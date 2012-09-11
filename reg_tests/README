@@ -1,0 +1,3 @@
+I think all the regression testing can be done via various namelist settings. I
+still need to figure out what, exactly, to test, and the best way to automate
+the process. This file will grow as more decisions are made.

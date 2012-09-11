@@ -1,0 +1,42 @@
+Right now, the stand-alone driver isn't very powerful. It is set up to run
+Bryan-Lewis mixing on a single column, and output the diffusivity coefficients
+at each level. Obviously this program will grow as we develop CVMix, but it
+seems like a good starting point.
+
+Directory structure:
+
+bld/ -- Contains the Makefile, is also where the build process will store .o
+        and .mod files.
+
+doc/ -- Contains documentation. At this point, it only has a PDF of the latest
+        protex in-code notes.
+
+exe/ -- Where the Makefile will put the vmix executable, also contains two
+        namelists that can be used to recreate Fig. 3.1 in Steve's notes.
+
+src/ -- Contains the source code. Right now it just contains the driver and
+        the subdirectory shared/, which is all the modules that are needed
+        to use CVMix with an outside model. (At some point, src/shared/ will
+        be picked up as an svn:external for POP and, I assume, MPAS and MOM.
+
+ncl/ -- Will eventually contain NCL scripts for making various plots depending
+        on the namelist settings. At this point, it contains one script for
+        generating the comparison of two Bryan-Lewis parameter sets. To use
+        right now, you need to run 
+
+        exe/] $ vmix < low_lat.ncl > diff1.txt
+        exe/] $ vmix < high_lat.ncl > diff2.txt
+        ncl/] $ ncl make_diff_plot-BryanLewis.ncl
+
+reg_tests/ -- This is a place-holder, but at some point we will want to create
+              a suite of regression tests to ensure everything in CVMix is
+              functioning correctly.
+
+INSTALLATION NOTES:
+
+The bld directory contains a Makefile and a 'setup' utility. bld/setup is a
+python script that asks for compiler / netcdf information (it only needs to
+be run once, info is saved in bld/.CVMix_env). If you just run 'make' without
+.CVMix_env, then setup will run automatically.
+
+To build with netcdf, run 'make netcdf' instead of just 'make'.
