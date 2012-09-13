@@ -90,7 +90,7 @@ contains
         Vmix_vars%nlev = val
         
       case ('diff')
-      if (.not.allocated(Vmix_vars%diff_iface)) then
+      if (.not.associated(Vmix_vars%diff_iface)) then
         allocate(Vmix_vars%diff_iface(nlev+1,2))
       end if
       if (trim(opts).eq.'col2') then
@@ -100,7 +100,7 @@ contains
       end if
       
       case ('visc')
-      if (.not.allocated(Vmix_vars%visc_iface)) then
+      if (.not.associated(Vmix_vars%visc_iface)) then
         allocate(Vmix_vars%visc_iface(nlev+1))
       end if
       Vmix_vars%visc_iface(:) = val
@@ -154,7 +154,7 @@ contains
     
     select case (trim(varname))
       case ('diff')
-      if (.not.allocated(Vmix_vars%diff_iface)) then
+      if (.not.associated(Vmix_vars%diff_iface)) then
         allocate(Vmix_vars%diff_iface(nlev+1,2))
       end if
       if (trim(opts).eq.'col2') then
@@ -164,7 +164,7 @@ contains
       end if
       
       case ('visc')
-      if (.not.allocated(Vmix_vars%visc_iface)) then
+      if (.not.associated(Vmix_vars%visc_iface)) then
         allocate(Vmix_vars%visc_iface(nlev+1))
       end if
       Vmix_vars%visc_iface(:) = val
@@ -218,7 +218,7 @@ contains
     
     select case (trim(varname))
       case ('diff')
-      if (.not.allocated(Vmix_vars%diff_iface)) then
+      if (.not.associated(Vmix_vars%diff_iface)) then
         allocate(Vmix_vars%diff_iface(nlev+1,2))
       end if
       if (trim(opts).eq.'col2') then
@@ -228,25 +228,25 @@ contains
       end if
 
       case ('visc')
-      if (.not.allocated(Vmix_vars%visc_iface)) then
+      if (.not.associated(Vmix_vars%visc_iface)) then
         allocate(Vmix_vars%visc_iface(nlev+1))
       end if
       Vmix_vars%visc_iface(:) = val
 
       case ('dens')
-      if (.not.allocated(Vmix_vars%dens)) then
+      if (.not.associated(Vmix_vars%dens)) then
         allocate(Vmix_vars%dens(nlev))
       end if
       Vmix_vars%dens(:) = val
 
       case ('dens_lwr')
-      if (.not.allocated(Vmix_vars%dens_lwr)) then
+      if (.not.associated(Vmix_vars%dens_lwr)) then
         allocate(Vmix_vars%dens_lwr(nlev))
       end if
       Vmix_vars%dens_lwr(:) = val
 
       case ('zw')
-      if (.not.allocated(Vmix_vars%z_iface)) then
+      if (.not.associated(Vmix_vars%z_iface)) then
         allocate(Vmix_vars%z_iface(nlev+1))
       end if
       Vmix_vars%z_iface(:) = val

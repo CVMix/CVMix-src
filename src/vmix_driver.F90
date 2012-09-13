@@ -36,9 +36,9 @@ Program vmix_driver
   type (vmix_data_type)                         :: Vmix_vars
   type (vmix_global_params_type)                :: Vmix_params
   type (vmix_bkgnd_params_type)                 :: Vmix_BL_params
-  real(kind=vmix_r8), dimension(:), allocatable :: iface_depth, &! nlev+1
-                                                   viscosity,   &! nlev+1 
-                                                   diffusivity   ! nlev+1
+  real(kind=vmix_r8), dimension(:), allocatable, target :: iface_depth, &! nlev+1
+                                                           viscosity     ! nlev+1
+  real(kind=vmix_r8), dimension(:,:), allocatable, target :: diffusivity ! nlev+1 x 1
 
   ! array indices
   integer :: kw
@@ -61,7 +61,7 @@ Program vmix_driver
 
   ! Calculate depth of cell interfaces based on number of levels and ocean
   ! depth (also allocate memory for diffusivity and viscosity)
-  allocate(iface_depth(nlev+1), diffusivity(nlev+1), viscosity(nlev+1))
+  allocate(iface_depth(nlev+1), diffusivity(nlev+1,1), viscosity(nlev+1))
   iface_depth(1) = 0.0d0
   do kw = 2,nlev+1
     iface_depth(kw) = iface_depth(kw-1) + ocn_depth/dble(nlev)
@@ -69,12 +69,17 @@ Program vmix_driver
 
   ! Initialization for CVMix data types
   ! Note that vmix_put will allocate memory for arrays as needed
+  ! Alternatively, for visc, diff, and zw, you could point directly
+  ! at the data
   call vmix_put(Vmix_params,  'max_nlev', nlev)
   call vmix_put(Vmix_params,  'prandtl',  0.0d0)
   call vmix_put(Vmix_vars, 'nlev',     nlev)
-  call vmix_put(Vmix_vars, 'visc',     0.0d0)
-  call vmix_put(Vmix_vars, 'diff',     0.0d0)
-  call vmix_put(Vmix_vars, 'zw',       iface_depth)
+!  call vmix_put(Vmix_vars, 'visc',     0.0d0)
+  Vmix_vars%visc_iface => viscosity
+!  call vmix_put(Vmix_vars, 'diff',     0.0d0)
+  Vmix_vars%diff_iface => diffusivity
+!  call vmix_put(Vmix_vars, 'zw',       iface_depth)
+  Vmix_vars%z_iface => iface_depth
 
   select case (trim(mixing))
     case ('BryanLewis')
@@ -90,11 +95,12 @@ Program vmix_driver
   end select
   
   ! Get viscosity and diffusivity out of CVMix datatypes
-  diffusivity = Vmix_vars%diff_iface(:,1)
-  viscosity   = Vmix_vars%visc_iface(:)
+  ! (Not needed if you use pointers instead of vmix_put!)
+!  diffusivity = Vmix_vars%diff_iface(:,:)
+!  viscosity   = Vmix_vars%visc_iface(:)
   
   do kw=1,nlev+1
-    print*, iface_depth(kw), diffusivity(kw)
+    print*, iface_depth(kw), diffusivity(kw,1)
   end do
 
 !EOC
