@@ -47,16 +47,16 @@ module vmix_kinds_and_types
                            ! Setting default to -1 might be F95...
 
       ! Values on interfaces
-      real(vmix_r8), pointer :: visc_iface(:)   ! nlev+1
-      real(vmix_r8), pointer :: diff_iface(:,:) ! nlev+1, 2
-      real(vmix_r8), pointer :: z_iface(:)      ! nlev+1
-      real(vmix_r8), pointer :: dw_iface(:)     ! nlev+1
+      real(vmix_r8), dimension(:),   pointer :: visc_iface  ! nlev+1
+      real(vmix_r8), dimension(:,:), pointer :: diff_iface  ! nlev+1, 2
+      real(vmix_r8), dimension(:),   pointer :: z_iface     ! nlev+1
+      real(vmix_r8), dimension(:),   pointer :: dw_iface    ! nlev+1
 
       ! Values at tracer points
-      real(vmix_r8), pointer :: dens(:)     ! nlev
-      real(vmix_r8), pointer :: dens_lwr(:) ! nlev
-      real(vmix_r8), pointer :: z(:)        ! nlev
-      real(vmix_r8), pointer :: dz(:)       ! nlev
+      real(vmix_r8), dimension(:),   pointer :: dens        ! nlev
+      real(vmix_r8), dimension(:),   pointer :: dens_lwr    ! nlev
+      real(vmix_r8), dimension(:),   pointer :: z           ! nlev
+      real(vmix_r8), dimension(:),   pointer :: dz          ! nlev
   end type vmix_data_type
 
   ! vmix_global_params_type contains global parameters used by multiple

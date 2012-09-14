@@ -93,10 +93,12 @@ contains
       if (.not.associated(Vmix_vars%diff_iface)) then
         allocate(Vmix_vars%diff_iface(nlev+1,2))
       end if
-      if (trim(opts).eq.'col2') then
-        Vmix_vars%diff_iface(:,2) = val
-      else
-        Vmix_vars%diff_iface(:,1) = val
+      if (present(opts)) then
+        if (trim(opts).eq.'col2') then
+          Vmix_vars%diff_iface(:,2) = val
+        else
+          Vmix_vars%diff_iface(:,1) = val
+        end if
       end if
       
       case ('visc')
@@ -157,10 +159,12 @@ contains
       if (.not.associated(Vmix_vars%diff_iface)) then
         allocate(Vmix_vars%diff_iface(nlev+1,2))
       end if
-      if (trim(opts).eq.'col2') then
-        Vmix_vars%diff_iface(:,2) = val
-      else
-        Vmix_vars%diff_iface(:,1) = val
+      if (present(opts)) then
+        if (trim(opts).eq.'col2') then
+          Vmix_vars%diff_iface(:,2) = val
+        else
+          Vmix_vars%diff_iface(:,1) = val
+        end if
       end if
       
       case ('visc')
@@ -221,10 +225,12 @@ contains
       if (.not.associated(Vmix_vars%diff_iface)) then
         allocate(Vmix_vars%diff_iface(nlev+1,2))
       end if
-      if (trim(opts).eq.'col2') then
-        Vmix_vars%diff_iface(:,2) = val
-      else
-        Vmix_vars%diff_iface(:,1) = val
+      if (present(opts)) then
+        if (trim(opts).eq.'col2') then
+          Vmix_vars%diff_iface(:,2) = val
+        else
+          Vmix_vars%diff_iface(:,1) = val
+        end if
       end if
 
       case ('visc')
