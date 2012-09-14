@@ -38,10 +38,11 @@ endif
 ifeq ($(FC),gfortran)
   COMPILE_FLAGS = -cpp -O2 -J $(OBJ)
 endif
-$(info FC = $(FC))
+
 ifeq ($(FC),pgf90)
   COMPILE_FLAGS = -O2 -module $(OBJ)
 endif
+
 ifeq ($(FC),ifort)
   COMPILE_FLAGS = -cpp -O2 -module $(OBJ)
 endif

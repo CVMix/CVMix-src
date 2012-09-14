@@ -12,6 +12,7 @@ else:
     return(glob.glob(text+'*')+[None])[state]
   readline.set_completer_delims(' \t\n;')
   if 'libedit' in readline.__doc__:
+    import rlcompleter
     readline.parse_and_bind("bind ^I rl_complete")
   else:
     readline.parse_and_bind("tab: complete")
