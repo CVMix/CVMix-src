@@ -6,17 +6,16 @@ begin
 ; Create Color Table
   my_color_map = (/"White", "Black"/)
 
-  nml   = asciiread("../exe/low_lat.nl", -1, "integer")
-  nlev  = nml(0)
-  datal = asciiread("../exe/diff1.txt", (/nlev+1,2/), "double")
-  datah = asciiread("../exe/diff2.txt", (/nlev+1,2/), "double")
+  nml  = asciiread("../reg_tests/Bryan-Lewis/input.nl", -1, "integer")
+  nlev = nml(0)
+  data = asciiread("../reg_tests/Bryan-Lewis/data.out", (/nlev+1,3/), "double")
 
   x = new((/2, nlev+1/), "double")
-  x(0,:) = datal(:,1)
-  x(1,:) = datah(:,1)
+  x(0,:) = data(:,1)
+  x(1,:) = data(:,2)
 
   y = new(nlev+1, "double")
-  y = datal(:,0)
+  y = data(:,0)
 
   ; out_type = "ps"
   out_type = "X11"

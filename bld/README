@@ -1,6 +1,6 @@
 To build, run
 
-$ make
+$ make VMIX_DRIVER=[specify driver F90 file to use, with no directory information]
 
 If this is your first time building, you will be prompted for some basic setup (compiler, location of netcdf). These values are saved in the file CVMix_env if they need to be editted later, or you can run
 
@@ -8,8 +8,8 @@ $ ./setup
 
 To run with netCDF support, use
 
-$ make netcdf
+$ make VMIX_DRIVER=[driver] netcdf
 
 or
 
-$ make USE_NETCDF=[any non-empty string]
+$ make VMIX_DRIVER=[driver] USE_NETCDF=[any non-empty string]

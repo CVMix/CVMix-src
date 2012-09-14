@@ -5,38 +5,47 @@ seems like a good starting point.
 
 Directory structure:
 
-bld/ -- Contains the Makefile, is also where the build process will store .o
-        and .mod files.
+bld/ -- Contains the Makefile, is also where the build process will keep a
+        couple of setup files to help with the build. It has two subdirectories:
+  bld/obj -- Where .o  and .mod files are stored.
+  bld/exe -- Where the Makefile will put the executable.
 
 doc/ -- Contains documentation. At this point, it only has a PDF of the latest
         protex in-code notes.
 
-exe/ -- Where the Makefile will put the vmix executable, also contains two
-        namelists that can be used to recreate Fig. 3.1 in Steve's notes.
+src/ -- Contains the source code, organized as follows. The top directory
+        contains modules needed by the stand-alone driver (output, for example).
+  src/drivers -- Stand-alone drivers for different tests.
+  src/shared  -- Where all the modules that are needed to use CVMix with an 
+                 outside model are stored. (Use as an svn:external!)
 
-src/ -- Contains the source code. Right now it just contains the driver and
-        the subdirectory shared/, which is all the modules that are needed
-        to use CVMix with an outside model. (At some point, src/shared/ will
-        be picked up as an svn:external for POP and, I assume, MPAS and MOM.
+reg_tests/ -- I envision this becoming a way to do regression tests as we
+              develop the code, but for now all it contains is one test that
+              outputs the resulting diffusivity coefficients when using
+              Bryan-Lewis mixing on two columns (with each column having its
+              own Bryan-Lewis parameterization).
 
 ncl/ -- Will eventually contain NCL scripts for making various plots depending
         on the namelist settings. At this point, it contains one script for
         generating the comparison of two Bryan-Lewis parameter sets. To use
         right now, you need to run 
 
-        exe/] $ vmix < low_lat.ncl > diff1.txt
-        exe/] $ vmix < high_lat.ncl > diff2.txt
+        reg_tests/Bryan-Lewis] $ ./pointer_test.sh > data.out
+        (or ./memcopy_test.sh > data.out)
         ncl/] $ ncl make_diff_plot-BryanLewis.ncl
-
-reg_tests/ -- This is a place-holder, but at some point we will want to create
-              a suite of regression tests to ensure everything in CVMix is
-              functioning correctly.
 
 INSTALLATION NOTES:
 
 The bld directory contains a Makefile and a 'setup' utility. bld/setup is a
 python script that asks for compiler / netcdf information (it only needs to
 be run once, info is saved in bld/.CVMix_env). If you just run 'make' without
-.CVMix_env, then setup will run automatically.
+.CVMix_env, then setup will run automatically. The makefile does require one
+variable as input: you need to specify which driver to build. If you omit this
+field, you will see an error like
 
-To build with netcdf, run 'make netcdf' instead of just 'make'.
+ERROR: You must compile using 'make VMIX_DRIVER=[driver]'. Valid choices are:
+vmix_BL_driver-mem_copy.F90
+vmix_BL_driver-pointers.F90
+
+To build with netcdf, run 'make VMIX_DRIVER=[] netcdf'.
+
