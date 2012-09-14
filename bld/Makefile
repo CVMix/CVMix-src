@@ -28,15 +28,22 @@ ENV_FILE = $(BLD)/.CVMix_env
 # netCDF (see below for more details)
 INFO_FILE = $(BLD)/.netcdf_info
 
-COMPILE_FLAGS = -cpp -O2 -J $(OBJ)
-LINKING_FLAGS =
-
 ifeq ($(wildcard $(ENV_FILE)),)
   NEED_ENV_FILE = TRUE
 else
   NEED_ENV_FILE = FALSE
   include $(ENV_FILE)
 endif
+
+ifeq ($(FC),gfortran)
+  COMPILE_FLAGS = -cpp -O2 -J $(OBJ)
+endif
+$(info FC = $(FC))
+ifeq ($(FC),ifort)
+  COMPILE_FLAGS = -cpp -O2 -module $(OBJ)
+endif
+LINKING_FLAGS =
+
 # If you build without netCDF and then decide you want to build with netCDF (or
 # vice versa), you need to clean the old object files. The way this is handled
 # is by storing whether the last compilation used netCDF or not in the hidden
