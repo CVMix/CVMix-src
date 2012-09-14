@@ -36,6 +36,7 @@ Program vmix_driver
   type (vmix_data_type)         , dimension(2) :: Vmix_vars
   type (vmix_global_params_type)               :: Vmix_params
   type (vmix_bkgnd_params_type) , dimension(2) :: Vmix_BL_params
+
   ! Will use 2 columns, viscosity will be 2 x nlev+1 and diffusivity will 
   ! be 2 x nlev+1 x 1 (diffusivity is 2D in column)
   ! iface_depth is the depth of each interface;  same in both columns
@@ -75,37 +76,31 @@ Program vmix_driver
 
   ! Allocate memory to store viscosity and diffusivity values
   allocate(diffusivity(2,nlev+1,1), viscosity(2,nlev+1))
+
   ! Initialization for CVMix data types
-  ! Note that vmix_put will allocate memory for arrays as needed
-  ! Alternatively, for visc, diff, and zw, you could point directly
-  ! at the data
   call vmix_put(Vmix_params,  'max_nlev', nlev)
   call vmix_put(Vmix_params,  'prandtl',  0.0d0)
   do icol=1,2
     call vmix_put(Vmix_vars(icol), 'nlev',     nlev)
-!    call vmix_put(Vmix_vars(icol), 'visc',     0.0d0)
-!    call vmix_put(Vmix_vars(icol), 'diff',     0.0d0)
-!    call vmix_put(Vmix_vars(icol), 'zw',       iface_depth)
+    ! Point Vmix_vars values to memory allocated above
     Vmix_vars(icol)%visc_iface => viscosity(icol,:)
     Vmix_vars(icol)%diff_iface => diffusivity(icol,:,:)
     Vmix_vars(icol)%z_iface => iface_depth
   end do
 
+  ! Read / set B-L parameters for column 1
   read(*, nml=BryanLewis1_nml)
   call vmix_init_bkgnd(Vmix_vars(1), Vmix_params, Vmix_BL_params(1),     &
                        1, 1, col1_vdc1, col1_vdc2, col1_linv, col1_dpth)
   call vmix_coeffs_bkgnd(Vmix_vars(1), Vmix_BL_params(1), 1)
   
+  ! Read / set B-L parameters for column 2
   read(*, nml=BryanLewis2_nml)
   call vmix_init_bkgnd(Vmix_vars(2), Vmix_params, Vmix_BL_params(2),     &
                        1, 1, col2_vdc1, col2_vdc2, col2_linv, col2_dpth)
   call vmix_coeffs_bkgnd(Vmix_vars(2), Vmix_BL_params(2), 1)
   
-  ! Get viscosity and diffusivity out of CVMix datatypes
-  ! (Not needed if you use pointers instead of vmix_put!)
-!  diffusivity = Vmix_vars%diff_iface(:,:)
-!  viscosity   = Vmix_vars%visc_iface(:)
-  
+  ! Output (just text for now, will be netCDF soon)
   do kw=1,nlev+1
     print*, iface_depth(kw), diffusivity(1,kw,1), diffusivity(2,kw,1)
   end do
