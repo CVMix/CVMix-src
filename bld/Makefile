@@ -153,7 +153,7 @@ $(ENV_FILE):
 # the vmix target only builds if NEED_ENV_FILE is FALSE, so after this build
 # returns, the vmix target won't do anything.
 	@$(BLD)/setup $(ENV_FILE)
-	$(MAKE)
+	$(MAKE) -f $(BLD)/Makefile
 
 remove_exe:
 	/bin/rm -rf $(EXE)
