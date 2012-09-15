@@ -12,8 +12,8 @@ module vmix_put_get
 !\\
 
 ! !REVISION HISTORY:
-!  SVN:$Id: vmix_put_get.F90 39458 2012-08-14 22:13:41Z mlevy@ucar.edu $
-!  SVN:$URL: https://svn-ccsm-models.cgd.ucar.edu/pop2/branches/vmix_project/source/vmix/vmix_put_get.F90 $
+!  SVN:$Id$
+!  SVN:$URL$
 
 ! !USES:
 

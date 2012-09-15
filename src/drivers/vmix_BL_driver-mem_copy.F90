@@ -1,14 +1,6 @@
-!BOI
-
-! !TITLE: In-code documentation for CVMix
-! !AUTHORS: Many contributors from GFDL, LANL, and NCAR
-! !AFFILIATION: GFDL, LANL, and NCAR
-! !DATE: \today
-
-!EOI
 !BOP
 
-! !ROUTINE: vmix_driver
+! !ROUTINE: vmix_BL_driver_mem_copy
 
 ! !DESCRIPTION: The stand-alone driver for the CVMix package. The type of
 !  mixing comes from the cvmix\_nml namelist, and then other namelists
@@ -18,7 +10,7 @@
 
 ! !INTERFACE:
 
-Program vmix_driver
+Program vmix_BL_driver_mem_copy
 
 ! !USES:
 
@@ -37,17 +29,15 @@ Program vmix_driver
   type (vmix_global_params_type)               :: Vmix_params
   type (vmix_bkgnd_params_type) , dimension(2) :: Vmix_BL_params
 
-  ! Will use 2 columns, viscosity will be 2 x nlev+1 and diffusivity will 
-  ! be 2 x nlev+1 x 1 (diffusivity is 2D in column)
   ! iface_depth is the depth of each interface;  same in both columns
   real(kind=vmix_r8), dimension(:),     allocatable :: iface_depth
-  real(kind=vmix_r8), dimension(:,:),   allocatable :: viscosity
-  real(kind=vmix_r8), dimension(:,:,:), allocatable :: diffusivity
 
   ! Global parameter
   integer, parameter :: ncol = 2
   ! array indices
   integer :: icol,kw
+  ! file indices
+  integer :: fid1, fid2, fid3
 
   ! Namelist variables
   ! 1) General mixing parameters
@@ -67,15 +57,12 @@ Program vmix_driver
   read(*, nml=cvmix_nml)
 
   ! Calculate depth of cell interfaces based on number of levels and ocean
-  ! depth (also allocate memory for diffusivity and viscosity)
+  ! depth
   allocate(iface_depth(nlev+1))
   iface_depth(1) = 0.0d0
   do kw = 2,nlev+1
     iface_depth(kw) = iface_depth(kw-1) + ocn_depth/dble(nlev)
   end do
-
-  ! Allocate memory to store viscosity and diffusivity values
-  allocate(diffusivity(2,nlev+1,1), viscosity(2,nlev+1))
 
   ! Initialization for CVMix data types
   ! Note that vmix_put will allocate memory for arrays as needed
@@ -100,15 +87,22 @@ Program vmix_driver
                        1, 1, col2_vdc1, col2_vdc2, col2_linv, col2_dpth)
   call vmix_coeffs_bkgnd(Vmix_vars(2), Vmix_BL_params(2), 1)
   
-  ! Get viscosity and diffusivity out of CVMix datatypes
-  diffusivity(1,:,1) = Vmix_vars(1)%diff_iface(:,1)
-  diffusivity(2,:,1) = Vmix_vars(2)%diff_iface(:,1)
-  
   ! Output (just text for now, will be netCDF soon)
-  do kw=1,nlev+1
-    print*, iface_depth(kw), diffusivity(1,kw,1), diffusivity(2,kw,1)
-  end do
+  ! data.out will have diffusivity from both columns (needed for NCL script)
+  call vmix_output_open(fid1, "data.out", "ascii")
+  ! col1.out will just have diffusivity from low lat
+  call vmix_output_open(fid2, "col1.out", "ascii")
+  ! col2.out will just have diffusivity from high lat
+  call vmix_output_open(fid3, "col2.out", "ascii")
+
+  call vmix_output_write_diffusivity(fid1, Vmix_vars)
+  call vmix_output_write_diffusivity(fid2, Vmix_vars(1))
+  call vmix_output_write_diffusivity(fid3, Vmix_vars(2))
+
+  call vmix_output_close(fid1)
+  call vmix_output_close(fid2)
+  call vmix_output_close(fid3)
 
 !EOC
 
-End program vmix_driver
+End program vmix_BL_driver_mem_copy

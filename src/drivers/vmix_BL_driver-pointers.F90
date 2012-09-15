@@ -8,7 +8,7 @@
 !EOI
 !BOP
 
-! !ROUTINE: vmix_driver
+! !ROUTINE: vmix_BL_driver_pointers
 
 ! !DESCRIPTION: The stand-alone driver for the CVMix package. The type of
 !  mixing comes from the cvmix\_nml namelist, and then other namelists
@@ -18,7 +18,7 @@
 
 ! !INTERFACE:
 
-Program vmix_driver
+Program vmix_BL_driver_pointers
 
 ! !USES:
 
@@ -48,6 +48,8 @@ Program vmix_driver
   integer, parameter :: ncol = 2
   ! array indices
   integer :: icol,kw
+  ! file indices
+  integer :: fid1, fid2, fid3
 
   ! Namelist variables
   ! 1) General mixing parameters
@@ -101,10 +103,21 @@ Program vmix_driver
   call vmix_coeffs_bkgnd(Vmix_vars(2), Vmix_BL_params(2), 1)
   
   ! Output (just text for now, will be netCDF soon)
-  do kw=1,nlev+1
-    print*, iface_depth(kw), diffusivity(1,kw,1), diffusivity(2,kw,1)
-  end do
+  ! data.out will have diffusivity from both columns (needed for NCL script)
+  call vmix_output_open(fid1, "data.out", "ascii")
+  ! col1.out will just have diffusivity from low lat
+  call vmix_output_open(fid2, "col1.out", "ascii")
+  ! col2.out will just have diffusivity from high lat
+  call vmix_output_open(fid3, "col2.out", "ascii")
+
+  call vmix_output_write_diffusivity(fid1, Vmix_vars)
+  call vmix_output_write_diffusivity(fid2, Vmix_vars(1))
+  call vmix_output_write_diffusivity(fid3, Vmix_vars(2))
+
+  call vmix_output_close(fid1)
+  call vmix_output_close(fid2)
+  call vmix_output_close(fid3)
 
 !EOC
 
-End program vmix_driver
+End program vmix_BL_driver_pointers

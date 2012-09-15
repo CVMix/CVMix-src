@@ -13,8 +13,8 @@ module vmix_background
 !\\
 
 ! !REVISION HISTORY:
-!  SVN:$Id: vmix_background.F90 39453 2012-08-14 20:01:16Z mlevy@ucar.edu $
-!  SVN:$URL: https://svn-ccsm-models.cgd.ucar.edu/pop2/branches/vmix_project/source/vmix/vmix_background.F90 $
+!  SVN:$Id$
+!  SVN:$URL$
 
 ! !USES:
 

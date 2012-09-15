@@ -11,8 +11,8 @@ module vmix_convection
 !\\
 
 ! !REVISION HISTORY:
-!  SVN:$Id: vmix_convection.F90 39453 2012-08-14 20:01:16Z mlevy@ucar.edu $
-!  SVN:$URL: https://svn-ccsm-models.cgd.ucar.edu/pop2/branches/vmix_project/source/vmix/vmix_convection.F90 $
+!  SVN:$Id$
+!  SVN:$URL$
 
 ! !USES:
    use vmix_kinds_and_types, only : vmix_r8,               &

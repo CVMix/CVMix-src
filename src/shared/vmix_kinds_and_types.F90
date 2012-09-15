@@ -12,8 +12,8 @@ module vmix_kinds_and_types
 !  \\
 
 ! !REVISION HISTORY:
-!  SVN:$Id: vmix_kinds_and_types.F90 39460 2012-08-14 23:22:31Z mlevy@ucar.edu $
-!  SVN:$URL: https://svn-ccsm-models.cgd.ucar.edu/pop2/branches/vmix_project/source/vmix/vmix_kinds_and_types.F90 $
+!  SVN:$Id$
+!  SVN:$URL$
 
 ! !USES:
 !  uses no other modules
