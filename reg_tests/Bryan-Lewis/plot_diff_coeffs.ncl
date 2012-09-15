@@ -6,9 +6,9 @@ begin
 ; Create Color Table
   my_color_map = (/"White", "Black"/)
 
-  nml  = asciiread("../reg_tests/Bryan-Lewis/input.nl", -1, "integer")
+  nml  = asciiread("input.nl", -1, "integer")
   nlev = nml(0)
-  data = asciiread("../reg_tests/Bryan-Lewis/data.out", (/nlev+1,3/), "double")
+  data = asciiread("data.out", (/nlev+1,3/), "double")
 
   x = new((/2, nlev+1/), "double")
   x(0,:) = data(:,1)

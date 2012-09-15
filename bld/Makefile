@@ -93,13 +93,13 @@ O_FILES = $(subst shared/,,$(subst drivers/,,$(subst $(SRC),$(OBJ),$(F_FILES:$(e
 
 .PHONY: check
 
-all: vmix
+all: $(EXE)
 
 # Possible executables: with and without netCDF
 netcdf:
 	$(MAKE) USE_NETCDF=TRUE
 
-vmix: remove_exe check $(O_FILES)
+$(EXE): remove_exe check $(O_FILES)
 # If NEED_ENV_FILE is TRUE, the check target recursively calls make
 # With NEED_ENV_FILE equal to FALSE, so the executable will be built
 ifeq ($(NEED_ENV_FILE),FALSE)
