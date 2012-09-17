@@ -1,0 +1,76 @@
+===============================================================================
+$Id$
+$URL$
+===============================================================================
+Tag Creator: mlevy
+Developers:  mlevy
+Tag Date:    ?? Sep 2012
+Tag Name:    cvmix_201209??
+Tag Summary: A lot of restructuring / one new feature. The executable is now
+             build in $CVMix/bld/exe/ instead of $CVMix/exe/; there are now
+             multiple stand-alone drivers, and you must specify which one to
+             use when you build the code. All the *.o and *.mod files are put
+             in $CVMix/bld/obj/, rather than the .o files in $CVMix/bld/ and
+             the .mod files in whatever directory you ran `make` from. If you
+             have protex installed, you can generate the in-source protex
+             documentation by running `$CVMix/doc/make_protex_file`. I also
+             deleted the $CVMix/ncl/ directory in favor of keeping the ncl
+             files in the reg_tests/ subdirectory that actually calls them.
+
+             Feature: vmix_output.F90 now handles outputting data to disk, and
+             both stand-alone drivers use the vmix_output routines.
+
+             Minor changes: updated the svn:keywords property on the source
+             code to include Id and URL. Also updated svn:ignore on $CVMix/bld
+             to account for moving the .o and .mod files into $CVMix/bld/obj.
+
+Files Modified:
+D    exe
+D    ncl
+A    reg_tests/Bryan-Lewis
+A    reg_tests/Bryan-Lewis/memcopy_test.sh
+A    reg_tests/Bryan-Lewis/plot_diff_coeffs.ncl
+A    reg_tests/Bryan-Lewis/input.nl
+A    reg_tests/Bryan-Lewis/pointer_test.sh
+M    bld/setup
+A    bld/exe
+A    bld/obj
+M    bld/README
+M    bld/Makefile
+ M   bld
+M    doc/protex_documentation.pdf
+A    doc/make_protex_file
+D    src/vmix_driver.F90
+MM   src/vmix_output.F90
+MM   src/shared/vmix_background.F90
+MM   src/shared/vmix_put_get.F90
+MM   src/shared/vmix_convection.F90
+MM   src/shared/vmix_kinds_and_types.F90
+A    src/drivers
+A    src/drivers/vmix_BL_driver-pointers.F90
+A    src/drivers/vmix_BL_driver-mem_copy.F90
+M    README
+===============================================================================
+Tag Creator: mlevy
+Developers:  mlevy
+Tag Date:    13 Sep 2012
+Tag Name:    cvmix_20120913
+Tag Summary: Started repository for stand-alone CVMix. This tag is the first
+             to use pointers rather than allocatable arrays for the mixing
+             coefficients / column parameters (depth, interface depth, etc).
+             This is also the first tag that uses $CVMix/bld/setup (a python
+             script) to store environment variables needed for the build.
+
+             Minor changes: updated the svn:ignore property on a couple of
+             directories to ignore the CVMix executable, .o and .mod files,
+             and any graphics output from the NCL scripts.
+
+Files Modified:
+D    old.tmp
+M    bld/setup
+ M   bld
+ M   exe
+M    src/shared/vmix_put_get.F90
+M    src/shared/vmix_kinds_and_types.F90
+M    src/vmix_driver.F90
+ M   ncl
