@@ -53,7 +53,7 @@ module vmix_output
     type(vmix_file_entry), pointer :: next
   end type
 
-  type(vmix_file_entry), allocatable, target :: file_database
+  type(vmix_file_entry), allocatable, target :: file_database(:)
 !EOP
 
 contains
@@ -91,19 +91,22 @@ contains
 !EOP
 !BOC
 
+    ! Need routine that will produce unique file_id
+    ! Starting with 615 and incrementing by one for now...
+    file_id = 615
     if (.not.(allocated(file_database))) then
-      allocate(file_database)
-      file_id = 615
-      file_database%file_id = file_id
-      nullify(file_database%prev)
-      nullify(file_database%next)
-      file_index => file_database
+      allocate(file_database(1))
+      file_database(1)%file_id = file_id
+      nullify(file_database(1)%prev)
+      nullify(file_database(1)%next)
+      file_index => file_database(1)
     else
-      file_index => file_database
+      file_id = file_id+1
+      file_index => file_database(1)
       do while(associated(file_index%next))
+        file_id = file_id+1
         file_index => file_index%next
       end do
-      file_id = file_index%file_id+1
       allocate(file_index%next)
       file_index%next%file_id   = file_id 
       file_index%next%prev     => file_index 
@@ -118,12 +121,12 @@ contains
         stop
 #else
         file_index%file_type = NETCDF_FILE_TYPE
+        call netcdf_check(nf90_create(file_name, NF90_CLOBBER, file_id))
+        file_index%file_id = file_id
         ! For outputting params, want vertical dimension to be unlimited?
         ! (Will be looping through the levels)
 #endif
       case ('ascii')
-        ! Need routine that will produce unique file_id
-        ! Starting with 615 and incrementing by one for now...
         file_index%file_type = ASCII_FILE_TYPE
         open(file_id, file = file_name, status="replace")
       case default
@@ -157,14 +160,26 @@ contains
     type(vmix_data_type), intent(in) :: Vmix_vars
 
 ! !LOCAL VARIABLES:
-    integer :: kw
+    integer :: kw, nw
+#ifdef _NETCDF
+    integer :: nw_id, zw_id, diff_id
+#endif
 
 !EOP
 !BOC
 
+    nw = Vmix_vars%nlev+1
     select case (get_file_type(file_id))
 #ifdef _NETCDF
       case (NETCDF_FILE_TYPE)
+        call netcdf_check(nf90_def_dim(file_id, "nw", nw, nw_id))
+        call netcdf_check(nf90_def_var(file_id, "depth", NF90_DOUBLE, &
+                                       (/nw_id/), zw_id))
+        call netcdf_check(nf90_def_var(file_id, "diff", NF90_DOUBLE, &
+                                       (/nw_id/), diff_id))
+        call netcdf_check(nf90_enddef(file_id))
+        call netcdf_check(nf90_put_var(file_id, nw_id, Vmix_vars%z_iface(:)))
+        call netcdf_check(nf90_put_var(file_id, diff_id, Vmix_vars%diff_iface(:,1)))
 #endif
       case (ASCII_FILE_TYPE)
         do kw=1,Vmix_vars%nlev+1
@@ -201,19 +216,22 @@ contains
     type(vmix_data_type), dimension(:), intent(in) :: Vmix_vars
 
 ! !LOCAL VARIABLES:
-    integer :: ncol, nlev, icol, kw
+    integer :: ncol, nw, icol, kw
     logical :: z_err
-    real(kind=vmix_r8), dimension(:,:), allocatable :: tmp_data
+    real(kind=vmix_r8), dimension(:,:), allocatable :: lcl_diff
+#ifdef _NETCDF
+    integer :: nw_id, ncol_id, zw_id, diff_id
+#endif
 
 !EOP
 !BOC
 
     z_err = .false.
     ncol = size(Vmix_vars)
-    nlev = Vmix_vars(1)%nlev
+    nw = Vmix_vars(1)%nlev+1
     ! Make sure all levels are the same
     do icol=2,ncol
-      if (Vmix_vars(icol)%nlev.ne.nlev) then
+      if (Vmix_vars(icol)%nlev+1.ne.nw) then
         z_err = .true.
       else
         if (any(Vmix_vars(icol)%z_iface.ne.Vmix_vars(icol-1)%z_iface)) then
@@ -227,19 +245,29 @@ contains
       stop
     end if
 
+    allocate(lcl_diff(ncol,nw))
+    do icol=1,ncol
+      lcl_diff(icol,:) = Vmix_vars(icol)%diff_iface(:,1)
+    end do
+
     select case (get_file_type(file_id))
 #ifdef _NETCDF
       case (NETCDF_FILE_TYPE)
+        call netcdf_check(nf90_def_dim(file_id, "nw",   nw,   nw_id))
+        call netcdf_check(nf90_def_dim(file_id, "ncol", ncol, ncol_id))
+        call netcdf_check(nf90_def_var(file_id, "depth", NF90_DOUBLE, &
+                                       (/nw_id/), zw_id))
+        call netcdf_check(nf90_def_var(file_id, "diff", NF90_DOUBLE, &
+                                       (/ncol_id, nw_id/), diff_id))
+        call netcdf_check(nf90_enddef(file_id))
+        call netcdf_check(nf90_put_var(file_id, nw_id, Vmix_vars(1)%z_iface(:)))
+        call netcdf_check(nf90_put_var(file_id, diff_id, lcl_diff))
 #endif
       case (ASCII_FILE_TYPE)
-        allocate(tmp_data(ncol,nlev+1))
-        do icol=1,ncol
-          tmp_data(icol,:) = Vmix_vars(icol)%diff_iface(:,1)
+        do kw=1,nw
+          write(file_id,*) Vmix_vars(1)%z_iface(kw), lcl_diff(:,kw)
         end do
-        do kw=1,nlev+1
-          write(file_id,*) Vmix_vars(1)%z_iface(kw), tmp_data(:,kw)
-        end do
-        deallocate(tmp_data)
+        deallocate(lcl_diff)
       case DEFAULT
         print*, "ERROR: Invalid file type"
         stop
@@ -279,7 +307,7 @@ contains
     ! Is fid in the file database?
     nullify(file_to_close)
     if (allocated(file_database)) then
-      ifile => file_database
+      ifile => file_database(1)
       do while(associated(ifile%next))
         if (ifile%file_id.eq.file_id) then
           file_to_close => ifile
@@ -309,15 +337,15 @@ contains
       deallocate(file_to_close)
     else
       ! file_id is stored in the first entry
-      if (associated(file_database%next)) then
+      if (associated(file_database(1)%next)) then
         ! Database has more than one entry, so copy last entry into first
-        file_to_close => file_database
+        file_to_close => file_database(1)
         do while(associated(file_to_close%next))
           file_to_close => file_to_close%next
         end do
         ifile => file_to_close%prev
-        file_database%file_id   = file_to_close%file_id
-        file_database%file_type = file_to_close%file_type
+        file_database(1)%file_id   = file_to_close%file_id
+        file_database(1)%file_type = file_to_close%file_type
         nullify(ifile%next)
         deallocate(file_to_close)
       else
@@ -329,6 +357,7 @@ contains
     select case (file_type)
 #ifdef _NETCDF
       case (NETCDF_FILE_TYPE)
+        call netcdf_check(nf90_close(file_id))
 #endif
       case (ASCII_FILE_TYPE)
         close(file_id)
@@ -367,7 +396,7 @@ contains
 !EOP
 !BOC
 
-    ifile => file_database
+    ifile => file_database(1)
     if (ifile%file_id.eq.file_id) then
       get_file_type = ifile%file_type
       return
@@ -392,16 +421,32 @@ contains
     if (.not.allocated(file_database)) then
       print*, "No Open files"
     else
-      ifile => file_database
+      ifile => file_database(1)
       do while (associated(ifile%next))
-        print*, "file id: ", ifile%file_id
+        print*, "file id: ", ifile%file_id, ifile%file_type
         ifile => ifile%next
       end do
-      print*, "file id: ", ifile%file_id
+      print*, "file id: ", ifile%file_id, ifile%file_type
     end if
     print*, "----"
 
   end subroutine print_open_files
+
+  subroutine netcdf_check(status)
+
+    integer, intent(in) :: status
+
+#ifdef _NETCDF
+    if (status.ne.nf90_noerr) then
+      print*, "netCDF error: ", trim(nf90_strerror(status))
+      stop
+    end if
+#else
+    print*, "ERROR: can not call netcdf_check unless compiling -D_NETCDF"
+    stop
+#endif
+
+  end subroutine netcdf_check
 
 end module vmix_output
 

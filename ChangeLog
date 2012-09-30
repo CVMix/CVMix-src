@@ -18,7 +18,11 @@ Tag Summary: A lot of restructuring / one new feature. The executable is now
              files in the reg_tests/ subdirectory that actually calls them.
 
              Feature: vmix_output.F90 now handles outputting data to disk, and
-             both stand-alone drivers use the vmix_output routines.
+             both stand-alone drivers use the vmix_output routines. At present,
+             can output either netCDF or ascii; the netCDF writing routines need
+             error checking / better interfaces (currently only write the
+             diffusivity coefficient, no check to see what dimensions were
+             previously defined).
 
              Minor changes: updated the svn:keywords property on the source
              code to include Id and URL. Also updated svn:ignore on $CVMix/bld
@@ -28,10 +32,9 @@ Files Modified:
 D    exe
 D    ncl
 A    reg_tests/Bryan-Lewis
-A    reg_tests/Bryan-Lewis/memcopy_test.sh
+A    reg_tests/Bryan-Lewis/BL_test.sh
 A    reg_tests/Bryan-Lewis/plot_diff_coeffs.ncl
 A    reg_tests/Bryan-Lewis/input.nl
-A    reg_tests/Bryan-Lewis/pointer_test.sh
 M    bld/setup
 A    bld/exe
 A    bld/obj

@@ -56,7 +56,7 @@ LINKING_FLAGS =
 # variable OLD_NETCDF. The target "check" compares these two variables and runs
 # make clean if they differ. If the file doesn't exist, the two variables are
 # equal.
-ifdef USE_NETCDF
+ifeq ($(USE_NETCDF),TRUE)
   COMPILE_FLAGS += -D_NETCDF -I$(NETCDF_INC)
   LINKING_FLAGS += -L$(NETCDF_LIB) -lnetcdf
   # Check for netcdf4 library
