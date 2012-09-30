@@ -124,7 +124,6 @@ Program vmix_BL_driver_pointers
   call vmix_output_open(fid3, "col2.out", "ascii")
 #endif
 
-  call print_open_files()
   call vmix_output_write_diffusivity(fid1, Vmix_vars)
   call vmix_output_write_diffusivity(fid2, Vmix_vars(1))
   call vmix_output_write_diffusivity(fid3, Vmix_vars(2))
