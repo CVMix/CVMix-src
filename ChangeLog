@@ -4,8 +4,8 @@ $URL$
 ===============================================================================
 Tag Creator: mlevy
 Developers:  mlevy
-Tag Date:    ?? Sep 2012
-Tag Name:    cvmix_201209??
+Tag Date:    30 Sep 2012
+Tag Name:    cvmix_20120930
 Tag Summary: A lot of restructuring / one new feature. The executable is now
              build in $CVMix/bld/exe/ instead of $CVMix/exe/; there are now
              multiple stand-alone drivers, and you must specify which one to
