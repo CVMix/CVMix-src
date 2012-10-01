@@ -2,8 +2,17 @@
 
 extension = .F90
 
-# Need CVMix root directory (should be passed in)
-VMIX_ROOT = ..
+# Need CVMix root directory
+# If using old version of make, pass in VMIX_ROOT
+ifeq ($(wildcard $(MAKEFILE_LIST)),)
+  VMIX_ROOT = ..
+else
+  ThisMakefile=$(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST))
+  ifeq (/,$(findstring /,$(ThisMakefile)))
+    ThisDir=$(shell x=$(ThisMakefile) && echo $${x%/*})/
+  endif
+  VMIX_ROOT = $(realpath $(ThisDir)..)
+endif
 # Need to know which driver to use (should be passed in)
 VMIX_DRIVER = FALSE
 ifeq ($(VMIX_DRIVER),FALSE)
@@ -97,7 +106,7 @@ all: $(EXE)
 
 # Possible executables: with and without netCDF
 netcdf:
-	$(MAKE) USE_NETCDF=TRUE
+	$(MAKE) -f $(BLD)/Makefile USE_NETCDF=TRUE
 
 $(EXE): remove_exe check $(O_FILES)
 # If NEED_ENV_FILE is TRUE, the check target recursively calls make

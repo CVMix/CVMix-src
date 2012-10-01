@@ -18,7 +18,6 @@ usage() {
 #############
 
 DRIVER=pointers
-USE_NETCDF=FALSE
 while [ $# -gt 0 ]; do
   case $1 in
     -h|--help)
@@ -26,7 +25,7 @@ while [ $# -gt 0 ]; do
       exit 0
       ;;
     -nc|--netcdf)
-      USE_NETCDF=TRUE
+      USE_NETCDF=netcdf
       ;;
     -mc|--memcopy)
       DRIVER=mem_copy
@@ -40,7 +39,9 @@ while [ $# -gt 0 ]; do
 done
 
 CVMix=$PWD/../..
-make -f $CVMix/bld/Makefile USE_NETCDF=${USE_NETCDF} VMIX_DRIVER=vmix_BL_driver-${DRIVER}.F90 VMIX_ROOT=$CVMix
+make -f $CVMix/bld/Makefile ${USE_NETCDF} VMIX_DRIVER=vmix_BL_driver-${DRIVER}.F90
+# Note: if make error, include VMIX_ROOT as below
+#make -f $CVMix/bld/Makefile ${USE_NETCDF} VMIX_DRIVER=vmix_BL_driver-${DRIVER}.F90 VMIX_ROOT=$CVMix
 if [ $? != 0 ]; then
   echo "Build error!"
   exit 1
