@@ -48,7 +48,7 @@ if [ $? != 0 ]; then
 fi
 
 $CVMix/bld/exe/cvmix < input.nl
-if [ "${USE_NETCDF}" == "TRUE" ]; then
+if [ "${USE_NETCDF}" == "netcdf" ]; then
   ncdump -v diff data.nc
 else
   cat data.out
