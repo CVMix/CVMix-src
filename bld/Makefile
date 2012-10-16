@@ -66,7 +66,12 @@ LINKING_FLAGS =
 # make clean if they differ. If the file doesn't exist, the two variables are
 # equal.
 ifeq ($(USE_NETCDF),TRUE)
-  COMPILE_FLAGS += -D_NETCDF -I$(NETCDF_INC)
+  ifeq ($(FC),xlf90)
+    COMPILE_FLAGS += -WF,-D_NETCDF
+  else
+    COMPILE_FLAGS += -D_NETCDF
+  endif
+    COMPILE_FLAGS += -I$(NETCDF_INC)
   LINKING_FLAGS += -L$(NETCDF_LIB) -lnetcdf
   # Check for netcdf4 library
   ifneq ($(wildcard $(NETCDF_LIB)/libnetcdff.a),)

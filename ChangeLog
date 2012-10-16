@@ -2,6 +2,14 @@
 $Id$
 $URL$
 ===============================================================================
+New Checkin: mlevy
+Date:        16 Oct 2012
+Summary:     Updated makefile to use proper tags for xlf90 compiler
+
+Files Modified:
+M       bld/Makefile
+
+===============================================================================
 Tag Creator: mlevy
 Developers:  mlevy
 Tag Date:    30 Sep 2012
