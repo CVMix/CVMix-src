@@ -17,8 +17,8 @@ begin
   y = new(nlev+1, "double")
   y = data(:,0)
 
-  ; out_type = "ps"
-  out_type = "X11"
+  out_type = "ps"
+  ; out_type = "X11"
   wks = gsn_open_wks(out_type, "Bryan-Lewis_CVMix")
   gsn_define_colormap(wks, my_color_map)
 

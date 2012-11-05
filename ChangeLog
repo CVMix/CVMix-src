@@ -3,6 +3,14 @@ $Id$
 $URL$
 ===============================================================================
 New Checkin: mlevy
+Date:        5 Nov 2012
+Summary:     Updated makefile to error out if VMIX_DRIVER is not found.
+
+Files Modified:
+M       bld/Makefile
+
+===============================================================================
+New Checkin: mlevy
 Date:        16 Oct 2012
 Summary:     Updated makefile to use proper tags for xlf90 compiler
 
