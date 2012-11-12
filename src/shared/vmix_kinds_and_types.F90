@@ -53,6 +53,8 @@ module vmix_kinds_and_types
       real(vmix_r8), dimension(:),   pointer :: visc_iface => NULL()
       real(vmix_r8), dimension(:),   pointer :: z_iface    => NULL()
       real(vmix_r8), dimension(:),   pointer :: dw_iface   => NULL()
+      real(vmix_r8), dimension(:),   pointer :: Ri_t_iface => NULL()
+      real(vmix_r8), dimension(:),   pointer :: Ri_u_iface => NULL()
 
       ! Values at tracer points
       ! nlev
@@ -81,6 +83,15 @@ module vmix_kinds_and_types
       logical :: lvary_vertical   ! True => second dim not 1
       logical :: lvary_horizontal ! True => first dim not 1
   end type vmix_bkgnd_params_type
+
+  ! vmix_shear_params_type contains the necessary parameters for shear mixing
+  ! (currently just Paconowski-Philander)
+  type, public :: vmix_shear_params_type
+      character(len=vmix_strlen) :: mix_scheme
+      real(vmix_r8), target      :: alpha
+      real(vmix_r8), target      :: nu_zero
+      real(vmix_r8), target      :: n
+  end type vmix_shear_params_type
 
   ! vmix_conv_params_type contains the necessary parameters for convective
   ! mixing.
