@@ -88,9 +88,9 @@ module vmix_kinds_and_types
   ! (currently just Paconowski-Philander)
   type, public :: vmix_shear_params_type
       character(len=vmix_strlen) :: mix_scheme
-      real(vmix_r8), target      :: alpha
-      real(vmix_r8), target      :: nu_zero
-      real(vmix_r8), target      :: n
+      real(vmix_r8)              :: alpha
+      real(vmix_r8)              :: nu_zero
+      real(vmix_r8)              :: n
   end type vmix_shear_params_type
 
   ! vmix_conv_params_type contains the necessary parameters for convective
