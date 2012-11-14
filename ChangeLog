@@ -3,6 +3,21 @@ $Id$
 $URL$
 ===============================================================================
 New Checkin: mlevy
+Date:        13 Nov 2012
+Summary:     Formatting for protex documentation (not commit will be new PDF)
+
+Files Modified:
+M       doc/make_protex_file
+M       src/vmix_output.F90
+M       src/shared/vmix_background.F90
+M       src/shared/vmix_shear.F90
+M       src/shared/vmix_put_get.F90
+M       src/shared/vmix_convection.F90
+M       src/shared/vmix_kinds_and_types.F90
+M       src/drivers/vmix_BL_driver-pointers.F90
+M       src/drivers/vmix_BL_driver-mem_copy.F90
+===============================================================================
+New Checkin: mlevy
 Date:        12 Nov 2012
 Summary:     gfortran barked about declaring pointers inside datatypes
              (something I meant to remove before committing -- the IBM compiler

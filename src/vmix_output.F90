@@ -86,8 +86,6 @@ contains
 
 ! !LOCAL VARIABLES:
     type(vmix_file_entry), pointer :: file_index
-
-
 !EOP
 !BOC
 
@@ -164,7 +162,6 @@ contains
 #ifdef _NETCDF
     integer :: nw_id, zw_id, diff_id
 #endif
-
 !EOP
 !BOC
 
@@ -222,7 +219,6 @@ contains
 #ifdef _NETCDF
     integer :: nw_id, ncol_id, zw_id, diff_id
 #endif
-
 !EOP
 !BOC
 
@@ -300,7 +296,6 @@ contains
     type(vmix_file_entry), pointer :: ifile, file_to_close
     logical :: file_found
     integer :: file_type
-
 !EOP
 !BOC
 
@@ -392,7 +387,6 @@ contains
 
 ! !LOCAL VARIABLES:
     type(vmix_file_entry), pointer :: ifile
-
 !EOP
 !BOC
 

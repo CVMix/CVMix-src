@@ -41,7 +41,6 @@ module vmix_put_get
     module procedure vmix_put_global_params_int
     module procedure vmix_put_global_params_real
   end interface vmix_put
-
 !EOP
 !BOC
 
@@ -69,7 +68,6 @@ contains
 
 ! !OUTPUT PARAMETERS:
     type (vmix_data_type), intent(inout) :: Vmix_vars
-
 !EOP
 !BOC
 
@@ -138,7 +136,6 @@ contains
 
 ! !OUTPUT PARAMETERS:
     type (vmix_data_type), intent(inout) :: Vmix_vars
-
 !EOP
 !BOC
 
@@ -204,7 +201,6 @@ contains
 
 ! !OUTPUT PARAMETERS:
     type (vmix_data_type), intent(inout) :: Vmix_vars
-
 !EOP
 !BOC
 
@@ -290,7 +286,6 @@ contains
 
 ! !OUTPUT PARAMETERS:
     type (vmix_bkgnd_params_type), intent(out) :: Vmix_bkgnd_params
-
 !EOP
 !BOC
 
@@ -320,7 +315,6 @@ contains
 
 ! !OUTPUT PARAMETERS:
     type (vmix_global_params_type), intent(inout) :: Vmix_params
-
 !EOP
 !BOC
 
@@ -359,7 +353,6 @@ contains
 
 ! !OUTPUT PARAMETERS:
     type (vmix_global_params_type), intent(inout) :: Vmix_params
-
 !EOP
 !BOC
 

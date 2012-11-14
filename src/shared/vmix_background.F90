@@ -41,7 +41,6 @@ module vmix_background
     module procedure vmix_init_bkgnd_2D
     module procedure vmix_init_bkgnd_BryanLewis
   end interface vmix_init_bkgnd
-
 !EOP
 !BOC
 
@@ -70,7 +69,6 @@ contains
 
 ! !OUTPUT PARAMETERS:
     type (vmix_bkgnd_params_type), intent(out) :: Vmix_bkgnd_params
-
 !EOP
 !BOC
 
@@ -116,7 +114,6 @@ contains
 
 ! !OUTPUT PARAMETERS:
     type (vmix_bkgnd_params_type), intent(out) :: Vmix_bkgnd_params
-
 !EOP
 !BOC
 
@@ -180,7 +177,6 @@ contains
 
 ! !OUTPUT PARAMETERS:
     type (vmix_bkgnd_params_type), intent(out) :: Vmix_bkgnd_params
-
 !EOP
 !BOC
 
@@ -260,7 +256,6 @@ contains
 
 ! !OUTPUT PARAMETERS:
     type (vmix_bkgnd_params_type), intent(out) :: Vmix_bkgnd_params
-
 !EOP
 !BOC
 
@@ -321,7 +316,6 @@ contains
 ! !INPUT/OUTPUT PARAMETERS:
 
     type (vmix_data_type), intent(inout) :: Vmix_vars
-
 !EOP
 !BOC
 

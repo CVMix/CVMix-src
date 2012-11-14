@@ -17,7 +17,6 @@ module vmix_kinds_and_types
 
 ! !USES:
 !  uses no other modules
-
 !EOP
 
   implicit none
@@ -99,7 +98,6 @@ module vmix_kinds_and_types
       real(vmix_r8)              :: convect_diff
       real(vmix_r8)              :: convect_visc
   end type vmix_conv_params_type
-
 !EOP
 
 end module vmix_kinds_and_types

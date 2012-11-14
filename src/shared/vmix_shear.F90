@@ -8,18 +8,21 @@
 ! !DESCRIPTION:
 !  This module contains routines to initialize the derived types needed for
 !  shear mixing (currently just the Pacanowski-Philander scheme) and to set
-!  the viscosity and diffusivity coefficients accordingly
+!  the viscosity and diffusivity coefficients accordingly.
+!\\
+!\\
 !
 ! !REVISION HISTORY:
 !  SVN:$Id$
+!  SVN:$URL$
 
-! !USES
+! !USES:
 
    use vmix_kinds_and_types, only : vmix_r8,                  &
                                     vmix_strlen,              &
                                     vmix_data_type,           &
                                     vmix_global_params_type,  &
-                                    vmix_bkgnd_params_type,  &
+                                    vmix_bkgnd_params_type,   &
                                     vmix_shear_params_type
 !EOP
 
@@ -33,9 +36,7 @@
 
    public :: vmix_init_shear
    public :: vmix_coeffs_shear
-
-
-!BOC
+!EOP
 
  contains
 
@@ -55,7 +56,7 @@
 !\\
 !
 ! !USES:
-!  only those used by entire module.
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*),        intent(in) :: mix_scheme 
@@ -63,7 +64,6 @@
 
 ! !OUTPUT PARAMETERS:
     type(vmix_shear_params_type), intent(inout) :: Vmix_shear_params
-
 !EOP
 !BOC
 
@@ -116,7 +116,6 @@
 
 ! !INPUT/OUTPUT PARAMETERS:
     type(vmix_data_type), intent(inout) :: Vmix_vars
-
 !EOP
 !BOC
 

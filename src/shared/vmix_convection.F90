@@ -18,7 +18,6 @@ module vmix_convection
    use vmix_kinds_and_types, only : vmix_r8,               &
                                     vmix_data_type,        &
                                     vmix_conv_params_type
-
 !EOP
 
   implicit none
@@ -31,7 +30,6 @@ module vmix_convection
 
    public :: vmix_init_conv
    public :: vmix_coeffs_conv
-
 !EOP
 
 contains
@@ -58,7 +56,6 @@ contains
    real(vmix_r8), intent(in) :: &
       convect_diff,      &! diffusivity to mimic convection
       convect_visc        ! viscosity to mimic convection
-
 !EOP
 !BOC
 
@@ -91,8 +88,6 @@ contains
 
 ! !INPUT/OUTPUT PARAMETERS:
     type (vmix_data_type), intent(inout) :: Vmix_vars
-
-
 !EOP
 !BOC
 

@@ -2,11 +2,17 @@
 
 ! !ROUTINE: vmix_BL_driver_mem_copy
 
-! !DESCRIPTION: The stand-alone driver for the CVMix package. The type of
-!  mixing comes from the cvmix\_nml namelist, and then other namelists
-!  contain parameters for the specific mixing methods.
+! !DESCRIPTION: A stand-alone driver for the CVMix package. This particular
+!  driver generates the Bryan-Lewis coefficients in two columns, one that
+!  represents tropical latitudes and one that represents subtropical
+!  latitudes. All memory is declared in the driver and then copied into the
+!  CVMix data structures.
 !\\
 !\\
+
+! !REVISION HISTORY:
+!  SVN:$Id$
+!  SVN:$URL$
 
 ! !INTERFACE:
 
@@ -19,7 +25,6 @@ Program vmix_BL_driver_mem_copy
   use vmix_convection
   use vmix_put_get
   use vmix_output
-
 !EOP
 !BOC
 
