@@ -167,6 +167,13 @@ $(OBJ)/vmix_BL_driver-pointers.o: $(SRC_DRIVE)/vmix_BL_driver-pointers.F90 \
                                   $(SRC)/vmix_output.F90
 	$(FC) $(COMPILE_FLAGS) -c $< -o $@
 
+$(OBJ)/vmix_KPP-shear_driver.o: $(SRC_DRIVE)/vmix_KPP-shear_driver.F90 \
+                                $(SRC_SHARE)/vmix_kinds_and_types.F90  \
+                                $(SRC_SHARE)/vmix_shear.F90            \
+                                $(SRC_SHARE)/vmix_put_get.F90          \
+                                $(SRC)/vmix_output.F90
+	$(FC) $(COMPILE_FLAGS) -c $< -o $@
+
 # Utilities:
 # 1) check has two tasks --
 #    a) sees if we need to rebuild stand-alone components using -D_NETCDF

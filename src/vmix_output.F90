@@ -30,9 +30,15 @@ module vmix_output
 !BOP
 ! !PUBLIC MEMBER FUNCTIONS:
   public :: vmix_output_open
+  public :: vmix_output_write_viscosity
   public :: vmix_output_write_diffusivity
   public :: vmix_output_close
   public :: print_open_files
+
+  interface vmix_output_write_viscosity
+    module procedure vmix_output_write_visc_coeff_single_col
+    module procedure vmix_output_write_visc_coeff_multi_col
+  end interface
 
   interface vmix_output_write_diffusivity
     module procedure vmix_output_write_diff_coeff_single_col
@@ -135,6 +141,143 @@ contains
 !EOC
 
   end subroutine vmix_output_open
+
+!BOP
+
+! !IROUTINE: vmix_output_write_visc_coeff_single_col
+! !INTERFACE:
+
+  subroutine vmix_output_write_visc_coeff_single_col(file_id, Vmix_vars)
+
+! !DESCRIPTION:
+!  Routine to write the viscosity coefficients from a single column to a file
+!  (file must be opened using vmix\_output\_open to ensure it is written
+!  correctly). Called with vmix\_output\_write\_viscosity (see interface in
+!  PUBLIC MEMBER FUNCTIONS above).
+!\\
+!\\
+
+! !USES:
+!  Only those used by entire module. 
+
+! !INPUT PARAMETERS:
+    integer, intent(in) :: file_id
+    type(vmix_data_type), intent(in) :: Vmix_vars
+
+! !LOCAL VARIABLES:
+    integer :: kw, nw
+#ifdef _NETCDF
+    integer :: nw_id, zw_id, visc_id
+#endif
+!EOP
+!BOC
+
+    nw = Vmix_vars%nlev+1
+    select case (get_file_type(file_id))
+#ifdef _NETCDF
+      case (NETCDF_FILE_TYPE)
+        call netcdf_check(nf90_def_dim(file_id, "nw", nw, nw_id))
+        call netcdf_check(nf90_def_var(file_id, "depth", NF90_DOUBLE, &
+                                       (/nw_id/), zw_id))
+        call netcdf_check(nf90_def_var(file_id, "visc", NF90_DOUBLE, &
+                                       (/nw_id/), visc_id))
+        call netcdf_check(nf90_enddef(file_id))
+        call netcdf_check(nf90_put_var(file_id, nw_id, Vmix_vars%z_iface(:)))
+        call netcdf_check(nf90_put_var(file_id, visc_id, Vmix_vars%visc_iface))
+#endif
+      case (ASCII_FILE_TYPE)
+        do kw=1,Vmix_vars%nlev+1
+          write(file_id,*) Vmix_vars%z_iface(kw), Vmix_vars%visc_iface(kw)
+        end do
+      case DEFAULT
+        print*, "ERROR: Invalid file type"
+        stop
+    end select
+!EOC
+
+  end subroutine vmix_output_write_visc_coeff_single_col
+
+!BOP
+
+! !IROUTINE: vmix_output_write_visc_coeff_multi_col
+! !INTERFACE:
+
+  subroutine vmix_output_write_visc_coeff_multi_col(file_id, Vmix_vars)
+
+! !DESCRIPTION:
+!  Routine to write the viscosity coefficients from multiple columns to a file
+!  (file must be opened using vmix\_output\_open to ensure it is written
+!  correctly). Called with vmix\_output\_write\_viscosity (see interface in
+!  PUBLIC MEMBER FUNCTIONS above).
+!\\
+!\\
+
+! !USES:
+!  Only those used by entire module. 
+
+! !INPUT PARAMETERS:
+    integer, intent(in) :: file_id
+    type(vmix_data_type), dimension(:), intent(in) :: Vmix_vars
+
+! !LOCAL VARIABLES:
+    integer :: ncol, nw, icol, kw
+    logical :: z_err
+    real(kind=vmix_r8), dimension(:,:), allocatable :: lcl_visc
+#ifdef _NETCDF
+    integer :: nw_id, ncol_id, zw_id, visc_id
+#endif
+!EOP
+!BOC
+
+    z_err = .false.
+    ncol = size(Vmix_vars)
+    nw = Vmix_vars(1)%nlev+1
+    ! Make sure all levels are the same
+    do icol=2,ncol
+      if (Vmix_vars(icol)%nlev+1.ne.nw) then
+        z_err = .true.
+      else
+        if (any(Vmix_vars(icol)%z_iface.ne.Vmix_vars(icol-1)%z_iface)) then
+          z_err = .true.
+        end if
+      end if
+    end do
+
+    if (z_err) then
+      print*, "ERROR: z-coordinates are not the same in every column!"
+      stop
+    end if
+
+    allocate(lcl_visc(ncol,nw))
+    do icol=1,ncol
+      lcl_visc(icol,:) = Vmix_vars(icol)%visc_iface
+    end do
+
+    select case (get_file_type(file_id))
+#ifdef _NETCDF
+      case (NETCDF_FILE_TYPE)
+        call netcdf_check(nf90_def_dim(file_id, "nw",   nw,   nw_id))
+        call netcdf_check(nf90_def_dim(file_id, "ncol", ncol, ncol_id))
+        call netcdf_check(nf90_def_var(file_id, "depth", NF90_DOUBLE, &
+                                       (/nw_id/), zw_id))
+        call netcdf_check(nf90_def_var(file_id, "visc", NF90_DOUBLE, &
+                                       (/ncol_id, nw_id/), visc_id))
+        call netcdf_check(nf90_enddef(file_id))
+        call netcdf_check(nf90_put_var(file_id, nw_id, Vmix_vars(1)%z_iface(:)))
+        call netcdf_check(nf90_put_var(file_id, visc_id, lcl_visc))
+#endif
+      case (ASCII_FILE_TYPE)
+        do kw=1,nw
+          write(file_id,*) Vmix_vars(1)%z_iface(kw), lcl_visc(:,kw)
+        end do
+        deallocate(lcl_visc)
+      case DEFAULT
+        print*, "ERROR: Invalid file type"
+        stop
+    end select
+!EOC
+
+  end subroutine vmix_output_write_visc_coeff_multi_col
 
 !BOP
 

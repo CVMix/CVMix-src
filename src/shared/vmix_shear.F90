@@ -104,7 +104,7 @@
         Vmix_shear_params%nu_zero    = nu_zero
 
       case ('KPP')
-        Vmix_shear_params%mix_scheme = "PP"
+        Vmix_shear_params%mix_scheme = "KPP"
         Vmix_shear_params%nu_zero    = nu_zero
         Vmix_shear_params%Ri_zero    = Ri_zero
         Vmix_shear_params%p_one      = p_one
@@ -139,10 +139,11 @@
 !  only those used by entire module.
 
 ! !INPUT PARAMETERS:
-    type(vmix_shear_params_type), intent(in) :: Vmix_shear_params
-    type(vmix_bkgnd_params_type), intent(in) :: Vmix_bkgnd_params
+    type(vmix_shear_params_type),           intent(in) :: Vmix_shear_params
+    ! PP mixing requires Vmix_bkgnd_params
+    type(vmix_bkgnd_params_type), optional, intent(in) :: Vmix_bkgnd_params
     ! colid is only needed if Vmix_bkgnd_params%lvary_horizontal is true
-    integer, optional,            intent(in) :: colid
+    integer,                      optional, intent(in) :: colid
 
 ! !INPUT/OUTPUT PARAMETERS:
     type(vmix_data_type), intent(inout) :: Vmix_vars
@@ -165,15 +166,19 @@
     RICHT => Vmix_vars%Ri_t_iface
     RICHU => Vmix_vars%Ri_u_iface
 
-    ! Error check
-    if (Vmix_bkgnd_params%lvary_horizontal.and.(.not.present(colid))) then
-      print*, "ERROR: background visc and diff vary in horizontal so you", &
-              "must pass column index to vmix_coeffs_shear"
-      stop
-    end if
-
     select case (trim(Vmix_shear_params%mix_scheme))
       case ('PP')
+        ! Error checks
+        if (.not.present(Vmix_bkgnd_params)) then
+          print*, "ERROR: can not run PP mixing without background mixing."
+          stop
+        end if
+        if (Vmix_bkgnd_params%lvary_horizontal.and.(.not.present(colid))) then
+          print*, "ERROR: background visc and diff vary in horizontal so you", &
+                  "must pass column index to vmix_coeffs_shear"
+          stop
+        end if
+
         ! Paconowski-Philander
         do kw=1,Vmix_vars%nlev+1
           if (Vmix_bkgnd_params%lvary_horizontal) then
@@ -194,9 +199,8 @@
             end if
           end if
           nu = nu_zero/((one+alpha*RICHT(kw))**n)+bkgnd_visc
-          Vmix_vars%diff_iface(kw,1) = nu/((one+alpha*RICHT(kw))**n) +    &
-                                       bkgnd_diff
-          Vmix_vars%visc_iface(kw) = nu_zero/((one+alpha*RICHU(kw))**n) + &
+          Vmix_vars%diff_iface(kw,1) = nu/(one+alpha*RICHT(kw)) + bkgnd_diff
+          Vmix_vars%visc_iface(kw) = nu_zero/((one+alpha*RICHU(kw))**n) +    &
                                      bkgnd_visc
         end do
 
@@ -205,12 +209,12 @@
         do kw=1,Vmix_vars%nlev+1
             ! On T-levs only (need to figure out how to split T and U)
             if (RICHT(kw).lt.0) then
-              Vmix_vars%diff_iface(kw,1) = nu_zero
+              Vmix_vars%visc_iface(kw) = nu_zero
             else if (RICHT(kw).lt.Ri_zero) then
-              Vmix_vars%diff_iface(kw,1) = nu_zero * (one -               &
+              Vmix_vars%visc_iface(kw) = nu_zero * (one -                  &
                    (RICHT(kw)/Ri_zero)**2)**p_one 
             else ! Ri_g >= Ri_zero
-              Vmix_vars%diff_iface(kw,1) = 0
+              Vmix_vars%visc_iface(kw) = 0
             end if
         end do
 
