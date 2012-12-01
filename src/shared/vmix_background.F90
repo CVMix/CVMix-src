@@ -1,6 +1,7 @@
 module vmix_background
 
 !BOP
+!\newpage
 ! !MODULE: vmix_background
 !
 ! !DESCRIPTION:

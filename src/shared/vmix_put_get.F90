@@ -1,6 +1,7 @@
 module vmix_put_get
 
 !BOP
+!\newpage
 ! !MODULE: vmix_put_get
 !
 ! !DESCRIPTION:

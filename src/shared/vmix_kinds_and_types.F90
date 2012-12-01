@@ -1,7 +1,7 @@
 module vmix_kinds_and_types
 
 !BOP
-!
+!\newpage
 ! !MODULE:  vmix_kinds_and_types
 !
 ! !DESCRIPTION:
@@ -54,6 +54,7 @@ module vmix_kinds_and_types
       real(vmix_r8), dimension(:),   pointer :: dw_iface   => NULL()
       real(vmix_r8), dimension(:),   pointer :: Ri_t_iface => NULL()
       real(vmix_r8), dimension(:),   pointer :: Ri_u_iface => NULL()
+      real(vmix_r8), dimension(:),   pointer :: Ri_g       => NULL()
 
       ! Values at tracer points
       ! nlev
@@ -88,8 +89,10 @@ module vmix_kinds_and_types
   type, public :: vmix_shear_params_type
       character(len=vmix_strlen) :: mix_scheme
       real(vmix_r8)              :: alpha
-      real(vmix_r8)              :: nu_zero
       real(vmix_r8)              :: n
+      real(vmix_r8)              :: nu_zero
+      real(vmix_r8)              :: Ri_zero
+      real(vmix_r8)              :: p_one
   end type vmix_shear_params_type
 
   ! vmix_conv_params_type contains the necessary parameters for convective

@@ -4,7 +4,24 @@ $URL$
 ===============================================================================
 New Checkin: mlevy
 Date:        13 Nov 2012
-Summary:     Formatting for protex documentation (not commit will be new PDF)
+Summary:     Added shear mixing from Large et al to vmix_shear, also updated
+             protex documentation to include new mixing (as well as details on
+             PP mixing) and to start documentation for each module on a new
+             page. Next step will be to build a driver to test Large et al
+             mixing, trying to recreate Figure 3 from the paper.
+
+Files Modified:
+M       doc/protex_documentation.pdf
+M       src/vmix_output.F90
+M       src/shared/vmix_background.F90
+M       src/shared/vmix_shear.F90
+M       src/shared/vmix_put_get.F90
+M       src/shared/vmix_convection.F90
+M       src/shared/vmix_kinds_and_types.F90
+===============================================================================
+New Checkin: mlevy
+Date:        13 Nov 2012
+Summary:     Formatting for protex documentation (next commit will be new PDF)
 
 Files Modified:
 M       doc/make_protex_file

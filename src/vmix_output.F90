@@ -1,6 +1,7 @@
 module vmix_output
 
 !BOP
+!\newpage
 ! !MODULE: vmix_output
 !
 ! !DESCRIPTION:
