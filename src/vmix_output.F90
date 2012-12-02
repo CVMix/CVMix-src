@@ -30,19 +30,13 @@ module vmix_output
 !BOP
 ! !PUBLIC MEMBER FUNCTIONS:
   public :: vmix_output_open
-  public :: vmix_output_write_viscosity
-  public :: vmix_output_write_diffusivity
+  public :: vmix_output_write
   public :: vmix_output_close
   public :: print_open_files
 
-  interface vmix_output_write_viscosity
-    module procedure vmix_output_write_visc_coeff_single_col
-    module procedure vmix_output_write_visc_coeff_multi_col
-  end interface
-
-  interface vmix_output_write_diffusivity
-    module procedure vmix_output_write_diff_coeff_single_col
-    module procedure vmix_output_write_diff_coeff_multi_col
+  interface vmix_output_write
+    module procedure vmix_output_write_single_col
+    module procedure vmix_output_write_multi_col
   end interface
 
 ! !DEFINED PARAMETERS:
@@ -144,16 +138,16 @@ contains
 
 !BOP
 
-! !IROUTINE: vmix_output_write_visc_coeff_single_col
+! !IROUTINE: vmix_output_write_single_col
 ! !INTERFACE:
 
-  subroutine vmix_output_write_visc_coeff_single_col(file_id, Vmix_vars)
+  subroutine vmix_output_write_single_col(file_id, Vmix_vars, var_names)
 
 ! !DESCRIPTION:
-!  Routine to write the viscosity coefficients from a single column to a file
+!  Routine to write the requested variables from a single column to a file
 !  (file must be opened using vmix\_output\_open to ensure it is written
-!  correctly). Called with vmix\_output\_write\_viscosity (see interface in
-!  PUBLIC MEMBER FUNCTIONS above).
+!  correctly). Called with vmix\_output\_write (see interface in PUBLIC
+!  MEMBER FUNCTIONS above).
 !\\
 !\\
 
@@ -161,13 +155,15 @@ contains
 !  Only those used by entire module. 
 
 ! !INPUT PARAMETERS:
-    integer, intent(in) :: file_id
-    type(vmix_data_type), intent(in) :: Vmix_vars
+    integer,                        intent(in) :: file_id
+    type(vmix_data_type),           intent(in) :: Vmix_vars
+    character(len=*), dimension(:), intent(in) :: var_names
 
 ! !LOCAL VARIABLES:
-    integer :: kw, nw
+    integer :: kw, nw, var
 #ifdef _NETCDF
-    integer :: nw_id, zw_id, visc_id
+    integer                            :: nw_id, zw_id
+    integer, dimension(:), allocatable :: var_id
 #endif
 !EOP
 !BOC
@@ -177,17 +173,54 @@ contains
 #ifdef _NETCDF
       case (NETCDF_FILE_TYPE)
         call netcdf_check(nf90_def_dim(file_id, "nw", nw, nw_id))
-        call netcdf_check(nf90_def_var(file_id, "depth", NF90_DOUBLE, &
-                                       (/nw_id/), zw_id))
-        call netcdf_check(nf90_def_var(file_id, "visc", NF90_DOUBLE, &
-                                       (/nw_id/), visc_id))
+        allocate(var_id(size(var_names)))
+        do var=1,size(var_names)
+          call netcdf_check(nf90_def_var(file_id, var_names(var), NF90_DOUBLE, &
+                                         (/nw_id/), var_id(var)))
+        end do
         call netcdf_check(nf90_enddef(file_id))
-        call netcdf_check(nf90_put_var(file_id, nw_id, Vmix_vars%z_iface(:)))
-        call netcdf_check(nf90_put_var(file_id, visc_id, Vmix_vars%visc_iface))
+        do var=1,size(var_names)
+          select case(trim(var_names(var)))
+            case ("depth")
+              call netcdf_check(nf90_put_var(file_id, var_id(var), &
+                                             Vmix_vars%z_iface(:)))
+            case ("Ri")
+              call netcdf_check(nf90_put_var(file_id, var_id(var), &
+                                             Vmix_vars%z_iface(:)))
+            case ("visc")
+              call netcdf_check(nf90_put_var(file_id, var_id(var), &
+                                             Vmix_vars%visc_iface(:)))
+            case ("diff")
+              call netcdf_check(nf90_put_var(file_id, var_id(var), &
+                                             Vmix_vars%diff_iface(:,1)))
+            case DEFAULT
+              print*, "ERROR: unable to write variable ", var_names(var)
+              stop
+          end select
+        end do
 #endif
       case (ASCII_FILE_TYPE)
         do kw=1,Vmix_vars%nlev+1
-          write(file_id,*) Vmix_vars%z_iface(kw), Vmix_vars%visc_iface(kw)
+          do var=1,size(var_names)
+            select case(trim(var_names(var)))
+              case ("depth")
+                write(file_id,"(E23.17E2,X)",advance='no') &
+                      Vmix_vars%z_iface(kw)
+              case ("Ri")
+                write(file_id,"(E23.17E2,X)",advance='no') &
+                      Vmix_vars%z_iface(kw)
+              case ("visc")
+                write(file_id,"(E23.17E2,X)",advance='no') &
+                      Vmix_vars%visc_iface(kw)
+              case ("diff")
+                write(file_id,"(E23.17E2,X)",advance='no') &
+                      Vmix_vars%diff_iface(kw,1)
+              case DEFAULT
+                print*, "ERROR: unable to write variable ", var_names(var)
+                stop
+            end select
+          end do
+          write(file_id, *) ""
         end do
       case DEFAULT
         print*, "ERROR: Invalid file type"
@@ -195,20 +228,20 @@ contains
     end select
 !EOC
 
-  end subroutine vmix_output_write_visc_coeff_single_col
+  end subroutine vmix_output_write_single_col
 
 !BOP
 
-! !IROUTINE: vmix_output_write_visc_coeff_multi_col
+! !IROUTINE: vmix_output_write_multi_col
 ! !INTERFACE:
 
-  subroutine vmix_output_write_visc_coeff_multi_col(file_id, Vmix_vars)
+  subroutine vmix_output_write_multi_col(file_id, Vmix_vars, var_names)
 
 ! !DESCRIPTION:
-!  Routine to write the viscosity coefficients from multiple columns to a file
+!  Routine to write the requested variables from multiple columns to a file
 !  (file must be opened using vmix\_output\_open to ensure it is written
-!  correctly). Called with vmix\_output\_write\_viscosity (see interface in
-!  PUBLIC MEMBER FUNCTIONS above).
+!  correctly). Called with vmix\_output\_write (see interface in PUBLIC
+!  MEMBER FUNCTIONS above).
 !\\
 !\\
 
@@ -216,15 +249,17 @@ contains
 !  Only those used by entire module. 
 
 ! !INPUT PARAMETERS:
-    integer, intent(in) :: file_id
+    integer,                            intent(in) :: file_id
     type(vmix_data_type), dimension(:), intent(in) :: Vmix_vars
+    character(len=*),     dimension(:), intent(in) :: var_names
 
 ! !LOCAL VARIABLES:
-    integer :: ncol, nw, icol, kw
+    integer :: ncol, nw, icol, kw, var
     logical :: z_err
-    real(kind=vmix_r8), dimension(:,:), allocatable :: lcl_visc
+    real(kind=vmix_r8), dimension(:,:), allocatable :: lcl_visc, lcl_diff
 #ifdef _NETCDF
-    integer :: nw_id, ncol_id, zw_id, visc_id
+    integer                            :: nw_id, ncol_id
+    integer, dimension(:), allocatable :: var_id
 #endif
 !EOP
 !BOC
@@ -248,83 +283,83 @@ contains
       stop
     end if
 
-    allocate(lcl_visc(ncol,nw))
-    do icol=1,ncol
-      lcl_visc(icol,:) = Vmix_vars(icol)%visc_iface
-    end do
-
     select case (get_file_type(file_id))
 #ifdef _NETCDF
       case (NETCDF_FILE_TYPE)
         call netcdf_check(nf90_def_dim(file_id, "nw",   nw,   nw_id))
         call netcdf_check(nf90_def_dim(file_id, "ncol", ncol, ncol_id))
-        call netcdf_check(nf90_def_var(file_id, "depth", NF90_DOUBLE, &
-                                       (/nw_id/), zw_id))
-        call netcdf_check(nf90_def_var(file_id, "visc", NF90_DOUBLE, &
-                                       (/ncol_id, nw_id/), visc_id))
+        allocate(var_id(size(var_names)))
+        do var=1,size(var_names)
+          if ((trim(var_names(var)).eq."depth").or.  &
+              (trim(var_names(var)).eq."depth")) then
+            call netcdf_check(nf90_def_var(file_id, var_names(var),     &
+                                NF90_DOUBLE, (/nw_id/), var_id(var)))
+          else
+            call netcdf_check(nf90_def_var(file_id, var_names(var),     &
+                                NF90_DOUBLE, (/2,nw_id/), var_id(var)))
+          end if
+          if (trim(var_names(var)).eq."visc") then
+            allocate(lcl_visc(ncol,nw))
+            do icol=1,ncol
+              lcl_visc(icol,:) = Vmix_vars(icol)%visc_iface
+            end do
+          endif
+          if (trim(var_names(var)).eq."diff") then
+            allocate(lcl_diff(ncol,nw))
+            do icol=1,ncol
+              lcl_diff(icol,:) = Vmix_vars(icol)%diff_iface(:,1)
+            end do
+          endif
+        end do
         call netcdf_check(nf90_enddef(file_id))
-        call netcdf_check(nf90_put_var(file_id, nw_id, Vmix_vars(1)%z_iface(:)))
-        call netcdf_check(nf90_put_var(file_id, visc_id, lcl_visc))
+        do var=1,size(var_names)
+          select case(trim(var_names(var)))
+            case("depth")
+              call netcdf_check(nf90_put_var(file_id, var_id(var), &
+                                Vmix_vars(1)%z_iface(:)))
+            case("Ri")
+              call netcdf_check(nf90_put_var(file_id, var_id(var), &
+                                Vmix_vars(1)%z_iface(:)))
+            case("visc")
+              call netcdf_check(nf90_put_var(file_id, var_id(var), &
+                                lcl_visc))
+              deallocate(lcl_visc)
+            case("diff")
+              call netcdf_check(nf90_put_var(file_id, var_id(var), &
+                                lcl_diff))
+              deallocate(lcl_diff)
+            case DEFAULT
+              print*, "ERROR: unable to write variable ", var_names(var)
+              stop
+          end select
+        end do
 #endif
       case (ASCII_FILE_TYPE)
         do kw=1,nw
-          write(file_id,*) Vmix_vars(1)%z_iface(kw), lcl_visc(:,kw)
-        end do
-        deallocate(lcl_visc)
-      case DEFAULT
-        print*, "ERROR: Invalid file type"
-        stop
-    end select
-!EOC
-
-  end subroutine vmix_output_write_visc_coeff_multi_col
-
-!BOP
-
-! !IROUTINE: vmix_output_write_diff_coeff_single_col
-! !INTERFACE:
-
-  subroutine vmix_output_write_diff_coeff_single_col(file_id, Vmix_vars)
-
-! !DESCRIPTION:
-!  Routine to write the diffusivity coefficients from a single column to a 
-!  file (file must be opened using vmix\_output\_open to ensure it is written
-!  correctly). Called with vmix\_output\_write (see interface in PUBLIC MEMBER
-!  FUNCTIONS above).
-!\\
-!\\
-
-! !USES:
-!  Only those used by entire module. 
-
-! !INPUT PARAMETERS:
-    integer, intent(in) :: file_id
-    type(vmix_data_type), intent(in) :: Vmix_vars
-
-! !LOCAL VARIABLES:
-    integer :: kw, nw
-#ifdef _NETCDF
-    integer :: nw_id, zw_id, diff_id
-#endif
-!EOP
-!BOC
-
-    nw = Vmix_vars%nlev+1
-    select case (get_file_type(file_id))
-#ifdef _NETCDF
-      case (NETCDF_FILE_TYPE)
-        call netcdf_check(nf90_def_dim(file_id, "nw", nw, nw_id))
-        call netcdf_check(nf90_def_var(file_id, "depth", NF90_DOUBLE, &
-                                       (/nw_id/), zw_id))
-        call netcdf_check(nf90_def_var(file_id, "diff", NF90_DOUBLE, &
-                                       (/nw_id/), diff_id))
-        call netcdf_check(nf90_enddef(file_id))
-        call netcdf_check(nf90_put_var(file_id, nw_id, Vmix_vars%z_iface(:)))
-        call netcdf_check(nf90_put_var(file_id, diff_id, Vmix_vars%diff_iface(:,1)))
-#endif
-      case (ASCII_FILE_TYPE)
-        do kw=1,Vmix_vars%nlev+1
-          write(file_id,*) Vmix_vars%z_iface(kw), Vmix_vars%diff_iface(kw,1)
+          do var=1,size(var_names)
+            select case(trim(var_names(var)))
+              case ("depth")
+                write(file_id,"(E23.17E2,X)",advance='no') &
+                      Vmix_vars(1)%z_iface(kw)
+              case ("Ri")
+                write(file_id,"(E23.17E2,X)",advance='no') &
+                      Vmix_vars(1)%z_iface(kw)
+              case ("visc")
+                do icol=1,ncol
+                  write(file_id,"(E23.17E2,X)",advance='no') &
+                        Vmix_vars(icol)%visc_iface(kw)
+                end do
+              case ("diff")
+                do icol=1,ncol
+                  write(file_id,"(E23.17E2,X)",advance='no') &
+                        Vmix_vars(icol)%diff_iface(kw,1)
+                end do
+              case DEFAULT
+                print*, "ERROR: unable to write variable ", var_names(var)
+                stop
+            end select
+          end do
+          write(file_id, *) ""
         end do
       case DEFAULT
         print*, "ERROR: Invalid file type"
@@ -332,89 +367,7 @@ contains
     end select
 !EOC
 
-  end subroutine vmix_output_write_diff_coeff_single_col
-
-!BOP
-
-! !IROUTINE: vmix_output_write_diff_coeff_multi_col
-! !INTERFACE:
-
-  subroutine vmix_output_write_diff_coeff_multi_col(file_id, Vmix_vars)
-
-! !DESCRIPTION:
-!  Routine to write the diffusivity coefficients from multiple columns to a 
-!  file (file must be opened using vmix\_output\_open to ensure it is written
-!  correctly). Called with vmix\_output\_write (see interface in PUBLIC MEMBER
-!  FUNCTIONS above).
-!\\
-!\\
-
-! !USES:
-!  Only those used by entire module. 
-
-! !INPUT PARAMETERS:
-    integer, intent(in) :: file_id
-    type(vmix_data_type), dimension(:), intent(in) :: Vmix_vars
-
-! !LOCAL VARIABLES:
-    integer :: ncol, nw, icol, kw
-    logical :: z_err
-    real(kind=vmix_r8), dimension(:,:), allocatable :: lcl_diff
-#ifdef _NETCDF
-    integer :: nw_id, ncol_id, zw_id, diff_id
-#endif
-!EOP
-!BOC
-
-    z_err = .false.
-    ncol = size(Vmix_vars)
-    nw = Vmix_vars(1)%nlev+1
-    ! Make sure all levels are the same
-    do icol=2,ncol
-      if (Vmix_vars(icol)%nlev+1.ne.nw) then
-        z_err = .true.
-      else
-        if (any(Vmix_vars(icol)%z_iface.ne.Vmix_vars(icol-1)%z_iface)) then
-          z_err = .true.
-        end if
-      end if
-    end do
-
-    if (z_err) then
-      print*, "ERROR: z-coordinates are not the same in every column!"
-      stop
-    end if
-
-    allocate(lcl_diff(ncol,nw))
-    do icol=1,ncol
-      lcl_diff(icol,:) = Vmix_vars(icol)%diff_iface(:,1)
-    end do
-
-    select case (get_file_type(file_id))
-#ifdef _NETCDF
-      case (NETCDF_FILE_TYPE)
-        call netcdf_check(nf90_def_dim(file_id, "nw",   nw,   nw_id))
-        call netcdf_check(nf90_def_dim(file_id, "ncol", ncol, ncol_id))
-        call netcdf_check(nf90_def_var(file_id, "depth", NF90_DOUBLE, &
-                                       (/nw_id/), zw_id))
-        call netcdf_check(nf90_def_var(file_id, "diff", NF90_DOUBLE, &
-                                       (/ncol_id, nw_id/), diff_id))
-        call netcdf_check(nf90_enddef(file_id))
-        call netcdf_check(nf90_put_var(file_id, nw_id, Vmix_vars(1)%z_iface(:)))
-        call netcdf_check(nf90_put_var(file_id, diff_id, lcl_diff))
-#endif
-      case (ASCII_FILE_TYPE)
-        do kw=1,nw
-          write(file_id,*) Vmix_vars(1)%z_iface(kw), lcl_diff(:,kw)
-        end do
-        deallocate(lcl_diff)
-      case DEFAULT
-        print*, "ERROR: Invalid file type"
-        stop
-    end select
-!EOC
-
-  end subroutine vmix_output_write_diff_coeff_multi_col
+  end subroutine vmix_output_write_multi_col
 
 !BOP
 

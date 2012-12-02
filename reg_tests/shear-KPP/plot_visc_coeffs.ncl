@@ -9,7 +9,7 @@ begin
   if (isfilepresent("data.nc")) then
     print((/"Reading netCDF data"/))
     f = addfile("data.nc", "r")
-    x = f->depth
+    x = f->Ri
     y = f->visc
   else
     if (isfilepresent("data.out")) then

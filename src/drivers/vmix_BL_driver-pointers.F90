@@ -129,9 +129,11 @@ Program vmix_BL_driver_pointers
   call vmix_output_open(fid3, "col2.out", "ascii")
 #endif
 
-  call vmix_output_write_diffusivity(fid1, Vmix_vars)
-  call vmix_output_write_diffusivity(fid2, Vmix_vars(1))
-  call vmix_output_write_diffusivity(fid3, Vmix_vars(2))
+  ! Note: all entries in string of variables to output must be
+  !       the same length... hence the space in "diff "
+  call vmix_output_write(fid1, Vmix_vars, (/"depth", "diff "/))
+  call vmix_output_write(fid2, Vmix_vars(1), (/"depth", "diff "/))
+  call vmix_output_write(fid3, Vmix_vars(2), (/"depth", "diff "/))
 
   call vmix_output_close(fid1)
   call vmix_output_close(fid2)

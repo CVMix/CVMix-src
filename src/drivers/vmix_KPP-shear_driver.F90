@@ -91,7 +91,7 @@ Program vmix_KPPshear_driver
   call vmix_output_open(fid, "data.out", "ascii")
 #endif
 
-  call vmix_output_write_viscosity(fid, Vmix_vars)
+  call vmix_output_write(fid, Vmix_vars, (/"Ri  ", "visc"/))
 
   call vmix_output_close(fid)
 
