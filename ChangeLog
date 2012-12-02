@@ -4,6 +4,13 @@ $URL$
 ===============================================================================
 New Checkin: mlevy
 Date:        2 Dec 2012
+Summary:     Bug-fix -- I didn't mean to hard-code in ncol_id=2 for output
+
+Files Modified:
+M       src/vmix_output.F90
+===============================================================================
+New Checkin: mlevy
+Date:        2 Dec 2012
 Summary:     Overhaul of the output routines, now all writing is done from one
              of two routines (single_col or multi_col) and variables to be
              written are also an argument sent to vmix_output_write(). As the

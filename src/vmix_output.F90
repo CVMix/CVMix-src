@@ -292,11 +292,11 @@ contains
         do var=1,size(var_names)
           if ((trim(var_names(var)).eq."depth").or.  &
               (trim(var_names(var)).eq."depth")) then
-            call netcdf_check(nf90_def_var(file_id, var_names(var),     &
+            call netcdf_check(nf90_def_var(file_id, var_names(var),          &
                                 NF90_DOUBLE, (/nw_id/), var_id(var)))
           else
-            call netcdf_check(nf90_def_var(file_id, var_names(var),     &
-                                NF90_DOUBLE, (/2,nw_id/), var_id(var)))
+            call netcdf_check(nf90_def_var(file_id, var_names(var),          &
+                                NF90_DOUBLE, (/ncol_id,nw_id/), var_id(var)))
           end if
           if (trim(var_names(var)).eq."visc") then
             allocate(lcl_visc(ncol,nw))
