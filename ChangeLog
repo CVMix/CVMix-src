@@ -4,6 +4,17 @@ $URL$
 ===============================================================================
 New Checkin: mlevy
 Date:        1 Dec 2012
+Summary:     Update NCL scripts to read in netCDF data (if available), ascii
+             data otherwise. Scripts report error if neither file is found.
+             Also, for shear-KPP test we are plotting viscosity coefficients.
+
+Files Modified:
+A  +    reg_tests/shear-KPP/plot_visc_coeffs.ncl
+D       reg_tests/shear-KPP/plot_diff_coeffs.ncl
+M       reg_tests/Bryan-Lewis/plot_diff_coeffs.ncl
+===============================================================================
+New Checkin: mlevy
+Date:        1 Dec 2012
 Summary:     New driver to test shear-KPP, can recreate figure 3 from Large et
              al. Required some tweaks to Makefile, adding new routines to
              vmix_output, and fixing some bugs in vmix_shear.

@@ -1,21 +1,34 @@
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_code.ncl"
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_csm.ncl"
+load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/contributed.ncl"
 
 begin
 
 ; Create Color Table
   my_color_map = (/"White", "Black"/)
 
-  nml  = asciiread("input.nl", -1, "integer")
-  nlev = nml(0)
-  data = asciiread("data.out", (/nlev+1,3/), "double")
+  if (isfilepresent("data.nc")) then
+    print((/"Reading netCDF data"/))
+    f = addfile("data.nc", "r")
+    x = transpose(f->diff)
+    y = f->depth
+  else
+    if (isfilepresent("data.out")) then
+      print((/"Reading ascii data"/))
+      nml  = asciiread("input.nl", -1, "integer")
+      nlev = nml(0)
+      x = new((/2, nlev+1/), "double")
+      y = new(nlev+1, "double")
 
-  x = new((/2, nlev+1/), "double")
-  x(0,:) = data(:,1)
-  x(1,:) = data(:,2)
-
-  y = new(nlev+1, "double")
-  y = data(:,0)
+      data = asciiread("data.out", (/nlev+1,3/), "double")
+      x(0,:) = data(:,1)
+      x(1,:) = data(:,2)
+      y = data(:,0)
+      else
+        print((/"ERROR: can not find output (looking for data.out or data.nc)"/))
+        exit
+    end if
+  end if
 
   out_type = "ps"
   ; out_type = "X11"
