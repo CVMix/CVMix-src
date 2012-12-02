@@ -1,9 +1,18 @@
-Right now, the stand-alone driver isn't very powerful. It is set up to run
-Bryan-Lewis mixing on a single column, and output the diffusivity coefficients
-at each level. Obviously this program will grow as we develop CVMix, but it
-seems like a good starting point.
+Right now, there are only three options for the stand-alone driver which can be
+used to test two different mixing methods. The first test is to output Bryan-
+Lewis mixing on two columns (a high latitude column and a tropical column),
+and output the diffusivity coefficients at each level. This can be run using
+pointers (allocate memory in the driver, have CVMix data structures point to
+it) or using pure memory copies (allocate memory in the driver AND CVMix).
 
-Directory structure:
+The third driver sets up a single column using the shear mixing formula found in
+the Large, et al. KPP paper. For this test, each level is a different local
+gradient Richardson number rather than a different depth to show how viscosity
+varies with different choices of Ri.
+
+
+DIRECTORY STRUCTURE
+-------------------
 
 bld/ -- Contains the Makefile, is also where the build process will keep a
         couple of setup files to help with the build. It has two subdirectories:
@@ -11,7 +20,7 @@ bld/ -- Contains the Makefile, is also where the build process will keep a
   bld/exe -- Where the Makefile will put the executable.
 
 doc/ -- Contains documentation. At this point, it only has a PDF of the latest
-        protex in-code notes.
+        protex in-code notes and a script to generate said PDF.
 
 src/ -- Contains the source code, organized as follows. The top directory
         contains modules needed by the stand-alone driver (output, for example).
@@ -20,32 +29,41 @@ src/ -- Contains the source code, organized as follows. The top directory
                  outside model are stored. (Use as an svn:external!)
 
 reg_tests/ -- I envision this becoming a way to do regression tests as we
-              develop the code, but for now all it contains is one test that
-              outputs the resulting diffusivity coefficients when using
-              Bryan-Lewis mixing on two columns (with each column having its
-              own Bryan-Lewis parameterization) and a script to compare the
+              develop the code, but for now it just contains two tests. One
+              outputs the diffusivity coefficients when using Bryan-Lewis
+              mixing on two columns (with each column having its own B-L
+              parameterization) and the other outputs the viscosity
+              coefficients when using the shear mixing scheme in the KPP
+              paper.
+
+              Note that all scripts have a "-h" (or "--help") flag to print
+              usage options and a "-nc" (or "--netcdf") flag to turn on netCDF
               output.
 
-              reg_tests/Bryan-Lewis]$ ./pointer_test.sh
-                                  (or ./memcopy_test.sh)
-              reg_tests/Bryan-Lewis]$ ncl plot_diff_coeffs.ncl
+              BL Pointer test
+              ---------------
+              reg_tests/Bryan-Lewis]$ ./BL_test.sh
 
-              I'm tempted to put a Makefile in each subdirectory of reg_tests
-              to handle output options / select between possible drivers. Then
-              the Bryan-Lewis test could be run with one of the following
+              BL Mem copy test
+              ----------------
+              reg_tests/Bryan-Lewis]$ ./BL_test.sh -mc
 
-              reg_tests/Bryan-Lewis]$ make pointer
-              reg_tests/Bryan-Lewis]$ make memcopy
-              reg_tests/Bryan-Lewis]$ make pointer-netcdf
-              reg_tests/Bryan-Lewis]$ make memcopy-netcdf
+              Shear mixing test
+              -----------------
+              reg_Tests/shear-KPP]$ ./Large_test.sh
 
-              One benefit of this is to allow multiple executables to exist
-              simultaneously, while also making it easy to clean un-wanted
-              executables. It would also reduce the number of scripts in each
-              reg_tests/ subdirectory, since all the tests could be launched
-              from a single makefile.
+              Both directories also contain a basic NCL script to produce a
+              plot.
 
-INSTALLATION NOTES:
+              Bryan-Lewis/plot_diff_coeffs.ncl -- makes a plot with depth on
+                   the y-axis and diffusivity (for both columns) on the x-axis.
+              shear-KPP/plot_visc_coeffs.ncl -- makes a plot with local gradient
+                   Richardson number on the x-axis and normalized viscosity
+                   coefficient on the y-axis.
+
+
+INSTALLATION NOTES
+------------------
 
 The bld directory contains a Makefile and a 'setup' utility. bld/setup is a
 python script that asks for compiler / netcdf information (it only needs to
@@ -57,6 +75,7 @@ field, you will see an error like
 ERROR: You must compile using 'make VMIX_DRIVER=[driver]'. Valid choices are:
 vmix_BL_driver-mem_copy.F90
 vmix_BL_driver-pointers.F90
+vmix_KPP-shear_driver.F90
 
 To build with netcdf, run 'make VMIX_DRIVER=[] netcdf'.
 

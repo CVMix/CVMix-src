@@ -30,7 +30,7 @@ begin
 
   out_type = "ps"
   ; out_type = "X11"
-  wks = gsn_open_wks(out_type, "KPP-shear_CVMix")
+  wks = gsn_open_wks(out_type, "shear_CVMix")
   gsn_define_colormap(wks, my_color_map)
 
   ; Basic Graphics set up (don't draw / advance frame to add legend!)
