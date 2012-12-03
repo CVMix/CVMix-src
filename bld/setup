@@ -35,7 +35,7 @@ compiler = raw_input('Fortran compiler (mpi not necessary): ')
 netcdf_dir = raw_input('Directory containing netcdf (enter "need_both" to enter netcdf include directory and netcdf lib directory separately): ')
 if netcdf_dir == "need_both":
   netcdf_inc = raw_input('netCDF/include location: ')
-  netcdf_lib = raw_input('netCDF/include location: ')
+  netcdf_lib = raw_input('netCDF/lib location: ')
 else:
   netcdf_inc = netcdf_dir+"/include"
   netcdf_lib = netcdf_dir+"/lib"

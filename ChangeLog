@@ -4,6 +4,13 @@ $URL$
 ===============================================================================
 New Checkin: mlevy
 Date:        3 Dec 2012
+Summary:     Bug-fix in setup routine (prompted for netcdf/include twice)
+
+Files Modified:
+M       bld/setup
+===============================================================================
+New Checkin: mlevy
+Date:        3 Dec 2012
 Summary:     New output routines don't require storing Ri in z_iface for shear
              test.
 
