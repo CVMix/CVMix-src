@@ -8,8 +8,9 @@ usage() {
   echo './KPP_test.sh [-nc|--netcdf]'
   echo ''
   echo 'By default, output is ascii'
-  echo '  -h  | --help     Display this message'
-  echo '  -nc | --netcdf   Output to a netcdf file (data.nc) rather than three ascii files'
+  echo '  -h     | --help     Display this message'
+  echo '  -nc    | --netcdf   Output to a netcdf file (data.nc) rather than three ascii files'
+  echo '  -clean | --clean    Delete all output data (data.nc and data.out files)'
 }
 
 #############
@@ -24,6 +25,11 @@ while [ $# -gt 0 ]; do
       ;;
     -nc|--netcdf)
       USE_NETCDF=netcdf
+      ;;
+    -clean|--clean)
+      echo "rm -f data.out data.nc"
+      rm -f data.out data.nc
+      exit
       ;;
     * )
       echo "ERROR: improper use of script. Run ./BL_test.sh -h for usage."

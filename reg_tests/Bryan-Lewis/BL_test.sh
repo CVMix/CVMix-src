@@ -8,9 +8,10 @@ usage() {
   echo './BL_test.sh [-mc|--memcopy] [-nc|--netcdf]'
   echo ''
   echo 'By default, this script allocates memory in the driver and the CVMix datatypes point back to memory. Output is ascii.'
-  echo '  -h  | --help     Display this message'
-  echo '  -mc | --memcopy  Allocate memory in the CVMix datatypes rather than point'
-  echo '  -nc | --netcdf   Output to a netcdf file (data.nc) rather than three ascii files'
+  echo '  -h     | --help     Display this message'
+  echo '  -mc    | --memcopy  Allocate memory in the CVMix datatypes rather than point'
+  echo '  -nc    | --netcdf   Output to a netcdf file (data.nc) rather than three ascii files'
+  echo '  -clean | --clean    Delete all output data (data.nc and any .out files)'
 }
 
 #############
@@ -29,6 +30,11 @@ while [ $# -gt 0 ]; do
       ;;
     -mc|--memcopy)
       DRIVER=mem_copy
+      ;;
+    -clean|--clean)
+      echo "rm -f data.out col1.out col2.out data.nc"
+      rm -f data.out col1.out col2.out data.nc
+      exit
       ;;
     * )
       echo "ERROR: improper use of script. Run ./BL_test.sh -h for usage."
