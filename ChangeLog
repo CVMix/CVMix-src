@@ -4,6 +4,17 @@ $URL$
 ===============================================================================
 New Checkin: mlevy
 Date:        3 Dec 2012
+Summary:     Removed T / U grid variables, improved ascii output (no trailing
+             spaces at the end of lines)
+
+Files Modified:
+M       src/vmix_output.F90
+M       src/shared/vmix_shear.F90
+M       src/shared/vmix_kinds_and_types.F90
+M       src/drivers/vmix_KPP-shear_driver.F90
+===============================================================================
+New Checkin: mlevy
+Date:        3 Dec 2012
 Summary:     Bug-fix in setup routine (prompted for netcdf/include twice)
 
 Files Modified:

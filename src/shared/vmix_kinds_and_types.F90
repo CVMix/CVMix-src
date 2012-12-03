@@ -52,9 +52,7 @@ module vmix_kinds_and_types
       real(vmix_r8), dimension(:),   pointer :: visc_iface => NULL()
       real(vmix_r8), dimension(:),   pointer :: z_iface    => NULL()
       real(vmix_r8), dimension(:),   pointer :: dw_iface   => NULL()
-      real(vmix_r8), dimension(:),   pointer :: Ri_t_iface => NULL()
-      real(vmix_r8), dimension(:),   pointer :: Ri_u_iface => NULL()
-      real(vmix_r8), dimension(:),   pointer :: Ri_g       => NULL()
+      real(vmix_r8), dimension(:),   pointer :: Ri_iface => NULL()
 
       ! Values at tracer points
       ! nlev

@@ -186,7 +186,7 @@ contains
                                              Vmix_vars%z_iface(:)))
             case ("Ri")
               call netcdf_check(nf90_put_var(file_id, var_id(var), &
-                                             Vmix_vars%Ri_t_iface(:)))
+                                             Vmix_vars%Ri_iface(:)))
             case ("visc")
               call netcdf_check(nf90_put_var(file_id, var_id(var), &
                                              Vmix_vars%visc_iface(:)))
@@ -204,23 +204,24 @@ contains
           do var=1,size(var_names)
             select case(trim(var_names(var)))
               case ("depth")
-                write(file_id,"(E23.17E2,X)",advance='no') &
+                write(file_id,"(E23.17E2)",advance='no') &
                       Vmix_vars%z_iface(kw)
               case ("Ri")
-                write(file_id,"(E23.17E2,X)",advance='no') &
-                      Vmix_vars%Ri_t_iface(kw)
+                write(file_id,"(E23.17E2)",advance='no') &
+                      Vmix_vars%Ri_iface(kw)
               case ("visc")
-                write(file_id,"(E23.17E2,X)",advance='no') &
+                write(file_id,"(E23.17E2)",advance='no') &
                       Vmix_vars%visc_iface(kw)
               case ("diff")
-                write(file_id,"(E23.17E2,X)",advance='no') &
+                write(file_id,"(E23.17E2)",advance='no') &
                       Vmix_vars%diff_iface(kw,1)
               case DEFAULT
                 print*, "ERROR: unable to write variable ", var_names(var)
                 stop
             end select
+            if (var.ne.size(var_names)) write(file_id, "(X)", advance='no')
           end do
-          write(file_id, *) ""
+          write(file_id, *)
         end do
       case DEFAULT
         print*, "ERROR: Invalid file type"
@@ -319,7 +320,7 @@ contains
                                 Vmix_vars(1)%z_iface(:)))
             case("Ri")
               call netcdf_check(nf90_put_var(file_id, var_id(var), &
-                                Vmix_vars(1)%Ri_t_iface(:)))
+                                Vmix_vars(1)%Ri_iface(:)))
             case("visc")
               call netcdf_check(nf90_put_var(file_id, var_id(var), &
                                 lcl_visc))
@@ -339,27 +340,30 @@ contains
           do var=1,size(var_names)
             select case(trim(var_names(var)))
               case ("depth")
-                write(file_id,"(E23.17E2,X)",advance='no') &
+                write(file_id,"(E23.17E2)",advance='no') &
                       Vmix_vars(1)%z_iface(kw)
               case ("Ri")
-                write(file_id,"(E23.17E2,X)",advance='no') &
-                      Vmix_vars(1)%Ri_t_iface(kw)
+                write(file_id,"(E23.17E2)",advance='no') &
+                      Vmix_vars(1)%Ri_iface(kw)
               case ("visc")
                 do icol=1,ncol
-                  write(file_id,"(E23.17E2,X)",advance='no') &
+                  write(file_id,"(E23.17E2)",advance='no') &
                         Vmix_vars(icol)%visc_iface(kw)
+                  if (icol.ne.ncol) write(file_id, "(X)", advance='no')
                 end do
               case ("diff")
                 do icol=1,ncol
-                  write(file_id,"(E23.17E2,X)",advance='no') &
+                  write(file_id,"(E23.17E2)",advance='no') &
                         Vmix_vars(icol)%diff_iface(kw,1)
+                  if (icol.ne.ncol) write(file_id, "(X)", advance='no')
                 end do
               case DEFAULT
                 print*, "ERROR: unable to write variable ", var_names(var)
                 stop
             end select
+            if (var.ne.size(var_names)) write(file_id, "(X)", advance='no')
           end do
-          write(file_id, *) ""
+          write(file_id, *)
         end do
       case DEFAULT
         print*, "ERROR: Invalid file type"

@@ -126,7 +126,7 @@
 ! !INTERFACE:
 
   subroutine vmix_coeffs_shear(Vmix_vars, Vmix_shear_params, &
-                               Vmix_bkgnd_params, colid)
+                               Vmix_bkgnd_params, colid, no_diff)
 
 ! !DESCRIPTION:
 !  Computes vertical diffusion coefficients for shear-type mixing
@@ -144,6 +144,7 @@
     type(vmix_bkgnd_params_type), optional, intent(in) :: Vmix_bkgnd_params
     ! colid is only needed if Vmix_bkgnd_params%lvary_horizontal is true
     integer,                      optional, intent(in) :: colid
+    logical,                      optional, intent(in) :: no_diff
 
 ! !INPUT/OUTPUT PARAMETERS:
     type(vmix_data_type), intent(inout) :: Vmix_vars
@@ -155,7 +156,8 @@
     real(vmix_r8)            :: nu
     real(vmix_r8)            :: alpha, n, nu_zero, Ri_zero, p_one
     real(vmix_r8)            :: bkgnd_diff, bkgnd_visc
-    real(vmix_r8), pointer, dimension(:) :: RICHT, RICHU
+    real(vmix_r8), pointer, dimension(:) :: RICH
+    logical                  :: calc_diff
 
     ! Copy vars / create pointers to make the code more legible
     alpha   = Vmix_shear_params%alpha
@@ -163,8 +165,12 @@
     nu_zero = Vmix_shear_params%nu_zero
     Ri_zero = Vmix_shear_params%Ri_zero
     p_one   = Vmix_shear_params%p_one
-    RICHT => Vmix_vars%Ri_t_iface
-    RICHU => Vmix_vars%Ri_u_iface
+    RICH => Vmix_vars%Ri_iface
+    if (.not.present(no_diff)) then
+      calc_diff = .true.
+    else
+      calc_diff = .not.no_diff
+    end if
 
     select case (trim(Vmix_shear_params%mix_scheme))
       case ('PP')
@@ -198,21 +204,20 @@
               bkgnd_visc = Vmix_bkgnd_params%static_visc(1, 1)
             end if
           end if
-          nu = nu_zero/((one+alpha*RICHT(kw))**n)+bkgnd_visc
-          Vmix_vars%diff_iface(kw,1) = nu/(one+alpha*RICHT(kw)) + bkgnd_diff
-          Vmix_vars%visc_iface(kw) = nu_zero/((one+alpha*RICHU(kw))**n) +    &
-                                     bkgnd_visc
+          nu = nu_zero/((one+alpha*RICH(kw))**n)+bkgnd_visc
+          Vmix_vars%visc_iface(kw) = nu
+          if (calc_diff) &
+            Vmix_vars%diff_iface(kw,1) = nu/(one+alpha*RICH(kw)) + bkgnd_diff
         end do
 
       case ('KPP')
         ! Large, et al
         do kw=1,Vmix_vars%nlev+1
-            ! On T-levs only (need to figure out how to split T and U)
-            if (RICHT(kw).lt.0) then
+            if (RICH(kw).lt.0) then
               Vmix_vars%visc_iface(kw) = nu_zero
-            else if (RICHT(kw).lt.Ri_zero) then
+            else if (RICH(kw).lt.Ri_zero) then
               Vmix_vars%visc_iface(kw) = nu_zero * (one -                  &
-                   (RICHT(kw)/Ri_zero)**2)**p_one 
+                   (RICH(kw)/Ri_zero)**2)**p_one 
             else ! Ri_g >= Ri_zero
               Vmix_vars%visc_iface(kw) = 0
             end if

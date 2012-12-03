@@ -74,7 +74,7 @@ Program vmix_KPPshear_driver
   ! Point Vmix_vars values to memory allocated above
   Vmix_vars%visc_iface => viscosity
   Vmix_vars%diff_iface => diffusivity
-  Vmix_vars%Ri_t_iface => Ri_g
+  Vmix_vars%Ri_iface => Ri_g
 
   ! Read / set KPP parameters
   read(*, nml=KPP_nml)
