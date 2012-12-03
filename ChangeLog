@@ -4,6 +4,13 @@ $URL$
 ===============================================================================
 New Checkin: mlevy
 Date:        3 Dec 2012
+Summary:     Avoid warning about write format on intel compiler
+
+Files Modified:
+M       src/vmix_output.F90
+===============================================================================
+New Checkin: mlevy
+Date:        3 Dec 2012
 Summary:     Removed T / U grid variables, improved ascii output (no trailing
              spaces at the end of lines)
 

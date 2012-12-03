@@ -204,16 +204,16 @@ contains
           do var=1,size(var_names)
             select case(trim(var_names(var)))
               case ("depth")
-                write(file_id,"(E23.17E2)",advance='no') &
+                write(file_id,"(E24.17E2)",advance='no') &
                       Vmix_vars%z_iface(kw)
               case ("Ri")
-                write(file_id,"(E23.17E2)",advance='no') &
+                write(file_id,"(E24.17E2)",advance='no') &
                       Vmix_vars%Ri_iface(kw)
               case ("visc")
-                write(file_id,"(E23.17E2)",advance='no') &
+                write(file_id,"(E24.17E2)",advance='no') &
                       Vmix_vars%visc_iface(kw)
               case ("diff")
-                write(file_id,"(E23.17E2)",advance='no') &
+                write(file_id,"(E24.17E2)",advance='no') &
                       Vmix_vars%diff_iface(kw,1)
               case DEFAULT
                 print*, "ERROR: unable to write variable ", var_names(var)
@@ -340,20 +340,20 @@ contains
           do var=1,size(var_names)
             select case(trim(var_names(var)))
               case ("depth")
-                write(file_id,"(E23.17E2)",advance='no') &
+                write(file_id,"(E24.17E2)",advance='no') &
                       Vmix_vars(1)%z_iface(kw)
               case ("Ri")
-                write(file_id,"(E23.17E2)",advance='no') &
+                write(file_id,"(E24.17E2)",advance='no') &
                       Vmix_vars(1)%Ri_iface(kw)
               case ("visc")
                 do icol=1,ncol
-                  write(file_id,"(E23.17E2)",advance='no') &
+                  write(file_id,"(E24.17E2)",advance='no') &
                         Vmix_vars(icol)%visc_iface(kw)
                   if (icol.ne.ncol) write(file_id, "(X)", advance='no')
                 end do
               case ("diff")
                 do icol=1,ncol
-                  write(file_id,"(E23.17E2)",advance='no') &
+                  write(file_id,"(E24.17E2)",advance='no') &
                         Vmix_vars(icol)%diff_iface(kw,1)
                   if (icol.ne.ncol) write(file_id, "(X)", advance='no')
                 end do
