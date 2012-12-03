@@ -186,7 +186,7 @@ contains
                                              Vmix_vars%z_iface(:)))
             case ("Ri")
               call netcdf_check(nf90_put_var(file_id, var_id(var), &
-                                             Vmix_vars%z_iface(:)))
+                                             Vmix_vars%Ri_t_iface(:)))
             case ("visc")
               call netcdf_check(nf90_put_var(file_id, var_id(var), &
                                              Vmix_vars%visc_iface(:)))
@@ -208,7 +208,7 @@ contains
                       Vmix_vars%z_iface(kw)
               case ("Ri")
                 write(file_id,"(E23.17E2,X)",advance='no') &
-                      Vmix_vars%z_iface(kw)
+                      Vmix_vars%Ri_t_iface(kw)
               case ("visc")
                 write(file_id,"(E23.17E2,X)",advance='no') &
                       Vmix_vars%visc_iface(kw)
@@ -319,7 +319,7 @@ contains
                                 Vmix_vars(1)%z_iface(:)))
             case("Ri")
               call netcdf_check(nf90_put_var(file_id, var_id(var), &
-                                Vmix_vars(1)%z_iface(:)))
+                                Vmix_vars(1)%Ri_t_iface(:)))
             case("visc")
               call netcdf_check(nf90_put_var(file_id, var_id(var), &
                                 lcl_visc))
@@ -343,7 +343,7 @@ contains
                       Vmix_vars(1)%z_iface(kw)
               case ("Ri")
                 write(file_id,"(E23.17E2,X)",advance='no') &
-                      Vmix_vars(1)%z_iface(kw)
+                      Vmix_vars(1)%Ri_t_iface(kw)
               case ("visc")
                 do icol=1,ncol
                   write(file_id,"(E23.17E2,X)",advance='no') &
