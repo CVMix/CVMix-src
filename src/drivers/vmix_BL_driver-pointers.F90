@@ -1,11 +1,3 @@
-!BOI
-
-! !TITLE: In-code documentation for CVMix
-! !AUTHORS: Many contributors from GFDL, LANL, and NCAR
-! !AFFILIATION: GFDL, LANL, and NCAR
-! !DATE: \today
-
-!EOI
 !BOP
 
 ! !ROUTINE: vmix_BL_driver_pointers
@@ -33,6 +25,7 @@ Program vmix_BL_driver_pointers
   use vmix_convection
   use vmix_put_get
   use vmix_output
+!\newpage
 !EOP
 !BOC
 
@@ -98,13 +91,13 @@ Program vmix_BL_driver_pointers
   ! Read / set B-L parameters for column 1
   read(*, nml=BryanLewis1_nml)
   call vmix_init_bkgnd(Vmix_vars(1), Vmix_params, Vmix_BL_params(1),     &
-                       1, 1, col1_vdc1, col1_vdc2, col1_linv, col1_dpth)
+                       col1_vdc1, col1_vdc2, col1_linv, col1_dpth)
   call vmix_coeffs_bkgnd(Vmix_vars(1), Vmix_BL_params(1), 1)
   
   ! Read / set B-L parameters for column 2
   read(*, nml=BryanLewis2_nml)
   call vmix_init_bkgnd(Vmix_vars(2), Vmix_params, Vmix_BL_params(2),     &
-                       1, 1, col2_vdc1, col2_vdc2, col2_linv, col2_dpth)
+                       col2_vdc1, col2_vdc2, col2_linv, col2_dpth)
   call vmix_coeffs_bkgnd(Vmix_vars(2), Vmix_BL_params(2), 1)
   
   ! Output

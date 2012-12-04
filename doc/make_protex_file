@@ -3,7 +3,8 @@
 SRC=../src
 DRIVE=$SRC/drivers
 SHARE=$SRC/shared
-f90pdf $DRIVE/vmix_BL_driver-pointers.F90 \
+f90pdf header                             \
+       $DRIVE/vmix_BL_driver-pointers.F90 \
        $DRIVE/vmix_BL_driver-mem_copy.F90 \
        $DRIVE/vmix_KPP-shear_driver.F90   \
        $SRC/vmix_output.F90               \

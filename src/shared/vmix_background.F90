@@ -19,11 +19,13 @@ module vmix_background
 
 ! !USES:
 
-   use vmix_kinds_and_types, only : vmix_PI,                  &
-                                    vmix_r8,                  &
-                                    vmix_data_type,           &
-                                    vmix_global_params_type,  &
-                                    vmix_bkgnd_params_type
+  use vmix_kinds_and_types, only : vmix_PI,                  &
+                                   vmix_r8,                  &
+                                   vmix_data_type,           &
+                                   vmix_global_params_type,  &
+                                   vmix_bkgnd_params_type
+  use vmix_put_get, only         : vmix_put
+
 !EOP
 
   implicit none
@@ -208,9 +210,8 @@ contains
 ! !IROUTINE: vmix_init_bkgnd_BryanLewis
 ! !INTERFACE:
 
-  subroutine vmix_init_bkgnd_BryanLewis(Vmix_vars, Vmix_params,         &
-                                        Vmix_bkgnd_params, colid, ncol, &
-                                        bl1, bl2, bl3, bl4)
+  subroutine vmix_init_bkgnd_BryanLewis(Vmix_vars, Vmix_params,               &
+                                        Vmix_bkgnd_params, bl1, bl2, bl3, bl4)
 
 ! !DESCRIPTION:
 !  Initialization routine for background mixing with a Bryan-Lewis mixing.
@@ -247,7 +248,6 @@ contains
 ! !INPUT PARAMETERS:
     type (vmix_data_type),          intent(in) :: Vmix_vars   ! Depth, nlev
     type (vmix_global_params_type), intent(in) :: Vmix_params ! Prandtl
-    integer,                        intent(in) :: colid, ncol
 
     ! Units are first column if Vmix_data%depth is m, second if cm
     real(vmix_r8), intent(in)         :: bl1,     &! m^2/s or cm^2/s
@@ -265,27 +265,21 @@ contains
                               nlev  ! max number of levels
 
     ! Local copies to make code easier to read
-    real(vmix_r8) :: visc, diff, z
+    real(vmix_r8), dimension(:), allocatable :: visc, diff, z
 
-    if (.not.allocated(Vmix_bkgnd_params%static_visc)) then
-      Vmix_bkgnd_params%lvary_vertical   = .true.
-      Vmix_bkgnd_params%lvary_horizontal = .true.
-      nlev = Vmix_params%max_nlev
-      allocate(Vmix_bkgnd_params%static_diff(ncol,nlev+1))
-      allocate(Vmix_bkgnd_params%static_visc(ncol,nlev+1))
-    end if
-    Vmix_bkgnd_params%static_diff(colid,:) = 0.0d0
-    Vmix_bkgnd_params%static_visc(colid,:) = 0.0d0
+    nlev = Vmix_params%max_nlev
+    allocate(z(nlev+1))
+    allocate(visc(nlev+1))
+    allocate(diff(nlev+1))
     
     ! Set static_visc and static_diff in background_input_type
-    do kw = 1, Vmix_vars%nlev+1
-       z    = Vmix_vars%z_iface(kw)
-       diff = bl1 + (bl2/vmix_PI)*atan(bl3*(z-bl4))
-       visc = Vmix_params%prandtl*diff
+    z    = Vmix_vars%z_iface
+    diff = bl1 + (bl2/vmix_PI)*atan(bl3*(z-bl4))
+    visc = Vmix_params%prandtl*diff
 
-       Vmix_bkgnd_params%static_diff(colid, kw) = diff
-       Vmix_bkgnd_params%static_visc(colid, kw) = visc
-    end do
+    call vmix_put(Vmix_bkgnd_params, "static_diff", diff, nlev=nlev)
+    call vmix_put(Vmix_bkgnd_params, "static_visc", visc, nlev=nlev)
+    deallocate(z, visc, diff)
 
 !EOC
 

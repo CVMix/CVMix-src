@@ -4,6 +4,26 @@ $URL$
 ===============================================================================
 New Checkin: mlevy
 Date:        3 Dec 2012
+Summary:     Added vmix_put routines for the background parameterization, the
+             Bryan-Lewis parameterization now uses these routines. Besides
+             adding the new routines, I also needed to update the build system
+             since vmix_background now uses vmix_put_get. Also, I realized the
+             routine vmix_init_bkgnd did not need to be passed ncol and colid
+             so I updated the vmix_BL drivers. Lastly, I rebuilt the protex
+             documentation since a lot has changed since the last version.
+
+Files Modified:
+M       bld/Makefile
+M       doc/protex_documentation.pdf
+A       doc/header
+M       doc/make_protex_file
+M       src/shared/vmix_background.F90
+M       src/shared/vmix_put_get.F90
+M       src/drivers/vmix_BL_driver-pointers.F90
+M       src/drivers/vmix_BL_driver-mem_copy.F90
+===============================================================================
+New Checkin: mlevy
+Date:        3 Dec 2012
 Summary:     Avoid warning about write format on intel compiler
 
 Files Modified:

@@ -100,10 +100,10 @@ endif
 # ORDER MATTERS UNTIL I SET UP DEPENDENCIES
 # Also, directories will change once we get a new repository
 F_FILES = $(SRC_SHARE)/vmix_kinds_and_types.F90 \
+          $(SRC_SHARE)/vmix_put_get.F90         \
           $(SRC_SHARE)/vmix_background.F90      \
           $(SRC_SHARE)/vmix_convection.F90      \
           $(SRC_SHARE)/vmix_shear.F90           \
-          $(SRC_SHARE)/vmix_put_get.F90         \
           $(SRC)/vmix_output.F90                \
           $(SRC_DRIVE)/$(VMIX_DRIVER)
 
@@ -131,7 +131,12 @@ endif
 $(OBJ)/vmix_kinds_and_types.o: $(SRC_SHARE)/vmix_kinds_and_types.F90
 	$(FC) $(COMPILE_FLAGS) -c $< -o $@
 
+$(OBJ)/vmix_put_get.o: $(SRC_SHARE)/vmix_put_get.F90                       \
+                       $(SRC_SHARE)/vmix_kinds_and_types.F90
+	$(FC) $(COMPILE_FLAGS) -c $< -o $@
+
 $(OBJ)/vmix_background.o: $(SRC_SHARE)/vmix_background.F90                 \
+                          $(SRC_SHARE)/vmix_put_get.F90                    \
                           $(SRC_SHARE)/vmix_kinds_and_types.F90
 	$(FC) $(COMPILE_FLAGS) -c $< -o $@
 
@@ -141,10 +146,6 @@ $(OBJ)/vmix_convection.o: $(SRC_SHARE)/vmix_convection.F90                 \
 
 $(OBJ)/vmix_shear.o: $(SRC_SHARE)/vmix_shear.F90                           \
                      $(SRC_SHARE)/vmix_kinds_and_types.F90
-	$(FC) $(COMPILE_FLAGS) -c $< -o $@
-
-$(OBJ)/vmix_put_get.o: $(SRC_SHARE)/vmix_put_get.F90                       \
-                       $(SRC_SHARE)/vmix_kinds_and_types.F90
 	$(FC) $(COMPILE_FLAGS) -c $< -o $@
 
 $(OBJ)/vmix_output.o: $(SRC)/vmix_output.F90                               \
