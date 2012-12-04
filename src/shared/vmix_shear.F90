@@ -20,9 +20,7 @@
 ! !USES:
 
    use vmix_kinds_and_types, only : vmix_r8,                  &
-                                    vmix_strlen,              &
                                     vmix_data_type,           &
-                                    vmix_global_params_type,  &
                                     vmix_bkgnd_params_type,   &
                                     vmix_shear_params_type
 !EOP

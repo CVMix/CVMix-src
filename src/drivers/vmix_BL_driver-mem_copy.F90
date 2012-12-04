@@ -93,25 +93,28 @@ Program vmix_BL_driver_mem_copy
   call vmix_coeffs_bkgnd(Vmix_vars(2), Vmix_BL_params(2), 1)
   
   ! Output
-  ! data will have diffusivity from both columns (needed for NCL script)
 #ifdef _NETCDF
-  call vmix_output_open(fid1, "data.nc", "nc")
-#else
-  call vmix_output_open(fid1, "data.out", "ascii")
-#endif
-
+  ! data will have diffusivity from both columns (needed for NCL script)
+  call vmix_output_open(fid, "data.nc", "nc")
   ! Note: all entries in string of variables to output must be
   !       the same length... hence the space in "diff "
-  call vmix_output_write(fid1, Vmix_vars, (/"depth", "diff "/))
-  call vmix_output_close(fid1)
-
-#ifndef _NETCDF
+  call vmix_output_write(fid, Vmix_vars, (/"depth", "diff "/))
+  call vmix_output_close(fid)
+#else
+  ! data will have diffusivity from both columns (needed for NCL script)
+  call vmix_output_open(fid1, "data.out", "ascii")
   ! col1 will just have diffusivity from low lat
   call vmix_output_open(fid2, "col1.out", "ascii")
   ! col2 will just have diffusivity from high lat
   call vmix_output_open(fid3, "col2.out", "ascii")
+
+  ! Note: all entries in string of variables to output must be
+  !       the same length... hence the space in "diff "
+  call vmix_output_write(fid1, Vmix_vars,    (/"depth", "diff "/))
   call vmix_output_write(fid2, Vmix_vars(1), (/"depth", "diff "/))
   call vmix_output_write(fid3, Vmix_vars(2), (/"depth", "diff "/))
+
+  call vmix_output_close(fid1)
   call vmix_output_close(fid2)
   call vmix_output_close(fid3)
 #endif

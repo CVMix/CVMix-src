@@ -261,8 +261,7 @@ contains
 !BOC
 
     ! Local index
-    integer                :: kw,  &! vertical cell index
-                              nlev  ! max number of levels
+    integer                :: nlev  ! max number of levels
 
     ! Local copies to make code easier to read
     real(vmix_r8), dimension(:), allocatable :: visc, diff, z

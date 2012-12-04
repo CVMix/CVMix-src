@@ -525,7 +525,7 @@ contains
 ! !IROUTINE: vmix_put_global_params_int
 ! !INTERFACE:
 
-  subroutine vmix_put_global_params_int(Vmix_params, varname, val, opts)
+  subroutine vmix_put_global_params_int(Vmix_params, varname, val)
 
 ! !DESCRIPTION:
 !  Write an integer value into a vmix\_global\_params\_type variable.
@@ -538,7 +538,6 @@ contains
 ! !INPUT PARAMETERS:
     character(len=*),           intent(in) :: varname
     integer,                    intent(in) :: val
-    character(len=*), optional, intent(in) :: opts
 
 ! !OUTPUT PARAMETERS:
     type (vmix_global_params_type), intent(inout) :: Vmix_params
@@ -563,7 +562,7 @@ contains
 ! !IROUTINE: vmix_put_global_params_real
 ! !INTERFACE:
 
-  subroutine vmix_put_global_params_real(Vmix_params, varname, val, opts)
+  subroutine vmix_put_global_params_real(Vmix_params, varname, val)
 
 ! !DESCRIPTION:
 !  Write a real value into a vmix\_global\_params\_type variable.
@@ -576,7 +575,6 @@ contains
 ! !INPUT PARAMETERS:
     character(len=*),           intent(in) :: varname
     real(vmix_r8),              intent(in) :: val
-    character(len=*), optional, intent(in) :: opts
 
 ! !OUTPUT PARAMETERS:
     type (vmix_global_params_type), intent(inout) :: Vmix_params

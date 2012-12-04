@@ -3,7 +3,22 @@ $Id$
 $URL$
 ===============================================================================
 New Checkin: mlevy
-Date:        3 Dec 2012
+Date:        4 Dec 2012
+Summary:     Added support for NAG compiler, cleaned up warnings. Note that
+             CVMix current compiles warning-free with gfortran, intel, PGI,
+						 and NAG. (Haven't checked IBM compiler recently.)
+
+Files Modified:
+M       bld/Makefile
+M       src/vmix_output.F90
+M       src/shared/vmix_background.F90
+M       src/shared/vmix_shear.F90
+M       src/shared/vmix_put_get.F90
+M       src/drivers/vmix_BL_driver-pointers.F90
+M       src/drivers/vmix_BL_driver-mem_copy.F90
+===============================================================================
+New Checkin: mlevy
+Date:        4 Dec 2012
 Summary:     Added vmix_put routines for the background parameterization, the
              Bryan-Lewis parameterization now uses these routines. Besides
              adding the new routines, I also needed to update the build system

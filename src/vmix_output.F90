@@ -160,18 +160,18 @@ contains
     character(len=*), dimension(:), intent(in) :: var_names
 
 ! !LOCAL VARIABLES:
-    integer :: kw, nw, var
+    integer :: kw, var
 #ifdef _NETCDF
-    integer                            :: nw_id, zw_id
+    integer                            :: nw, nw_id
     integer, dimension(:), allocatable :: var_id
 #endif
 !EOP
 !BOC
 
-    nw = Vmix_vars%nlev+1
     select case (get_file_type(file_id))
 #ifdef _NETCDF
       case (NETCDF_FILE_TYPE)
+        nw = Vmix_vars%nlev+1
         call netcdf_check(nf90_def_dim(file_id, "nw", nw, nw_id))
         allocate(var_id(size(var_names)))
         do var=1,size(var_names)
@@ -219,7 +219,7 @@ contains
                 print*, "ERROR: unable to write variable ", var_names(var)
                 stop
             end select
-            if (var.ne.size(var_names)) write(file_id, "(X)", advance='no')
+            if (var.ne.size(var_names)) write(file_id, "(1X)", advance='no')
           end do
           write(file_id, *)
         end do
@@ -257,10 +257,10 @@ contains
 ! !LOCAL VARIABLES:
     integer :: ncol, nw, icol, kw, var
     logical :: z_err
-    real(kind=vmix_r8), dimension(:,:), allocatable :: lcl_visc, lcl_diff
 #ifdef _NETCDF
-    integer                            :: nw_id, ncol_id
-    integer, dimension(:), allocatable :: var_id
+    integer                                         :: nw_id, ncol_id
+    integer, dimension(:), allocatable              :: var_id
+    real(kind=vmix_r8), dimension(:,:), allocatable :: lcl_visc, lcl_diff
 #endif
 !EOP
 !BOC
@@ -349,19 +349,19 @@ contains
                 do icol=1,ncol
                   write(file_id,"(E24.17E2)",advance='no') &
                         Vmix_vars(icol)%visc_iface(kw)
-                  if (icol.ne.ncol) write(file_id, "(X)", advance='no')
+                  if (icol.ne.ncol) write(file_id, "(1X)", advance='no')
                 end do
               case ("diff")
                 do icol=1,ncol
                   write(file_id,"(E24.17E2)",advance='no') &
                         Vmix_vars(icol)%diff_iface(kw,1)
-                  if (icol.ne.ncol) write(file_id, "(X)", advance='no')
+                  if (icol.ne.ncol) write(file_id, "(1X)", advance='no')
                 end do
               case DEFAULT
                 print*, "ERROR: unable to write variable ", var_names(var)
                 stop
             end select
-            if (var.ne.size(var_names)) write(file_id, "(X)", advance='no')
+            if (var.ne.size(var_names)) write(file_id, "(1X)", advance='no')
           end do
           write(file_id, *)
         end do
@@ -538,6 +538,7 @@ contains
     end if
 #else
     print*, "ERROR: can not call netcdf_check unless compiling -D_NETCDF"
+    print*, "The status you passed in = ", status
     stop
 #endif
 

@@ -60,6 +60,11 @@ endif
 ifeq ($(FC),ifort)
   COMPILE_FLAGS = -cpp -O2 -module $(OBJ)
 endif
+
+ifeq ($(FC),nagfor)
+  COMPILE_FLAGS = -kind=byte -free -O2 -I $(OBJ) -mdir $(OBJ)
+endif
+
 LINKING_FLAGS =
 
 # If you build without netCDF and then decide you want to build with netCDF (or
@@ -77,10 +82,11 @@ ifeq ($(USE_NETCDF),TRUE)
     COMPILE_FLAGS += -D_NETCDF
   endif
     COMPILE_FLAGS += -I$(NETCDF_INC)
-  LINKING_FLAGS += -L$(NETCDF_LIB) -lnetcdf
   # Check for netcdf4 library
-  ifneq ($(wildcard $(NETCDF_LIB)/libnetcdff.a),)
-    LINKING_FLAGS += -lnetcdff
+  ifeq ($(wildcard $(NETCDF_LIB)/libnetcdff.a),)
+    LINKING_FLAGS += -L$(NETCDF_LIB) -lnetcdf
+  else
+    LINKING_FLAGS += -L$(NETCDF_LIB) -lnetcdff -lnetcdf
   endif
   NEW_NETCDF = YES
 else
