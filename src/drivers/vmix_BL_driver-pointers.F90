@@ -25,7 +25,6 @@ Program vmix_BL_driver_pointers
   use vmix_convection
   use vmix_put_get
   use vmix_output
-!\newpage
 !EOP
 !BOC
 
