@@ -61,6 +61,10 @@ ifeq ($(FC),ifort)
   COMPILE_FLAGS = -cpp -O2 -module $(OBJ)
 endif
 
+ifeq ($(FC),xlf90)
+  COMPILE_FLAGS = -O2 -I $(OBJ) -qmoddir=$(OBJ)
+endif
+
 ifeq ($(FC),nagfor)
   COMPILE_FLAGS = -kind=byte -free -O2 -I $(OBJ) -mdir $(OBJ)
 endif

@@ -4,6 +4,13 @@ $URL$
 ===============================================================================
 New Checkin: mlevy
 Date:        4 Dec 2012
+Summary:     Updated Makefile to handle IBM compiler correctly.
+
+Files Modified:
+M       bld/Makefile
+===============================================================================
+New Checkin: mlevy
+Date:        4 Dec 2012
 Summary:     Added support for NAG compiler, cleaned up warnings. Note that
              CVMix current compiles warning-free with gfortran, intel, PGI,
 						 and NAG. (Haven't checked IBM compiler recently.)
