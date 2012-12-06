@@ -20,11 +20,16 @@ Program vmix_BL_driver_mem_copy
 
 ! !USES:
 
-  use vmix_kinds_and_types
-  use vmix_background
-  use vmix_convection
-  use vmix_put_get
-  use vmix_output
+  use vmix_kinds_and_types, only : vmix_r8,                 &
+                                   vmix_data_type,          &
+                                   vmix_global_params_type, &
+                                   vmix_bkgnd_params_type
+  use vmix_background,      only : vmix_init_bkgnd,         &
+                                   vmix_coeffs_bkgnd
+  use vmix_put_get,         only : vmix_put
+  use vmix_output,          only : vmix_output_open,        &
+                                   vmix_output_write,       &
+                                   vmix_output_close
 !EOP
 !BOC
 
@@ -42,7 +47,11 @@ Program vmix_BL_driver_mem_copy
   ! array indices
   integer :: icol,kw
   ! file indices
+#ifdef _NETCDF
+  integer :: fid
+#else
   integer :: fid1, fid2, fid3
+#endif
 
   ! Namelist variables
   ! 1) General mixing parameters

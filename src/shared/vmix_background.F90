@@ -45,7 +45,6 @@ module vmix_background
     module procedure vmix_init_bkgnd_BryanLewis
   end interface vmix_init_bkgnd
 !EOP
-!BOC
 
 contains
 

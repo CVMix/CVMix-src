@@ -45,7 +45,6 @@ module vmix_put_get
     module procedure vmix_put_global_params_real
   end interface vmix_put
 !EOP
-!BOC
 
 contains
 

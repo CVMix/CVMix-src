@@ -20,7 +20,11 @@ module vmix_output
 #ifdef _NETCDF
    use netcdf
 #endif
-   use vmix_kinds_and_types
+   use vmix_kinds_and_types, only : vmix_data_type
+#ifdef _NETCDF
+   use vmix_kinds_and_types, only : vmix_r8
+#endif
+
 !EOP
 
   implicit none

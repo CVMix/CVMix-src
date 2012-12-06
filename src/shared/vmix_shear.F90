@@ -228,6 +228,7 @@
 
     end select
 
+!EOC
   end subroutine vmix_coeffs_shear
 
 end module vmix_shear

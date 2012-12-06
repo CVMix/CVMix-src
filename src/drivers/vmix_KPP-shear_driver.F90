@@ -22,10 +22,16 @@ Program vmix_KPPshear_driver
 
 ! !USES:
 
-  use vmix_kinds_and_types
-  use vmix_shear
-  use vmix_put_get
-  use vmix_output
+  use vmix_kinds_and_types, only : vmix_r8,                 &
+                                   vmix_data_type,          &
+                                   vmix_global_params_type, &
+                                   vmix_shear_params_type
+  use vmix_shear,           only : vmix_init_shear,         &
+                                   vmix_coeffs_shear
+  use vmix_put_get,         only : vmix_put
+  use vmix_output,          only : vmix_output_open,        &
+                                   vmix_output_write,       &
+                                   vmix_output_close
 !EOP
 !BOC
 

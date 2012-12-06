@@ -3,6 +3,25 @@ $Id$
 $URL$
 ===============================================================================
 New Checkin: mlevy
+Date:        5 Dec 2012
+Summary:     A couple minor tweaks
+             1) vmix_output and all three drivers were missing the "only" from
+                use statements
+             2) vmix_BL_driver* doesn't need anything from vmix_convection,
+                so I removed the use statement and fixed the Makefile
+             3) some formatting changes in src/share for protex documentation
+
+Files Modified:
+M       bld/Makefile
+M       src/vmix_output.F90
+M       src/shared/vmix_background.F90
+M       src/shared/vmix_shear.F90
+M       src/shared/vmix_put_get.F90
+M       src/drivers/vmix_KPP-shear_driver.F90
+M       src/drivers/vmix_BL_driver-pointers.F90
+M       src/drivers/vmix_BL_driver-mem_copy.F90
+===============================================================================
+New Checkin: mlevy
 Date:        4 Dec 2012
 Summary:     Updated Makefile to handle IBM compiler correctly.
 

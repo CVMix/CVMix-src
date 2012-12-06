@@ -165,7 +165,6 @@ $(OBJ)/vmix_output.o: $(SRC)/vmix_output.F90                               \
 $(OBJ)/vmix_BL_driver-mem_copy.o: $(SRC_DRIVE)/vmix_BL_driver-mem_copy.F90 \
                                   $(SRC_SHARE)/vmix_kinds_and_types.F90    \
                                   $(SRC_SHARE)/vmix_background.F90         \
-                                  $(SRC_SHARE)/vmix_convection.F90         \
                                   $(SRC_SHARE)/vmix_put_get.F90            \
                                   $(SRC)/vmix_output.F90
 	$(FC) $(COMPILE_FLAGS) -c $< -o $@
@@ -173,7 +172,6 @@ $(OBJ)/vmix_BL_driver-mem_copy.o: $(SRC_DRIVE)/vmix_BL_driver-mem_copy.F90 \
 $(OBJ)/vmix_BL_driver-pointers.o: $(SRC_DRIVE)/vmix_BL_driver-pointers.F90 \
                                   $(SRC_SHARE)/vmix_kinds_and_types.F90    \
                                   $(SRC_SHARE)/vmix_background.F90         \
-                                  $(SRC_SHARE)/vmix_convection.F90         \
                                   $(SRC_SHARE)/vmix_put_get.F90            \
                                   $(SRC)/vmix_output.F90
 	$(FC) $(COMPILE_FLAGS) -c $< -o $@
