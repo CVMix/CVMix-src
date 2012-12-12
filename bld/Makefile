@@ -90,7 +90,16 @@ ifeq ($(USE_NETCDF),TRUE)
   ifeq ($(wildcard $(NETCDF_LIB)/libnetcdff.a),)
     LINKING_FLAGS += -L$(NETCDF_LIB) -lnetcdf
   else
-    LINKING_FLAGS += -L$(NETCDF_LIB) -lnetcdff -lnetcdf
+    # with netcdf4, need to know whether to include hdf5 or not
+    # That comes from $(NETCDF_LIB)/pkgconfig/netcdf.pc
+    NETCDF_PC = $(NETCDF_LIB)/pkgconfig/netcdf.pc
+    ifeq ($(wildcard $(NETCDF_PC)),)
+      LINKING_FLAGS += -L$(NETCDF_LIB) -lnetcdff -lnetcdf
+    else
+      # get flibs from netcdf.pc
+      FLIBS = $(subst flibs=,,$(shell grep flibs $(NETCDF_PC)))
+      LINKING_FLAGS += -L$(NETCDF_LIB) $(FLIBS)
+    endif
   endif
   NEW_NETCDF = YES
 else

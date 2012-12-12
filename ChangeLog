@@ -3,6 +3,15 @@ $Id$
 $URL$
 ===============================================================================
 New Checkin: mlevy
+Date:        12 Dec 2012
+Summary:     Updated Makefile to (hopefully) handle netCDF / HDF5 correctly.
+             Can now compile with netCDF + NAH compiler (netCDF there does
+						 use HDF5).
+
+Files Modified:
+M       bld/Makefile
+===============================================================================
+New Checkin: mlevy
 Date:        5 Dec 2012
 Summary:     A couple minor tweaks
              1) vmix_output and all three drivers were missing the "only" from
