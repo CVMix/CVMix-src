@@ -4,6 +4,24 @@ $URL$
 ===============================================================================
 New Checkin: mlevy
 Date:        14 Jan 2013
+Summary:     Add mostly-blank template for double diffusion mixing module /
+             driver. Only tested with gfortran, hopefully no new warnings from
+             other compilers. Also cleaned up some formatting in the tidal
+             module / driver.
+
+Files Modified:
+A       reg_tests/double_diff
+A       reg_tests/double_diff/input.nl
+A       reg_tests/double_diff/double_diff-test.sh
+M       bld/Makefile
+A       src/shared/vmix_ddiff.F90
+M       src/shared/vmix_tidal.F90
+M       src/shared/vmix_kinds_and_types.F90
+A       src/drivers/vmix_ddiff_driver.F90
+M       src/drivers/vmix_Simmons-tidal_driver.F90
+===============================================================================
+New Checkin: mlevy
+Date:        14 Jan 2013
 Summary:     Add mostly-blank template for tidal mixing module / driver. Only
              tested with gfortran, hopefully no new warnings from other
              compilers.

@@ -99,6 +99,12 @@ module vmix_kinds_and_types
       character(len=vmix_strlen) :: mix_scheme
   end type vmix_tidal_params_type
 
+  ! vmix_ddiff_params_type contains the necessary parameters for double
+  ! diffusion mixing (currently just a place-holder variable)
+  type, public :: vmix_ddiff_params_type
+      real(vmix_r8) :: deleteme
+  end type vmix_ddiff_params_type
+
   ! vmix_conv_params_type contains the necessary parameters for convective
   ! mixing.
   type, public :: vmix_conv_params_type

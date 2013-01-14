@@ -55,7 +55,7 @@
 !  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
-    character(len=*),        intent(in) :: mix_scheme 
+    character(len=*), intent(in) :: mix_scheme 
 
 ! !OUTPUT PARAMETERS:
     type(vmix_tidal_params_type), intent(inout) :: Vmix_tidal_params
@@ -94,7 +94,7 @@
 !  only those used by entire module.
 
 ! !INPUT PARAMETERS:
-    type(vmix_tidal_params_type),           intent(in) :: Vmix_tidal_params
+    type(vmix_tidal_params_type), intent(in) :: Vmix_tidal_params
 
 ! !INPUT/OUTPUT PARAMETERS:
     type(vmix_data_type), intent(inout) :: Vmix_vars
