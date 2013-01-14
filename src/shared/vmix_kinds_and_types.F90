@@ -83,7 +83,7 @@ module vmix_kinds_and_types
   end type vmix_bkgnd_params_type
 
   ! vmix_shear_params_type contains the necessary parameters for shear mixing
-  ! (currently just Paconowski-Philander)
+  ! (currently Paconowski-Philander or Large et al)
   type, public :: vmix_shear_params_type
       character(len=vmix_strlen) :: mix_scheme
       real(vmix_r8)              :: alpha
@@ -92,6 +92,12 @@ module vmix_kinds_and_types
       real(vmix_r8)              :: Ri_zero
       real(vmix_r8)              :: p_one
   end type vmix_shear_params_type
+
+  ! vmix_tidal_params_type contains the necessary parameters for shear mixing
+  ! (currently just Simmons)
+  type, public :: vmix_tidal_params_type
+      character(len=vmix_strlen) :: mix_scheme
+  end type vmix_tidal_params_type
 
   ! vmix_conv_params_type contains the necessary parameters for convective
   ! mixing.

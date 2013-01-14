@@ -123,6 +123,7 @@ F_FILES = $(SRC_SHARE)/vmix_kinds_and_types.F90 \
           $(SRC_SHARE)/vmix_background.F90      \
           $(SRC_SHARE)/vmix_convection.F90      \
           $(SRC_SHARE)/vmix_shear.F90           \
+          $(SRC_SHARE)/vmix_tidal.F90           \
           $(SRC)/vmix_output.F90                \
           $(SRC_DRIVE)/$(VMIX_DRIVER)
 
@@ -167,6 +168,10 @@ $(OBJ)/vmix_shear.o: $(SRC_SHARE)/vmix_shear.F90                           \
                      $(SRC_SHARE)/vmix_kinds_and_types.F90
 	$(FC) $(COMPILE_FLAGS) -c $< -o $@
 
+$(OBJ)/vmix_tidal.o: $(SRC_SHARE)/vmix_tidal.F90                           \
+                     $(SRC_SHARE)/vmix_kinds_and_types.F90
+	$(FC) $(COMPILE_FLAGS) -c $< -o $@
+
 $(OBJ)/vmix_output.o: $(SRC)/vmix_output.F90                               \
                       $(SRC_SHARE)/vmix_kinds_and_types.F90
 	$(FC) $(COMPILE_FLAGS) -c $< -o $@
@@ -190,6 +195,13 @@ $(OBJ)/vmix_KPP-shear_driver.o: $(SRC_DRIVE)/vmix_KPP-shear_driver.F90 \
                                 $(SRC_SHARE)/vmix_shear.F90            \
                                 $(SRC_SHARE)/vmix_put_get.F90          \
                                 $(SRC)/vmix_output.F90
+	$(FC) $(COMPILE_FLAGS) -c $< -o $@
+
+$(OBJ)/vmix_Simmons-tidal_driver.o: $(SRC_DRIVE)/vmix_Simmons-tidal_driver.F90 \
+                                    $(SRC_SHARE)/vmix_kinds_and_types.F90      \
+                                    $(SRC_SHARE)/vmix_shear.F90                \
+                                    $(SRC_SHARE)/vmix_put_get.F90              \
+                                    $(SRC)/vmix_output.F90
 	$(FC) $(COMPILE_FLAGS) -c $< -o $@
 
 # Utilities:

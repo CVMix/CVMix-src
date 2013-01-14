@@ -3,6 +3,21 @@ $Id$
 $URL$
 ===============================================================================
 New Checkin: mlevy
+Date:        14 Jan 2013
+Summary:     Add mostly-blank template for tidal mixing module / driver. Only
+             tested with gfortran, hopefully no new warnings from other
+             compilers.
+
+Files Modified:
+A       reg_tests/tidal-Simmons
+A       reg_tests/tidal-Simmons/input.nl
+A       reg_tests/tidal-Simmons/Simmons-test.sh
+M       bld/Makefile
+A       src/shared/vmix_tidal.F90
+M       src/shared/vmix_kinds_and_types.F90
+A       src/drivers/vmix_Simmons-tidal_driver.F90
+===============================================================================
+New Checkin: mlevy
 Date:        12 Dec 2012
 Summary:     Updated Makefile to (hopefully) handle netCDF / HDF5 correctly.
              Can now compile with netCDF + NAH compiler (netCDF there does
