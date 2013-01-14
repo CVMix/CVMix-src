@@ -116,19 +116,30 @@ ifneq ($(OLD_NETCDF), $(NEW_NETCDF))
   REBUILD = TRUE
 endif
 
-# ORDER MATTERS UNTIL I SET UP DEPENDENCIES
-# Also, directories will change once we get a new repository
-F_FILES = $(SRC_SHARE)/vmix_kinds_and_types.F90 \
-          $(SRC_SHARE)/vmix_put_get.F90         \
-          $(SRC_SHARE)/vmix_background.F90      \
-          $(SRC_SHARE)/vmix_convection.F90      \
-          $(SRC_SHARE)/vmix_shear.F90           \
-          $(SRC_SHARE)/vmix_tidal.F90           \
-          $(SRC_SHARE)/vmix_ddiff.F90           \
-          $(SRC)/vmix_output.F90                \
-          $(SRC_DRIVE)/$(VMIX_DRIVER)
+# Driver file and its associated object file
+F_FILE = $(SRC_DRIVE)/$(VMIX_DRIVER)
 
-O_FILES = $(subst shared/,,$(subst drivers/,,$(subst $(SRC),$(OBJ),$(F_FILES:$(extension)=.o))))
+# All drivers use kinds_and_types, put_get, and output
+O_FILES = vmix_kinds_and_types.o \
+          vmix_put_get.o         \
+          vmix_output.o
+
+# Dependencies (eventually this should be automated)
+ifeq ($(VMIX_DRIVER),vmix_BL_driver-pointers.F90)
+  O_FILES += vmix_background.o
+endif
+ifeq ($(VMIX_DRIVER),vmix_BL_driver-mem_copy.F90)
+  O_FILES += vmix_background.o
+endif
+ifeq ($(VMIX_DRIVER),vmix_KPP-shear_driver.F90)
+  O_FILES += vmix_shear.o
+endif
+ifeq ($(VMIX_DRIVER),vmix_Simmons-tidal_driver.F90)
+  O_FILES += vmix_tidal.o
+endif
+ifeq ($(VMIX_DRIVER),vmix_ddiff_driver.F90)
+  O_FILES += vmix_ddiff.o
+endif
 
 ### TARGETS ###
 
@@ -140,81 +151,42 @@ all: $(EXE)
 netcdf:
 	$(MAKE) -f $(BLD)/Makefile USE_NETCDF=TRUE
 
-$(EXE): remove_exe check $(O_FILES)
+$(EXE): remove_exe check $(OBJ)/$(VMIX_DRIVER_O)
 # If NEED_ENV_FILE is TRUE, the check target recursively calls make
 # With NEED_ENV_FILE equal to FALSE, so the executable will be built
 ifeq ($(NEED_ENV_FILE),FALSE)
-	$(FC) -o $(EXE) $(O_FILES) $(LINKING_FLAGS)
+	$(FC) -o $(EXE) $(OBJ)/$(VMIX_DRIVER_O) $(addprefix $(OBJ)/,$(O_FILES)) $(LINKING_FLAGS)
 	$(shell echo $(NEW_NETCDF) > $(INFO_FILE))
 endif
 
-# .o files -- until I can handle dependencies automatically, have to be specific
-$(OBJ)/vmix_kinds_and_types.o: $(SRC_SHARE)/vmix_kinds_and_types.F90
-	$(FC) $(COMPILE_FLAGS) -c $< -o $@
+# Create all object and module files
+$(OBJ)/vmix_kinds_and_types.o:
+	$(FC) $(COMPILE_FLAGS) -c $(SRC_SHARE)/vmix_kinds_and_types.F90 -o $@
 
-$(OBJ)/vmix_put_get.o: $(SRC_SHARE)/vmix_put_get.F90                       \
-                       $(SRC_SHARE)/vmix_kinds_and_types.F90
-	$(FC) $(COMPILE_FLAGS) -c $< -o $@
+$(OBJ)/vmix_put_get.o: $(OBJ)/vmix_kinds_and_types.o
+	$(FC) $(COMPILE_FLAGS) -c $(SRC_SHARE)/vmix_put_get.F90 -o $@
 
-$(OBJ)/vmix_background.o: $(SRC_SHARE)/vmix_background.F90                 \
-                          $(SRC_SHARE)/vmix_put_get.F90                    \
-                          $(SRC_SHARE)/vmix_kinds_and_types.F90
-	$(FC) $(COMPILE_FLAGS) -c $< -o $@
+$(OBJ)/vmix_background.o: $(OBJ)/vmix_put_get.o         \
+                          $(OBJ)/vmix_kinds_and_types.o
+	$(FC) $(COMPILE_FLAGS) -c $(SRC_SHARE)/vmix_background.F90 -o $@
 
-$(OBJ)/vmix_convection.o: $(SRC_SHARE)/vmix_convection.F90                 \
-                          $(SRC_SHARE)/vmix_kinds_and_types.F90
-	$(FC) $(COMPILE_FLAGS) -c $< -o $@
+$(OBJ)/vmix_convection.o: $(OBJ)/vmix_kinds_and_types.o
+	$(FC) $(COMPILE_FLAGS) -c $(SRC_SHARE)/vmix_convection.F90 -o $@
 
-$(OBJ)/vmix_shear.o: $(SRC_SHARE)/vmix_shear.F90                           \
-                     $(SRC_SHARE)/vmix_kinds_and_types.F90
-	$(FC) $(COMPILE_FLAGS) -c $< -o $@
+$(OBJ)/vmix_shear.o: $(OBJ)/vmix_kinds_and_types.o
+	$(FC) $(COMPILE_FLAGS) -c $(SRC_SHARE)/vmix_shear.F90 -o $@
 
-$(OBJ)/vmix_tidal.o: $(SRC_SHARE)/vmix_tidal.F90                           \
-                     $(SRC_SHARE)/vmix_kinds_and_types.F90
-	$(FC) $(COMPILE_FLAGS) -c $< -o $@
+$(OBJ)/vmix_tidal.o: $(OBJ)/vmix_kinds_and_types.o
+	$(FC) $(COMPILE_FLAGS) -c $(SRC_SHARE)/vmix_tidal.F90 -o $@
 
-$(OBJ)/vmix_ddiff.o: $(SRC_SHARE)/vmix_ddiff.F90                           \
-                     $(SRC_SHARE)/vmix_kinds_and_types.F90
-	$(FC) $(COMPILE_FLAGS) -c $< -o $@
+$(OBJ)/vmix_ddiff.o: $(OBJ)/vmix_kinds_and_types.o
+	$(FC) $(COMPILE_FLAGS) -c $(SRC_SHARE)/vmix_ddiff.F90 -o $@
 
-$(OBJ)/vmix_output.o: $(SRC)/vmix_output.F90                               \
-                      $(SRC_SHARE)/vmix_kinds_and_types.F90
-	$(FC) $(COMPILE_FLAGS) -c $< -o $@
+$(OBJ)/vmix_output.o: $(OBJ)/vmix_kinds_and_types.o
+	$(FC) $(COMPILE_FLAGS) -c $(SRC)/vmix_output.F90 -o $@
 
-$(OBJ)/vmix_BL_driver-mem_copy.o: $(SRC_DRIVE)/vmix_BL_driver-mem_copy.F90 \
-                                  $(SRC_SHARE)/vmix_kinds_and_types.F90    \
-                                  $(SRC_SHARE)/vmix_background.F90         \
-                                  $(SRC_SHARE)/vmix_put_get.F90            \
-                                  $(SRC)/vmix_output.F90
-	$(FC) $(COMPILE_FLAGS) -c $< -o $@
-
-$(OBJ)/vmix_BL_driver-pointers.o: $(SRC_DRIVE)/vmix_BL_driver-pointers.F90 \
-                                  $(SRC_SHARE)/vmix_kinds_and_types.F90    \
-                                  $(SRC_SHARE)/vmix_background.F90         \
-                                  $(SRC_SHARE)/vmix_put_get.F90            \
-                                  $(SRC)/vmix_output.F90
-	$(FC) $(COMPILE_FLAGS) -c $< -o $@
-
-$(OBJ)/vmix_KPP-shear_driver.o: $(SRC_DRIVE)/vmix_KPP-shear_driver.F90 \
-                                $(SRC_SHARE)/vmix_kinds_and_types.F90  \
-                                $(SRC_SHARE)/vmix_shear.F90            \
-                                $(SRC_SHARE)/vmix_put_get.F90          \
-                                $(SRC)/vmix_output.F90
-	$(FC) $(COMPILE_FLAGS) -c $< -o $@
-
-$(OBJ)/vmix_Simmons-tidal_driver.o: $(SRC_DRIVE)/vmix_Simmons-tidal_driver.F90 \
-                                    $(SRC_SHARE)/vmix_kinds_and_types.F90      \
-                                    $(SRC_SHARE)/vmix_tidal.F90                \
-                                    $(SRC_SHARE)/vmix_put_get.F90              \
-                                    $(SRC)/vmix_output.F90
-	$(FC) $(COMPILE_FLAGS) -c $< -o $@
-
-$(OBJ)/vmix_ddiff_driver.o: $(SRC_DRIVE)/vmix_ddiff_driver.F90    \
-                            $(SRC_SHARE)/vmix_kinds_and_types.F90 \
-                            $(SRC_SHARE)/vmix_ddiff.F90           \
-                            $(SRC_SHARE)/vmix_put_get.F90         \
-                            $(SRC)/vmix_output.F90
-	$(FC) $(COMPILE_FLAGS) -c $< -o $@
+$(OBJ)/$(VMIX_DRIVER_O): $(addprefix $(OBJ)/,$(O_FILES))
+	$(FC) $(COMPILE_FLAGS) -c $(F_FILE) -o $@
 
 # Utilities:
 # 1) check has two tasks --

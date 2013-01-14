@@ -4,6 +4,16 @@ $URL$
 ===============================================================================
 New Checkin: mlevy
 Date:        14 Jan 2013
+Summary:     Huge cleanup of Makefile, now only builds object files for modules
+             that are actually used by specified driver. At some point we really
+             need to automate the dependency process, but I think this is a step
+             in the right direction.
+
+Files Modified:
+M       bld/Makefile
+===============================================================================
+New Checkin: mlevy
+Date:        14 Jan 2013
 Summary:     Add mostly-blank template for double diffusion mixing module /
              driver. Only tested with gfortran, hopefully no new warnings from
              other compilers. Also cleaned up some formatting in the tidal
