@@ -1,8 +1,8 @@
-module vmix_output
+module cvmix_output
 
 !BOP
 !\newpage
-! !MODULE: vmix_output
+! !MODULE: cvmix_output
 !
 ! !DESCRIPTION:
 !  This module contains routines to output CVmix variables to data files.
@@ -17,12 +17,10 @@ module vmix_output
 
 ! !USES:
 
+   use cvmix_kinds_and_types, only : cvmix_data_type
 #ifdef _NETCDF
+   use cvmix_kinds_and_types, only : cvmix_r8
    use netcdf
-#endif
-   use vmix_kinds_and_types, only : vmix_data_type
-#ifdef _NETCDF
-   use vmix_kinds_and_types, only : vmix_r8
 #endif
 
 !EOP
@@ -33,14 +31,14 @@ module vmix_output
 
 !BOP
 ! !PUBLIC MEMBER FUNCTIONS:
-  public :: vmix_output_open
-  public :: vmix_output_write
-  public :: vmix_output_close
+  public :: cvmix_output_open
+  public :: cvmix_output_write
+  public :: cvmix_output_close
   public :: print_open_files
 
-  interface vmix_output_write
-    module procedure vmix_output_write_single_col
-    module procedure vmix_output_write_multi_col
+  interface cvmix_output_write
+    module procedure cvmix_output_write_single_col
+    module procedure cvmix_output_write_multi_col
   end interface
 
 ! !DEFINED PARAMETERS:
@@ -51,24 +49,24 @@ module vmix_output
 
   ! Probably not the best technique, but going to use a linked list to keep
   ! track of what files are open / what format they are (ascii, bin, or nc)
-  type :: vmix_file_entry
+  type :: cvmix_file_entry
     integer :: file_id
     integer :: file_type
-    type(vmix_file_entry), pointer :: prev
-    type(vmix_file_entry), pointer :: next
+    type(cvmix_file_entry), pointer :: prev
+    type(cvmix_file_entry), pointer :: next
   end type
 
-  type(vmix_file_entry), allocatable, target :: file_database(:)
+  type(cvmix_file_entry), allocatable, target :: file_database(:)
 !EOP
 
 contains
 
 !BOP
 
-! !IROUTINE: vmix_output_open
+! !IROUTINE: cvmix_output_open
 ! !INTERFACE:
 
-  subroutine vmix_output_open(file_id, file_name, file_format)
+  subroutine cvmix_output_open(file_id, file_name, file_format)
 
 ! !DESCRIPTION:
 !  Routine to open a file for writing. Goal is to support writing files
@@ -90,7 +88,7 @@ contains
     integer, intent(out) :: file_id
 
 ! !LOCAL VARIABLES:
-    type(vmix_file_entry), pointer :: file_index
+    type(cvmix_file_entry), pointer :: file_index
 !EOP
 !BOC
 
@@ -138,14 +136,14 @@ contains
     end select
 !EOC
 
-  end subroutine vmix_output_open
+  end subroutine cvmix_output_open
 
 !BOP
 
-! !IROUTINE: vmix_output_write_single_col
+! !IROUTINE: cvmix_output_write_single_col
 ! !INTERFACE:
 
-  subroutine vmix_output_write_single_col(file_id, Vmix_vars, var_names)
+  subroutine cvmix_output_write_single_col(file_id, CVmix_vars, var_names)
 
 ! !DESCRIPTION:
 !  Routine to write the requested variables from a single column to a file
@@ -160,7 +158,7 @@ contains
 
 ! !INPUT PARAMETERS:
     integer,                        intent(in) :: file_id
-    type(vmix_data_type),           intent(in) :: Vmix_vars
+    type(cvmix_data_type),           intent(in) :: CVmix_vars
     character(len=*), dimension(:), intent(in) :: var_names
 
 ! !LOCAL VARIABLES:
@@ -175,7 +173,7 @@ contains
     select case (get_file_type(file_id))
 #ifdef _NETCDF
       case (NETCDF_FILE_TYPE)
-        nw = Vmix_vars%nlev+1
+        nw = CVmix_vars%nlev+1
         call netcdf_check(nf90_def_dim(file_id, "nw", nw, nw_id))
         allocate(var_id(size(var_names)))
         do var=1,size(var_names)
@@ -187,16 +185,16 @@ contains
           select case(trim(var_names(var)))
             case ("depth")
               call netcdf_check(nf90_put_var(file_id, var_id(var), &
-                                             Vmix_vars%z_iface(:)))
+                                             CVmix_vars%z_iface(:)))
             case ("Ri")
               call netcdf_check(nf90_put_var(file_id, var_id(var), &
-                                             Vmix_vars%Ri_iface(:)))
+                                             CVmix_vars%Ri_iface(:)))
             case ("visc")
               call netcdf_check(nf90_put_var(file_id, var_id(var), &
-                                             Vmix_vars%visc_iface(:)))
+                                             CVmix_vars%visc_iface(:)))
             case ("diff")
               call netcdf_check(nf90_put_var(file_id, var_id(var), &
-                                             Vmix_vars%diff_iface(:,1)))
+                                             CVmix_vars%diff_iface(:,1)))
             case DEFAULT
               print*, "ERROR: unable to write variable ", var_names(var)
               stop
@@ -204,21 +202,21 @@ contains
         end do
 #endif
       case (ASCII_FILE_TYPE)
-        do kw=1,Vmix_vars%nlev+1
+        do kw=1,CVmix_vars%nlev+1
           do var=1,size(var_names)
             select case(trim(var_names(var)))
               case ("depth")
                 write(file_id,"(E24.17E2)",advance='no') &
-                      Vmix_vars%z_iface(kw)
+                      CVmix_vars%z_iface(kw)
               case ("Ri")
                 write(file_id,"(E24.17E2)",advance='no') &
-                      Vmix_vars%Ri_iface(kw)
+                      CVmix_vars%Ri_iface(kw)
               case ("visc")
                 write(file_id,"(E24.17E2)",advance='no') &
-                      Vmix_vars%visc_iface(kw)
+                      CVmix_vars%visc_iface(kw)
               case ("diff")
                 write(file_id,"(E24.17E2)",advance='no') &
-                      Vmix_vars%diff_iface(kw,1)
+                      CVmix_vars%diff_iface(kw,1)
               case DEFAULT
                 print*, "ERROR: unable to write variable ", var_names(var)
                 stop
@@ -233,14 +231,14 @@ contains
     end select
 !EOC
 
-  end subroutine vmix_output_write_single_col
+  end subroutine cvmix_output_write_single_col
 
 !BOP
 
-! !IROUTINE: vmix_output_write_multi_col
+! !IROUTINE: cvmix_output_write_multi_col
 ! !INTERFACE:
 
-  subroutine vmix_output_write_multi_col(file_id, Vmix_vars, var_names)
+  subroutine cvmix_output_write_multi_col(file_id, CVmix_vars, var_names)
 
 ! !DESCRIPTION:
 !  Routine to write the requested variables from multiple columns to a file
@@ -254,30 +252,30 @@ contains
 !  Only those used by entire module. 
 
 ! !INPUT PARAMETERS:
-    integer,                            intent(in) :: file_id
-    type(vmix_data_type), dimension(:), intent(in) :: Vmix_vars
-    character(len=*),     dimension(:), intent(in) :: var_names
+    integer,                             intent(in) :: file_id
+    type(cvmix_data_type), dimension(:), intent(in) :: CVmix_vars
+    character(len=*),      dimension(:), intent(in) :: var_names
 
 ! !LOCAL VARIABLES:
     integer :: ncol, nw, icol, kw, var
     logical :: z_err
 #ifdef _NETCDF
-    integer                                         :: nw_id, ncol_id
-    integer, dimension(:), allocatable              :: var_id
-    real(kind=vmix_r8), dimension(:,:), allocatable :: lcl_visc, lcl_diff
+    integer                                          :: nw_id, ncol_id
+    integer,             dimension(:),   allocatable :: var_id
+    real(kind=cvmix_r8), dimension(:,:), allocatable :: lcl_visc, lcl_diff
 #endif
 !EOP
 !BOC
 
     z_err = .false.
-    ncol = size(Vmix_vars)
-    nw = Vmix_vars(1)%nlev+1
+    ncol = size(CVmix_vars)
+    nw = CVmix_vars(1)%nlev+1
     ! Make sure all levels are the same
     do icol=2,ncol
-      if (Vmix_vars(icol)%nlev+1.ne.nw) then
+      if (CVmix_vars(icol)%nlev+1.ne.nw) then
         z_err = .true.
       else
-        if (any(Vmix_vars(icol)%z_iface.ne.Vmix_vars(icol-1)%z_iface)) then
+        if (any(CVmix_vars(icol)%z_iface.ne.CVmix_vars(icol-1)%z_iface)) then
           z_err = .true.
         end if
       end if
@@ -306,13 +304,13 @@ contains
           if (trim(var_names(var)).eq."visc") then
             allocate(lcl_visc(ncol,nw))
             do icol=1,ncol
-              lcl_visc(icol,:) = Vmix_vars(icol)%visc_iface
+              lcl_visc(icol,:) = CVmix_vars(icol)%visc_iface
             end do
           endif
           if (trim(var_names(var)).eq."diff") then
             allocate(lcl_diff(ncol,nw))
             do icol=1,ncol
-              lcl_diff(icol,:) = Vmix_vars(icol)%diff_iface(:,1)
+              lcl_diff(icol,:) = CVmix_vars(icol)%diff_iface(:,1)
             end do
           endif
         end do
@@ -321,10 +319,10 @@ contains
           select case(trim(var_names(var)))
             case("depth")
               call netcdf_check(nf90_put_var(file_id, var_id(var), &
-                                Vmix_vars(1)%z_iface(:)))
+                                CVmix_vars(1)%z_iface(:)))
             case("Ri")
               call netcdf_check(nf90_put_var(file_id, var_id(var), &
-                                Vmix_vars(1)%Ri_iface(:)))
+                                CVmix_vars(1)%Ri_iface(:)))
             case("visc")
               call netcdf_check(nf90_put_var(file_id, var_id(var), &
                                 lcl_visc))
@@ -345,20 +343,20 @@ contains
             select case(trim(var_names(var)))
               case ("depth")
                 write(file_id,"(E24.17E2)",advance='no') &
-                      Vmix_vars(1)%z_iface(kw)
+                      CVmix_vars(1)%z_iface(kw)
               case ("Ri")
                 write(file_id,"(E24.17E2)",advance='no') &
-                      Vmix_vars(1)%Ri_iface(kw)
+                      CVmix_vars(1)%Ri_iface(kw)
               case ("visc")
                 do icol=1,ncol
                   write(file_id,"(E24.17E2)",advance='no') &
-                        Vmix_vars(icol)%visc_iface(kw)
+                        CVmix_vars(icol)%visc_iface(kw)
                   if (icol.ne.ncol) write(file_id, "(1X)", advance='no')
                 end do
               case ("diff")
                 do icol=1,ncol
                   write(file_id,"(E24.17E2)",advance='no') &
-                        Vmix_vars(icol)%diff_iface(kw,1)
+                        CVmix_vars(icol)%diff_iface(kw,1)
                   if (icol.ne.ncol) write(file_id, "(1X)", advance='no')
                 end do
               case DEFAULT
@@ -375,14 +373,14 @@ contains
     end select
 !EOC
 
-  end subroutine vmix_output_write_multi_col
+  end subroutine cvmix_output_write_multi_col
 
 !BOP
 
-! !IROUTINE: vmix_output_close
+! !IROUTINE: cvmix_output_close
 ! !INTERFACE:
 
-  subroutine vmix_output_close(file_id)
+  subroutine cvmix_output_close(file_id)
 
 ! !DESCRIPTION:
 !  Routine to close a file once all writing has been completed. In addition
@@ -398,9 +396,9 @@ contains
     integer, intent(in) :: file_id
 
 ! !LOCAL VARIABLES:
-    type(vmix_file_entry), pointer :: ifile, file_to_close
-    logical :: file_found
-    integer :: file_type
+    type(cvmix_file_entry), pointer :: ifile, file_to_close
+    logical                         :: file_found
+    integer                         :: file_type
 !EOP
 !BOC
 
@@ -466,7 +464,7 @@ contains
     end select
 !EOC
 
-  end subroutine vmix_output_close
+  end subroutine cvmix_output_close
 
 !BOP
 
@@ -491,7 +489,7 @@ contains
     integer             :: get_file_type
 
 ! !LOCAL VARIABLES:
-    type(vmix_file_entry), pointer :: ifile
+    type(cvmix_file_entry), pointer :: ifile
 !EOP
 !BOC
 
@@ -512,25 +510,6 @@ contains
 
   end function get_file_type
 
-! DEBUGGING ROUTINE
-  subroutine print_open_files()
-
-    type(vmix_file_entry), pointer :: ifile
-
-    if (.not.allocated(file_database)) then
-      print*, "No Open files"
-    else
-      ifile => file_database(1)
-      do while (associated(ifile%next))
-        print*, "file id: ", ifile%file_id, ifile%file_type
-        ifile => ifile%next
-      end do
-      print*, "file id: ", ifile%file_id, ifile%file_type
-    end if
-    print*, "----"
-
-  end subroutine print_open_files
-
   subroutine netcdf_check(status)
 
     integer, intent(in) :: status
@@ -548,5 +527,24 @@ contains
 
   end subroutine netcdf_check
 
-end module vmix_output
+! DEBUGGING ROUTINE
+  subroutine print_open_files()
+
+    type(cvmix_file_entry), pointer :: ifile
+
+    if (.not.allocated(file_database)) then
+      print*, "No Open files"
+    else
+      ifile => file_database(1)
+      do while (associated(ifile%next))
+        print*, "file id: ", ifile%file_id, ifile%file_type
+        ifile => ifile%next
+      end do
+      print*, "file id: ", ifile%file_id, ifile%file_type
+    end if
+    print*, "----"
+
+  end subroutine print_open_files
+
+end module cvmix_output
 

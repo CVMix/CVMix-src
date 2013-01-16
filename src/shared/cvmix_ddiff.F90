@@ -1,10 +1,10 @@
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 
- module vmix_ddiff
+ module cvmix_ddiff
 
 !BOP
 !\newpage
-! !MODULE: vmix_ddiff
+! !MODULE: cvmix_ddiff
 !
 ! !DESCRIPTION:
 !  This module contains routines to initialize the derived types needed for
@@ -19,10 +19,9 @@
 
 ! !USES:
 
-   use vmix_kinds_and_types, only : vmix_r8,                  &
-                                    vmix_data_type,           &
-                                    vmix_bkgnd_params_type,   &
-                                    vmix_ddiff_params_type
+   use cvmix_kinds_and_types, only : cvmix_r8,                &
+                                     cvmix_data_type,         &
+                                     cvmix_ddiff_params_type
 !EOP
 
    implicit none
@@ -33,18 +32,18 @@
 
 ! !PUBLIC MEMBER FUNCTIONS:
 
-   public :: vmix_init_ddiff
-   public :: vmix_coeffs_ddiff
+   public :: cvmix_init_ddiff
+   public :: cvmix_coeffs_ddiff
 !EOP
 
  contains
 
 !BOP
 
-! !IROUTINE: vmix_init_ddiff
+! !IROUTINE: cvmix_init_ddiff
 ! !INTERFACE:
 
-  subroutine vmix_init_ddiff(Vmix_ddiff_params)
+  subroutine cvmix_init_ddiff(CVmix_ddiff_params)
 
 ! !DESCRIPTION:
 !  Initialization routine for double diffusion mixing.
@@ -53,21 +52,21 @@
 !  Only those used by entire module.
 
 ! !OUTPUT PARAMETERS:
-    type(vmix_ddiff_params_type), intent(inout) :: Vmix_ddiff_params
+    type(cvmix_ddiff_params_type), intent(inout) :: CVmix_ddiff_params
 !EOP
 !BOC
 
-    Vmix_ddiff_params%deleteme = 0.0_vmix_r8
+    CVmix_ddiff_params%deleteme = 0.0_cvmix_r8
 !EOC
 
-  end subroutine vmix_init_ddiff
+  end subroutine cvmix_init_ddiff
 
 !***********************************************************************
 !BOP
-! !IROUTINE: vmix_coeffs_ddiff
+! !IROUTINE: cvmix_coeffs_ddiff
 ! !INTERFACE:
 
-  subroutine vmix_coeffs_ddiff(Vmix_vars, Vmix_ddiff_params)
+  subroutine cvmix_coeffs_ddiff(CVmix_vars, CVmix_ddiff_params)
 
 ! !DESCRIPTION:
 !  Computes vertical diffusion coefficients for the double diffusion mixing
@@ -79,17 +78,17 @@
 !  only those used by entire module.
 
 ! !INPUT PARAMETERS:
-    type(vmix_ddiff_params_type), intent(in) :: Vmix_ddiff_params
+    type(cvmix_ddiff_params_type), intent(in) :: CVmix_ddiff_params
 
 ! !INPUT/OUTPUT PARAMETERS:
-    type(vmix_data_type), intent(inout) :: Vmix_vars
+    type(cvmix_data_type), intent(inout) :: CVmix_vars
 !EOP
 !BOC
 
-    Vmix_vars%visc_iface = Vmix_ddiff_params%deleteme
-    Vmix_vars%diff_iface = Vmix_ddiff_params%deleteme
+    CVmix_vars%visc_iface = CVmix_ddiff_params%deleteme
+    CVmix_vars%diff_iface = CVmix_ddiff_params%deleteme
 
 !EOC
-  end subroutine vmix_coeffs_ddiff
+  end subroutine cvmix_coeffs_ddiff
 
-end module vmix_ddiff
+end module cvmix_ddiff

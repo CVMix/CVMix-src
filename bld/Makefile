@@ -3,36 +3,36 @@
 extension = .F90
 
 # Need CVMix root directory
-# If using old version of make, pass in VMIX_ROOT
+# If using old version of make, pass in CVMIX_ROOT
 ifeq ($(wildcard $(MAKEFILE_LIST)),)
-  VMIX_ROOT = ..
+  CVMIX_ROOT = ..
 else
   ThisMakefile=$(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST))
   ifeq (/,$(findstring /,$(ThisMakefile)))
     ThisDir=$(shell x=$(ThisMakefile) && echo $${x%/*})/
   endif
-  VMIX_ROOT = $(realpath $(ThisDir)..)
+  CVMIX_ROOT = $(realpath $(ThisDir)..)
 endif
 
 # Directory to build in
-BLD = $(VMIX_ROOT)/bld
+BLD = $(CVMIX_ROOT)/bld
 OBJ = $(BLD)/obj
 # Name of executable
 EXE = $(BLD)/exe/cvmix
 # Directories with source code
-SRC = $(VMIX_ROOT)/src
+SRC = $(CVMIX_ROOT)/src
 SRC_SHARE = $(SRC)/shared
 SRC_DRIVE = $(SRC)/drivers
 
 # Need to know which driver to use (should be passed in)
-VMIX_DRIVER = FALSE
-ifeq ($(VMIX_DRIVER),FALSE)
-  VMIX_DRIVER_NOT_SPECIFIED = TRUE
+CVMIX_DRIVER = FALSE
+ifeq ($(CVMIX_DRIVER),FALSE)
+  CVMIX_DRIVER_NOT_SPECIFIED = TRUE
 else
-  ifeq ($(wildcard $(SRC_DRIVE)/$(VMIX_DRIVER)),)
-    VMIX_DRIVER_NOT_FOUND = TRUE
+  ifeq ($(wildcard $(SRC_DRIVE)/$(CVMIX_DRIVER)),)
+    CVMIX_DRIVER_NOT_FOUND = TRUE
   else
-    VMIX_DRIVER_O = $(VMIX_DRIVER:$(extension)=.o)
+    CVMIX_DRIVER_O = $(CVMIX_DRIVER:$(extension)=.o)
   endif
 endif
 
@@ -117,28 +117,28 @@ ifneq ($(OLD_NETCDF), $(NEW_NETCDF))
 endif
 
 # Driver file and its associated object file
-F_FILE = $(SRC_DRIVE)/$(VMIX_DRIVER)
+F_FILE = $(SRC_DRIVE)/$(CVMIX_DRIVER)
 
 # All drivers use kinds_and_types, put_get, and output
-O_FILES = vmix_kinds_and_types.o \
-          vmix_put_get.o         \
-          vmix_output.o
+O_FILES = cvmix_kinds_and_types.o \
+          cvmix_put_get.o         \
+          cvmix_output.o
 
 # Dependencies (eventually this should be automated)
-ifeq ($(VMIX_DRIVER),vmix_BL_driver-pointers.F90)
-  O_FILES += vmix_background.o
+ifeq ($(CVMIX_DRIVER),cvmix_BL_driver-pointers.F90)
+  O_FILES += cvmix_background.o
 endif
-ifeq ($(VMIX_DRIVER),vmix_BL_driver-mem_copy.F90)
-  O_FILES += vmix_background.o
+ifeq ($(CVMIX_DRIVER),cvmix_BL_driver-mem_copy.F90)
+  O_FILES += cvmix_background.o
 endif
-ifeq ($(VMIX_DRIVER),vmix_KPP-shear_driver.F90)
-  O_FILES += vmix_shear.o
+ifeq ($(CVMIX_DRIVER),cvmix_KPP-shear_driver.F90)
+  O_FILES += cvmix_shear.o
 endif
-ifeq ($(VMIX_DRIVER),vmix_Simmons-tidal_driver.F90)
-  O_FILES += vmix_tidal.o
+ifeq ($(CVMIX_DRIVER),cvmix_Simmons-tidal_driver.F90)
+  O_FILES += cvmix_tidal.o
 endif
-ifeq ($(VMIX_DRIVER),vmix_ddiff_driver.F90)
-  O_FILES += vmix_ddiff.o
+ifeq ($(CVMIX_DRIVER),cvmix_ddiff_driver.F90)
+  O_FILES += cvmix_ddiff.o
 endif
 
 ### TARGETS ###
@@ -151,41 +151,41 @@ all: $(EXE)
 netcdf:
 	$(MAKE) -f $(BLD)/Makefile USE_NETCDF=TRUE
 
-$(EXE): remove_exe check $(OBJ)/$(VMIX_DRIVER_O)
+$(EXE): remove_exe check $(OBJ)/$(CVMIX_DRIVER_O)
 # If NEED_ENV_FILE is TRUE, the check target recursively calls make
 # With NEED_ENV_FILE equal to FALSE, so the executable will be built
 ifeq ($(NEED_ENV_FILE),FALSE)
-	$(FC) -o $(EXE) $(OBJ)/$(VMIX_DRIVER_O) $(addprefix $(OBJ)/,$(O_FILES)) $(LINKING_FLAGS)
+	$(FC) -o $(EXE) $(OBJ)/$(CVMIX_DRIVER_O) $(addprefix $(OBJ)/,$(O_FILES)) $(LINKING_FLAGS)
 	$(shell echo $(NEW_NETCDF) > $(INFO_FILE))
 endif
 
 # Create all object and module files
-$(OBJ)/vmix_kinds_and_types.o:
-	$(FC) $(COMPILE_FLAGS) -c $(SRC_SHARE)/vmix_kinds_and_types.F90 -o $@
+$(OBJ)/cvmix_kinds_and_types.o:
+	$(FC) $(COMPILE_FLAGS) -c $(SRC_SHARE)/cvmix_kinds_and_types.F90 -o $@
 
-$(OBJ)/vmix_put_get.o: $(OBJ)/vmix_kinds_and_types.o
-	$(FC) $(COMPILE_FLAGS) -c $(SRC_SHARE)/vmix_put_get.F90 -o $@
+$(OBJ)/cvmix_put_get.o: $(OBJ)/cvmix_kinds_and_types.o
+	$(FC) $(COMPILE_FLAGS) -c $(SRC_SHARE)/cvmix_put_get.F90 -o $@
 
-$(OBJ)/vmix_background.o: $(OBJ)/vmix_put_get.o         \
-                          $(OBJ)/vmix_kinds_and_types.o
-	$(FC) $(COMPILE_FLAGS) -c $(SRC_SHARE)/vmix_background.F90 -o $@
+$(OBJ)/cvmix_background.o: $(OBJ)/cvmix_put_get.o         \
+                          $(OBJ)/cvmix_kinds_and_types.o
+	$(FC) $(COMPILE_FLAGS) -c $(SRC_SHARE)/cvmix_background.F90 -o $@
 
-$(OBJ)/vmix_convection.o: $(OBJ)/vmix_kinds_and_types.o
-	$(FC) $(COMPILE_FLAGS) -c $(SRC_SHARE)/vmix_convection.F90 -o $@
+$(OBJ)/cvmix_convection.o: $(OBJ)/cvmix_kinds_and_types.o
+	$(FC) $(COMPILE_FLAGS) -c $(SRC_SHARE)/cvmix_convection.F90 -o $@
 
-$(OBJ)/vmix_shear.o: $(OBJ)/vmix_kinds_and_types.o
-	$(FC) $(COMPILE_FLAGS) -c $(SRC_SHARE)/vmix_shear.F90 -o $@
+$(OBJ)/cvmix_shear.o: $(OBJ)/cvmix_kinds_and_types.o
+	$(FC) $(COMPILE_FLAGS) -c $(SRC_SHARE)/cvmix_shear.F90 -o $@
 
-$(OBJ)/vmix_tidal.o: $(OBJ)/vmix_kinds_and_types.o
-	$(FC) $(COMPILE_FLAGS) -c $(SRC_SHARE)/vmix_tidal.F90 -o $@
+$(OBJ)/cvmix_tidal.o: $(OBJ)/cvmix_kinds_and_types.o
+	$(FC) $(COMPILE_FLAGS) -c $(SRC_SHARE)/cvmix_tidal.F90 -o $@
 
-$(OBJ)/vmix_ddiff.o: $(OBJ)/vmix_kinds_and_types.o
-	$(FC) $(COMPILE_FLAGS) -c $(SRC_SHARE)/vmix_ddiff.F90 -o $@
+$(OBJ)/cvmix_ddiff.o: $(OBJ)/cvmix_kinds_and_types.o
+	$(FC) $(COMPILE_FLAGS) -c $(SRC_SHARE)/cvmix_ddiff.F90 -o $@
 
-$(OBJ)/vmix_output.o: $(OBJ)/vmix_kinds_and_types.o
-	$(FC) $(COMPILE_FLAGS) -c $(SRC)/vmix_output.F90 -o $@
+$(OBJ)/cvmix_output.o: $(OBJ)/cvmix_kinds_and_types.o
+	$(FC) $(COMPILE_FLAGS) -c $(SRC)/cvmix_output.F90 -o $@
 
-$(OBJ)/$(VMIX_DRIVER_O): $(addprefix $(OBJ)/,$(O_FILES))
+$(OBJ)/$(CVMIX_DRIVER_O): $(addprefix $(OBJ)/,$(O_FILES))
 	$(FC) $(COMPILE_FLAGS) -c $(F_FILE) -o $@
 
 # Utilities:
@@ -199,18 +199,18 @@ check: $(ENV_FILE)
 # The variables FC, NETCDF_INC, NETCDF_LIB, and NETCDF_LINK are read in from
 # CVMix_env. If the file doesn't exist, then the python script "setup" is run
 # to generate the file.
-	@$(if $(VMIX_DRIVER_NOT_SPECIFIED), echo "ERROR: You must compile using \
-    'make VMIX_DRIVER=[driver]'. Valid choices are:"; \
+	@$(if $(CVMIX_DRIVER_NOT_SPECIFIED), echo "ERROR: You must compile using \
+    'make CVMIX_DRIVER=[driver]'. Valid choices are:"; \
     ls -1 $(SRC_DRIVE); exit 1)
-	@$(if $(VMIX_DRIVER_NOT_FOUND), echo "ERROR: can not find specified \
-    driver $(VMIX_DRIVER). Valid choices are:"; \
+	@$(if $(CVMIX_DRIVER_NOT_FOUND), echo "ERROR: can not find specified \
+    driver $(CVMIX_DRIVER). Valid choices are:"; \
     ls -1 $(SRC_DRIVE); echo "(The .F90 suffix is necessary.)"; exit 1)
-	$(if $(REBUILD), rm -f $(OBJ)/vmix_output.o $(OBJ)/$(VMIX_DRIVER_O))
+	$(if $(REBUILD), rm -f $(OBJ)/cvmix_output.o $(OBJ)/$(CVMIX_DRIVER_O))
 
 $(ENV_FILE):
 # After building the ENV_FILE, must invoke make again to read it in. Note that
-# the vmix target only builds if NEED_ENV_FILE is FALSE, so after this build
-# returns, the vmix target won't do anything.
+# the cvmix target only builds if NEED_ENV_FILE is FALSE, so after this build
+# returns, the cvmix target won't do anything.
 	@$(BLD)/setup $(ENV_FILE)
 	$(MAKE) -f $(BLD)/Makefile
 

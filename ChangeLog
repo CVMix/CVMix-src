@@ -4,6 +4,49 @@ $URL$
 
 ALL CHANGES SHOULD OCCUR BELOW THIS LINE
 ===============================================================================
+New Checkin: mlevy
+Date:        16 Jan 2013
+Summary:     Big overhaul of the code: renamed all vmix_ variables, data types,
+             and file names to cvmix_. Same for Vmix_. This also required
+             updating the makefile and the run scripts for every regression
+             test, plus I updated the protex documentation.
+
+Files Modified:
+M       reg_tests/tidal-Simmons/Simmons-test.sh
+M       reg_tests/double_diff/double_diff-test.sh
+M       reg_tests/shear-KPP/Large_test.sh
+M       reg_tests/Bryan-Lewis/BL_test.sh
+M       bld/Makefile
+M       doc/protex_documentation.pdf
+M       doc/make_protex_file
+D       src/vmix_output.F90
+A  +    src/cvmix_output.F90
+D       src/shared/vmix_background.F90
+A  +    src/shared/cvmix_ddiff.F90
+A  +    src/shared/cvmix_tidal.F90
+A  +    src/shared/cvmix_kinds_and_types.F90
+D       src/shared/vmix_shear.F90
+A  +    src/shared/cvmix_background.F90
+A  +    src/shared/cvmix_shear.F90
+D       src/shared/vmix_put_get.F90
+D       src/shared/vmix_convection.F90
+A  +    src/shared/cvmix_convection.F90
+A  +    src/shared/cvmix_put_get.F90
+D       src/shared/vmix_ddiff.F90
+D       src/shared/vmix_tidal.F90
+D       src/shared/vmix_kinds_and_types.F90
+A  +    src/drivers/cvmix_BL_driver-mem_copy.F90
+D       src/drivers/vmix_KPP-shear_driver.F90
+D       src/drivers/vmix_ddiff_driver.F90
+A  +    src/drivers/cvmix_KPP-shear_driver.F90
+D       src/drivers/vmix_BL_driver-pointers.F90
+A  +    src/drivers/cvmix_ddiff_driver.F90
+D       src/drivers/vmix_Simmons-tidal_driver.F90
+A  +    src/drivers/cvmix_BL_driver-pointers.F90
+D       src/drivers/vmix_BL_driver-mem_copy.F90
+A  +    src/drivers/cvmix_Simmons-tidal_driver.F90
+===============================================================================
+New Checkin: mlevy
 New Checkin: sgriffies
 Date:        16 Jan 2013
 Summary:     Modify some of the comments.

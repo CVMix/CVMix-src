@@ -40,9 +40,9 @@ while [ $# -gt 0 ]; do
 done
 
 CVMix=$PWD/../..
-make -f $CVMix/bld/Makefile ${USE_NETCDF} VMIX_DRIVER=vmix_ddiff_driver.F90
-# Note: if make error, include VMIX_ROOT as below
-#make -f $CVMix/bld/Makefile ${USE_NETCDF} VMIX_DRIVER=vmix_ddiff_driver.F90 VMIX_ROOT=$CVMix
+make -f $CVMix/bld/Makefile ${USE_NETCDF} CVMIX_DRIVER=cvmix_ddiff_driver.F90
+# Note: if make error, include CVMIX_ROOT as below
+#make -f $CVMix/bld/Makefile ${USE_NETCDF} CVMIX_DRIVER=cvmix_ddiff_driver.F90 CVMIX_ROOT=$CVMix
 if [ $? != 0 ]; then
   echo "Build error!"
   exit 1

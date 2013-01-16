@@ -5,7 +5,7 @@
 ##################
 
 usage() {
-  echo './KPP_test.sh [-nc|--netcdf]'
+  echo './Large_test.sh [-nc|--netcdf]'
   echo ''
   echo 'By default, output is ascii'
   echo '  -h     | --help     Display this message'
@@ -32,7 +32,7 @@ while [ $# -gt 0 ]; do
       exit
       ;;
     * )
-      echo "ERROR: improper use of script. Run ./BL_test.sh -h for usage."
+      echo "ERROR: improper use of script. Run ./Large_test.sh -h for usage."
       exit 1
       ;;
   esac
@@ -40,9 +40,9 @@ while [ $# -gt 0 ]; do
 done
 
 CVMix=$PWD/../..
-make -f $CVMix/bld/Makefile ${USE_NETCDF} VMIX_DRIVER=vmix_KPP-shear_driver.F90
-# Note: if make error, include VMIX_ROOT as below
-#make -f $CVMix/bld/Makefile ${USE_NETCDF} VMIX_DRIVER=vmix_KPP-shear_driver.F90 VMIX_ROOT=$CVMix
+make -f $CVMix/bld/Makefile ${USE_NETCDF} CVMIX_DRIVER=cvmix_KPP-shear_driver.F90
+# Note: if make error, include CVMIX_ROOT as below
+#make -f $CVMix/bld/Makefile ${USE_NETCDF} CVMIX_DRIVER=cvmix_KPP-shear_driver.F90 CVMIX_ROOT=$CVMix
 if [ $? != 0 ]; then
   echo "Build error!"
   exit 1

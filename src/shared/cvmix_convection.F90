@@ -1,8 +1,8 @@
-module vmix_convection
+module cvmix_convection
 
 !BOP
 !\newpage
-! !MODULE: vmix_convection
+! !MODULE: cvmix_convection
 !
 ! !DESCRIPTION:
 !  This module contains routines to initialize the derived types needed for
@@ -17,9 +17,9 @@ module vmix_convection
 !  SVN:$URL$
 
 ! !USES:
-   use vmix_kinds_and_types, only : vmix_r8,               &
-                                    vmix_data_type,        &
-                                    vmix_conv_params_type
+   use cvmix_kinds_and_types, only : cvmix_r8,               &
+                                     cvmix_data_type,        &
+                                     cvmix_conv_params_type
 !EOP
 
   implicit none
@@ -30,18 +30,18 @@ module vmix_convection
 
 ! !PUBLIC MEMBER FUNCTIONS:
 
-   public :: vmix_init_conv
-   public :: vmix_coeffs_conv
+   public :: cvmix_init_conv
+   public :: cvmix_coeffs_conv
 !EOP
 
 contains
 
 !BOP
 
-! !IROUTINE: vmix_init_conv
+! !IROUTINE: cvmix_init_conv
 ! !INTERFACE:
 
-  subroutine vmix_init_conv(Vmix_conv_params, convect_diff, convect_visc)
+  subroutine cvmix_init_conv(CVmix_conv_params, convect_diff, convect_visc)
 
 ! !DESCRIPTION:
 !  Initialization routine for specifying convective mixing coefficients.
@@ -52,29 +52,29 @@ contains
 !  Only those used by entire module. 
 
 ! !OUTPUT PARAMETERS:
-    type (vmix_conv_params_type), intent(out) :: Vmix_conv_params
+    type (cvmix_conv_params_type), intent(out) :: CVmix_conv_params
 
 ! !INPUT PARAMETERS:
-   real(vmix_r8), intent(in) :: &
+   real(cvmix_r8), intent(in) :: &
       convect_diff,      &! diffusivity to parameterize convection
       convect_visc        ! viscosity to parameterize convection
 !EOP
 !BOC
 
     ! Set convect_diff and convect_visc in conv_params_type
-    Vmix_conv_params%convect_diff = convect_diff
-    Vmix_conv_params%convect_visc = convect_visc
+    CVmix_conv_params%convect_diff = convect_diff
+    CVmix_conv_params%convect_visc = convect_visc
 
 !EOC
-  end subroutine vmix_init_conv
+  end subroutine cvmix_init_conv
 
 
 !BOP
 
-! !IROUTINE: vmix_coeffs_conv
+! !IROUTINE: cvmix_coeffs_conv
 ! !INTERFACE:
 
-  subroutine vmix_coeffs_conv(Vmix_vars, Vmix_conv_params)
+  subroutine cvmix_coeffs_conv(CVmix_vars, CVmix_conv_params)
 
 ! !DESCRIPTION:
 !  Computes vertical diffusion coefficients for convective mixing.
@@ -86,10 +86,10 @@ contains
 
 ! !INPUT PARAMETERS:
 
-    type (vmix_conv_params_type), intent(in)  :: Vmix_conv_params
+    type (cvmix_conv_params_type), intent(in)  :: CVmix_conv_params
 
 ! !INPUT/OUTPUT PARAMETERS:
-    type (vmix_data_type), intent(inout) :: Vmix_vars
+    type (cvmix_data_type), intent(inout) :: CVmix_vars
 !EOP
 !BOC
 
@@ -99,9 +99,8 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    integer :: kw  ! vertical level index 
-       
-    real(vmix_r8) :: vvconv
+    real(cvmix_r8) :: vvconv
+    integer        :: kw  ! vertical level index 
 
 !-----------------------------------------------------------------------
 !
@@ -109,23 +108,23 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    do kw=1,Vmix_vars%nlev-1
-      if (Vmix_conv_params%convect_visc.ne.0_vmix_r8) then
-         vvconv = Vmix_conv_params%convect_visc
+    do kw=1,CVmix_vars%nlev-1
+      if (CVmix_conv_params%convect_visc.ne.0_cvmix_r8) then
+         vvconv = CVmix_conv_params%convect_visc
       else
         ! convection only affects tracers
-        vvconv = Vmix_vars%visc_iface(kw)
+        vvconv = CVmix_vars%visc_iface(kw)
       end if
 
-      if (Vmix_vars%dens(kw).gt.Vmix_vars%dens_lwr(kw)) then
-        Vmix_vars%diff_iface(kw+1,1) = Vmix_conv_params%convect_diff
-        Vmix_vars%visc_iface(kw+1)   = vvconv
+      if (CVmix_vars%dens(kw).gt.CVmix_vars%dens_lwr(kw)) then
+        CVmix_vars%diff_iface(kw+1,1) = CVmix_conv_params%convect_diff
+        CVmix_vars%visc_iface(kw+1)   = vvconv
       end if
     end do
 
 !EOC
 
-  end subroutine vmix_coeffs_conv
+  end subroutine cvmix_coeffs_conv
 
-end module vmix_convection
+end module cvmix_convection
 
