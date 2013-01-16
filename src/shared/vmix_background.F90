@@ -6,10 +6,10 @@ module vmix_background
 !
 ! !DESCRIPTION:
 !  This module contains routines to initialize the derived types needed for
-!  background mixing (either specifying a scalar, 1D, or 2D field for
-!  viscosity and diffusivity coefficients or calculating these coefficients
-!  using the Bryan-Lewis method) and to set the viscosity and diffusivity
-!  coefficients to this specified value.
+!  time independent static background mixing coefficients.  It specifies
+!  either a scalar, 1D, or 2D field for viscosity and diffusivity. It also
+!  calculates the background diffusivity using the Bryan-Lewis method.
+!  It then sets the viscosity and diffusivity to the specified value.
 !\\
 !\\
 
@@ -56,7 +56,7 @@ contains
   subroutine vmix_init_bkgnd_scalar(Vmix_bkgnd_params, bkgnd_visc, bkgnd_diff)
 
 ! !DESCRIPTION:
-!  Initialization routine for background mixing with a static field. For each
+!  Initialization routine for static background mixing coefficients. For each
 !  column, this routine sets the static viscosity / diffusivity to the given
 !  scalar constants.
 !\\
@@ -99,7 +99,7 @@ contains
                                 bkgnd_visc, bkgnd_diff, ncol)
 
 ! !DESCRIPTION:
-!  Initialization routine for background mixing with a static field. For each
+!  Initialization routine for static background mixing coefficients. For each
 !  column, this routine sets the static viscosity / diffusivity to the given
 !  1D field. If field varies horizontally, need to include ncol!
 !\\
@@ -162,7 +162,7 @@ contains
                                 bkgnd_visc, bkgnd_diff, ncol)
 
 ! !DESCRIPTION:
-!  Initialization routine for background mixing with a static field. For each
+!  Initialization routine for static background mixing coefficients. For each
 !  column, this routine sets the static viscosity / diffusivity to the given
 !  2D field.
 !\\
@@ -213,34 +213,35 @@ contains
                                         Vmix_bkgnd_params, bl1, bl2, bl3, bl4)
 
 ! !DESCRIPTION:
-!  Initialization routine for background mixing with a Bryan-Lewis mixing.
-!  For each column, this routine sets the static viscosity / diffusivity
+!  Initialization routine for Bryan-Lewis diffusivity/viscosity calculation.
+!  For each column, this routine sets the static viscosity & diffusivity
 !  based on the specified parameters. Note that the units of these parameters
 !  must be consistent with the units of viscosity and diffusivity -- either
-!  cgs or mks, but don't mix and match!
+!  cgs or mks, but do not mix and match!
 !  \\
 !  \\
-!  The Bryan-Lewis parameterization uses the following:
+!  The Bryan-Lewis parameterization is based on the following:
 !  \begin{eqnarray*}
 !  \kappa_{BL} &=& \textrm{bl1} + \frac{\textrm{bl2}}{\pi}\tan^{-1}\bigg(
 !                  \textrm{bl3}(z-\textrm{bl4})\bigg)\\
 !  \nu_{BL} &=& \textrm{Pr}\cdot\kappa_{BL}
 !  \end{eqnarray*}
-!  This is all based on the following paper:
+!  This method is based on the following paper:
 !  \begin{quote}
 !  \emph{A Water Mass Model of the World Ocean}\\
 !  K. Bryan and L. J. Lewis\\
 !  Journal of Geophysical Research, vol 84 (1979), pages 2503-2517.
 !  \end{quote}
 !
-!  In that paper,
+!  In that paper, they recommend the parameters 
 !  \begin{itemize}
 !  \item[] bl1 $= 8 \cdot 10^{-5}$ m$^2/$s
 !  \item[] bl2 $= 1.05 \cdot 10^{-4}$ m$^2/$s
 !  \item[] bl3 $= 4.5 \cdot 10^{-3}$ m$^{-1}$
 !  \item[] bl4 $= 2500$ m
 !  \end{itemize}
-
+!  However, more recent usage of their scheme may warrant different settings.
+!    
 ! !USES:
 !  Only those used by entire module. 
 
@@ -291,9 +292,9 @@ contains
   subroutine vmix_coeffs_bkgnd(Vmix_vars, Vmix_bkgnd_params, colid)
 
 ! !DESCRIPTION:
-!  Computes vertical diffusion coefficients for static mixing. This routine
-!  simply copies viscosity / diffusivity values from Vmix\_bkgnd\_params to
-!  Vmix\_vars.
+!  Computes vertical tracer and velocity mixing coefficients for static
+!  background mixing. This routine simply copies viscosity / diffusivity
+!  values from Vmix\_bkgnd\_params to Vmix\_vars.
 !\\
 !\\
 

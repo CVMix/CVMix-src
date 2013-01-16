@@ -1,4 +1,12 @@
 ===============================================================================
+New Checkin: sgriffies
+Date:        16 Jan 2013
+Summary:     Modify some of the comments.
+Files Modified:
+M       src/shared/vmix_background.F90
+M       src/shared/vmix_shear.F90
+M       src/shared/vmix_convection.F90
+===============================================================================
 $Id$
 $URL$
 ===============================================================================

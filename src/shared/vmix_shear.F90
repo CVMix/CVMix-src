@@ -8,8 +8,9 @@
 !
 ! !DESCRIPTION:
 !  This module contains routines to initialize the derived types needed for
-!  shear mixing (currently just the Pacanowski-Philander scheme) and to set
-!  the viscosity and diffusivity coefficients accordingly.
+!  shear mixing, and to set the viscosity and diffusivity coefficients.
+!  Presently this scheme has implemented the shear mixing parameterizations
+!  from Pacanowski & Philander (1981) and Large, McWilliams, & Doney (1994).
 !\\
 !\\
 !
@@ -50,7 +51,7 @@
 ! !DESCRIPTION:
 !  Initialization routine for shear (Richardson number-based) mixing. There are
 !  currently two supported schemes - set \verb|mix_scheme = 'PP'| to use the
-!  Paconowski-Philander mixing scheme or set \verb|mix_scheme = 'KPP'| to use
+!  Pacanowski-Philander mixing scheme or set \verb|mix_scheme = 'KPP'| to use
 !  the interior mixing scheme laid out in Large et al.
 !\\
 !\\
@@ -93,7 +94,7 @@
       case ('PP')
         if (.not.(present(alpha).and.present(nu_zero).and.present(n))) then
           print*, "ERROR: you must specify alpha, nu_zero, and n to use" ,&
-                  "Paconowski-Philander mixing!"
+                  "Pacanowski-Philander mixing!"
           stop
         end if
         Vmix_shear_params%mix_scheme = "PP"
@@ -127,9 +128,9 @@
                                Vmix_bkgnd_params, colid, no_diff)
 
 ! !DESCRIPTION:
-!  Computes vertical diffusion coefficients for shear-type mixing
-!  parameterizatiions. Note that Richardson number is needed at
-!  both T-points and U-points.
+!  Computes vertical tracer and velocity mixing coefficients for
+!  shear-type mixing parameterizatiions. Note that Richardson number
+!  is needed at both T-points and U-points.
 !\\
 !\\
 !
@@ -183,7 +184,7 @@
           stop
         end if
 
-        ! Paconowski-Philander
+        ! Pacanowski-Philander
         do kw=1,Vmix_vars%nlev+1
           if (Vmix_bkgnd_params%lvary_horizontal) then
             if (Vmix_bkgnd_params%lvary_vertical) then

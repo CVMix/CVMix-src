@@ -6,8 +6,9 @@ module vmix_convection
 !
 ! !DESCRIPTION:
 !  This module contains routines to initialize the derived types needed for
-!  convective mixing and to set the viscosity and diffusivity in unstable
-!  columns.
+!  specifying mixing coefficients to parameterize vertical convective mixing,
+!  and to set the viscosity and diffusivity in gravitationally unstable portions
+!  of the water column.
 !\\
 !\\
 
@@ -43,7 +44,7 @@ contains
   subroutine vmix_init_conv(Vmix_conv_params, convect_diff, convect_visc)
 
 ! !DESCRIPTION:
-!  Initialization routine for convective mixing.
+!  Initialization routine for specifying convective mixing coefficients.
 !\\
 !\\
 
@@ -55,8 +56,8 @@ contains
 
 ! !INPUT PARAMETERS:
    real(vmix_r8), intent(in) :: &
-      convect_diff,      &! diffusivity to mimic convection
-      convect_visc        ! viscosity to mimic convection
+      convect_diff,      &! diffusivity to parameterize convection
+      convect_visc        ! viscosity to parameterize convection
 !EOP
 !BOC
 
