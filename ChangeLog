@@ -4,6 +4,11 @@ $URL$
 
 ALL CHANGES SHOULD OCCUR BELOW THIS LINE
 ===============================================================================
+New Checkin: sgriffies
+Date:        22 Jan 2013
+Summary:     Added directory /manual with Latex and associated
+                    documentation now under version control.
+===============================================================================
 New Checkin: mlevy
 Date:        16 Jan 2013
 Summary:     Big overhaul of the code: renamed all vmix_ variables, data types,
@@ -46,7 +51,6 @@ A  +    src/drivers/cvmix_BL_driver-pointers.F90
 D       src/drivers/vmix_BL_driver-mem_copy.F90
 A  +    src/drivers/cvmix_Simmons-tidal_driver.F90
 ===============================================================================
-New Checkin: mlevy
 New Checkin: sgriffies
 Date:        16 Jan 2013
 Summary:     Modify some of the comments.
