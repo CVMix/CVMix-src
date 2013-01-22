@@ -8,6 +8,57 @@ New Checkin: sgriffies
 Date:        22 Jan 2013
 Summary:     Added directory /manual with Latex and associated
                     documentation now under version control.
+Files Modified:
+Sending        ChangeLog
+Adding         manual
+Adding         manual/cvmix.tex
+Adding  (bin)  manual/cvmix_21jan2013.pdf
+Adding         manual/cvmix_background.tex
+Adding         manual/cvmix_convection.tex
+Adding         manual/cvmix_ddiff.tex
+Adding         manual/cvmix_dissipation.tex
+Adding         manual/cvmix_elements.tex
+Adding         manual/cvmix_intro.tex
+Adding         manual/cvmix_kpp.tex
+Adding         manual/cvmix_shear.tex
+Adding         manual/cvmix_tidal.tex
+Adding         manual/figs
+Adding  (bin)  manual/figs/LargeKPP_fig1.pdf
+Adding  (bin)  manual/figs/LargeKPP_fig2.pdf
+Adding  (bin)  manual/figs/LargeKPP_figB1.pdf
+Adding  (bin)  manual/figs/OceanProcSchem_revision3.png
+Adding  (bin)  manual/figs/bl_diffusivity.pdf
+Adding  (bin)  manual/figs/bryan_lewis.pdf
+Adding  (bin)  manual/figs/bryan_lewis_cm2p1.pdf
+Adding  (bin)  manual/figs/phi_m_profiles.pdf
+Adding  (bin)  manual/figs/phi_s_profiles.pdf
+Adding  (bin)  manual/figs/prandtl_profiles_just_phim_new.pdf
+Adding  (bin)  manual/figs/prandtl_profiles_phim_phis.pdf
+Adding         manual/mfpic_figs
+Adding  (bin)  manual/mfpic_figs/B_grid.pdf
+Adding         manual/mfpic_figs/B_grid.tex
+Adding  (bin)  manual/mfpic_figs/C_grid.pdf
+Adding         manual/mfpic_figs/C_grid.tex
+Adding  (bin)  manual/mfpic_figs/cvmix_discrete_vertical.pdf
+Adding         manual/mfpic_figs/cvmix_discrete_vertical.tex
+Adding  (bin)  manual/mfpic_figs/cvmix_flow_diagram.pdf
+Adding  (bin)  manual/mfpic_figs/cvmix_flow_diagram.pdfcrop.pdf
+Adding         manual/mfpic_figs/cvmix_flow_diagram.tex
+Adding  (bin)  manual/mfpic_figs/cvmix_kpp_boundary_layer.pdf
+Adding         manual/mfpic_figs/cvmix_kpp_boundary_layer.tex
+Adding  (bin)  manual/mfpic_figs/cvmix_stability.pdf
+Adding         manual/mfpic_figs/cvmix_stability.tex
+Adding         manual/mfpic_figs/cvmix_stabilityA.tex
+Adding         manual/mfpic_figs/cvmix_stabilityB.tex
+Adding         manual/mfpic_figs/cvmix_stabilityC.tex
+Adding  (bin)  manual/mfpic_figs/cvmix_stability_nonlocal.pdf
+Adding         manual/mfpic_figs/cvmix_stability_nonlocal.tex
+Adding         manual/references
+Adding         manual/references/Griffies_refs.bib
+Adding         manual/references/elsarticle-harv.bst
+Adding         manual/styles
+Adding         manual/styles/Griffies_style.sty
+Adding         manual/styles/fncychap.sty
 ===============================================================================
 New Checkin: mlevy
 Date:        16 Jan 2013
