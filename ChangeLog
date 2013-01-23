@@ -4,10 +4,19 @@ $URL$
 
 ALL CHANGES SHOULD OCCUR BELOW THIS LINE
 ===============================================================================
+New Checkin: mlevy
+Date:        22 Jan 2013
+Summary:     Update Makefile to turn warnings into errors for gfortran and
+             ifort. Other compilers coming at some point?
+
+Files Modified:
+M       bld/Makefile
+===============================================================================
 New Checkin: sgriffies
 Date:        22 Jan 2013
 Summary:     Added directory /manual with Latex and associated
-                    documentation now under version control.
+             documentation now under version control.
+
 Files Modified:
 Sending        ChangeLog
 Adding         manual

@@ -50,7 +50,7 @@ else
 endif
 
 ifeq ($(FC),gfortran)
-  COMPILE_FLAGS = -cpp -O2 -J $(OBJ)
+  COMPILE_FLAGS = -Wall -Werror -cpp -O2 -J $(OBJ)
 endif
 
 ifeq ($(FC),pgf90)
@@ -58,7 +58,7 @@ ifeq ($(FC),pgf90)
 endif
 
 ifeq ($(FC),ifort)
-  COMPILE_FLAGS = -cpp -O2 -module $(OBJ)
+  COMPILE_FLAGS = -diag-error warn,remark -warn all -cpp -O2 -module $(OBJ)
 endif
 
 ifeq ($(FC),xlf90)
@@ -98,6 +98,11 @@ ifeq ($(USE_NETCDF),TRUE)
     else
       # get flibs from netcdf.pc
       FLIBS = $(subst flibs=,,$(shell grep flibs $(NETCDF_PC)))
+      # Workaround for yellowstone, I need to figure out where this
+      # @NC_FLIBS@ comes from
+      ifeq ($(FLIBS),@NC_FLIBS@)
+        FLIBS = -lnetcdf
+      endif
       LINKING_FLAGS += -L$(NETCDF_LIB) $(FLIBS)
     endif
   endif
