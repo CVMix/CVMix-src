@@ -5,6 +5,17 @@ $URL$
 ALL CHANGES SHOULD OCCUR BELOW THIS LINE
 ===============================================================================
 New Checkin: mlevy
+Date:        25 Jan 2013
+Summary:     Removed bounding box from pdf graphics, not needed when using
+             pdflatex.
+
+Files Modified:
+M       manual/cvmix_elements.tex
+M       manual/cvmix_background.tex
+M       manual/cvmix_kpp.tex
+M       manual/cvmix_intro.tex
+===============================================================================
+New Checkin: mlevy
 Date:        24 Jan 2013
 Summary:     Some changes to aid in building the manual. Note that I have trouble
              using latex, but can build fine with pdflatex. So I added some
