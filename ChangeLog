@@ -5,6 +5,37 @@ $URL$
 ALL CHANGES SHOULD OCCUR BELOW THIS LINE
 ===============================================================================
 New Checkin: mlevy
+Date:        24 Jan 2013
+Summary:     Some changes to aid in building the manual. Note that I have trouble
+             using latex, but can build fine with pdflatex. So I added some
+             bounding boxes to figures that may not actually be necessary...
+             Other changes:
+
+             1) Griffies_refs.bib was missing an entry defining JC as Journal
+                of Climate
+             2) Added bibliography file (.bbl) to repo so you don't need to
+                run bibtex unless you change a reference
+             3) The label "inifinitesimal-delta-rho-elements-upwards" was used
+                twice in cvmix_elements.tex, so I changed the first occurance
+                to "...1" and the second to "...2".
+             4) Set up the svn:ignore property on the manual directory. At
+                present, I am not ignoring pdf files... though I think in the
+                future it might be wise to put cvmix.pdf in the doc/ directory
+                in the repository so people who don't want to edit the document
+                can find it in the same place as the protex document.
+
+Files Modified:
+ M      manual
+M       manual/cvmix_elements.tex
+M       manual/references/Griffies_refs.bib
+A       manual/cvmix.bbl
+M       manual/cvmix_background.tex
+M       manual/cvmix_dissipation.tex
+M       manual/cvmix_kpp.tex
+M       manual/cvmix_intro.tex
+M       manual/cvmix_convection.tex
+===============================================================================
+New Checkin: mlevy
 Date:        22 Jan 2013
 Summary:     Update Makefile to turn warnings into errors for gfortran and
              ifort. Other compilers coming at some point?
