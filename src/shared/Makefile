@@ -8,7 +8,10 @@ OBJS = cvmix_background.o \
 	   cvmix_shear.o \
 	   cvmix_tidal.o \
 
-all: $(OBJS)
+all: $(OBJS) lib
+
+lib:
+	ar -ru libcvmix.a $(OBJS)
 
 cvmix_kinds_and_types.o:
 
@@ -25,7 +28,7 @@ cvmix_shear.o: cvmix_kinds_and_types.o
 cvmix_tidal.o: cvmix_kinds_and_types.o
 
 clean:
-	$(RM) *.o *.mod
+	$(RM) *.o *.mod *.a
 
 .F90.o:
 	$(FC) $(FFLAGS) -c $< $(FCINCLUDES)
