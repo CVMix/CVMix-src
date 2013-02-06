@@ -6,6 +6,45 @@ ALL CHANGES SHOULD OCCUR BELOW THIS LINE
 ===============================================================================
 New Checkin: mlevy
 Date:        06 Feb 2013
+Summary:     More Makefile improvements - no need to include kinds_and_types
+             in libcvmix.a (because there are no functions or routines)... so
+             no more "ranlib ... has no symbols" warning. Also moved finished
+             two and a half of the four tasks mentioned in the previous commit:
+
+             * build executable in bin/ rather than bld/exe
+               - This required changing all the reg_test scripts
+             * build libcvmix.a in lib/ rather than src/shared
+               - This required a few changes in the Makefiles
+             * Change some variable names to be consistent with how Makefiles
+               usually work: add the keyword DIR to variables that are directory
+               names.
+               - If you want to build libcvmix.a (to link to an ocean model, for
+                 example), you should start in $CVMIX/src/shared and run
+                 $ make LIB_DIR=[where you want libcvmix.a] \
+                        OBJ_DIR=[where you want .o and .mod files]
+                 By default, LIB_DIR = $CVMIX/lib and OBJ_DIR=$CVMIX/bld/obj
+
+             I think the next commit will include moving bld/Makefile to
+             src/Makefile and renaming Makefile variables. I'm also tempted
+             to have the default behavior of the standalone driver makefile
+             be to build every standalone driver rather than to prompt you
+             to specify which driver file to use, but that will be a topic
+             for a Monday telecon.
+
+Files Modified:
+M       reg_tests/tidal-Simmons/Simmons-test.sh
+M       reg_tests/double_diff/double_diff-test.sh
+M       reg_tests/shear-KPP/Large_test.sh
+M       reg_tests/Bryan-Lewis/BL_test.sh
+D       bld/exe
+M       bld/CompileFlags.mak
+M       bld/Makefile
+A       lib
+M       src/shared/Makefile
+A  +    bin
+===============================================================================
+New Checkin: mlevy
+Date:        06 Feb 2013
 Summary:     Updated the two Makefiles to play nice together. For the standalone
              driver, both Makefiles should get compiler info from .CVMix_env and
              compiler flag info from CompilerFlags.mak (to ensure everything is

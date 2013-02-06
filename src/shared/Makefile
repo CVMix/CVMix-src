@@ -12,52 +12,65 @@ else
   CVMIX_ROOT = $(realpath $(ThisDir)../..)
 endif
 
-# Directory to build in
-BLD = $(CVMIX_ROOT)/bld
-OBJ = $(BLD)/obj
-DIR = .
+# Directories used in Makefile
+SRC_DIR = $(CVMIX_ROOT)/src/shared
+BLD_DIR = $(CVMIX_ROOT)/bld
+OBJ_DIR = $(BLD_DIR)/obj
+LIB_DIR = $(CVMIX_ROOT)/lib
 
 # Read in Compiler information
-include $(BLD)/.CVMix_env
+include $(BLD_DIR)/.CVMix_env
 # Read in COMPILE_FLAGS
-include $(BLD)/CompileFlags.mak
+include $(BLD_DIR)/CompileFlags.mak
 
-OBJS = $(OBJ)/cvmix_background.o \
-	     $(OBJ)/cvmix_convection.o \
-	     $(OBJ)/cvmix_ddiff.o \
-	     $(OBJ)/cvmix_kinds_and_types.o \
-	     $(OBJ)/cvmix_put_get.o \
-	     $(OBJ)/cvmix_shear.o \
-	     $(OBJ)/cvmix_tidal.o
+OBJS = $(OBJ_DIR)/cvmix_background.o \
+	     $(OBJ_DIR)/cvmix_convection.o \
+	     $(OBJ_DIR)/cvmix_ddiff.o \
+	     $(OBJ_DIR)/cvmix_put_get.o \
+	     $(OBJ_DIR)/cvmix_shear.o \
+	     $(OBJ_DIR)/cvmix_tidal.o
 
-all: libcvmix.a
+### TARGETS ###
+
+.PHONY: clean recurse
+
+all: recurse
+
+recurse:
+	$(MAKE) $(LIB_DIR)/libcvmix.a
 
 # Create all object and module files
-$(OBJ)/cvmix_kinds_and_types.o:
-	$(FC) $(COMPILE_FLAGS) -c $(DIR)/cvmix_kinds_and_types.F90 -o $@
+$(OBJ_DIR)/cvmix_kinds_and_types.o: $(SRC_DIR)/cvmix_kinds_and_types.F90
+	$(FC) $(COMPILE_FLAGS) -c $(SRC_DIR)/cvmix_kinds_and_types.F90 -o $@
 
-$(OBJ)/cvmix_put_get.o: $(OBJ)/cvmix_kinds_and_types.o
-	$(FC) $(COMPILE_FLAGS) -c $(DIR)/cvmix_put_get.F90 -o $@
+$(OBJ_DIR)/cvmix_put_get.o: $(SRC_DIR)/cvmix_put_get.F90       \
+                            $(OBJ_DIR)/cvmix_kinds_and_types.o
+	$(FC) $(COMPILE_FLAGS) -c $(SRC_DIR)/cvmix_put_get.F90 -o $@
 
-$(OBJ)/cvmix_background.o: $(OBJ)/cvmix_put_get.o         \
-                          $(OBJ)/cvmix_kinds_and_types.o
-	$(FC) $(COMPILE_FLAGS) -c $(DIR)/cvmix_background.F90 -o $@
+$(OBJ_DIR)/cvmix_background.o: $(SRC_DIR)/cvmix_background.F90    \
+                               $(OBJ_DIR)/cvmix_put_get.o         \
+                               $(OBJ_DIR)/cvmix_kinds_and_types.o
+	$(FC) $(COMPILE_FLAGS) -c $(SRC_DIR)/cvmix_background.F90 -o $@
 
-$(OBJ)/cvmix_convection.o: $(OBJ)/cvmix_kinds_and_types.o
-	$(FC) $(COMPILE_FLAGS) -c $(DIR)/cvmix_convection.F90 -o $@
+$(OBJ_DIR)/cvmix_convection.o: $(SRC_DIR)/cvmix_convection.F90    \
+                               $(OBJ_DIR)/cvmix_kinds_and_types.o
+	$(FC) $(COMPILE_FLAGS) -c $(SRC_DIR)/cvmix_convection.F90 -o $@
 
-$(OBJ)/cvmix_shear.o: $(OBJ)/cvmix_kinds_and_types.o
-	$(FC) $(COMPILE_FLAGS) -c $(DIR)/cvmix_shear.F90 -o $@
+$(OBJ_DIR)/cvmix_shear.o: $(SRC_DIR)/cvmix_shear.F90         \
+                          $(OBJ_DIR)/cvmix_kinds_and_types.o
+	$(FC) $(COMPILE_FLAGS) -c $(SRC_DIR)/cvmix_shear.F90 -o $@
 
-$(OBJ)/cvmix_tidal.o: $(OBJ)/cvmix_kinds_and_types.o
-	$(FC) $(COMPILE_FLAGS) -c $(DIR)/cvmix_tidal.F90 -o $@
+$(OBJ_DIR)/cvmix_tidal.o: $(SRC_DIR)/cvmix_tidal.F90         \
+                          $(OBJ_DIR)/cvmix_kinds_and_types.o
+	$(FC) $(COMPILE_FLAGS) -c $(SRC_DIR)/cvmix_tidal.F90 -o $@
 
-$(OBJ)/cvmix_ddiff.o: $(OBJ)/cvmix_kinds_and_types.o
-	$(FC) $(COMPILE_FLAGS) -c $(DIR)/cvmix_ddiff.F90 -o $@
+$(OBJ_DIR)/cvmix_ddiff.o: $(SRC_DIR)/cvmix_ddiff.F90         \
+                          $(OBJ_DIR)/cvmix_kinds_and_types.o
+	$(FC) $(COMPILE_FLAGS) -c $(SRC_DIR)/cvmix_ddiff.F90 -o $@
 
-libcvmix.a: $(OBJS)
-	ar -ru $(DIR)/libcvmix.a $(OBJS)
+$(LIB_DIR)/libcvmix.a: $(OBJS)
+	ar -ru $(LIB_DIR)/libcvmix.a $(OBJS)
 
 clean:
-	/bin/rm -f $(DIR)/*.a
+	/bin/rm -f $(LIB_DIR)/*.a
 
