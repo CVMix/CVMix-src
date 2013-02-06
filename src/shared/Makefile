@@ -18,7 +18,7 @@ OBJ = $(BLD)/obj
 DIR = .
 
 # Read in Compiler information
-include $(BLD)/.CVmix_env
+include $(BLD)/.CVMix_env
 # Read in COMPILE_FLAGS
 include $(BLD)/CompileFlags.mak
 
