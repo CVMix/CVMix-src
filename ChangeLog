@@ -5,6 +5,16 @@ $URL$
 ALL CHANGES SHOULD OCCUR BELOW THIS LINE
 ===============================================================================
 New Checkin: mlevy
+Date:        05 Feb 2013
+Summary:     Made variable names in shear mixing module more descriptive.
+
+Files Modified:
+M       reg_tests/shear-KPP/input.nl
+M       src/shared/cvmix_kinds_and_types.F90
+M       src/shared/cvmix_shear.F90
+M       src/drivers/cvmix_KPP-shear_driver.F90
+===============================================================================
+New Checkin: mlevy
 Date:        25 Jan 2013
 Summary:     Removed bounding box from pdf graphics, not needed when using
              pdflatex.

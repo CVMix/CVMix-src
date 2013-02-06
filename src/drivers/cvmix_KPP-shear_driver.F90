@@ -54,11 +54,11 @@ Program cvmix_KPPshear_driver
   ! 1) General mixing parameters
   integer        :: nlev      ! number of Ri points to sample
   ! 2) KPP mixing parameters for column
-  real(cvmix_r8) :: nu_zero, Ri_zero, p_one
+  real(cvmix_r8) :: KPP_nu_zero, KPP_Ri_zero, KPP_exp
 
   ! Namelists that may be read in, depending on desired mixing scheme
   namelist/cvmix_nml/nlev
-  namelist/KPP_nml/nu_zero, Ri_zero, p_one
+  namelist/KPP_nml/KPP_nu_zero, KPP_Ri_zero, KPP_exp
 
   ! Read general mixing parameters
   read(*, nml=cvmix_nml)
@@ -84,8 +84,9 @@ Program cvmix_KPPshear_driver
 
   ! Read / set KPP parameters
   read(*, nml=KPP_nml)
-  call cvmix_init_shear(CVmix_KPP_params, 'KPP',                            &
-                        nu_zero = nu_zero, Ri_zero = Ri_zero, p_one = p_one)
+  call cvmix_init_shear(CVmix_KPP_params, 'KPP',                           &
+                        KPP_nu_zero=KPP_nu_zero, KPP_Ri_zero=KPP_Ri_zero,  &
+                        KPP_exp=KPP_exp)
   call cvmix_coeffs_shear(CVmix_vars, CVmix_KPP_params)
 
   ! Output

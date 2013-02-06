@@ -46,7 +46,8 @@
 ! !INTERFACE:
 
   subroutine cvmix_init_shear(CVmix_shear_params, mix_scheme,  &
-                              alpha, n, nu_zero, Ri_zero, p_one)
+                              PP_nu_zero, PP_alpha, PP_exp, &
+                              KPP_nu_zero, KPP_Ri_zero, KPP_exp)
 
 ! !DESCRIPTION:
 !  Initialization routine for shear (Richardson number-based) mixing. There are
@@ -55,8 +56,8 @@
 !  the interior mixing scheme laid out in Large et al.
 !\\
 !\\
-!  PP requires setting \verb|nu_zero| ($\nu_0$), \verb|alpha| ($\alpha$), and
-!  \verb|n| ($n$), and returns
+!  PP requires setting $\nu_0$ (\verb|PP_nu_zero| in this routine), $alpha$ 
+!  (\verb|PP_alpha|), and $n$ (\verb|PP_exp|), and returns
 !  \begin{eqnarray*}
 !  \nu_{PP} & = & \frac{\nu_0}{(1+\alpha \textrm{Ri})^n} + \nu_b \\
 !  \kappa_{PP} & = & \frac{\nu}{1+\alpha \textrm{Ri}} + \kappa_b
@@ -65,8 +66,8 @@
 !  needs to be called separately from this routine.
 ! \\
 ! \\
-! KPP requires setting \verb|nu_zero| ($\nu^0$), \verb|p_one| ($p_1$), and
-! \verb|Ri_zero| ($\textrm{Ri}_0$), and returns
+! KPP requires setting $\nu^0$ (\verb|KPP_nu_zero|, $\textrm{Ri}_0 
+! ($\verb|KPP_Ri_zero|), and $p_1$ (\verb|KPP_exp|),  and returns
 ! $$
 ! \nu_{KPP} = \left\{
 ! \begin{array}{r l}
@@ -83,7 +84,8 @@
 
 ! !INPUT PARAMETERS:
     character(len=*),         intent(in) :: mix_scheme 
-    real(cvmix_r8), optional, intent(in) :: alpha, n, nu_zero, ri_zero, p_one
+    real(cvmix_r8), optional, intent(in) :: PP_nu_zero, PP_alpha, PP_exp, &
+                                            KPP_nu_zero, KPP_Ri_zero, KPP_exp
 
 ! !OUTPUT PARAMETERS:
     type(cvmix_shear_params_type), intent(inout) :: CVmix_shear_params
@@ -92,21 +94,28 @@
 
     select case (trim(mix_scheme))
       case ('PP')
-        if (.not.(present(alpha).and.present(nu_zero).and.present(n))) then
-          print*, "ERROR: you must specify alpha, nu_zero, and n to use" ,&
-                  "Pacanowski-Philander mixing!"
+        if (.not.(present(PP_nu_zero) .and. present(PP_alpha) .and.        &
+                  present(PP_exp))) then
+          print*, "ERROR: you must specify PP_nu_zero, PP_alpha, and PP_exp", &
+                  " to use Pacanowski-Philander mixing!"
           stop
         end if
         CVmix_shear_params%mix_scheme = "PP"
-        CVmix_shear_params%alpha      = alpha
-        CVmix_shear_params%n          = n
-        CVmix_shear_params%nu_zero    = nu_zero
+        CVmix_shear_params%PP_nu_zero = PP_nu_zero
+        CVmix_shear_params%PP_alpha   = PP_alpha
+        CVmix_shear_params%PP_exp     = PP_exp
 
       case ('KPP')
-        CVmix_shear_params%mix_scheme = "KPP"
-        CVmix_shear_params%nu_zero    = nu_zero
-        CVmix_shear_params%Ri_zero    = Ri_zero
-        CVmix_shear_params%p_one      = p_one
+        if (.not.(present(KPP_nu_zero) .and. present(KPP_Ri_zero) .and.       &
+                  present(KPP_exp))) then
+          print*, "ERROR: you must specify KPP_nu_zero, KPP_alpha, and", &
+                  " KPP_exp to use Pacanowski-Philander mixing!"
+          stop
+        end if
+        CVmix_shear_params%mix_scheme  = "KPP"
+        CVmix_shear_params%KPP_nu_zero = KPP_nu_zero
+        CVmix_shear_params%KPP_Ri_zero = KPP_Ri_zero
+        CVmix_shear_params%KPP_exp     = KPP_exp
 
       case DEFAULT
         print*, "ERROR: ", trim(mix_scheme), " is not a valid choice for ", &
@@ -154,16 +163,11 @@
     logical                   :: calc_diff
     real(cvmix_r8), parameter :: one = 1.0_cvmix_r8
     real(cvmix_r8)            :: nu
-    real(cvmix_r8)            :: alpha, n, nu_zero, Ri_zero, p_one
+    real(cvmix_r8)            :: nu_zero, PP_alpha, KPP_Ri_zero, loc_exp
     real(cvmix_r8)            :: bkgnd_diff, bkgnd_visc
     real(cvmix_r8), pointer, dimension(:) :: RICH
 
-    ! Copy vars / create pointers to make the code more legible
-    alpha   = CVmix_shear_params%alpha
-    n       = CVmix_shear_params%n
-    nu_zero = CVmix_shear_params%nu_zero
-    Ri_zero = CVmix_shear_params%Ri_zero
-    p_one   = CVmix_shear_params%p_one
+    ! Pointer to make the code more legible
     RICH => CVmix_vars%Ri_iface
     if (.not.present(no_diff)) then
       calc_diff = .true.
@@ -184,6 +188,11 @@
           stop
         end if
 
+        ! Copy parameters to make the code more legible
+        nu_zero  = CVmix_shear_params%PP_nu_zero
+        PP_alpha = CVmix_shear_params%PP_alpha
+        loc_exp  = CVmix_shear_params%PP_exp
+
         ! Pacanowski-Philander
         do kw=1,CVmix_vars%nlev+1
           if (CVmix_bkgnd_params%lvary_horizontal) then
@@ -203,20 +212,25 @@
               bkgnd_visc = CVmix_bkgnd_params%static_visc(1, 1)
             end if
           end if
-          nu = nu_zero/((one+alpha*RICH(kw))**n)+bkgnd_visc
+          nu = nu_zero/((one+PP_alpha*RICH(kw))**loc_exp)+bkgnd_visc
           CVmix_vars%visc_iface(kw) = nu
           if (calc_diff) &
-            CVmix_vars%diff_iface(kw,1) = nu/(one+alpha*RICH(kw)) + bkgnd_diff
+            CVmix_vars%diff_iface(kw,1) = nu/(one+PP_alpha*RICH(kw)) + bkgnd_diff
         end do
 
       case ('KPP')
+        ! Copy parameters to make the code more legible
+        nu_zero     = CVmix_shear_params%KPP_nu_zero
+        KPP_Ri_zero = CVmix_shear_params%KPP_Ri_zero
+        loc_exp     = CVmix_shear_params%KPP_exp
+
         ! Large, et al
         do kw=1,CVmix_vars%nlev+1
             if (RICH(kw).lt.0) then
               CVmix_vars%visc_iface(kw) = nu_zero
-            else if (RICH(kw).lt.Ri_zero) then
+            else if (RICH(kw).lt.KPP_Ri_zero) then
               CVmix_vars%visc_iface(kw) = nu_zero * (one -                  &
-                   (RICH(kw)/Ri_zero)**2)**p_one 
+                   (RICH(kw)/KPP_Ri_zero)**2)**loc_exp
             else ! Ri_g >= Ri_zero
               CVmix_vars%visc_iface(kw) = 0
             end if
