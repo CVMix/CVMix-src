@@ -6,6 +6,36 @@ ALL CHANGES SHOULD OCCUR BELOW THIS LINE
 ===============================================================================
 New Checkin: mlevy
 Date:        06 Feb 2013
+Summary:     Realized that if we are going to link to CVMix as a library, then
+             we also need $CVMIX/include/. Right now that directory contains
+             all the module files, but it might make sense to separate it into
+             kinds_and_types.mod and everything_else.mod (I don't know how to
+             do that). I did finish the tasks from a couple of commits ago:
+
+             * move main Makefile from bld/ to src/
+             * change COMPILE_FLAGS to FCFLAGS, (and added -I$CVMIX/include)
+
+             Note that all the test scripts were changed to reflect the change
+             in the location of the Makefile. With this commit, I'll test the
+             new build system on the usual range of machines.
+
+             One more question for the next telecon: should the standalone
+             driver makefile also build libcvmix.a, or should it error out
+             if the library (and .mod files) don't already exist?
+
+Files Modified:
+M       reg_tests/tidal-Simmons/Simmons-test.sh
+M       reg_tests/double_diff/double_diff-test.sh
+M       reg_tests/shear-KPP/Large_test.sh
+M       reg_tests/Bryan-Lewis/BL_test.sh
+M       bld/CompileFlags.mak
+D       bld/Makefile
+A       include
+M       src/shared/Makefile
+A  +    src/Makefile
+===============================================================================
+New Checkin: mlevy
+Date:        06 Feb 2013
 Summary:     More Makefile improvements - no need to include kinds_and_types
              in libcvmix.a (because there are no functions or routines)... so
              no more "ranlib ... has no symbols" warning. Also moved finished

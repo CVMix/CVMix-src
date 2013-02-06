@@ -9,7 +9,7 @@ usage() {
   echo ''
   echo 'By default, output is ascii'
   echo '  -h     | --help     Display this message'
-  echo '  -nc    | --netcdf   Output to a netcdf file (data.nc) rather than three ascii files'
+  echo '  -nc    | --netcdf   Output to a netcdf file (data.nc) rather than ascii file'
   echo '  -clean | --clean    Delete all output data (data.nc and data.out files)'
 }
 
@@ -40,9 +40,9 @@ while [ $# -gt 0 ]; do
 done
 
 CVMix=$PWD/../..
-make -f $CVMix/bld/Makefile ${USE_NETCDF} CVMIX_DRIVER=cvmix_KPP-shear_driver.F90
+make -f $CVMix/src/Makefile ${USE_NETCDF} CVMIX_DRIVER=cvmix_KPP-shear_driver.F90
 # Note: if make error, include CVMIX_ROOT as below
-#make -f $CVMix/bld/Makefile ${USE_NETCDF} CVMIX_DRIVER=cvmix_KPP-shear_driver.F90 CVMIX_ROOT=$CVMix
+#make -f $CVMix/src/Makefile ${USE_NETCDF} CVMIX_DRIVER=cvmix_KPP-shear_driver.F90 CVMIX_ROOT=$CVMix
 if [ $? != 0 ]; then
   echo "Build error!"
   exit 1
