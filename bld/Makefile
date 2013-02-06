@@ -21,8 +21,8 @@ OBJ = $(BLD)/obj
 EXE = $(BLD)/exe/cvmix
 # Directories with source code
 SRC = $(CVMIX_ROOT)/src
-SRC_SHARE = $(SRC)/shared
 SRC_DRIVE = $(SRC)/drivers
+SRC_SHARED = $(SRC)/shared
 
 # Need to know which driver to use (should be passed in)
 CVMIX_DRIVER = FALSE
@@ -49,27 +49,9 @@ else
   include $(ENV_FILE)
 endif
 
-ifeq ($(FC),gfortran)
-  COMPILE_FLAGS = -Wall -Werror -cpp -O2 -J $(OBJ)
-endif
-
-ifeq ($(FC),pgf90)
-  COMPILE_FLAGS = -O2 -module $(OBJ)
-endif
-
-ifeq ($(FC),ifort)
-  COMPILE_FLAGS = -diag-error warn,remark -warn all -cpp -O2 -module $(OBJ)
-endif
-
-ifeq ($(FC),xlf90)
-  COMPILE_FLAGS = -O2 -I $(OBJ) -qmoddir=$(OBJ)
-endif
-
-ifeq ($(FC),nagfor)
-  COMPILE_FLAGS = -kind=byte -free -O2 -I $(OBJ) -mdir $(OBJ)
-endif
-
-LINKING_FLAGS =
+# update COMPILE_FLAGS based on compiler
+include $(BLD)/CompileFlags.mak
+LINKING_FLAGS = -L$(SRC_SHARED) -lcvmix
 
 # If you build without netCDF and then decide you want to build with netCDF (or
 # vice versa), you need to clean the old object files. The way this is handled
@@ -124,10 +106,8 @@ endif
 # Driver file and its associated object file
 F_FILE = $(SRC_DRIVE)/$(CVMIX_DRIVER)
 
-# All drivers use kinds_and_types, put_get, and output
-O_FILES = cvmix_kinds_and_types.o \
-          cvmix_put_get.o         \
-          cvmix_output.o
+# All drivers use cvmix_output
+O_FILES = cvmix_output.o
 
 # Dependencies (eventually this should be automated)
 ifeq ($(CVMIX_DRIVER),cvmix_BL_driver-pointers.F90)
@@ -148,7 +128,7 @@ endif
 
 ### TARGETS ###
 
-.PHONY: check
+.PHONY: check lib
 
 all: $(EXE)
 
@@ -156,7 +136,7 @@ all: $(EXE)
 netcdf:
 	$(MAKE) -f $(BLD)/Makefile USE_NETCDF=TRUE
 
-$(EXE): remove_exe check $(OBJ)/$(CVMIX_DRIVER_O)
+$(EXE): remove_exe check lib $(OBJ)/$(CVMIX_DRIVER_O)
 # If NEED_ENV_FILE is TRUE, the check target recursively calls make
 # With NEED_ENV_FILE equal to FALSE, so the executable will be built
 ifeq ($(NEED_ENV_FILE),FALSE)
@@ -165,33 +145,14 @@ ifeq ($(NEED_ENV_FILE),FALSE)
 endif
 
 # Create all object and module files
-$(OBJ)/cvmix_kinds_and_types.o:
-	$(FC) $(COMPILE_FLAGS) -c $(SRC_SHARE)/cvmix_kinds_and_types.F90 -o $@
-
-$(OBJ)/cvmix_put_get.o: $(OBJ)/cvmix_kinds_and_types.o
-	$(FC) $(COMPILE_FLAGS) -c $(SRC_SHARE)/cvmix_put_get.F90 -o $@
-
-$(OBJ)/cvmix_background.o: $(OBJ)/cvmix_put_get.o         \
-                          $(OBJ)/cvmix_kinds_and_types.o
-	$(FC) $(COMPILE_FLAGS) -c $(SRC_SHARE)/cvmix_background.F90 -o $@
-
-$(OBJ)/cvmix_convection.o: $(OBJ)/cvmix_kinds_and_types.o
-	$(FC) $(COMPILE_FLAGS) -c $(SRC_SHARE)/cvmix_convection.F90 -o $@
-
-$(OBJ)/cvmix_shear.o: $(OBJ)/cvmix_kinds_and_types.o
-	$(FC) $(COMPILE_FLAGS) -c $(SRC_SHARE)/cvmix_shear.F90 -o $@
-
-$(OBJ)/cvmix_tidal.o: $(OBJ)/cvmix_kinds_and_types.o
-	$(FC) $(COMPILE_FLAGS) -c $(SRC_SHARE)/cvmix_tidal.F90 -o $@
-
-$(OBJ)/cvmix_ddiff.o: $(OBJ)/cvmix_kinds_and_types.o
-	$(FC) $(COMPILE_FLAGS) -c $(SRC_SHARE)/cvmix_ddiff.F90 -o $@
-
-$(OBJ)/cvmix_output.o: $(OBJ)/cvmix_kinds_and_types.o
+$(OBJ)/cvmix_output.o: 
 	$(FC) $(COMPILE_FLAGS) -c $(SRC)/cvmix_output.F90 -o $@
 
 $(OBJ)/$(CVMIX_DRIVER_O): $(addprefix $(OBJ)/,$(O_FILES))
 	$(FC) $(COMPILE_FLAGS) -c $(F_FILE) -o $@
+
+lib:
+	cd $(SRC_SHARED) ; $(MAKE) libcvmix.a
 
 # Utilities:
 # 1) check has two tasks --
@@ -227,3 +188,4 @@ clean: remove_exe
 
 distclean: clean
 	/bin/rm -rf $(ENV_FILE)
+	cd $(SRC_SHARED); $(MAKE) clean 

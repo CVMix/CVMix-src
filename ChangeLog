@@ -5,6 +5,32 @@ $URL$
 ALL CHANGES SHOULD OCCUR BELOW THIS LINE
 ===============================================================================
 New Checkin: mlevy
+Date:        06 Feb 2013
+Summary:     Updated the two Makefiles to play nice together. For the standalone
+             driver, both Makefiles should get compiler info from .CVMix_env and
+             compiler flag info from CompilerFlags.mak (to ensure everything is
+             build consistently).
+
+             This is kind of a partial commit -- everything builds correctly and
+             the standalone driver links libcvmix.a rather than building modules
+             from src/shared/ directly, but there is a lot organization stuff
+             that needs to be done:
+
+             * move Makefile from bld/ to src/
+             * build executable in bin/ (which doesn't exist yet) rather than
+               bld/exe/
+             * build libcvmix.a in lib/ (which doesn't exist yet) rather than
+               src/shared/
+             * Change some variable names to be consistent with how Makefiles
+               usually work (FFLAGS instead of COMPILER_FLAGS), adding the
+               keyword DIR to variables that are directory names, etc
+
+Files Modified:
+A       bld/CompileFlags.mak
+M       bld/Makefile
+M       src/shared/Makefile
+===============================================================================
+New Checkin: mlevy
 Date:        05 Feb 2013
 Summary:     Made variable names in shear mixing module more descriptive.
 

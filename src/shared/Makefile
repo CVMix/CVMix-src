@@ -1,35 +1,63 @@
 .SUFFIXES: .F90 .o
 
-OBJS = cvmix_background.o \
-	   cvmix_convection.o \
-	   cvmix_ddiff.o \
-	   cvmix_kinds_and_types.o \
-	   cvmix_put_get.o \
-	   cvmix_shear.o \
-	   cvmix_tidal.o \
+# Need CVMix root directory
+# If using old version of make, pass in CVMIX_ROOT
+ifeq ($(wildcard $(MAKEFILE_LIST)),)
+  CVMIX_ROOT = ../..
+else
+  ThisMakefile=$(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST))
+  ifeq (/,$(findstring /,$(ThisMakefile)))
+    ThisDir=$(shell x=$(ThisMakefile) && echo $${x%/*})/
+  endif
+  CVMIX_ROOT = $(realpath $(ThisDir)../..)
+endif
 
-all: $(OBJS) lib
+# Directory to build in
+BLD = $(CVMIX_ROOT)/bld
+OBJ = $(BLD)/obj
+DIR = .
 
-lib:
-	ar -ru libcvmix.a $(OBJS)
+# Read in Compiler information
+include $(BLD)/.CVmix_env
+# Read in COMPILE_FLAGS
+include $(BLD)/CompileFlags.mak
 
-cvmix_kinds_and_types.o:
+OBJS = $(OBJ)/cvmix_background.o \
+	     $(OBJ)/cvmix_convection.o \
+	     $(OBJ)/cvmix_ddiff.o \
+	     $(OBJ)/cvmix_kinds_and_types.o \
+	     $(OBJ)/cvmix_put_get.o \
+	     $(OBJ)/cvmix_shear.o \
+	     $(OBJ)/cvmix_tidal.o
 
-cvmix_put_get.o: cvmix_kinds_and_types.o
+all: libcvmix.a
 
-cvmix_background.o: cvmix_put_get.o
+# Create all object and module files
+$(OBJ)/cvmix_kinds_and_types.o:
+	$(FC) $(COMPILE_FLAGS) -c $(DIR)/cvmix_kinds_and_types.F90 -o $@
 
-cvmix_convection.o: cvmix_kinds_and_types.o
+$(OBJ)/cvmix_put_get.o: $(OBJ)/cvmix_kinds_and_types.o
+	$(FC) $(COMPILE_FLAGS) -c $(DIR)/cvmix_put_get.F90 -o $@
 
-cvmix_ddiff.o: cvmix_kinds_and_types.o
+$(OBJ)/cvmix_background.o: $(OBJ)/cvmix_put_get.o         \
+                          $(OBJ)/cvmix_kinds_and_types.o
+	$(FC) $(COMPILE_FLAGS) -c $(DIR)/cvmix_background.F90 -o $@
 
-cvmix_shear.o: cvmix_kinds_and_types.o
+$(OBJ)/cvmix_convection.o: $(OBJ)/cvmix_kinds_and_types.o
+	$(FC) $(COMPILE_FLAGS) -c $(DIR)/cvmix_convection.F90 -o $@
 
-cvmix_tidal.o: cvmix_kinds_and_types.o
+$(OBJ)/cvmix_shear.o: $(OBJ)/cvmix_kinds_and_types.o
+	$(FC) $(COMPILE_FLAGS) -c $(DIR)/cvmix_shear.F90 -o $@
+
+$(OBJ)/cvmix_tidal.o: $(OBJ)/cvmix_kinds_and_types.o
+	$(FC) $(COMPILE_FLAGS) -c $(DIR)/cvmix_tidal.F90 -o $@
+
+$(OBJ)/cvmix_ddiff.o: $(OBJ)/cvmix_kinds_and_types.o
+	$(FC) $(COMPILE_FLAGS) -c $(DIR)/cvmix_ddiff.F90 -o $@
+
+libcvmix.a: $(OBJS)
+	ar -ru $(DIR)/libcvmix.a $(OBJS)
 
 clean:
-	$(RM) *.o *.mod *.a
-
-.F90.o:
-	$(FC) $(FFLAGS) -c $< $(FCINCLUDES)
+	/bin/rm -f $(DIR)/*.a
 
