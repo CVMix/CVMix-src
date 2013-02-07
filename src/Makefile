@@ -128,7 +128,7 @@ netcdf:
 $(EXE): $(OBJ_DIR)/$(CVMIX_DRIVER_O)
 	$(FC) -o $(EXE) $(OBJ_DIR)/$(CVMIX_DRIVER_O) $(addprefix $(OBJ_DIR)/,$(OBJS)) $(LINKING_FLAGS)
 
-exe: check lib $(OBJ_DIR)/$(CVMIX_DRIVER_O)
+exe: check $(ENV_FILE) lib $(OBJ_DIR)/$(CVMIX_DRIVER_O)
 # If NEED_ENV_FILE is TRUE, the check target recursively calls make
 # With NEED_ENV_FILE equal to FALSE, so the executable will be built
 ifeq ($(NEED_ENV_FILE),FALSE)
@@ -153,8 +153,10 @@ lib:
 #    b) make sure a driver was specified
 # 2) remove_exe deletes the executable to ensure the proper file is built
 # 3) clean deletes object and module files, as well as the netcdf info file
-# 4) distclean removes $ENV_FILE so you will need to re-run setup
-check: $(ENV_FILE)
+# 4) libclean also removes lib/libcvmix.a include/*.mod so you will need to
+#    rebuild the library.
+# 5) distclean also removes $ENV_FILE so you will need to re-run setup
+check:
 # The variables FC, NETCDF_INC, NETCDF_LIB, and NETCDF_LINK are read in from
 # CVMix_env. If the file doesn't exist, then the python script "setup" is run
 # to generate the file.
@@ -171,7 +173,7 @@ $(ENV_FILE):
 # the cvmix target only builds if NEED_ENV_FILE is FALSE, so after this build
 # returns, the cvmix target won't do anything.
 	@$(BLD_DIR)/setup $(ENV_FILE)
-	$(MAKE) -f $(BLD_DIR)/Makefile
+	$(MAKE) -f $(SRC_DIR)/Makefile
 
 remove_exe:
 	/bin/rm -rf $(EXE)
@@ -182,5 +184,5 @@ clean: remove_exe
 libclean: clean
 	cd $(SRC_SHARED_DIR); $(MAKE) clean 
 
-distclean: clean
+distclean: libclean
 	/bin/rm -rf $(ENV_FILE)

@@ -13,36 +13,63 @@ else
   CVMIX_ROOT = $(realpath $(ThisDir)../..)
 endif
 
+FLAG_FILE = $(CVMIX_ROOT)/bld/CompileFlags.mak
+ENV_FILE = $(CVMIX_ROOT)/bld/.CVMix_env
 # Directories used in Makefile
-SRC_DIR = $(CVMIX_ROOT)/src/shared
-BLD_DIR = $(CVMIX_ROOT)/bld
-OBJ_DIR = $(BLD_DIR)/obj
-LIB_DIR = $(CVMIX_ROOT)/lib
-INC_DIR = $(CVMIX_ROOT)/include
+# Check to this is standalone CVMix or not (look for $CVMIX_ROOT/.CVMix_env)
+ifneq ($(wildcard $(FLAG_FILE)),)
+  SRC_DIR = $(CVMIX_ROOT)/src/shared
+  BLD_DIR = $(CVMIX_ROOT)/bld
+  OBJ_DIR = $(BLD_DIR)/obj
+  LIB_DIR = $(CVMIX_ROOT)/lib
+  INC_DIR = $(CVMIX_ROOT)/include
+  ifeq ($(wildcard $(ENV_FILE)),)
+    NEED_ENV_FILE = TRUE
+  else
+    # Read in Compiler information
+    include $(BLD_DIR)/.CVMix_env
+    NEED_ENV_FILE = FALSE
+  endif
+  # Read in FCFLAGS
+  include $(BLD_DIR)/CompileFlags.mak
+else
+  SRC_DIR = .
+  OBJ_DIR = .
+  LIB_DIR = .
+  INC_DIR = .
+  FC = NONE
+  NEED_ENV_FILE = FALSE
+endif
 
-# Read in Compiler information
-include $(BLD_DIR)/.CVMix_env
-# Read in FCFLAGS
-include $(BLD_DIR)/CompileFlags.mak
+ifeq ($(FC),NONE)
+  NOFC = TRUE
+endif
 
-SRC = cvmix_background.F90 \
-	    cvmix_convection.F90 \
-	    cvmix_ddiff.F90 \
-	    cvmix_put_get.F90 \
-	    cvmix_shear.F90 \
-	    cvmix_tidal.F90
+SRC = cvmix_kinds_and_types.F90 \
+      cvmix_background.F90 \
+      cvmix_convection.F90 \
+      cvmix_ddiff.F90 \
+      cvmix_put_get.F90 \
+      cvmix_shear.F90 \
+      cvmix_tidal.F90
 
 OBJS = $(addprefix $(OBJ_DIR)/,${SRC:.F90=.o})
-INCS = $(addprefix $(INC_DIR)/,${SRC:.F90=.mod})
+MODS = $(addprefix $(OBJ_DIR)/,${SRC:.F90=.mod}) \
+       $(addprefix $(INC_DIR)/,${SRC:.F90=.mod})
+ifneq ($(OBJ_DIR),$(INC_DIR))
+  INCS = $(addprefix $(INC_DIR)/,${SRC:.F90=.mod})
+endif
 
 ### TARGETS ###
 
-.PHONY: clean recurse
+.PHONY: clean recurse check
 
 all: recurse
 
-recurse:
-	$(MAKE) $(LIB_DIR)/libcvmix.a $(INCS) $(INC_DIR)/cvmix_kinds_and_types.mod
+recurse: check
+ifeq ($(NEED_ENV_FILE),FALSE)
+	$(MAKE) $(LIB_DIR)/libcvmix.a $(INCS)
+endif
 
 # Create all object and module files
 # Note that .mod files need to be copied to INC_DIR
@@ -114,6 +141,16 @@ $(INC_DIR)/cvmix_ddiff.mod: $(SRC_DIR)/cvmix_ddiff.F90       \
 $(LIB_DIR)/libcvmix.a: $(OBJS)
 	ar -ru $(LIB_DIR)/libcvmix.a $(OBJS)
 
+# Utilities:
+# 1) check ensures that FC has been specified
+# 2) clean deletes object and mod files
+check:
+	@$(if $(NOFC), echo "ERROR: you must specify FC (and it is recommended that \
+     you specify FCFLAGS"; echo "as well)."; exit 1)
+ifeq ($(NEED_ENV_FILE),TRUE)
+	../../bld/setup ../../bld/.CVMix_env; $(MAKE)
+endif
+
 clean:
-	/bin/rm -f $(LIB_DIR)/libcvmix.a $(INC_DIR)/cvmix_kinds_and_types.mod
+	/bin/rm -f $(LIB_DIR)/libcvmix.a $(OBJS) $(MODS)
 

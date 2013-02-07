@@ -6,6 +6,31 @@ ALL CHANGES SHOULD OCCUR BELOW THIS LINE
 ===============================================================================
 New Checkin: mlevy
 Date:        06 Feb 2013
+Summary:     Hopefully the last of the build-system commits for a while. I
+             added an INSTALL file to src/shared to give some hints on how
+             to build the library (for linking to bigger models). In the
+             course of writing up the document, I realized the Makefile was
+             pretty flawed...
+
+             Also, I fixed a bug in the stand-alone Makefile - if you needed
+             to run setup to generate .CVMix_env, the recursive part of the
+             Makefile was still looking in BLD_DIR instead of SRC_DIR.
+
+             There is probably some future cleanup to do with these Makefiles,
+             but for now they work individually and together so I don't want
+             to mess with it.
+
+             (Adding to the known problems list: you can't use environment
+             variables in .CVMix_env... maybe the setup script should write
+             whatever is in the environment variable rather than $____?)
+
+Files Modified:
+A       src/shared/INSTALL
+M       src/shared/Makefile
+M       src/Makefile
+===============================================================================
+New Checkin: mlevy
+Date:        06 Feb 2013
 Summary:     Realized that if we are going to link to CVMix as a library, then
              we also need $CVMIX/include/. Right now that directory contains
              all the module files, but it might make sense to separate it into
