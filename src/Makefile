@@ -114,6 +114,7 @@ F_FILE = $(SRC_DRIVE_DIR)/$(CVMIX_DRIVER)
 
 # Dependencies: all drivers use cvmix_output
 OBJS = cvmix_output.o
+MODS = ${OBJS:.o=.mod}
 
 ### TARGETS ###
 
@@ -179,7 +180,7 @@ remove_exe:
 	/bin/rm -rf $(EXE)
 
 clean: remove_exe
-	/bin/rm -rf $(INFO_FILE) $(OBJ_DIR)/*.mod $(OBJ_DIR)/*.o
+	/bin/rm -rf $(INFO_FILE) $(addprefix $(OBJ_DIR)/,$(MODS) $(OBJS) *driver.o)
 
 libclean: clean
 	cd $(SRC_SHARED_DIR); $(MAKE) clean 

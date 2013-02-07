@@ -45,20 +45,22 @@ ifeq ($(FC),NONE)
   NOFC = TRUE
 endif
 
-SRC = cvmix_kinds_and_types.F90 \
-      cvmix_background.F90 \
-      cvmix_convection.F90 \
-      cvmix_ddiff.F90 \
-      cvmix_put_get.F90 \
-      cvmix_shear.F90 \
-      cvmix_tidal.F90
+MODULES = cvmix_background.F90 \
+          cvmix_convection.F90 \
+          cvmix_ddiff.F90 \
+          cvmix_put_get.F90 \
+          cvmix_shear.F90 \
+          cvmix_tidal.F90
 
-OBJS = $(addprefix $(OBJ_DIR)/,${SRC:.F90=.o})
-MODS = $(addprefix $(OBJ_DIR)/,${SRC:.F90=.mod}) \
-       $(addprefix $(INC_DIR)/,${SRC:.F90=.mod})
 ifneq ($(OBJ_DIR),$(INC_DIR))
-  INCS = $(addprefix $(INC_DIR)/,${SRC:.F90=.mod})
+  INCS = $(INC_DIR)/cvmix_kinds_and_types.mod \
+         $(addprefix $(INC_DIR)/,${MODULES:.F90=.mod})
 endif
+MODS = $(OBJ_DIR)/cvmix_kinds_and_types.mod \
+       $(addprefix $(OBJ_DIR)/,${MODULES:.F90=.mod}) \
+       $(INCS)
+OBJS = $(addprefix $(OBJ_DIR)/,${MODULES:.F90=.o})
+KINDS_OBJ = $(OBJ_DIR)/cvmix_kinds_and_types.o
 
 ### TARGETS ###
 
@@ -138,7 +140,7 @@ $(INC_DIR)/cvmix_ddiff.mod: $(SRC_DIR)/cvmix_ddiff.F90       \
 	cp $(OBJ_DIR)/cvmix_ddiff.mod $@
 
 ### Combine into library
-$(LIB_DIR)/libcvmix.a: $(OBJS)
+$(LIB_DIR)/libcvmix.a: $(KINDS_OBJ) $(OBJS)
 	ar -ru $(LIB_DIR)/libcvmix.a $(OBJS)
 
 # Utilities:
@@ -152,5 +154,5 @@ ifeq ($(NEED_ENV_FILE),TRUE)
 endif
 
 clean:
-	/bin/rm -f $(LIB_DIR)/libcvmix.a $(OBJS) $(MODS)
+	/bin/rm -f $(LIB_DIR)/libcvmix.a $(OBJS) $(KINDS_OBJ) $(MODS) $(KINDS_MOD)
 
