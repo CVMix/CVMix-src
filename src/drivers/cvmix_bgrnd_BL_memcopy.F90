@@ -16,7 +16,7 @@
 
 ! !INTERFACE:
 
-Program cvmix_BL_driver_mem_copy
+Subroutine cvmix_BL_memcopy_driver(nlev, ocn_depth)
 
 ! !USES:
 
@@ -55,20 +55,16 @@ Program cvmix_BL_driver_mem_copy
 
   ! Namelist variables
   ! 1) General mixing parameters
-  integer                :: nlev      ! number of levels for column
-  real(cvmix_r8)         :: ocn_depth ! Depth of ocn
+  integer, intent(in)                :: nlev      ! number of levels for column
+  real(cvmix_r8), intent(in)         :: ocn_depth ! Depth of ocn
   ! 2) Bryan-Lewis mixing parameters for column 1
   real(cvmix_r8)         :: col1_vdc1, col1_vdc2, col1_linv, col1_dpth
   ! 3) Bryan-Lewis mixing parameters for column 2
   real(cvmix_r8)         :: col2_vdc1, col2_vdc2, col2_linv, col2_dpth
 
   ! Namelists that may be read in, depending on desired mixing scheme
-  namelist/cvmix_nml/nlev, ocn_depth
   namelist/BryanLewis1_nml/col1_vdc1, col1_vdc2, col1_linv, col1_dpth
   namelist/BryanLewis2_nml/col2_vdc1, col2_vdc2, col2_linv, col2_dpth
-
-  ! Read general mixing parameters
-  read(*, nml=cvmix_nml)
 
   ! Calculate depth of cell interfaces based on number of levels and ocean
   ! depth
@@ -130,4 +126,4 @@ Program cvmix_BL_driver_mem_copy
 
 !EOC
 
-End program cvmix_BL_driver_mem_copy
+End Subroutine cvmix_BL_memcopy_driver

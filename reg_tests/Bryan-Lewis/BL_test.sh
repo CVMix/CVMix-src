@@ -45,17 +45,32 @@ while [ $# -gt 0 ]; do
 done
 
 CVMix=$PWD/../..
-make -f $CVMix/src/Makefile ${USE_NETCDF} CVMIX_DRIVER=cvmix_BL_driver-${DRIVER}.F90
+make -f $CVMix/src/Makefile ${USE_NETCDF}
 # Note: if make error, include CVMIX_ROOT as below
-#make -f $CVMix/src/Makefile ${USE_NETCDF} CVMIX_DRIVER=cvmix_BL_driver-${DRIVER}.F90 CVMIX_ROOT=$CVMix
+#make -f $CVMix/src/Makefile ${USE_NETCDF} CVMIX_ROOT=$CVMix
 if [ $? != 0 ]; then
   echo "Build error!"
   exit 1
 fi
 
-$CVMix/bin/cvmix < input.nl
-if [ "${USE_NETCDF}" == "netcdf" ]; then
-  ncdump -v diff data.nc
+if [ "$DRIVER" == "mem_copy" ]; then
+  $CVMix/bin/cvmix < input_memcopy.nl
 else
-  cat data.out
+  $CVMix/bin/cvmix < input_pointer.nl
+fi
+
+if [ "${USE_NETCDF}" == "netcdf" ]; then
+  if [ -f data.nc ]; then
+    ncdump -v diff data.nc
+  else
+    echo "Execution error!"
+    exit 1
+  fi
+else
+  if [ -f data.out ]; then
+    cat data.out
+  else
+    echo "Execution error!"
+    exit 1
+  fi
 fi

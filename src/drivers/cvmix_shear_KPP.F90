@@ -18,7 +18,7 @@
 
 ! !INTERFACE:
 
-Program cvmix_KPPshear_driver
+Subroutine cvmix_shear_driver(nlev)
 
 ! !USES:
 
@@ -52,16 +52,12 @@ Program cvmix_KPPshear_driver
 
   ! Namelist variables
   ! 1) General mixing parameters
-  integer        :: nlev      ! number of Ri points to sample
+  integer, intent(in)        :: nlev      ! number of Ri points to sample
   ! 2) KPP mixing parameters for column
   real(cvmix_r8) :: KPP_nu_zero, KPP_Ri_zero, KPP_exp
 
-  ! Namelists that may be read in, depending on desired mixing scheme
-  namelist/cvmix_nml/nlev
+  ! Namelist with shear mixing parameters
   namelist/KPP_nml/KPP_nu_zero, KPP_Ri_zero, KPP_exp
-
-  ! Read general mixing parameters
-  read(*, nml=cvmix_nml)
 
   ! Ri_g should increase from 0 to 1
   allocate(Ri_g(nlev+1))
@@ -103,4 +99,4 @@ Program cvmix_KPPshear_driver
 
 !EOC
 
-End program cvmix_KPPshear_driver
+End Subroutine cvmix_shear_driver

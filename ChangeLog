@@ -5,6 +5,39 @@ $URL$
 ALL CHANGES SHOULD OCCUR BELOW THIS LINE
 ===============================================================================
 New Checkin: mlevy
+Date:        11 Feb 2013
+Summary:     Changed the stand-alone driver to be a single program (found in
+             src/cvmix_driver.F90); the old stand-alone drivers are now just
+             subroutines that all get compiled when you build the new driver
+             (and the appropriate one is called based on a namelist variable
+             in the cvmix_nml namelist). Everything is working in this commit
+             but I need to go back through and clean up the documentation.
+
+Files Modified:
+M       reg_tests/tidal-Simmons/input.nl
+M       reg_tests/tidal-Simmons/Simmons-test.sh
+M       reg_tests/double_diff/input.nl
+M       reg_tests/double_diff/double_diff-test.sh
+M       reg_tests/shear-KPP/Large_test.sh
+M       reg_tests/shear-KPP/input.nl
+A       reg_tests/Bryan-Lewis/input_memcopy.nl
+M       reg_tests/Bryan-Lewis/BL_test.sh
+D       reg_tests/Bryan-Lewis/input.nl
+A  +    reg_tests/Bryan-Lewis/input_pointer.nl
+M       src/Makefile
+A  +    src/drivers/cvmix_shear_KPP.F90
+D       src/drivers/cvmix_BL_driver-mem_copy.F90
+A  +    src/drivers/cvmix_bgrnd_BL_memcopy.F90
+A  +    src/drivers/cvmix_tidal_Simmons.F90
+D       src/drivers/cvmix_KPP-shear_driver.F90
+D       src/drivers/cvmix_ddiff_driver.F90
+A  +    src/drivers/cvmix_ddiff_drv.F90
+D       src/drivers/cvmix_BL_driver-pointers.F90
+A  +    src/drivers/cvmix_bgrnd_BL_pointer.F90
+D       src/drivers/cvmix_Simmons-tidal_driver.F90
+A       src/cvmix_driver.F90
+===============================================================================
+New Checkin: mlevy
 Date:        06 Feb 2013
 Summary:     Hopefully the last of the build-system commits for a while. I
              added an INSTALL file to src/shared to give some hints on how

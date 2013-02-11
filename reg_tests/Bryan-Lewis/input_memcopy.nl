@@ -1,6 +1,7 @@
 &cvmix_nml
+mix_type  = 'BryanLewis_memcopy'
 nlev      = 30
-ocn_depth = 5250
+ocn_depth = 5250.0d0
 /
 ! BL Parameters --
 ! Low  latitude: 6.50e-5, 1.15e-4, 4.5e-3, 2500
