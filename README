@@ -1,3 +1,5 @@
+Last update:
+$Id$
 ----------------------------------------------------------------------
 Right now, there are only three options for the stand-alone driver which can be
 used to test two different mixing methods. The first test is to output Bryan-
@@ -15,27 +17,44 @@ varies with different choices of Ri.
 DIRECTORY STRUCTURE
 -------------------
 
-bld/ -- Contains the Makefile, is also where the build process will keep a
-        couple of setup files to help with the build. It has two subdirectories:
-  bld/obj -- Where .o  and .mod files are stored.
-  bld/exe -- Where the Makefile will put the executable.
+bin/ -- Default location for the cvmix executable.
+
+lib/ -- Default location for libcvmix.a, the library that can be linked in
+        to an ocean model.
+
+include/ -- Default location for the .o and .mod files that need to be included
+            with libcvmix.a.
 
 doc/ -- Contains documentation. At this point, it only has a PDF of the latest
         protex in-code notes and a script to generate said PDF.
 
+manual/ -- This may be moved into doc/ at some point, it is the scientific
+           description of the CVMix package.
+
+bld/ -- Contains auxiliary files needed by the build system. CompileFlags.mak
+        has default compile flags for 5 different compilers -- gfortran, 
+        pgf90, ifort, xlf90, and nagfor. cvmix_setup is a python script that
+        saves information about what compiler to use and where netCDF is
+        installed in .CVMix_env. It has one subdirectory:
+  bld/obj -- Where .o  and .mod files for the stand-alone drivers are stored.
+
 src/ -- Contains the source code, organized as follows. The top directory
-        contains modules needed by the stand-alone driver (output, for example).
-  src/drivers -- Stand-alone drivers for different tests.
+        contains modules needed by the stand-alone driver (output, for example)
+        as well as the driver routine itself. Also contains the Makefile used
+        to build the cvmix executable.
+  src/drivers -- Subroutines called by the driver (one per tests).
   src/shared  -- Where all the modules that are needed to use CVMix with an 
-                 outside model are stored. (Use as an svn:external!)
+                 outside model are stored. (Use as an svn:external!) Also
+                 contains the Makefile used to build the libcvmix.a library.
 
 reg_tests/ -- I envision this becoming a way to do regression tests as we
-              develop the code, but for now it just contains two tests. One
-              outputs the diffusivity coefficients when using Bryan-Lewis
-              mixing on two columns (with each column having its own B-L
-              parameterization) and the other outputs the viscosity
+              develop the code, but for now it just contains two functional
+              tests. One outputs the diffusivity coefficients when using
+              Bryan-Lewis mixing on two columns (with each column having its
+              own B-L parameterization) and the other outputs the viscosity
               coefficients when using the shear mixing scheme in the KPP
-              paper.
+              paper. (At this time the tests for double diffusion and tidal
+              mixing return all 0s because those modules are not complete.)
 
               Note that all scripts have a "-h" (or "--help") flag to print
               usage options and a "-nc" (or "--netcdf") flag to turn on netCDF
@@ -66,19 +85,12 @@ reg_tests/ -- I envision this becoming a way to do regression tests as we
 INSTALLATION NOTES
 ------------------
 
-The bld directory contains a Makefile and a 'setup' utility. bld/setup is a
-python script that asks for compiler / netcdf information (it only needs to
-be run once, info is saved in bld/.CVMix_env). If you just run 'make' without
-.CVMix_env, then setup will run automatically. The makefile does require one
-variable as input: you need to specify which driver to build. If you omit this
-field, you will see an error like
+The src directory contains a Makefile and a simple 'make' should be sufficient
+to build the standalone driver. The first time you build, the 'cvmix_setup'
+utility will run and prompt you for compiler and netcdf information - it will
+only run once, and the info is saved in bld/.CVMix_env.
 
-ERROR: You must compile using 'make VMIX_DRIVER=[driver]'. Valid choices are:
-vmix_BL_driver-mem_copy.F90
-vmix_BL_driver-pointers.F90
-vmix_KPP-shear_driver.F90
+To build with netcdf, run 'make netcdf'.
 
-To build with netcdf, run 'make VMIX_DRIVER=[] netcdf'.
-
-The default executable is $CVMix/bld/exe/cvmix, but it can be overwritten with
+The default executable is $CVMix/bin/cvmix, but it can be overwritten with
 'make EXE=[executable]'. 

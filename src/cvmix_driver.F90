@@ -1,11 +1,19 @@
+!BOI
+
+! !TITLE: In-code documentation for CVMix
+! !AUTHORS: Many contributors from GFDL, LANL, and NCAR
+! !AFFILIATION: GFDL, LANL, and NCAR
+! !DATE: \today
+
+!EOI
 !BOP
 
 ! !ROUTINE: cvmix_driver
 
 ! !DESCRIPTION: The stand-alone driver for the CVMix package. This driver
-!  reads in the cvmix_nml namelist to determine what type of mixing has
+!  reads in the cvmix\_nml namelist to determine what type of mixing has
 !  been requested, and also reads in mixing-specific parameters from a
-!  mixingtype_nml namelist.
+!  mixingtype\_nml namelist.
 !\\
 !\\
 

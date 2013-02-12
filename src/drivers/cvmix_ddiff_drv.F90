@@ -1,9 +1,8 @@
 !BOP
-
+!\newpage
 ! !ROUTINE: cvmix_ddiff_driver
 
-! !DESCRIPTION: A stand-alone driver for the CVMix package. This particular
-!  driver generates the double diffusion mixing coefficients.
+! !DESCRIPTION: A routine to test the double diffusion mixing module.
 !\\
 !\\
 
@@ -27,11 +26,16 @@ Subroutine cvmix_ddiff_driver(nlev)
   use cvmix_output,          only : cvmix_output_open,        &
                                     cvmix_output_write,       &
                                     cvmix_output_close
-!EOP
-!BOC
 
   Implicit None
 
+! !INPUT PARAMETERS:
+  integer, intent(in) :: nlev
+
+!EOP
+!BOC
+
+  ! CVMix datatypes
   type(cvmix_data_type)          :: CVmix_vars
   type(cvmix_global_params_type) :: CVmix_params
   type(cvmix_ddiff_params_type)  :: CVmix_ddiff_params
@@ -43,9 +47,7 @@ Subroutine cvmix_ddiff_driver(nlev)
   integer :: fid
 
   ! Namelist variables
-  ! 1) General mixing parameters
-  integer, intent(in) :: nlev
-  ! 2) Other variables for double diffusion mixing go here
+  ! Variables for double diffusion mixing go here
 
   ! Namelists that may be read in, depending on desired mixing scheme
   ! namelist/ddiff_nml/

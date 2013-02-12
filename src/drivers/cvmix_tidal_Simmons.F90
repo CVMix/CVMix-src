@@ -1,11 +1,8 @@
 !BOP
-
+!\newpage
 ! !ROUTINE: cvmix_tidal_driver
 
-! !DESCRIPTION: A stand-alone driver for the CVMix package. This particular
-!  driver generates the tidal-mixing coefficient defined in Equation (??) of
-!  Simmons, et al., in a single column and then outputs the column to allow
-!  recreation of Figure ? from the same paper.
+! !DESCRIPTION: A routine to test the Simmons implementation of tidal mixing.
 !\\
 !\\
 
@@ -29,11 +26,16 @@ Subroutine cvmix_tidal_driver(nlev)
   use cvmix_output,          only : cvmix_output_open,        &
                                     cvmix_output_write,       &
                                     cvmix_output_close
-!EOP
-!BOC
 
   Implicit None
 
+! !INPUT PARAMETERS
+  integer, intent(in) :: nlev
+
+!EOP
+!BOC
+
+  ! CVMix datatypes
   type(cvmix_data_type)          :: CVmix_vars
   type(cvmix_global_params_type) :: CVmix_params
   type(cvmix_tidal_params_type)  :: CVmix_Simmons_params
@@ -45,9 +47,7 @@ Subroutine cvmix_tidal_driver(nlev)
   integer :: fid
 
   ! Namelist variables
-  ! 1) General mixing parameters
-  integer, intent(in) :: nlev
-  ! 2) Other variables for tidal mixing go here
+  ! Variables for tidal mixing go here
 
   ! Namelists that may be read in, depending on desired mixing scheme
   ! namelist/Simmons_nml/

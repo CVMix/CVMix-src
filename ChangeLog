@@ -6,6 +6,38 @@ ALL CHANGES SHOULD OCCUR BELOW THIS LINE
 ===============================================================================
 New Checkin: mlevy
 Date:        11 Feb 2013
+Summary:     Lots of clean-up: removed the bld/python directory since we are
+             not going to offer python drivers. Renamed setup cvmix_setup to
+             (a) avoid confusion with the native setup program, and (b) have
+             a unique file name for src/shared/Makefile to look for to
+             determine if it is building in CVMIX_ROOT or not.
+
+             Also updated the protex documentation in the driver modules and
+             regenerated the protex PDF, plus updated the instructions in the
+             README document.
+
+Files Modified:
+D       bld/setup
+D       bld/python
+D       bld/python/run_cvmix.py
+D       bld/python/cvmix_BL_driver-pointers-python.F90
+D       bld/python/Makefile
+A  +    bld/cvmix_setup
+M       doc/protex_documentation.pdf
+D       doc/header
+M       doc/make_protex_file
+M       src/shared/Makefile
+M       src/Makefile
+M       src/drivers/cvmix_shear_KPP.F90
+M       src/drivers/cvmix_tidal_Simmons.F90
+M       src/drivers/cvmix_bgrnd_BL_memcopy.F90
+M       src/drivers/cvmix_ddiff_drv.F90
+M       src/drivers/cvmix_bgrnd_BL_pointer.F90
+M       src/cvmix_driver.F90
+MM      README
+===============================================================================
+New Checkin: mlevy
+Date:        11 Feb 2013
 Summary:     Changed the stand-alone driver to be a single program (found in
              src/cvmix_driver.F90); the old stand-alone drivers are now just
              subroutines that all get compiled when you build the new driver

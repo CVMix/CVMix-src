@@ -1,9 +1,9 @@
 !BOP
+!\newpage
+! !ROUTINE: cvmix_BL_pointer_driver
 
-! !ROUTINE: cvmix_BL_driver_pointers
-
-! !DESCRIPTION: A stand-alone driver for the CVMix package. This particular
-!  driver generates the Bryan-Lewis coefficients in two columns, one that
+! !DESCRIPTION: A routine to test the Bryan-Lewis implementation of static
+!  background mixing. Inputs are BL coefficients in two columns, one that
 !  represents tropical latitudes and one that represents subtropical
 !  latitudes. All memory is declared in the driver, and the CVMix data type
 !  points to the local variables.
@@ -30,11 +30,20 @@ Subroutine cvmix_BL_pointer_driver(nlev, ocn_depth)
   use cvmix_output,          only : cvmix_output_open,        &
                                     cvmix_output_write,       &
                                     cvmix_output_close
-!EOP
-!BOC
 
   Implicit None
 
+! !INPUT PARAMETERS:
+  integer, intent(in)        :: nlev        ! number of levels for column
+  real(cvmix_r8), intent(in) :: ocn_depth   ! Depth of ocn
+
+!EOP
+!BOC
+
+  ! Global parameter
+  integer, parameter :: ncol = 2
+
+  ! CVMix datatypes
   type(cvmix_data_type)         , dimension(2) :: CVmix_vars
   type(cvmix_global_params_type)               :: CVmix_params
   type(cvmix_bkgnd_params_type) , dimension(2) :: CVmix_BL_params
@@ -46,8 +55,12 @@ Subroutine cvmix_BL_pointer_driver(nlev, ocn_depth)
   real(cvmix_r8), dimension(:,:),   allocatable, target :: viscosity
   real(cvmix_r8), dimension(:,:,:), allocatable, target :: diffusivity
 
-  ! Global parameter
-  integer, parameter :: ncol = 2
+  ! Namelist variables
+  ! Bryan-Lewis mixing parameters for column 1
+  real(cvmix_r8) :: col1_vdc1, col1_vdc2, col1_linv, col1_dpth
+  ! Bryan-Lewis mixing parameters for column 2
+  real(cvmix_r8) :: col2_vdc1, col2_vdc2, col2_linv, col2_dpth
+
   ! array indices
   integer :: icol,kw
   ! file indices
@@ -56,15 +69,6 @@ Subroutine cvmix_BL_pointer_driver(nlev, ocn_depth)
 #else
   integer :: fid1, fid2, fid3
 #endif
-
-  ! Namelist variables
-  ! 1) General mixing parameters
-  integer, intent(in)                :: nlev      ! number of levels for column
-  real(cvmix_r8), intent(in)         :: ocn_depth ! Depth of ocn
-  ! 2) Bryan-Lewis mixing parameters for column 1
-  real(cvmix_r8)         :: col1_vdc1, col1_vdc2, col1_linv, col1_dpth
-  ! 3) Bryan-Lewis mixing parameters for column 2
-  real(cvmix_r8)         :: col2_vdc1, col2_vdc2, col2_linv, col2_dpth
 
   ! Namelists that may be read in, depending on desired mixing scheme
   namelist/BryanLewis1_nml/col1_vdc1, col1_vdc2, col1_linv, col1_dpth

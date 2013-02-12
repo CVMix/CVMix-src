@@ -1,13 +1,13 @@
 !BOP
+!\newpage
+! !ROUTINE: cvmix_shear_driver
 
-! !ROUTINE: cvmix_KPPshear_driver
-
-! !DESCRIPTION: A stand-alone driver for the CVMix package. This particular
-!  driver generates the shear-mixing coefficient defined in Equation (28) of
-!  Large, et al., in a single column and then outputs the column to allow
-!  recreation of Figure 3 from the same paper. Note that here each "level" of
-!  the column denotes a different local gradient Richardson number rather than
-!  a physical ocean level. All memory is declared in the driver, and the CVMix
+! !DESCRIPTION: A routine to test the Large, et al., implementation of shear
+!  mixing. Inputs are the coefficients used in Equation (28) of the paper.
+!  The viscosity coefficient is output from a single column to allow
+!  recreation of the paper's Figure 3. Note that here each "level" of the
+!  column denotes a different local gradient Richardson number rather than a
+!  physical ocean level. All memory is declared in the driver, and the CVMix
 !  data type points to the local variables.
 !\\
 !\\
@@ -32,11 +32,16 @@ Subroutine cvmix_shear_driver(nlev)
   use cvmix_output,          only : cvmix_output_open,        &
                                     cvmix_output_write,       &
                                     cvmix_output_close
-!EOP
-!BOC
 
   Implicit None
 
+! !INPUT PARAMETERS:
+  integer, intent(in) :: nlev      ! number of Ri points to sample
+
+!EOP
+!BOC
+
+  ! CVMix datatypes
   type(cvmix_data_type)          :: CVmix_vars
   type(cvmix_global_params_type) :: CVmix_params
   type(cvmix_shear_params_type)  :: CVmix_KPP_params
@@ -51,9 +56,7 @@ Subroutine cvmix_shear_driver(nlev)
   integer :: fid
 
   ! Namelist variables
-  ! 1) General mixing parameters
-  integer, intent(in)        :: nlev      ! number of Ri points to sample
-  ! 2) KPP mixing parameters for column
+  ! KPP mixing parameters for column
   real(cvmix_r8) :: KPP_nu_zero, KPP_Ri_zero, KPP_exp
 
   ! Namelist with shear mixing parameters
