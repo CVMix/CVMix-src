@@ -70,7 +70,7 @@ all: recurse
 
 recurse: check
 ifeq ($(NEED_ENV_FILE),FALSE)
-	$(MAKE) $(LIB_DIR)/libcvmix.a $(INCS)
+	cd $(SRC_DIR); $(MAKE) $(LIB_DIR)/libcvmix.a $(INCS)
 endif
 
 # Create all object and module files
@@ -150,7 +150,7 @@ check:
 	@$(if $(NOFC), echo "ERROR: you must specify FC (and it is recommended that \
      you specify FCFLAGS"; echo "as well)."; exit 1)
 ifeq ($(NEED_ENV_FILE),TRUE)
-	../../bld/cvmix_setup ../../bld/.CVMix_env; $(MAKE)
+	$(BLD_DIR)/cvmix_setup $(BLD_DIR)/.CVMix_env; cd $(SRC_DIR); $(MAKE)
 endif
 
 clean:
