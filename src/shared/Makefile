@@ -4,13 +4,13 @@ extension = .F90
 # Need CVMix root directory
 # If using old version of make, pass in CVMIX_ROOT
 ifeq ($(wildcard $(MAKEFILE_LIST)),)
-  CVMIX_ROOT = ../..
+  CVMIX_ROOT := ../..
 else
   ThisMakefile=$(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST))
   ifeq (/,$(findstring /,$(ThisMakefile)))
     ThisDir=$(shell x=$(ThisMakefile) && echo $${x%/*})/
   endif
-  CVMIX_ROOT = $(realpath $(ThisDir)../..)
+  CVMIX_ROOT := $(realpath $(ThisDir)../..)
 endif
 
 SETUP_FILE = $(CVMIX_ROOT)/bld/cvmix_setup
@@ -70,7 +70,7 @@ all: recurse
 
 recurse: check
 ifeq ($(NEED_ENV_FILE),FALSE)
-	cd $(SRC_DIR); $(MAKE) $(LIB_DIR)/libcvmix.a $(INCS)
+	$(MAKE) -e -f $(SRC_DIR)/Makefile $(LIB_DIR)/libcvmix.a $(INCS)
 endif
 
 # Create all object and module files
@@ -150,7 +150,7 @@ check:
 	@$(if $(NOFC), echo "ERROR: you must specify FC (and it is recommended that \
      you specify FCFLAGS"; echo "as well)."; exit 1)
 ifeq ($(NEED_ENV_FILE),TRUE)
-	$(BLD_DIR)/cvmix_setup $(BLD_DIR)/.CVMix_env; cd $(SRC_DIR); $(MAKE)
+	$(BLD_DIR)/cvmix_setup $(BLD_DIR)/.CVMix_env; $(MAKE) -e -f $(SRC_DIR)/Makefile
 endif
 
 clean:
