@@ -6,6 +6,17 @@ ALL CHANGES SHOULD OCCUR BELOW THIS LINE
 ===============================================================================
 Tag Creator: mlevy
 Developers:  mlevy
+Tag Date:    14 Feb 2013
+Tag Name:    cvmix_20130214
+Tag Summary: Improvements to src/shared/Makefile; can now call the Makefile
+             from any directory and the recursion works properly (so nothing
+             gets written to src/shared/ unless you want it to). This is the
+             tag I am going to hardcode into my POP branch because POP can
+             now call this Makefile remotely rather than building CVMix into
+             CESM's libocn.a.
+===============================================================================
+Tag Creator: mlevy
+Developers:  mlevy
 Tag Date:    13 Feb 2013
 Tag Name:    cvmix_20130213
 Tag Summary: This is an enormous change from the last tag.
