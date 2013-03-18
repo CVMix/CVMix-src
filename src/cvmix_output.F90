@@ -195,6 +195,10 @@ contains
             case ("diff")
               call netcdf_check(nf90_put_var(file_id, var_id(var), &
                                              CVmix_vars%diff_iface(:,1)))
+            case ("Rrho")
+              call netcdf_check(nf90_put_var(file_id, var_id(var), &
+                                             CVmix_vars%strat_param_num(:)/ &
+                                             CVmix_vars%strat_param_denom(:)))
             case DEFAULT
               print*, "ERROR: unable to write variable ", var_names(var)
               stop
@@ -217,6 +221,10 @@ contains
               case ("diff")
                 write(file_id,"(E24.17E2)",advance='no') &
                       CVmix_vars%diff_iface(kw,1)
+              case ("Rrho")
+                write(file_id,"(E24.17E2)",advance='no') &
+                      CVmix_vars%strat_param_num(kw) / &
+                      CVmix_vars%strat_param_denom(kw)
               case DEFAULT
                 print*, "ERROR: unable to write variable ", var_names(var)
                 stop

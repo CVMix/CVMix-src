@@ -20,7 +20,8 @@
 
 ! !USES:
 
-   use cvmix_kinds_and_types, only : cvmix_r8,                &
+   use cvmix_kinds_and_types, only : one,                     &
+                                     cvmix_r8,                &
                                      cvmix_data_type,         &
                                      cvmix_bkgnd_params_type, &
                                      cvmix_shear_params_type
@@ -161,7 +162,6 @@
 
     integer                   :: kw ! vertical cell index
     logical                   :: calc_diff
-    real(cvmix_r8), parameter :: one = 1.0_cvmix_r8
     real(cvmix_r8)            :: nu
     real(cvmix_r8)            :: nu_zero, PP_alpha, KPP_Ri_zero, loc_exp
     real(cvmix_r8)            :: bkgnd_diff, bkgnd_visc

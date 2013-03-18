@@ -8,8 +8,8 @@
 !
 ! !DESCRIPTION:
 !  This module contains routines to initialize the derived types needed for
-!  double diffusion mixing and to set the viscosity and diffusivity
-!  coefficients accordingly.
+!  double diffusion mixing and to set the diffusivity coefficient
+!  accordingly.
 !\\
 !\\
 !
@@ -19,7 +19,8 @@
 
 ! !USES:
 
-   use cvmix_kinds_and_types, only : cvmix_r8,                &
+   use cvmix_kinds_and_types, only : one,                     &
+                                     cvmix_r8,                &
                                      cvmix_data_type,         &
                                      cvmix_ddiff_params_type
 !EOP
@@ -43,20 +44,140 @@
 ! !IROUTINE: cvmix_init_ddiff
 ! !INTERFACE:
 
-  subroutine cvmix_init_ddiff(CVmix_ddiff_params)
+  subroutine cvmix_init_ddiff(CVmix_ddiff_params, units, strat_param_max, &
+                              kappa_ddiff_t, kappa_ddiff_s, ddiff_exp1, &
+                              ddiff_exp2, mol_diff, kappa_ddiff_param1, &
+                              kappa_ddiff_param2, kappa_ddiff_param3)
 
 ! !DESCRIPTION:
-!  Initialization routine for double diffusion mixing.
-!
+!  Initialization routine for double diffusion mixing. This mixing technique
+!  looks for two unstable cases in a column - salty water over fresher
+!  water and colder water over warmer water - and computes different
+!  diffusivity coefficients in each of these two locations. The parameter
+!  \begin{eqnarray*}
+!  R_\rho = \frac{\alpha (\partial \Theta / \partial z)}
+!                {\beta (\partial S / \partial z)}
+!  \end{eqnarray*}
+!  to determine as a stratification parameter. If $(\partial S / \partial z)$
+!  is positive and $1 < R_\rho < R_\rho^0$ then salt water sits on top
+!  of fresh water and the diffusivity is given by
+!  \begin{eqnarray*}
+!  \kappa = \kappa^0 \left[ 1 - \left(\frac{R_\rho - 1}{R_\rho^0 - 1} \right)^{p_1}\right]^{p_2}
+!  \end{eqnarray*}
+!  where
+!  \begin{eqnarray*}
+!  \kappa^0 = \left\{ \begin{array}{r l}
+!             7 \cdot 10^{-5}\ \textrm{m}^2\textrm{/s} & \textrm{for temperature} 
+!             \ (\verb|dd2|\ \textrm{in this routine})\\
+!             10^{-4}\ \textrm{m}^2\textrm{/s} & \textrm{for salinity and other tracers}
+!             \ (\verb|dd3|\ \textrm{in this routine})
+!                     \end{array} \right.
+!  \end{eqnarray*}
+!  On the other hand, if $(\partial \Theta / \partial z)$ is negative and
+!  $0 < R_\rho < 1$ then cold water sits on warm warm water and the
+!  diffusivity for temperature is given by
+!  \begin{eqnarray*}
+!  \kappa = \nu_\textrm{molecular} \cdot 0.909\exp\left\{ 4.6\exp\left[
+!           -0.54\left( \frac{1}{R_\rho} - 1 \right) \right] \right\}
+!  \end{eqnarray*}
+!  where $\nu_\textrm{molecular} = 1.5 \cdot 10^{-6}\ \textrm{m}^2\textrm{/s}$ is the
+!  molecular viscosity of water. For salinity and other tracers, multiply
+!  $\kappa$ above by the factor
+!  \begin{eqnarray*}
+!  \textrm{factor} = \left\{ \begin{array}{c l}
+!                    0.15R_\rho & R_\rho < 0.5\\
+!                    1.85R_\rho - 0.85 & 0.5 \le R_\rho < 1\\
+!                     \end{array} \right.
+!  \end{eqnarray*}
 ! !USES:
 !  Only those used by entire module.
+
+! !INPUT PARAMETERS:
+    character(len=*),           intent(in) :: units ! "mks" or "cgs"
+    real(cvmix_r8),   optional, intent(in) :: strat_param_max, &
+                                              kappa_ddiff_t, &
+                                              kappa_ddiff_s, &
+                                              ddiff_exp1, &
+                                              ddiff_exp2, &
+                                              mol_diff, &
+                                              kappa_ddiff_param1, &
+                                              kappa_ddiff_param2, &
+                                              kappa_ddiff_param3
 
 ! !OUTPUT PARAMETERS:
     type(cvmix_ddiff_params_type), intent(inout) :: CVmix_ddiff_params
 !EOP
 !BOC
 
-    CVmix_ddiff_params%deleteme = 0.0_cvmix_r8
+    ! Unitless parameters
+    if (present(strat_param_max)) then
+      CVmix_ddiff_params%strat_param_max = strat_param_max
+    else
+      CVmix_ddiff_params%strat_param_max = 2.55_cvmix_r8
+    end if
+    if (present(ddiff_exp1)) then
+      CVmix_ddiff_params%ddiff_exp1 = ddiff_exp1
+    else
+      CVmix_ddiff_params%ddiff_exp1 = 1.0_cvmix_r8
+    end if
+    if (present(ddiff_exp2)) then
+      CVmix_ddiff_params%ddiff_exp2 = ddiff_exp2
+    else
+      CVmix_ddiff_params%ddiff_exp2 = 3.0_cvmix_r8
+    end if
+    if (present(kappa_ddiff_param1)) then
+      CVmix_ddiff_params%kappa_ddiff_param1 = kappa_ddiff_param1
+    else
+      CVmix_ddiff_params%kappa_ddiff_param1 = 0.909_cvmix_r8
+    end if
+    if (present(kappa_ddiff_param2)) then
+      CVmix_ddiff_params%kappa_ddiff_param2 = kappa_ddiff_param2
+    else
+      CVmix_ddiff_params%kappa_ddiff_param2 = 4.6_cvmix_r8
+    end if
+    if (present(kappa_ddiff_param3)) then
+      CVmix_ddiff_params%kappa_ddiff_param3 = kappa_ddiff_param3
+    else
+      CVmix_ddiff_params%kappa_ddiff_param3 = -0.54_cvmix_r8
+    end if
+
+    ! Parameters with units
+    if (present(kappa_ddiff_t)) then
+       CVmix_ddiff_params%kappa_ddiff_t = kappa_ddiff_t
+    end if
+    if (present(kappa_ddiff_s)) then
+      CVmix_ddiff_params%kappa_ddiff_s = kappa_ddiff_s
+    end if
+    if (present(mol_diff)) then
+      CVmix_ddiff_params%mol_diff = mol_diff
+    end if
+    select case (trim(units))
+      case ('mks')
+        if (.not.present(kappa_ddiff_t)) then
+          CVmix_ddiff_params%kappa_ddiff_t = 7d-5
+        end if
+        if (present(kappa_ddiff_s)) then
+          CVmix_ddiff_params%kappa_ddiff_s = 1d-4
+        end if
+        if (present(mol_diff)) then
+          CVmix_ddiff_params%mol_diff = 1.5d-6
+        end if
+      case ('cgs')
+        if (.not.present(kappa_ddiff_t)) then
+          CVmix_ddiff_params%kappa_ddiff_t = 7d-1
+        end if
+        if (present(kappa_ddiff_s)) then
+          CVmix_ddiff_params%kappa_ddiff_s = 1.0_cvmix_r8
+        end if
+        if (present(mol_diff)) then
+          CVmix_ddiff_params%mol_diff = 1.5d-2
+        end if
+      case DEFAULT
+        print*, "ERROR: ", trim(units), " is not a valid choice for double ", &
+                "diffusion mixing. Only 'mks' or 'cgs' are supported."
+        stop
+    end select
+
 !EOC
 
   end subroutine cvmix_init_ddiff
@@ -82,11 +203,43 @@
 
 ! !INPUT/OUTPUT PARAMETERS:
     type(cvmix_data_type), intent(inout) :: CVmix_vars
+
+! !LOCAL VARIABLES:
+    integer :: k ! column index
+    real(cvmix_r8) :: ddiff, Rrho
+
 !EOP
 !BOC
 
-    CVmix_vars%visc_iface = CVmix_ddiff_params%deleteme
-    CVmix_vars%diff_iface = CVmix_ddiff_params%deleteme
+    ! Determine coefficients based on units requested
+    CVmix_vars%diff_iface = 0_cvmix_r8
+    do k = 1, CVmix_vars%nlev
+      if ((CVmix_vars%strat_param_num(k).gt.CVmix_vars%strat_param_denom(k)).and.&
+          (CVmix_vars%strat_param_denom(k).gt.0)) then
+        ! Rrho > 1 and dS/dz < 0 => Salt fingering
+        Rrho = CVmix_vars%strat_param_num(k) / CVmix_vars%strat_param_denom(k)
+        if (Rrho.lt.CVmix_ddiff_params%strat_param_max) then
+          ddiff = (one-((Rrho-one)/(CVmix_ddiff_params%strat_param_max-one))** &
+                  CVmix_ddiff_params%ddiff_exp1)**CVmix_ddiff_params%ddiff_exp2
+          CVmix_vars%diff_iface(k,1) = CVmix_ddiff_params%kappa_ddiff_t*ddiff
+          CVmix_vars%diff_iface(k,2) = CVmix_ddiff_params%kappa_ddiff_s*ddiff
+        end if
+      end if
+      if ((CVmix_vars%strat_param_num(k).gt.CVmix_vars%strat_param_denom(k)).and.&
+          (CVmix_vars%strat_param_num(k).lt.0)) then
+        ! Rrho < 1 and dT/dz > 0 => Diffusive convection
+        Rrho = CVmix_vars%strat_param_num(k) / CVmix_vars%strat_param_denom(k)
+        ddiff = CVmix_ddiff_params%mol_diff*CVmix_ddiff_params%kappa_ddiff_param1*&
+                exp(CVmix_ddiff_params%kappa_ddiff_param2*exp(&
+                CVmix_ddiff_params%kappa_ddiff_param3*(one/Rrho-one)))
+          CVmix_vars%diff_iface(k,1) = ddiff
+          if (Rrho.lt.0.5_cvmix_r8) then
+            CVmix_vars%diff_iface(k,2) = 0.15_cvmix_r8*Rrho*ddiff
+          else
+            CVmix_vars%diff_iface(k,2) = (1.85_cvmix_r8*Rrho-0.85_cvmix_r8)*ddiff
+          end if
+      end if
+    end do
 
 !EOC
   end subroutine cvmix_coeffs_ddiff

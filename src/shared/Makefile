@@ -16,10 +16,11 @@ endif
 SETUP_FILE = $(CVMIX_ROOT)/bld/cvmix_setup
 ENV_FILE = $(CVMIX_ROOT)/bld/.CVMix_env
 # Directories used in Makefile
-# Check to this is standalone CVMix or not (look for $CVMIX_ROOT/.CVMix_env)
+# Check to this is standalone CVMix or not (look for $(SETUP_FILE))
 ifneq ($(wildcard $(SETUP_FILE)),)
   SRC_DIR = $(CVMIX_ROOT)/src/shared
   BLD_DIR = $(CVMIX_ROOT)/bld
+  FLAG_FILE = $(BLD_DIR)/CompileFlags.mak
   OBJ_DIR = $(BLD_DIR)/obj
   LIB_DIR = $(CVMIX_ROOT)/lib
   INC_DIR = $(CVMIX_ROOT)/include
@@ -27,11 +28,11 @@ ifneq ($(wildcard $(SETUP_FILE)),)
     NEED_ENV_FILE = TRUE
   else
     # Read in Compiler information
-    include $(BLD_DIR)/.CVMix_env
+    include $(ENV_FILE)
     NEED_ENV_FILE = FALSE
   endif
   # Read in FCFLAGS
-  include $(BLD_DIR)/CompileFlags.mak
+  include $(FLAG_FILE)
 else
   SRC_DIR = .
   OBJ_DIR = .
@@ -150,7 +151,7 @@ check:
 	@$(if $(NOFC), echo "ERROR: you must specify FC (and it is recommended that \
      you specify FCFLAGS"; echo "as well)."; exit 1)
 ifeq ($(NEED_ENV_FILE),TRUE)
-	$(BLD_DIR)/cvmix_setup $(BLD_DIR)/.CVMix_env; $(MAKE) -e -f $(SRC_DIR)/Makefile
+	$(BLD_DIR)/cvmix_setup $(ENV_FILE); $(MAKE) -e -f $(SRC_DIR)/Makefile
 endif
 
 clean:

@@ -50,7 +50,7 @@ fi
 
 $CVMix/bin/cvmix < input.nl
 if [ "${USE_NETCDF}" == "netcdf" ]; then
-  ncdump -v visc data.nc
+  ncdump -v diff data.nc
 else
   cat data.out
 fi

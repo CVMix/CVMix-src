@@ -33,7 +33,9 @@ module cvmix_kinds_and_types
                                 cvmix_strlen = 256
 
   ! Global parameters:
+  ! The constant 1 is used repeatedly in PP and double-diff mixing.
   ! The value for pi is needed for Bryan-Lewis mixing.
+  real(cvmix_r8), parameter, public :: one = 1.0_cvmix_r8
   real(cvmix_r8), parameter, public :: cvmix_PI = &
                       2.0_cvmix_r8*acos(0.0_cvmix_r8)
 
@@ -60,6 +62,8 @@ module cvmix_kinds_and_types
       real(cvmix_r8), dimension(:),   pointer :: dens_lwr => NULL()
       real(cvmix_r8), dimension(:),   pointer :: z        => NULL()
       real(cvmix_r8), dimension(:),   pointer :: dz       => NULL()
+      real(cvmix_r8), dimension(:),   pointer :: strat_param_num   => NULL()
+      real(cvmix_r8), dimension(:),   pointer :: strat_param_denom => NULL()
   end type cvmix_data_type
 
   ! cvmix_global_params_type contains global parameters used by multiple
@@ -101,9 +105,17 @@ module cvmix_kinds_and_types
   end type cvmix_tidal_params_type
 
   ! cvmix_ddiff_params_type contains the necessary parameters for double
-  ! diffusion mixing (currently just a place-holder variable)
+  ! diffusion mixing
   type, public :: cvmix_ddiff_params_type
-      real(cvmix_r8) :: deleteme
+      real(cvmix_r8)              :: strat_param_max
+      real(cvmix_r8)              :: kappa_ddiff_t
+      real(cvmix_r8)              :: kappa_ddiff_s
+      real(cvmix_r8)              :: ddiff_exp1
+      real(cvmix_r8)              :: ddiff_exp2
+      real(cvmix_r8)              :: kappa_ddiff_param1
+      real(cvmix_r8)              :: kappa_ddiff_param2
+      real(cvmix_r8)              :: kappa_ddiff_param3
+      real(cvmix_r8)              :: mol_diff
   end type cvmix_ddiff_params_type
 
   ! cvmix_conv_params_type contains the necessary parameters for convective

@@ -117,7 +117,7 @@ all: exe
 netcdf:
 	$(MAKE) -f $(SRC_DIR)/Makefile USE_NETCDF=TRUE
 
-$(EXE): $(OBJ_DIR)/cvmix_driver.o
+$(EXE): $(OBJ_DIR)/cvmix_driver.o $(LIB_DIR)/libcvmix.a
 	$(FC) -o $(EXE) $(addprefix $(OBJ_DIR)/,$(OBJS)) $(addprefix $(OBJ_DIR)/,$(DRIVER_OBJS)) $(LINKING_FLAGS)
 
 exe: check $(ENV_FILE) lib
@@ -130,23 +130,38 @@ endif
 
 # Create all object and module files
 $(OBJ_DIR)/cvmix_bgrnd_BL_pointer.o: $(OBJ_DIR)/cvmix_output.o \
+                                     $(INC_DIR)/cvmix_kinds_and_types.mod \
+                                     $(INC_DIR)/cvmix_put_get.mod \
+                                     $(INC_DIR)/cvmix_background.mod \
                                      $(SRC_DRIVE_DIR)/cvmix_bgrnd_BL_pointer.F90
 	$(FC) $(FCFLAGS) -c $(SRC_DRIVE_DIR)/cvmix_bgrnd_BL_pointer.F90 -o $@
 
 $(OBJ_DIR)/cvmix_bgrnd_BL_memcopy.o: $(OBJ_DIR)/cvmix_output.o \
+                                     $(INC_DIR)/cvmix_kinds_and_types.mod \
+                                     $(INC_DIR)/cvmix_put_get.mod \
+                                     $(INC_DIR)/cvmix_background.mod \
                                      $(SRC_DRIVE_DIR)/cvmix_bgrnd_BL_memcopy.F90
 	$(FC) $(FCFLAGS) -c $(SRC_DRIVE_DIR)/cvmix_bgrnd_BL_memcopy.F90 -o $@
 
 $(OBJ_DIR)/cvmix_tidal_Simmons.o: $(OBJ_DIR)/cvmix_output.o \
+                                  $(INC_DIR)/cvmix_kinds_and_types.mod \
+                                  $(INC_DIR)/cvmix_put_get.mod \
+                                  $(INC_DIR)/cvmix_tidal.mod \
                                   $(SRC_DRIVE_DIR)/cvmix_tidal_Simmons.F90
 	$(FC) $(FCFLAGS) -c $(SRC_DRIVE_DIR)/cvmix_tidal_Simmons.F90 -o $@
 
 $(OBJ_DIR)/cvmix_shear_KPP.o: $(OBJ_DIR)/cvmix_output.o \
+                              $(INC_DIR)/cvmix_kinds_and_types.mod \
+                              $(INC_DIR)/cvmix_put_get.mod \
+                              $(INC_DIR)/cvmix_shear.mod \
                               $(SRC_DRIVE_DIR)/cvmix_shear_KPP.F90
 	$(FC) $(FCFLAGS) -c $(SRC_DRIVE_DIR)/cvmix_shear_KPP.F90 -o $@
 
 $(OBJ_DIR)/cvmix_ddiff_drv.o: $(OBJ_DIR)/cvmix_output.o \
-                          $(SRC_DRIVE_DIR)/cvmix_ddiff_drv.F90
+                              $(INC_DIR)/cvmix_kinds_and_types.mod \
+                              $(INC_DIR)/cvmix_put_get.mod \
+                              $(INC_DIR)/cvmix_ddiff.mod \
+                              $(SRC_DRIVE_DIR)/cvmix_ddiff_drv.F90
 	$(FC) $(FCFLAGS) -c $(SRC_DRIVE_DIR)/cvmix_ddiff_drv.F90 -o $@
 
 $(OBJ_DIR)/cvmix_driver.o: $(addprefix $(OBJ_DIR)/,$(DRIVER_OBJS)) \
