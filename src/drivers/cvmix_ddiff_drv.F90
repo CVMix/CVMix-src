@@ -84,20 +84,6 @@ Subroutine cvmix_ddiff_driver(nlev)
   call cvmix_init_ddiff(CVmix_ddiff_params,'mks', ddiff_exp1=ddiff_exp1, &
                         strat_param_max=strat_param_max,                 &
                         kappa_ddiff_t=kappa_ddiff_t)
-  ! Debug option
-  !if (.false.) then
-  if (.true.) then
-    print*, "Parameters are as follows:"
-    print*, "strat_param_max = ", CVmix_ddiff_params%strat_param_max
-    print*, "ddiff_exp1 = ", CVmix_ddiff_params%ddiff_exp1
-    print*, "ddiff_exp2 = ", CVmix_ddiff_params%ddiff_exp2
-    print*, "kappa_ddiff_param1 = ", CVmix_ddiff_params%kappa_ddiff_param1
-    print*, "kappa_ddiff_param2 = ", CVmix_ddiff_params%kappa_ddiff_param2
-    print*, "kappa_ddiff_param3 = ", CVmix_ddiff_params%kappa_ddiff_param3
-    print*, "kappa_ddiff_t = ", CVmix_ddiff_params%kappa_ddiff_t
-    print*, "kappa_ddiff_s = ", CVmix_ddiff_params%kappa_ddiff_s
-    print*, "mol_diff = ", CVmix_ddiff_params%mol_diff
-  end if
 
   call cvmix_coeffs_ddiff(CVmix_vars(1), CVmix_ddiff_params)
   call cvmix_coeffs_ddiff(CVmix_vars(2), CVmix_ddiff_params)
