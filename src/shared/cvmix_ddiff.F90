@@ -156,20 +156,20 @@
         if (.not.present(kappa_ddiff_t)) then
           CVmix_ddiff_params%kappa_ddiff_t = 7d-5
         end if
-        if (present(kappa_ddiff_s)) then
+        if (.not.present(kappa_ddiff_s)) then
           CVmix_ddiff_params%kappa_ddiff_s = 1d-4
         end if
-        if (present(mol_diff)) then
+        if (.not.present(mol_diff)) then
           CVmix_ddiff_params%mol_diff = 1.5d-6
         end if
       case ('cgs')
         if (.not.present(kappa_ddiff_t)) then
           CVmix_ddiff_params%kappa_ddiff_t = 7d-1
         end if
-        if (present(kappa_ddiff_s)) then
+        if (.not.present(kappa_ddiff_s)) then
           CVmix_ddiff_params%kappa_ddiff_s = 1.0_cvmix_r8
         end if
-        if (present(mol_diff)) then
+        if (.not.present(mol_diff)) then
           CVmix_ddiff_params%mol_diff = 1.5d-2
         end if
       case DEFAULT
@@ -232,12 +232,12 @@
         ddiff = CVmix_ddiff_params%mol_diff*CVmix_ddiff_params%kappa_ddiff_param1*&
                 exp(CVmix_ddiff_params%kappa_ddiff_param2*exp(&
                 CVmix_ddiff_params%kappa_ddiff_param3*(one/Rrho-one)))
-          CVmix_vars%diff_iface(k,1) = ddiff
-          if (Rrho.lt.0.5_cvmix_r8) then
-            CVmix_vars%diff_iface(k,2) = 0.15_cvmix_r8*Rrho*ddiff
-          else
-            CVmix_vars%diff_iface(k,2) = (1.85_cvmix_r8*Rrho-0.85_cvmix_r8)*ddiff
-          end if
+        CVmix_vars%diff_iface(k,1) = ddiff
+        if (Rrho.lt.0.5_cvmix_r8) then
+          CVmix_vars%diff_iface(k,2) = 0.15_cvmix_r8*Rrho*ddiff
+        else
+          CVmix_vars%diff_iface(k,2) = (1.85_cvmix_r8*Rrho-0.85_cvmix_r8)*ddiff
+        end if
       end if
     end do
 

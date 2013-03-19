@@ -270,7 +270,7 @@ contains
 #ifdef _NETCDF
     integer                                          :: nw_id, ncol_id
     integer,             dimension(:),   allocatable :: var_id
-    real(kind=cvmix_r8), dimension(:,:), allocatable :: lcl_visc, lcl_diff
+    real(kind=cvmix_r8), dimension(:,:), allocatable :: lcl_visc, lcl_diff, lcl_Rrho
 #endif
 !EOP
 !BOC
@@ -283,8 +283,11 @@ contains
       if (CVmix_vars(icol)%nlev+1.ne.nw) then
         z_err = .true.
       else
-        if (any(CVmix_vars(icol)%z_iface.ne.CVmix_vars(icol-1)%z_iface)) then
-          z_err = .true.
+        ! Make sure z_iface lines up for Bryan-Lewis case
+        if (associated(CVmix_vars(1)%z_iface)) then
+          if (any(CVmix_vars(icol)%z_iface.ne.CVmix_vars(icol-1)%z_iface)) then
+            z_err = .true.
+          end if
         end if
       end if
     end do
@@ -321,6 +324,13 @@ contains
               lcl_diff(icol,:) = CVmix_vars(icol)%diff_iface(:,1)
             end do
           endif
+          if (trim(var_names(var)).eq."Rrho") then
+            allocate(lcl_Rrho(ncol,nw))
+            do icol=1,ncol
+              lcl_Rrho(icol,:) = CVmix_vars(icol)%strat_param_num(:) / &
+                                 CVmix_vars(icol)%strat_param_denom(:)
+            end do
+          endif
         end do
         call netcdf_check(nf90_enddef(file_id))
         do var=1,size(var_names)
@@ -339,6 +349,10 @@ contains
               call netcdf_check(nf90_put_var(file_id, var_id(var), &
                                 lcl_diff))
               deallocate(lcl_diff)
+            case("Rrho")
+              call netcdf_check(nf90_put_var(file_id, var_id(var), &
+                                lcl_Rrho))
+              deallocate(lcl_Rrho)
             case DEFAULT
               print*, "ERROR: unable to write variable ", var_names(var)
               stop
@@ -365,6 +379,13 @@ contains
                 do icol=1,ncol
                   write(file_id,"(E24.17E2)",advance='no') &
                         CVmix_vars(icol)%diff_iface(kw,1)
+                  if (icol.ne.ncol) write(file_id, "(1X)", advance='no')
+                end do
+              case ("Rrho")
+                do icol=1,ncol
+                  write(file_id,"(E24.17E2)",advance='no')     &
+                        CVmix_vars(icol)%strat_param_num(kw) / &
+                        CVmix_vars(icol)%strat_param_denom(kw)
                   if (icol.ne.ncol) write(file_id, "(1X)", advance='no')
                 end do
               case DEFAULT

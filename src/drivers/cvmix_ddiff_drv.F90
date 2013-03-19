@@ -37,15 +37,15 @@ Subroutine cvmix_ddiff_driver(nlev)
 !BOC
 
   ! CVMix datatypes
-  type(cvmix_data_type)          :: CVmix_vars
-  type(cvmix_global_params_type) :: CVmix_params
-  type(cvmix_ddiff_params_type)  :: CVmix_ddiff_params
+  type(cvmix_data_type),         dimension(2) :: CVmix_vars
+  type(cvmix_global_params_type)              :: CVmix_params
+  type(cvmix_ddiff_params_type)               :: CVmix_ddiff_params
 
-  real(cvmix_r8), dimension(:,:), allocatable, target :: diffusivity
-  real(cvmix_r8), dimension(:),   allocatable, target :: Rrho_num, Rrho_denom
+  real(cvmix_r8), dimension(:,:,:), allocatable, target :: diffusivity
+  real(cvmix_r8), dimension(:,:),   allocatable, target :: Rrho_num, Rrho_denom
 
   ! column / file indices
-  integer :: k, fid
+  integer :: k, fid, ncol, ic
 
   ! Namelist variables
   real(cvmix_r8) :: ddiff_exp1, strat_param_max, kappa_ddiff_t
@@ -55,21 +55,29 @@ Subroutine cvmix_ddiff_driver(nlev)
 
   ! Allocate memory to store diffusivity values
   ! Also store numerator / denominator for stratification parameter
-  allocate(diffusivity(nlev+1,2))
-  allocate(Rrho_num(nlev+1), Rrho_denom(nlev+1))
+  ncol = 2
+  allocate(diffusivity(nlev+1,2,ncol))
+  allocate(Rrho_num(nlev+1,ncol), Rrho_denom(nlev+1,ncol))
   do k=1,nlev+1
-    Rrho_num(k) = dble(k-1)/dble(nlev)+one
-    Rrho_denom(k) = one
+    ! For first column, Rrho varies from 1 to 2
+    Rrho_num(k,1) = dble(k-1)/dble(nlev)+one
+    Rrho_denom(k,1) = one
+    ! For second column, 1/Rrho varies from 1 to 10
+    ! (Note: last column has diff=0, hence only using nlev instead of nlev+1)
+    Rrho_num(k,2) = -one/(dble(9)*dble(k-1)/dble(nlev-1)+one)
+    Rrho_denom(k,2) = -one
   end do
 
   ! Initialization for CVMix data types
-  call cvmix_put(CVmix_params,  'max_nlev', nlev)
-  call cvmix_put(CVmix_params,  'prandtl',  0.0_cvmix_r8)
-  call cvmix_put(CVmix_vars,    'nlev',     nlev)
+  call cvmix_put(CVmix_params, 'max_nlev', nlev)
+  call cvmix_put(CVmix_params, 'prandtl',  0.0_cvmix_r8)
   ! Point CVmix_vars values to memory allocated above
-  CVmix_vars%diff_iface => diffusivity
-  CVmix_vars%strat_param_num => Rrho_num
-  CVmix_vars%strat_param_denom => Rrho_denom
+  do ic=1,ncol
+    call cvmix_put(CVmix_vars(ic), 'nlev', nlev)
+    CVmix_vars(ic)%diff_iface => diffusivity(:,:,ic)
+    CVmix_vars(ic)%strat_param_num => Rrho_num(:,ic)
+    CVmix_vars(ic)%strat_param_denom => Rrho_denom(:,ic)
+  end do
 
   ! Read / set double diffusion parameters
   read(*, nml=ddiff_nml)
@@ -77,7 +85,8 @@ Subroutine cvmix_ddiff_driver(nlev)
                         strat_param_max=strat_param_max,                 &
                         kappa_ddiff_t=kappa_ddiff_t)
   ! Debug option
-  if (.false.) then
+  !if (.false.) then
+  if (.true.) then
     print*, "Parameters are as follows:"
     print*, "strat_param_max = ", CVmix_ddiff_params%strat_param_max
     print*, "ddiff_exp1 = ", CVmix_ddiff_params%ddiff_exp1
@@ -90,9 +99,13 @@ Subroutine cvmix_ddiff_driver(nlev)
     print*, "mol_diff = ", CVmix_ddiff_params%mol_diff
   end if
 
-  call cvmix_coeffs_ddiff(CVmix_vars, CVmix_ddiff_params)
+  call cvmix_coeffs_ddiff(CVmix_vars(1), CVmix_ddiff_params)
+  call cvmix_coeffs_ddiff(CVmix_vars(2), CVmix_ddiff_params)
   ! For continuity of plot, set diffusivity when Rrho = 1
-  diffusivity(1,1) = CVmix_ddiff_params%kappa_ddiff_t
+  diffusivity(1,1,1) = CVmix_ddiff_params%kappa_ddiff_t
+  diffusivity(1,1,2) = CVmix_ddiff_params%mol_diff*&
+                       CVmix_ddiff_params%kappa_ddiff_param1*&
+                       exp(CVmix_ddiff_params%kappa_ddiff_param2)
 
   ! Output
   ! data will have diffusivity from both columns (needed for NCL script)
