@@ -57,10 +57,10 @@ Subroutine cvmix_ddiff_driver(nlev)
   ! Also store numerator / denominator for stratification parameter
   ncol = 2
   allocate(diffusivity(nlev+1,2,ncol))
-  allocate(Rrho_num(nlev+1,ncol), Rrho_denom(nlev+1,ncol))
-  do k=1,nlev+1
+  allocate(Rrho_num(nlev,ncol), Rrho_denom(nlev,ncol))
+  do k=1,nlev
     ! For first column, Rrho varies from 1 to 2
-    Rrho_num(k,1) = dble(k-1)/dble(nlev)+one
+    Rrho_num(k,1) = dble(k-1)/dble(nlev-1)+one
     Rrho_denom(k,1) = one
     ! For second column, 1/Rrho varies from 1 to 10
     ! (Note: last column has diff=0, hence only using nlev instead of nlev+1)

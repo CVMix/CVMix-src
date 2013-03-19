@@ -14,16 +14,16 @@ begin
     print((/"Reading netCDF data"/))
     f = addfile("data.nc", "r")
     x1 = f->Rrho
-    y1 = f->diff
+    y1 = f->diff(0:nlev-1,:)
   else
     if (isfilepresent("data.out")) then
       print((/"Reading ascii data"/))
-      x1 = new((/nlev+1,2/), "double")
-      y1 = new((/nlev+1,2/), "double")
+      x1 = new((/nlev,2/), "double")
+      y1 = new((/nlev,2/), "double")
 
       data = asciiread("data.out", (/nlev+1,4/), "double")
-      x1 = data(:,0:1)
-      y1 = data(:,2:3)
+      x1 = data(0:nlev-1,0:1)
+      y1 = data(0:nlev-1,2:3)
       else
         print((/"ERROR: can not find output (looking for data.out or data.nc)"/))
         exit
@@ -79,7 +79,7 @@ begin
   ; Title / axes labels
   res@tiMainString  = "Diffusivity in Salt Fingering regime"
   res@tiXAxisString = "R:B::F8:r:E:"
-  res@tiYAxisString = ":F8:n:F10::S:d:E::B:s:E::F8: /n:F10::S:f:E:"
+  res@tiYAxisString = ":F8:n:F10::S:d:E::B:s:E::F8: /n:F10::B:f:E:"
 
   plot = gsn_csm_xy(wks, x1(:,0), 1e3*y1(:,0), res)
 

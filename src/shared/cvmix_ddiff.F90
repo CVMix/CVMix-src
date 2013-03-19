@@ -23,6 +23,7 @@
                                      cvmix_r8,                &
                                      cvmix_data_type,         &
                                      cvmix_ddiff_params_type
+   use cvmix_put_get, only : cvmix_put
 !EOP
 
    implicit none
@@ -111,66 +112,67 @@
 
     ! Unitless parameters
     if (present(strat_param_max)) then
-      CVmix_ddiff_params%strat_param_max = strat_param_max
+      call cvmix_put(CVmix_ddiff_params, "strat_param_max", strat_param_max)
     else
-      CVmix_ddiff_params%strat_param_max = 2.55_cvmix_r8
+      call cvmix_put(CVmix_ddiff_params, "strat_param_max", 2.55_cvmix_r8)
     end if
     if (present(ddiff_exp1)) then
-      CVmix_ddiff_params%ddiff_exp1 = ddiff_exp1
+      call cvmix_put(CVmix_ddiff_params, "ddiff_exp1", ddiff_exp1)
     else
-      CVmix_ddiff_params%ddiff_exp1 = 1.0_cvmix_r8
+      call cvmix_put(CVmix_ddiff_params, "ddiff_exp1", 1.0_cvmix_r8)
     end if
     if (present(ddiff_exp2)) then
-      CVmix_ddiff_params%ddiff_exp2 = ddiff_exp2
+      call cvmix_put(CVmix_ddiff_params, "ddiff_exp2", ddiff_exp2)
     else
-      CVmix_ddiff_params%ddiff_exp2 = 3.0_cvmix_r8
+      call cvmix_put(CVmix_ddiff_params, "ddiff_exp2", 3.0_cvmix_r8)
     end if
     if (present(kappa_ddiff_param1)) then
-      CVmix_ddiff_params%kappa_ddiff_param1 = kappa_ddiff_param1
+      call cvmix_put(CVmix_ddiff_params, "kappa_ddiff_param1", kappa_ddiff_param1)
     else
-      CVmix_ddiff_params%kappa_ddiff_param1 = 0.909_cvmix_r8
+      call cvmix_put(CVmix_ddiff_params, "kappa_ddiff_param1", 0.909_cvmix_r8)
     end if
     if (present(kappa_ddiff_param2)) then
-      CVmix_ddiff_params%kappa_ddiff_param2 = kappa_ddiff_param2
+      call cvmix_put(CVmix_ddiff_params, "kappa_ddiff_param2", kappa_ddiff_param2)
     else
-      CVmix_ddiff_params%kappa_ddiff_param2 = 4.6_cvmix_r8
+      call cvmix_put(CVmix_ddiff_params, "kappa_ddiff_param2", 4.6_cvmix_r8)
     end if
     if (present(kappa_ddiff_param3)) then
-      CVmix_ddiff_params%kappa_ddiff_param3 = kappa_ddiff_param3
+      call cvmix_put(CVmix_ddiff_params, "kappa_ddiff_param3", kappa_ddiff_param3)
     else
-      CVmix_ddiff_params%kappa_ddiff_param3 = -0.54_cvmix_r8
+      call cvmix_put(CVmix_ddiff_params, "kappa_ddiff_param3", -0.54_cvmix_r8)
     end if
 
     ! Parameters with units
     if (present(kappa_ddiff_t)) then
-       CVmix_ddiff_params%kappa_ddiff_t = kappa_ddiff_t
+      call cvmix_put(CVmix_ddiff_params, "kappa_ddiff_t", kappa_ddiff_t)
     end if
     if (present(kappa_ddiff_s)) then
-      CVmix_ddiff_params%kappa_ddiff_s = kappa_ddiff_s
+      call cvmix_put(CVmix_ddiff_params, "kappa_ddiff_s", kappa_ddiff_s)
     end if
     if (present(mol_diff)) then
-      CVmix_ddiff_params%mol_diff = mol_diff
+      call cvmix_put(CVmix_ddiff_params, "mol_diff", mol_diff)
     end if
+
     select case (trim(units))
       case ('mks')
         if (.not.present(kappa_ddiff_t)) then
-          CVmix_ddiff_params%kappa_ddiff_t = 7d-5
+          call cvmix_put(CVmix_ddiff_params, "kappa_ddiff_t", 7d-5)
         end if
         if (.not.present(kappa_ddiff_s)) then
-          CVmix_ddiff_params%kappa_ddiff_s = 1d-4
+          call cvmix_put(CVmix_ddiff_params, "kappa_ddiff_s", 1d-4)
         end if
         if (.not.present(mol_diff)) then
-          CVmix_ddiff_params%mol_diff = 1.5d-6
+          call cvmix_put(CVmix_ddiff_params, "mol_diff", 1.5d-6)
         end if
       case ('cgs')
         if (.not.present(kappa_ddiff_t)) then
-          CVmix_ddiff_params%kappa_ddiff_t = 7d-1
+          call cvmix_put(CVmix_ddiff_params, "kappa_ddiff_t", 7d-1)
         end if
         if (.not.present(kappa_ddiff_s)) then
-          CVmix_ddiff_params%kappa_ddiff_s = 1.0_cvmix_r8
+          call cvmix_put(CVmix_ddiff_params, "kappa_ddiff_s", 1.0_cvmix_r8)
         end if
         if (.not.present(mol_diff)) then
-          CVmix_ddiff_params%mol_diff = 1.5d-2
+          call cvmix_put(CVmix_ddiff_params, "mol_diff", 1.5d-2)
         end if
       case DEFAULT
         print*, "ERROR: ", trim(units), " is not a valid choice for double ", &
@@ -240,6 +242,7 @@
         end if
       end if
     end do
+    CVmix_vars%diff_iface(CVmix_vars%nlev+1,:) = 0.0_cvmix_r8
 
 !EOC
   end subroutine cvmix_coeffs_ddiff

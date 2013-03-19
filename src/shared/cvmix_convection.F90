@@ -20,6 +20,7 @@ module cvmix_convection
    use cvmix_kinds_and_types, only : cvmix_r8,               &
                                      cvmix_data_type,        &
                                      cvmix_conv_params_type
+   use cvmix_put_get, only : cvmix_put
 !EOP
 
   implicit none
@@ -62,8 +63,8 @@ contains
 !BOC
 
     ! Set convect_diff and convect_visc in conv_params_type
-    CVmix_conv_params%convect_diff = convect_diff
-    CVmix_conv_params%convect_visc = convect_visc
+    call cvmix_put(CVmix_conv_params, "convect_diff", convect_diff)
+    call cvmix_put(CVmix_conv_params, "convect_visc", convect_visc)
 
 !EOC
   end subroutine cvmix_init_conv

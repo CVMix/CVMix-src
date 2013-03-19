@@ -106,6 +106,7 @@ $(INC_DIR)/cvmix_background.mod: $(SRC_DIR)/cvmix_background.F90       \
 
 ### cvmix_convection.F90
 $(OBJ_DIR)/cvmix_convection.o: $(SRC_DIR)/cvmix_convection.F90    \
+                               $(OBJ_DIR)/cvmix_put_get.o         \
                                $(OBJ_DIR)/cvmix_kinds_and_types.o
 	$(FC) $(FCFLAGS) -c $(SRC_DIR)/cvmix_convection.F90 -o $@
 
@@ -115,6 +116,7 @@ $(INC_DIR)/cvmix_convection.mod: $(SRC_DIR)/cvmix_convection.F90       \
 
 ### cvmix_shear.F90
 $(OBJ_DIR)/cvmix_shear.o: $(SRC_DIR)/cvmix_shear.F90         \
+                          $(OBJ_DIR)/cvmix_put_get.o         \
                           $(OBJ_DIR)/cvmix_kinds_and_types.o
 	$(FC) $(FCFLAGS) -c $(SRC_DIR)/cvmix_shear.F90 -o $@
 
@@ -133,6 +135,7 @@ $(INC_DIR)/cvmix_tidal.mod: $(SRC_DIR)/cvmix_tidal.F90       \
 
 ### cvmix_ddiff.F90
 $(OBJ_DIR)/cvmix_ddiff.o: $(SRC_DIR)/cvmix_ddiff.F90         \
+                          $(OBJ_DIR)/cvmix_put_get.o         \
                           $(OBJ_DIR)/cvmix_kinds_and_types.o
 	$(FC) $(FCFLAGS) -c $(SRC_DIR)/cvmix_ddiff.F90 -o $@
 

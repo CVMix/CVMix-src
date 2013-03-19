@@ -19,10 +19,12 @@ module cvmix_put_get
 ! !USES:
 
    use cvmix_kinds_and_types, only : cvmix_r8,                  &
-                                     cvmix_strlen,              &
                                      cvmix_data_type,           &
                                      cvmix_global_params_type,  &
-                                     cvmix_bkgnd_params_type
+                                     cvmix_bkgnd_params_type,   &
+                                     cvmix_conv_params_type,    &
+                                     cvmix_ddiff_params_type,   &
+                                     cvmix_shear_params_type
 !EOP
 
   implicit none
@@ -41,6 +43,10 @@ module cvmix_put_get
     module procedure cvmix_put_bkgnd_real    ! untested
     module procedure cvmix_put_bkgnd_real_1D
     module procedure cvmix_put_bkgnd_real_2D ! untested
+    module procedure cvmix_put_conv_real
+    module procedure cvmix_put_ddiff_real
+    module procedure cvmix_put_shear_real
+    module procedure cvmix_put_shear_str
     module procedure cvmix_put_global_params_int
     module procedure cvmix_put_global_params_real
   end interface cvmix_put
@@ -255,6 +261,18 @@ contains
       end if
       CVmix_vars%z_iface(:) = val
 
+      case ('strat_param_num')
+      if (.not.associated(CVmix_vars%strat_param_num)) then
+        allocate(CVmix_vars%strat_param_num(nlev))
+      end if
+      CVmix_vars%strat_param_num(:) = val
+
+      case ('strat_param_denom')
+      if (.not.associated(CVmix_vars%strat_param_denom)) then
+        allocate(CVmix_vars%strat_param_denom(nlev))
+      end if
+      CVmix_vars%strat_param_denom(:) = val
+
       case default
         print*, "ERROR: ", trim(varname), " not a valid choice!"
         stop
@@ -281,8 +299,8 @@ contains
 !  Only those used by entire module. 
 
 ! !INPUT PARAMETERS:
-    character(len=cvmix_strlen), intent(in) :: varname
-    real(cvmix_r8),              intent(in) :: val
+    character(len=*), intent(in) :: varname
+    real(cvmix_r8),   intent(in) :: val
 
 ! !OUTPUT PARAMETERS:
     type(cvmix_bkgnd_params_type), intent(inout) :: CVmix_bkgnd_params
@@ -455,7 +473,7 @@ contains
 !  Only those used by entire module. 
 
 ! !INPUT PARAMETERS:
-    character(len=cvmix_strlen),    intent(in) :: varname
+    character(len=*),               intent(in) :: varname
     real(cvmix_r8), dimension(:,:), intent(in) :: val
     integer,                        intent(in) :: ncol, nlev
 
@@ -518,6 +536,182 @@ contains
 !EOC
 
   end subroutine cvmix_put_bkgnd_real_2D
+
+!BOP
+
+! !IROUTINE: cvmix_put_conv_real
+! !INTERFACE:
+
+  subroutine cvmix_put_conv_real(CVmix_conv_params, varname, val)
+
+! !DESCRIPTION:
+!  Write a real value into a cvmix\_conv\_params\_type variable.
+!\\
+!\\
+
+! !USES:
+!  Only those used by entire module. 
+
+! !INPUT PARAMETERS:
+    character(len=*), intent(in) :: varname
+    real(cvmix_r8),   intent(in) :: val
+
+! !OUTPUT PARAMETERS:
+    type(cvmix_conv_params_type), intent(inout) :: CVmix_conv_params
+!EOP
+!BOC
+
+    select case (trim(varname))
+      case ('convect_diff')
+        CVmix_conv_params%convect_diff = val
+      case ('convect_visc')
+        CVmix_conv_params%convect_visc = val
+      case DEFAULT
+        print*, "ERROR: ", trim(varname), " not a valid choice!"
+        stop
+      
+    end select
+
+!EOC
+
+  end subroutine cvmix_put_conv_real
+
+!BOP
+
+! !IROUTINE: cvmix_put_ddiff_real
+! !INTERFACE:
+
+  subroutine cvmix_put_ddiff_real(CVmix_ddiff_params, varname, val)
+
+! !DESCRIPTION:
+!  Write a real value into a cvmix\_ddiff\_params\_type variable.
+!\\
+!\\
+
+! !USES:
+!  Only those used by entire module. 
+
+! !INPUT PARAMETERS:
+    character(len=*), intent(in) :: varname
+    real(cvmix_r8),   intent(in) :: val
+
+! !OUTPUT PARAMETERS:
+    type(cvmix_ddiff_params_type), intent(inout) :: CVmix_ddiff_params
+!EOP
+!BOC
+
+    select case (trim(varname))
+      case ('strat_param_max')
+        CVmix_ddiff_params%strat_param_max = val
+      case ('ddiff_exp1')
+        CVmix_ddiff_params%ddiff_exp1 = val
+      case ('ddiff_exp2')
+        CVmix_ddiff_params%ddiff_exp2 = val
+      case ('kappa_ddiff_param1')
+        CVmix_ddiff_params%kappa_ddiff_param1 = val
+      case ('kappa_ddiff_param2')
+        CVmix_ddiff_params%kappa_ddiff_param2 = val
+      case ('kappa_ddiff_param3')
+        CVmix_ddiff_params%kappa_ddiff_param3 = val
+      case ('kappa_ddiff_t')
+        CVmix_ddiff_params%kappa_ddiff_t = val
+      case ('kappa_ddiff_s')
+        CVmix_ddiff_params%kappa_ddiff_s = val
+      case ('mol_diff')
+        CVmix_ddiff_params%mol_diff = val
+      case DEFAULT
+        print*, "ERROR: ", trim(varname), " not a valid choice!"
+        stop
+      
+    end select
+
+!EOC
+
+  end subroutine cvmix_put_ddiff_real
+
+!BOP
+
+! !IROUTINE: cvmix_put_shear_real
+! !INTERFACE:
+
+  subroutine cvmix_put_shear_real(CVmix_shear_params, varname, val)
+
+! !DESCRIPTION:
+!  Write a real value into a cvmix\_shear\_params\_type variable.
+!\\
+!\\
+
+! !USES:
+!  Only those used by entire module. 
+
+! !INPUT PARAMETERS:
+    character(len=*), intent(in) :: varname
+    real(cvmix_r8),   intent(in) :: val
+
+! !OUTPUT PARAMETERS:
+    type(cvmix_shear_params_type), intent(inout) :: CVmix_shear_params
+!EOP
+!BOC
+
+    select case (trim(varname))
+      case ('PP_nu_zero')
+        CVmix_shear_params%PP_nu_zero = val
+      case ('PP_alpha')
+        CVmix_shear_params%PP_alpha = val
+      case ('PP_exp')
+        CVmix_shear_params%PP_exp = val
+      case ('KPP_nu_zero')
+        CVmix_shear_params%KPP_nu_zero = val
+      case ('KPP_Ri_zero')
+        CVmix_shear_params%KPP_Ri_zero = val
+      case ('KPP_exp')
+        CVmix_shear_params%KPP_exp = val
+      case DEFAULT
+        print*, "ERROR: ", trim(varname), " not a valid choice!"
+        stop
+      
+    end select
+
+!EOC
+
+  end subroutine cvmix_put_shear_real
+
+!BOP
+
+! !IROUTINE: cvmix_put_shear_str
+! !INTERFACE:
+
+  subroutine cvmix_put_shear_str(CVmix_shear_params, varname, val)
+
+! !DESCRIPTION:
+!  Write a string into a cvmix\_shear\_params\_type variable.
+!\\
+!\\
+
+! !USES:
+!  Only those used by entire module. 
+
+! !INPUT PARAMETERS:
+    character(len=*), intent(in) :: varname
+    character(len=*), intent(in) :: val
+
+! !OUTPUT PARAMETERS:
+    type(cvmix_shear_params_type), intent(inout) :: CVmix_shear_params
+!EOP
+!BOC
+
+    select case (trim(varname))
+      case ('mix_scheme')
+        CVmix_shear_params%mix_scheme = val
+      case DEFAULT
+        print*, "ERROR: ", trim(varname), " not a valid choice!"
+        stop
+      
+    end select
+
+!EOC
+
+  end subroutine cvmix_put_shear_str
 
 !BOP
 

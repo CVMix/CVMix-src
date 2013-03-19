@@ -25,6 +25,7 @@
                                      cvmix_data_type,         &
                                      cvmix_bkgnd_params_type, &
                                      cvmix_shear_params_type
+   use cvmix_put_get, only : cvmix_put
 !EOP
 
    implicit none
@@ -101,10 +102,10 @@
                   " to use Pacanowski-Philander mixing!"
           stop
         end if
-        CVmix_shear_params%mix_scheme = "PP"
-        CVmix_shear_params%PP_nu_zero = PP_nu_zero
-        CVmix_shear_params%PP_alpha   = PP_alpha
-        CVmix_shear_params%PP_exp     = PP_exp
+        call cvmix_put(CVmix_shear_params, "mix_scheme", "PP")
+        call cvmix_put(CVmix_shear_params, "PP_nu_zero", PP_nu_zero)
+        call cvmix_put(CVmix_shear_params, "PP_alpha", PP_alpha)
+        call cvmix_put(CVmix_shear_params, "PP_exp", PP_exp)
 
       case ('KPP')
         if (.not.(present(KPP_nu_zero) .and. present(KPP_Ri_zero) .and.       &
@@ -113,10 +114,10 @@
                   " KPP_exp to use Pacanowski-Philander mixing!"
           stop
         end if
-        CVmix_shear_params%mix_scheme  = "KPP"
-        CVmix_shear_params%KPP_nu_zero = KPP_nu_zero
-        CVmix_shear_params%KPP_Ri_zero = KPP_Ri_zero
-        CVmix_shear_params%KPP_exp     = KPP_exp
+        call cvmix_put(CVmix_shear_params, "mix_scheme", "KPP")
+        call cvmix_put(CVmix_shear_params, "KPP_nu_zero", KPP_nu_zero)
+        call cvmix_put(CVmix_shear_params, "KPP_Ri_zero", KPP_Ri_zero)
+        call cvmix_put(CVmix_shear_params, "KPP_exp", KPP_exp)
 
       case DEFAULT
         print*, "ERROR: ", trim(mix_scheme), " is not a valid choice for ", &

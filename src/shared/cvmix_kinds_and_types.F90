@@ -62,6 +62,10 @@ module cvmix_kinds_and_types
       real(cvmix_r8), dimension(:),   pointer :: dens_lwr => NULL()
       real(cvmix_r8), dimension(:),   pointer :: z        => NULL()
       real(cvmix_r8), dimension(:),   pointer :: dz       => NULL()
+      ! For double diffusion mixing, we need to calculate the stratification
+      ! parameter R_rho. Since the denominator of this ratio may be zero,
+      ! we store the numerator and denominator separately and make sure the
+      ! denominator is non-zero before performing the division.
       real(cvmix_r8), dimension(:),   pointer :: strat_param_num   => NULL()
       real(cvmix_r8), dimension(:),   pointer :: strat_param_denom => NULL()
   end type cvmix_data_type

@@ -164,7 +164,7 @@ contains
 ! !LOCAL VARIABLES:
     integer :: kw, var
 #ifdef _NETCDF
-    integer                            :: nw, nw_id
+    integer                            :: nt, nt_id, nw, nw_id
     integer, dimension(:), allocatable :: var_id
 #endif
 !EOP
@@ -173,12 +173,19 @@ contains
     select case (get_file_type(file_id))
 #ifdef _NETCDF
       case (NETCDF_FILE_TYPE)
+        nt = CVmix_vars%nlev
         nw = CVmix_vars%nlev+1
+        call netcdf_check(nf90_def_dim(file_id, "nt", nt, nt_id))
         call netcdf_check(nf90_def_dim(file_id, "nw", nw, nw_id))
         allocate(var_id(size(var_names)))
         do var=1,size(var_names)
-          call netcdf_check(nf90_def_var(file_id, var_names(var), NF90_DOUBLE, &
-                                         (/nw_id/), var_id(var)))
+          if (trim(var_names(var)).eq."Rrho") then
+            call netcdf_check(nf90_def_var(file_id, var_names(var), NF90_DOUBLE, &
+                                           (/nt_id/), var_id(var)))
+          else
+            call netcdf_check(nf90_def_var(file_id, var_names(var), NF90_DOUBLE, &
+                                           (/nw_id/), var_id(var)))
+          end if
         end do
         call netcdf_check(nf90_enddef(file_id))
         do var=1,size(var_names)
@@ -222,9 +229,13 @@ contains
                 write(file_id,"(E24.17E2)",advance='no') &
                       CVmix_vars%diff_iface(kw,1)
               case ("Rrho")
-                write(file_id,"(E24.17E2)",advance='no') &
-                      CVmix_vars%strat_param_num(kw) / &
-                      CVmix_vars%strat_param_denom(kw)
+                if (kw<CVmix_vars%nlev+1) then
+                  write(file_id,"(E24.17E2)",advance='no') &
+                        CVmix_vars%strat_param_num(kw) / &
+                        CVmix_vars%strat_param_denom(kw)
+                else
+                  write(file_id,"(E24.17E2)",advance='no') 0.0
+                end if
               case DEFAULT
                 print*, "ERROR: unable to write variable ", var_names(var)
                 stop
@@ -265,10 +276,10 @@ contains
     character(len=*),      dimension(:), intent(in) :: var_names
 
 ! !LOCAL VARIABLES:
-    integer :: ncol, nw, icol, kw, var
+    integer :: ncol, nw, nt, icol, kw, var
     logical :: z_err
 #ifdef _NETCDF
-    integer                                          :: nw_id, ncol_id
+    integer                                          :: nt_id, nw_id, ncol_id
     integer,             dimension(:),   allocatable :: var_id
     real(kind=cvmix_r8), dimension(:,:), allocatable :: lcl_visc, lcl_diff, lcl_Rrho
 #endif
@@ -277,6 +288,7 @@ contains
 
     z_err = .false.
     ncol = size(CVmix_vars)
+    nt = CVmix_vars(1)%nlev
     nw = CVmix_vars(1)%nlev+1
     ! Make sure all levels are the same
     do icol=2,ncol
@@ -300,17 +312,22 @@ contains
     select case (get_file_type(file_id))
 #ifdef _NETCDF
       case (NETCDF_FILE_TYPE)
+        call netcdf_check(nf90_def_dim(file_id, "nt",   nt,   nt_id))
         call netcdf_check(nf90_def_dim(file_id, "nw",   nw,   nw_id))
         call netcdf_check(nf90_def_dim(file_id, "ncol", ncol, ncol_id))
         allocate(var_id(size(var_names)))
         do var=1,size(var_names)
-          if ((trim(var_names(var)).eq."depth").or.  &
-              (trim(var_names(var)).eq."depth")) then
+          if (trim(var_names(var)).eq."depth") then
             call netcdf_check(nf90_def_var(file_id, var_names(var),          &
                                 NF90_DOUBLE, (/nw_id/), var_id(var)))
           else
-            call netcdf_check(nf90_def_var(file_id, var_names(var),          &
-                                NF90_DOUBLE, (/ncol_id,nw_id/), var_id(var)))
+            if (trim(var_names(var)).eq."Rrho") then
+              call netcdf_check(nf90_def_var(file_id, var_names(var),        &
+                                  NF90_DOUBLE, (/ncol_id,nt_id/), var_id(var)))
+            else
+              call netcdf_check(nf90_def_var(file_id, var_names(var),        &
+                                  NF90_DOUBLE, (/ncol_id,nw_id/), var_id(var)))
+            end if
           end if
           if (trim(var_names(var)).eq."visc") then
             allocate(lcl_visc(ncol,nw))
@@ -325,7 +342,7 @@ contains
             end do
           endif
           if (trim(var_names(var)).eq."Rrho") then
-            allocate(lcl_Rrho(ncol,nw))
+            allocate(lcl_Rrho(ncol,nt))
             do icol=1,ncol
               lcl_Rrho(icol,:) = CVmix_vars(icol)%strat_param_num(:) / &
                                  CVmix_vars(icol)%strat_param_denom(:)
@@ -383,9 +400,13 @@ contains
                 end do
               case ("Rrho")
                 do icol=1,ncol
-                  write(file_id,"(E24.17E2)",advance='no')     &
-                        CVmix_vars(icol)%strat_param_num(kw) / &
-                        CVmix_vars(icol)%strat_param_denom(kw)
+                  if (kw.ne.nw) then
+                    write(file_id,"(E24.17E2)",advance='no')     &
+                          CVmix_vars(icol)%strat_param_num(kw) / &
+                          CVmix_vars(icol)%strat_param_denom(kw)
+                  else
+                    write(file_id,"(E24.17E2)",advance='no') 0.0
+                  end if
                   if (icol.ne.ncol) write(file_id, "(1X)", advance='no')
                 end do
               case DEFAULT
