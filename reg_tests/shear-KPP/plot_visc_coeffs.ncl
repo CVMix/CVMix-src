@@ -1,9 +1,13 @@
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_code.ncl"
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_csm.ncl"
 
+; This script reads in output from the CVMix stand-alone driver using the shear
+; mixing technique from Large, et al., 1992. This script takes the output from
+; CVMix and uses it to recreate Figure 3 from that paper (page 373).
+
 begin
 
-; Create Color Table
+  ; Create Color Table
   my_color_map = (/"White", "Black"/)
 
   if (isfilepresent("data.nc")) then
@@ -35,15 +39,19 @@ begin
 
   ; Basic Graphics set up (don't draw / advance frame to add legend!)
   res          = True
+  res@tiMainFuncCode = ":"
+  res@tiXAxisFuncCode = res@tiMainFuncCode
+  res@tiYAxisFuncCode = res@tiMainFuncCode
   res@gsnDraw  = False
   res@gsnFrame = False
 
   ; line & marker styles / axes ranges (y decreases to bottom)
   res@xyMonoMarkLineMode = True
   res@xyMarkLineMode     = "Lines"
+  res@xyLineThicknessF   = 2.
   res@xyDashPattern      = 0
   res@trXMinF            = 0
-  res@trXMaxF            = 1
+  res@trXMaxF            = 0.8
   res@trYMinF            = 0
   res@trYMaxF            = 1
 
@@ -57,15 +65,23 @@ begin
   res@tmYLLabelFontHeightF    = 0.015
   res@tmXBMinorOn             = False
   res@tmYLMinorOn             = False
-  res@tmXBMajorOutwardLengthF = 0
-  res@tmYLMajorOutwardLengthF = 0
+  res@tmXBMode = "Manual"
+  res@tmXBTickStartF = 0.0
+  res@tmXBTickEndF = 0.8
+  res@tmXBTickSpacingF = 0.1
+  res@tmXBLabelStride = 2
+  res@tmYLMode = "Manual"
+  res@tmYLTickStartF = 0.0
+  res@tmYLTickEndF = 1.0
+  res@tmYLTickSpacingF = 0.1
+  res@tmYLLabelStride = 2
 
   ; Title / axes labels
-  res@tiMainString  = "Shear instability"
-  res@tiXAxisString = "Local gradient Richardson number"
-  res@tiYAxisString = "Normalized viscosity"
+  res@tiMainString  = "Shear Instability"
+  res@tiXAxisString = "Ri:B:g:E:"
+  res@tiYAxisString = ":F8:n:F10::S:s:E::B:x:E::F8: /n:F10::S:0:E:"
 
-  plot = gsn_csm_xy(wks, x, y, res)
+  plot = gsn_csm_xy(wks, x, y/5e-3, res)
 
   draw(plot)
   frame(wks)

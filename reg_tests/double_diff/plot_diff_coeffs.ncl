@@ -2,6 +2,10 @@ load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_code.ncl"
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_csm.ncl"
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/contributed.ncl"
 
+; This script reads in output from the CVMix stand-alone driver using double
+; diffusion mixing from Large, et al., 1992. This script takes the output from
+; CVMix and uses it to recreate Figures 4a and 4b from that paper (page 374).
+
 begin
 
 ; Create Color Table
@@ -73,8 +77,6 @@ begin
   res@tmYLTickEndF = 1.0
   res@tmYLTickSpacingF = 0.1
   res@tmYLLabelStride = 2
-;  res@tmXBMajorOutwardLengthF = 0
-;  res@tmYLMajorOutwardLengthF = 0
 
   ; Title / axes labels
   res@tiMainString  = "Diffusivity in Salt Fingering regime"
