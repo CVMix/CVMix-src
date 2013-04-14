@@ -7,7 +7,7 @@ ifeq ($(FC),pgf90)
 endif
 
 ifeq ($(FC),ifort)
-  FCFLAGS = -diag-error warn,remark -warn all -cpp -O2 -module $(OBJ_DIR)
+  FCFLAGS = -diag-error warn,remark -warn all -nogen-interface -cpp -O2 -module $(OBJ_DIR)
 endif
 
 ifeq ($(FC),xlf90)
