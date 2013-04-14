@@ -38,7 +38,6 @@ Subroutine cvmix_ddiff_driver(nlev)
 
   ! CVMix datatypes
   type(cvmix_data_type),         dimension(2) :: CVmix_vars
-  type(cvmix_global_params_type)              :: CVmix_params
   type(cvmix_ddiff_params_type)               :: CVmix_ddiff_params
 
   real(cvmix_r8), dimension(:,:,:), allocatable, target :: diffusivity
@@ -68,9 +67,6 @@ Subroutine cvmix_ddiff_driver(nlev)
     Rrho_denom(k,2) = -one
   end do
 
-  ! Initialization for CVMix data types
-  call cvmix_put(CVmix_params, 'max_nlev', nlev)
-  call cvmix_put(CVmix_params, 'prandtl',  0.0_cvmix_r8)
   ! Point CVmix_vars values to memory allocated above
   do ic=1,ncol
     call cvmix_put(CVmix_vars(ic), 'nlev', nlev)
