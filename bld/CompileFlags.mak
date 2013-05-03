@@ -17,3 +17,11 @@ endif
 ifeq ($(FC),nagfor)
   FCFLAGS = -kind=byte -free -O2 -I $(OBJ_DIR) -mdir $(OBJ_DIR)
 endif
+
+ifeq ($(FC),ftn)
+  FCFLAGS = -Mfree -O2 -module $(OBJ_DIR)
+endif
+
+ifeq ($(FC),crayftn)
+  FCFLAGS = -f free -O2 -em -p $(OBJ_DIR)
+endif

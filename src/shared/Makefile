@@ -62,6 +62,9 @@ MODS = $(OBJ_DIR)/cvmix_kinds_and_types.mod \
        $(INCS)
 OBJS = $(addprefix $(OBJ_DIR)/,${MODULES:.F90=.o})
 KINDS_OBJ = $(OBJ_DIR)/cvmix_kinds_and_types.o
+ifeq ($(FC),$(filter $(FC),pgf90 ftn))
+  OBJS += $(KINDS_OBJ)
+endif
 
 ### TARGETS ###
 
