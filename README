@@ -33,16 +33,20 @@ manual/ -- This may be moved into doc/ at some point, it is the scientific
 
 bld/ -- Contains auxiliary files needed by the build system. CompileFlags.mak
         has default compile flags for 5 different compilers -- gfortran, 
-        pgf90, ifort, xlf90, and nagfor. cvmix_setup is a python script that
-        saves information about what compiler to use and where netCDF is
-        installed in .CVMix_env. It has one subdirectory:
+        pgf90, ifort, xlf90, and nagfor, as well as ftn (the Cray wrapper for
+        pgf90). At this time, no other compilers are supported on Cray systems.
+        cvmix_setup is a python script that saves information about what
+        compiler to use and where netCDF is installed in .CVMix_env.
+
   bld/obj -- Where .o  and .mod files for the stand-alone drivers are stored.
 
 src/ -- Contains the source code, organized as follows. The top directory
         contains modules needed by the stand-alone driver (output, for example)
         as well as the driver routine itself. Also contains the Makefile used
         to build the cvmix executable.
+
   src/drivers -- Subroutines called by the driver (one per tests).
+
   src/shared  -- Where all the modules that are needed to use CVMix with an 
                  outside model are stored. (Use as an svn:external!) Also
                  contains the Makefile used to build the libcvmix.a library.

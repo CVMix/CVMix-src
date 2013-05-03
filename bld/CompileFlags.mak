@@ -21,7 +21,3 @@ endif
 ifeq ($(FC),ftn)
   FCFLAGS = -Mfree -O2 -module $(OBJ_DIR)
 endif
-
-ifeq ($(FC),crayftn)
-  FCFLAGS = -f free -O2 -em -p $(OBJ_DIR)
-endif
