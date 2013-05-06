@@ -65,13 +65,16 @@
 !  \begin{eqnarray*}
 !  \kappa = \kappa^0 \left[ 1 - \left(\frac{R_\rho - 1}{R_\rho^0 - 1} \right)^{p_1}\right]^{p_2}
 !  \end{eqnarray*}
-!  where
+!  The user must specify which set of units to use, either \verb|'mks'| or \verb|'cgs'|.
+!  By default, $R_\rho^0 = 2.55$, but that can be changed by setting 
+!  \verb|strat_param_max| in the code. Similarly, by default $p_1 = 1$ 
+! (\verb|ddiff_exp1|), $p_2 = 3$ (\verb|ddiff_exp2|), and
 !  \begin{eqnarray*}
 !  \kappa^0 = \left\{ \begin{array}{r l}
-!             7 \cdot 10^{-5}\ \textrm{m}^2\textrm{/s} & \textrm{for temperature} 
-!             \ (\verb|dd2|\ \textrm{in this routine})\\
+!             7 \cdot 10^{-5}\ \textrm{m}^2\textrm{/s} & \textrm{for temperature}
+!             \ (\verb|kappa_ddiff_t|\ \textrm{in this routine})\\
 !             10^{-4}\ \textrm{m}^2\textrm{/s} & \textrm{for salinity and other tracers}
-!             \ (\verb|dd3|\ \textrm{in this routine})
+!             \ (\verb|kappa_ddiff_s|\ \textrm{in this routine}).
 !                     \end{array} \right.
 !  \end{eqnarray*}
 !  On the other hand, if $(\partial \Theta / \partial z)$ is negative and
@@ -81,15 +84,22 @@
 !  \kappa = \nu_\textrm{molecular} \cdot 0.909\exp\left\{ 4.6\exp\left[
 !           -0.54\left( \frac{1}{R_\rho} - 1 \right) \right] \right\}
 !  \end{eqnarray*}
-!  where $\nu_\textrm{molecular} = 1.5 \cdot 10^{-6}\ \textrm{m}^2\textrm{/s}$ is the
-!  molecular viscosity of water. For salinity and other tracers, multiply
-!  $\kappa$ above by the factor
+!  where $\nu_\textrm{molecular}$ Is the molecular viscosity of water. By default it
+!  is set to $1.5 \cdot 10^{-6}\ \textrm{m}^2\textrm{/s}$, but it can be changed
+!  through \verb|mol_diff| in the code. Similarly, 0.909, 4.6, and -0.54 are the
+!  default values of \verb|kappa_ddiff_param1|, \verb|kappa_ddiff_param2|, and
+!  \verb|kappa_ddiff_param3|, respectively.\\
+!\\
+!  For salinity and other tracers, $\kappa$ above is multiplied by the factor
 !  \begin{eqnarray*}
 !  \textrm{factor} = \left\{ \begin{array}{c l}
 !                    0.15R_\rho & R_\rho < 0.5\\
 !                    1.85R_\rho - 0.85 & 0.5 \le R_\rho < 1\\
 !                     \end{array} \right.
 !  \end{eqnarray*}
+!  $\kappa$ is stored in \verb|CVmix_vars%diff_iface(:,1)|, while the modified value
+!  for non-temperature tracers is stored in \verb|CVmix_vars%diff_iface(:,2)|.\\
+!\\
 ! !USES:
 !  Only those used by entire module.
 
