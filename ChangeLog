@@ -6,6 +6,14 @@ ALL CHANGES SHOULD OCCUR BELOW THIS LINE
 ===============================================================================
 Tag Creator: mlevy
 Developers:  mlevy
+Tag Date:    6 May 2013
+Tag Name:    cvmix_20130506
+Tag Summary: Inclusion of double-diffusion mixing, fixed support for building
+             with the PGI compiler, and a couple of other small make system
+             bug fixes.
+===============================================================================
+Tag Creator: mlevy
+Developers:  mlevy
 Tag Date:    14 Feb 2013
 Tag Name:    cvmix_20130214
 Tag Summary: Improvements to src/shared/Makefile; can now call the Makefile
