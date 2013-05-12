@@ -23,9 +23,9 @@ Subroutine cvmix_tidal_driver(nlev)
   use cvmix_tidal,           only : cvmix_init_tidal,         &
                                     cvmix_coeffs_tidal
   use cvmix_put_get,         only : cvmix_put
-  use cvmix_io,              only : cvmix_output_open,        &
+  use cvmix_io,              only : cvmix_io_open,            &
                                     cvmix_output_write,       &
-                                    cvmix_output_close
+                                    cvmix_io_close
 
   Implicit None
 
@@ -71,14 +71,14 @@ Subroutine cvmix_tidal_driver(nlev)
   ! Output
   ! data will have diffusivity from both columns (needed for NCL script)
 #ifdef _NETCDF
-  call cvmix_output_open(fid, "data.nc", "nc")
+  call cvmix_io_open(fid, "data.nc", "nc")
 #else
-  call cvmix_output_open(fid, "data.out", "ascii")
+  call cvmix_io_open(fid, "data.out", "ascii")
 #endif
 
   call cvmix_output_write(fid, CVmix_vars, (/"diff", "visc"/))
 
-  call cvmix_output_close(fid)
+  call cvmix_io_close(fid)
 
 !EOC
 

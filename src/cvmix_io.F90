@@ -32,9 +32,9 @@ module cvmix_io
 
 !BOP
 ! !PUBLIC MEMBER FUNCTIONS:
-  public :: cvmix_output_open
+  public :: cvmix_io_open
   public :: cvmix_output_write
-  public :: cvmix_output_close
+  public :: cvmix_io_close
   public :: print_open_files
 
   interface cvmix_output_write
@@ -64,10 +64,10 @@ contains
 
 !BOP
 
-! !IROUTINE: cvmix_output_open
+! !IROUTINE: cvmix_io_open
 ! !INTERFACE:
 
-  subroutine cvmix_output_open(file_id, file_name, file_format)
+  subroutine cvmix_io_open(file_id, file_name, file_format, read_only)
 
 ! !DESCRIPTION:
 !  Routine to open a file for writing. Goal is to support writing files
@@ -83,16 +83,23 @@ contains
 !  Only those used by entire module. 
 
 ! !INPUT PARAMETERS:
-    character(len=*), intent(in) :: file_name, file_format
+    character(len=*),  intent(in) :: file_name, file_format
+    logical, optional, intent(in) :: read_only
 
 ! !OUTPUT PARAMETERS:
     integer, intent(out) :: file_id
 
 ! !LOCAL VARIABLES:
     type(cvmix_file_entry), pointer :: file_index
+    logical                         :: readonly
 !EOP
 !BOC
 
+    if (present(read_only)) then
+      readonly = read_only
+    else
+      readonly = .false.
+    end if
     ! Need routine that will produce unique file_id
     ! Starting with 615 and incrementing by one for now...
     file_id = 615
@@ -123,7 +130,17 @@ contains
         stop
 #else
         file_index%file_type = NETCDF_FILE_TYPE
-        call netcdf_check(nf90_create(file_name, NF90_CLOBBER, file_id))
+        ! Note: at this point, will either open file with NOWRITE for
+        !       read-only, or will clobber file to write new data to it.
+        !       Eventually we should add a check to see if the file exists
+        !       and open it with NF90_WRITE for non-readonly files, but that
+        !       will require checking to see if dims / variables already exist
+        !       (and are correct dimension) before trying to define them.
+        if (readonly) then
+          call netcdf_check(nf90_open(file_name, NF90_NOWRITE, file_id))
+        else
+          call netcdf_check(nf90_create(file_name, NF90_CLOBBER, file_id))
+        end if
         file_index%file_id = file_id
         ! For outputting params, want vertical dimension to be unlimited?
         ! (Will be looping through the levels)
@@ -137,7 +154,7 @@ contains
     end select
 !EOC
 
-  end subroutine cvmix_output_open
+  end subroutine cvmix_io_open
 
 !BOP
 
@@ -428,10 +445,10 @@ contains
 
 !BOP
 
-! !IROUTINE: cvmix_output_close
+! !IROUTINE: cvmix_io_close
 ! !INTERFACE:
 
-  subroutine cvmix_output_close(file_id)
+  subroutine cvmix_io_close(file_id)
 
 ! !DESCRIPTION:
 !  Routine to close a file once all writing has been completed. In addition
@@ -515,7 +532,7 @@ contains
     end select
 !EOC
 
-  end subroutine cvmix_output_close
+  end subroutine cvmix_io_close
 
 !BOP
 
@@ -568,7 +585,7 @@ contains
 #ifdef _NETCDF
     if (status.ne.nf90_noerr) then
       print*, "netCDF error: ", trim(nf90_strerror(status))
-      stop
+      stop 1
     end if
 #else
     print*, "ERROR: can not call netcdf_check unless compiling -D_NETCDF"

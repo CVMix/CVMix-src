@@ -24,9 +24,9 @@ Subroutine cvmix_ddiff_driver(nlev)
   use cvmix_ddiff,           only : cvmix_init_ddiff,         &
                                     cvmix_coeffs_ddiff
   use cvmix_put_get,         only : cvmix_put
-  use cvmix_io,              only : cvmix_output_open,        &
+  use cvmix_io,              only : cvmix_io_open,            &
                                     cvmix_output_write,       &
-                                    cvmix_output_close
+                                    cvmix_io_close
 
   Implicit None
 
@@ -92,14 +92,14 @@ Subroutine cvmix_ddiff_driver(nlev)
   ! Output
   ! data will have diffusivity from both columns (needed for NCL script)
 #ifdef _NETCDF
-  call cvmix_output_open(fid, "data.nc", "nc")
+  call cvmix_io_open(fid, "data.nc", "nc")
 #else
-  call cvmix_output_open(fid, "data.out", "ascii")
+  call cvmix_io_open(fid, "data.out", "ascii")
 #endif
 
   call cvmix_output_write(fid, CVmix_vars, (/"Rrho", "diff"/))
 
-  call cvmix_output_close(fid)
+  call cvmix_io_close(fid)
 
 !EOC
 

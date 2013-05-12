@@ -49,6 +49,11 @@ if [ $? != 0 ]; then
 fi
 
 $CVMix/bin/cvmix < input.nl
+if [ $? != 0 ]; then
+  echo "Error in execution!"
+  exit 1
+fi
+
 if [ "${USE_NETCDF}" == "netcdf" ]; then
   ncdump -v visc data.nc
 else

@@ -59,6 +59,11 @@ else
   $CVMix/bin/cvmix < input_pointer.nl
 fi
 
+if [ $? != 0 ]; then
+  echo "Error in execution!"
+  exit 1
+fi
+
 if [ "${USE_NETCDF}" == "netcdf" ]; then
   if [ -f data.nc ]; then
     ncdump -v diff data.nc

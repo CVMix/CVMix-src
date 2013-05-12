@@ -27,9 +27,9 @@ Subroutine cvmix_BL_pointer_driver(nlev, ocn_depth)
   use cvmix_background,      only : cvmix_init_bkgnd,         &
                                     cvmix_coeffs_bkgnd
   use cvmix_put_get,         only : cvmix_put
-  use cvmix_io,              only : cvmix_output_open,        &
+  use cvmix_io,              only : cvmix_io_open,            &
                                     cvmix_output_write,       &
-                                    cvmix_output_close
+                                    cvmix_io_close
 
   Implicit None
 
@@ -111,18 +111,18 @@ Subroutine cvmix_BL_pointer_driver(nlev, ocn_depth)
   ! Output
 #ifdef _NETCDF
   ! data will have diffusivity from both columns (needed for NCL script)
-  call cvmix_output_open(fid, "data.nc", "nc")
+  call cvmix_io_open(fid, "data.nc", "nc")
   ! Note: all entries in string of variables to output must be
   !       the same length... hence the space in "diff "
   call cvmix_output_write(fid, CVmix_vars, (/"depth", "diff "/))
-  call cvmix_output_close(fid)
+  call cvmix_io_close(fid)
 #else
   ! data will have diffusivity from both columns (needed for NCL script)
-  call cvmix_output_open(fid1, "data.out", "ascii")
+  call cvmix_io_open(fid1, "data.out", "ascii")
   ! col1 will just have diffusivity from low lat
-  call cvmix_output_open(fid2, "col1.out", "ascii")
+  call cvmix_io_open(fid2, "col1.out", "ascii")
   ! col2 will just have diffusivity from high lat
-  call cvmix_output_open(fid3, "col2.out", "ascii")
+  call cvmix_io_open(fid3, "col2.out", "ascii")
 
   ! Note: all entries in string of variables to output must be
   !       the same length... hence the space in "diff "
@@ -130,9 +130,9 @@ Subroutine cvmix_BL_pointer_driver(nlev, ocn_depth)
   call cvmix_output_write(fid2, CVmix_vars(1), (/"depth", "diff "/))
   call cvmix_output_write(fid3, CVmix_vars(2), (/"depth", "diff "/))
 
-  call cvmix_output_close(fid1)
-  call cvmix_output_close(fid2)
-  call cvmix_output_close(fid3)
+  call cvmix_io_close(fid1)
+  call cvmix_io_close(fid2)
+  call cvmix_io_close(fid3)
 #endif
 
 !EOC
