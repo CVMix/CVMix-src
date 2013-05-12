@@ -45,7 +45,7 @@ include $(BLD_DIR)/CompileFlags.mak
 LINKING_FLAGS = -L$(LIB_DIR) -lcvmix
 
 # If you build without netCDF and then decide you want to build with netCDF (or
-# vice versa), you need to clean the cvmix_output and cvmix_driver object files.
+# vice versa), you need to clean the cvmix_io and cvmix_driver object files.
 # The way this is handled is by storing whether the last compilation used netCDF
 # or not in the hidden file .netcdf_info; whether the current built is using
 # netCDF or not is stored in the variable NEW_NETCDF while the contents of
@@ -97,9 +97,9 @@ ifneq ($(OLD_NETCDF), $(NEW_NETCDF))
   REBUILD = TRUE
 endif
 
-# Dependencies: all drivers use cvmix_output
+# Dependencies: all drivers use cvmix_io
 OBJS = cvmix_driver.o \
-       cvmix_output.o
+       cvmix_io.o
 DRIVER_OBJS = cvmix_bgrnd_BL_pointer.o \
               cvmix_bgrnd_BL_memcopy.o \
               cvmix_shear_KPP.o        \
@@ -129,35 +129,35 @@ ifeq ($(NEED_ENV_FILE),FALSE)
 endif
 
 # Create all object and module files
-$(OBJ_DIR)/cvmix_bgrnd_BL_pointer.o: $(OBJ_DIR)/cvmix_output.o \
+$(OBJ_DIR)/cvmix_bgrnd_BL_pointer.o: $(OBJ_DIR)/cvmix_io.o \
                                      $(INC_DIR)/cvmix_kinds_and_types.mod \
                                      $(INC_DIR)/cvmix_put_get.mod \
                                      $(INC_DIR)/cvmix_background.mod \
                                      $(SRC_DRIVE_DIR)/cvmix_bgrnd_BL_pointer.F90
 	$(FC) $(FCFLAGS) -c $(SRC_DRIVE_DIR)/cvmix_bgrnd_BL_pointer.F90 -o $@
 
-$(OBJ_DIR)/cvmix_bgrnd_BL_memcopy.o: $(OBJ_DIR)/cvmix_output.o \
+$(OBJ_DIR)/cvmix_bgrnd_BL_memcopy.o: $(OBJ_DIR)/cvmix_io.o \
                                      $(INC_DIR)/cvmix_kinds_and_types.mod \
                                      $(INC_DIR)/cvmix_put_get.mod \
                                      $(INC_DIR)/cvmix_background.mod \
                                      $(SRC_DRIVE_DIR)/cvmix_bgrnd_BL_memcopy.F90
 	$(FC) $(FCFLAGS) -c $(SRC_DRIVE_DIR)/cvmix_bgrnd_BL_memcopy.F90 -o $@
 
-$(OBJ_DIR)/cvmix_tidal_Simmons.o: $(OBJ_DIR)/cvmix_output.o \
+$(OBJ_DIR)/cvmix_tidal_Simmons.o: $(OBJ_DIR)/cvmix_io.o \
                                   $(INC_DIR)/cvmix_kinds_and_types.mod \
                                   $(INC_DIR)/cvmix_put_get.mod \
                                   $(INC_DIR)/cvmix_tidal.mod \
                                   $(SRC_DRIVE_DIR)/cvmix_tidal_Simmons.F90
 	$(FC) $(FCFLAGS) -c $(SRC_DRIVE_DIR)/cvmix_tidal_Simmons.F90 -o $@
 
-$(OBJ_DIR)/cvmix_shear_KPP.o: $(OBJ_DIR)/cvmix_output.o \
+$(OBJ_DIR)/cvmix_shear_KPP.o: $(OBJ_DIR)/cvmix_io.o \
                               $(INC_DIR)/cvmix_kinds_and_types.mod \
                               $(INC_DIR)/cvmix_put_get.mod \
                               $(INC_DIR)/cvmix_shear.mod \
                               $(SRC_DRIVE_DIR)/cvmix_shear_KPP.F90
 	$(FC) $(FCFLAGS) -c $(SRC_DRIVE_DIR)/cvmix_shear_KPP.F90 -o $@
 
-$(OBJ_DIR)/cvmix_ddiff_drv.o: $(OBJ_DIR)/cvmix_output.o \
+$(OBJ_DIR)/cvmix_ddiff_drv.o: $(OBJ_DIR)/cvmix_io.o \
                               $(INC_DIR)/cvmix_kinds_and_types.mod \
                               $(INC_DIR)/cvmix_put_get.mod \
                               $(INC_DIR)/cvmix_ddiff.mod \
@@ -168,8 +168,8 @@ $(OBJ_DIR)/cvmix_driver.o: $(addprefix $(OBJ_DIR)/,$(DRIVER_OBJS)) \
                            $(SRC_DIR)/cvmix_driver.F90
 	$(FC) $(FCFLAGS) -c $(SRC_DIR)/cvmix_driver.F90 -o $@
 
-$(OBJ_DIR)/cvmix_output.o: $(SRC_DIR)/cvmix_output.F90
-	$(FC) $(FCFLAGS) -c $(SRC_DIR)/cvmix_output.F90 -o $@
+$(OBJ_DIR)/cvmix_io.o: $(SRC_DIR)/cvmix_io.F90
+	$(FC) $(FCFLAGS) -c $(SRC_DIR)/cvmix_io.F90 -o $@
 
 lib:
 	cd $(SRC_SHARED_DIR) ; $(MAKE)
@@ -186,7 +186,7 @@ check:
 # The variables FC, NETCDF_INC, NETCDF_LIB, and NETCDF_LINK are read in from
 # CVMix_env. If the file doesn't exist, then the python script "cvmix_setup"
 # is run to generate the file.
-	$(if $(REBUILD), rm -f $(addprefix $(OBJ_DIR)/,cvmix_output.o $(DRIVER_OBJS)))
+	$(if $(REBUILD), rm -f $(addprefix $(OBJ_DIR)/,cvmix_io.o $(DRIVER_OBJS)))
 
 $(ENV_FILE):
 # After building the ENV_FILE, must invoke make again to read it in. Note that

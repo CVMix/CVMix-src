@@ -24,7 +24,7 @@ Subroutine cvmix_ddiff_driver(nlev)
   use cvmix_ddiff,           only : cvmix_init_ddiff,         &
                                     cvmix_coeffs_ddiff
   use cvmix_put_get,         only : cvmix_put
-  use cvmix_output,          only : cvmix_output_open,        &
+  use cvmix_io,              only : cvmix_output_open,        &
                                     cvmix_output_write,       &
                                     cvmix_output_close
 

@@ -23,7 +23,7 @@ Subroutine cvmix_tidal_driver(nlev)
   use cvmix_tidal,           only : cvmix_init_tidal,         &
                                     cvmix_coeffs_tidal
   use cvmix_put_get,         only : cvmix_put
-  use cvmix_output,          only : cvmix_output_open,        &
+  use cvmix_io,              only : cvmix_output_open,        &
                                     cvmix_output_write,       &
                                     cvmix_output_close
 

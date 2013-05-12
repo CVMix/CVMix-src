@@ -1,13 +1,14 @@
-module cvmix_output
+module cvmix_io
 
 !BOP
 !\newpage
-! !MODULE: cvmix_output
+! !MODULE: cvmix_io
 !
 ! !DESCRIPTION:
-!  This module contains routines to output CVmix variables to data files.
-!  Currently only ascii output is supported, but the plan is to also include
-!  plain binary and netCDF output as well.
+!  This module contains routines to read CVmix variables from data files or 
+!  output CVmix variables to data files. Currently only ascii and netCDF output
+!  are supported, as well as netCDF input, but the plan is to also include plain
+!  binary input / output as well.
 !\\
 !\\
 
@@ -596,5 +597,5 @@ contains
 
   end subroutine print_open_files
 
-end module cvmix_output
+end module cvmix_io
 

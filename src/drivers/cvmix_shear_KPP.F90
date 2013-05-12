@@ -29,7 +29,7 @@ Subroutine cvmix_shear_driver(nlev)
   use cvmix_shear,           only : cvmix_init_shear,         &
                                     cvmix_coeffs_shear
   use cvmix_put_get,         only : cvmix_put
-  use cvmix_output,          only : cvmix_output_open,        &
+  use cvmix_io,              only : cvmix_output_open,        &
                                     cvmix_output_write,       &
                                     cvmix_output_close
 
