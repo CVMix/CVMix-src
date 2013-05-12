@@ -17,6 +17,7 @@ Subroutine cvmix_tidal_driver(nlev)
 ! !USES:
 
   use cvmix_kinds_and_types, only : cvmix_r8,                 &
+                                    cvmix_strlen,             &
                                     cvmix_data_type,          &
                                     cvmix_global_params_type, &
                                     cvmix_tidal_params_type
@@ -24,6 +25,7 @@ Subroutine cvmix_tidal_driver(nlev)
                                     cvmix_coeffs_tidal
   use cvmix_put_get,         only : cvmix_put
   use cvmix_io,              only : cvmix_io_open,            &
+                                    cvmix_input_read,         &
                                     cvmix_output_write,       &
                                     cvmix_io_close
 
@@ -47,10 +49,14 @@ Subroutine cvmix_tidal_driver(nlev)
   integer :: fid
 
   ! Namelist variables
-  ! Variables for tidal mixing go here
+  character(len=cvmix_strlen) :: energy_flux_file, energy_flux_var
+  integer :: nlon, nlat
+
+  ! Local variables
+  real(cvmix_r8), dimension(:,:), allocatable :: energy_flux
 
   ! Namelists that may be read in, depending on desired mixing scheme
-  ! namelist/Simmons_nml/
+  namelist/Simmons_nml/energy_flux_file, energy_flux_var, nlon, nlat
 
   ! Allocate memory to store viscosity and diffusivity values
   allocate(diffusivity(nlev+1,1), viscosity(nlev+1))
@@ -64,7 +70,20 @@ Subroutine cvmix_tidal_driver(nlev)
   CVmix_vars%diff_iface => diffusivity
 
   ! Read / set Simmons parameters
-!  read(*, nml=Simmons_nml)
+  ! Default values
+  energy_flux_file = "none"
+  energy_flux_var = "none"
+  nlon = 360
+  nlat = 180
+  read(*, nml=Simmons_nml)
+  allocate(energy_flux(nlon, nlat))
+  call cvmix_io_open(fid, trim(energy_flux_file), 'nc', read_only=.true.)
+  call cvmix_input_read(fid, trim(energy_flux_var), energy_flux)
+  call cvmix_io_close(fid)
+  ! Note: at this time, not ignoring missing value
+  print*, "Min and Max of energy flux (min = 0 with proper missing value support):"
+  print*, minval(energy_flux), maxval(energy_flux)
+
   call cvmix_init_tidal(CVmix_Simmons_params, 'simmons')
   call cvmix_coeffs_tidal(CVmix_vars, CVmix_Simmons_params)
 
