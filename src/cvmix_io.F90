@@ -18,9 +18,10 @@ module cvmix_io
 
 ! !USES:
 
-   use cvmix_kinds_and_types, only : cvmix_data_type
+   use cvmix_kinds_and_types, only : cvmix_data_type, &
+                                     cvmix_r8,        &
+                                     cvmix_strlen
 #ifdef _NETCDF
-   use cvmix_kinds_and_types, only : cvmix_r8
    use netcdf
 #endif
 
@@ -33,9 +34,15 @@ module cvmix_io
 !BOP
 ! !PUBLIC MEMBER FUNCTIONS:
   public :: cvmix_io_open
+  public :: cvmix_input_read
   public :: cvmix_output_write
   public :: cvmix_io_close
+  public :: cvmix_io_close_all
   public :: print_open_files
+
+  interface cvmix_input_read
+    module procedure cvmix_input_read_2d_double
+  end interface
 
   interface cvmix_output_write
     module procedure cvmix_output_write_single_col
@@ -53,6 +60,7 @@ module cvmix_io
   type :: cvmix_file_entry
     integer :: file_id
     integer :: file_type
+    character(len=cvmix_strlen) :: file_name
     type(cvmix_file_entry), pointer :: prev
     type(cvmix_file_entry), pointer :: next
   end type
@@ -122,6 +130,7 @@ contains
       nullify(file_index%next%next)
       file_index => file_index%next
     end if
+    file_index%file_name = trim(file_name)
 
     select case (trim(file_format))
       case ('nc')
@@ -158,6 +167,112 @@ contains
 
 !BOP
 
+! !IROUTINE: cvmix_input_read_2d_double
+! !INTERFACE:
+
+  subroutine cvmix_input_read_2d_double(file_id, var_name, local_copy)
+
+! !DESCRIPTION:
+!  Routine to read the requested 2D variable from a netcdf file and save it to
+!  a local array (file must be opened using cvmix\_io\_open with the optional
+!  argument readonly = .true.). Called with cvmix\_input\_read (see interface
+!  in PUBLIC MEMBER FUNCTIONS above). At this time, only works with netcdf
+!  files.
+!\\
+!\\
+
+! !USES:
+!  Only those used by entire module. 
+
+! !INPUT PARAMETERS:
+    integer,          intent(in)  :: file_id
+    character(len=*), intent(in)  :: var_name
+    real(cvmix_r8), dimension(:,:),  intent(out) :: local_copy
+
+! !LOCAL VARIABLES:
+    logical :: lerr_in_read
+#ifdef _NETCDF
+    integer :: varid, nvar, i, ndims, xtype
+    integer, dimension(2) :: dims1, dims2
+    character(len=cvmix_strlen) :: tmp_name
+#endif
+
+!EOP
+!BOC
+
+  local_copy = 0.0_cvmix_r8
+  lerr_in_read = .false.
+    select case (get_file_type(file_id))
+#ifdef _NETCDF
+      case (NETCDF_FILE_TYPE)
+        varid = -1
+        ! Find number of variables in file
+        call netcdf_check(nf90_inquire(file_id, nVariables=nvar))
+        i = 1
+        do while((i.le.nvar).and.(varid.eq.-1))
+          ! Loop to figure out if var_name is a valid variable in the file
+          call netcdf_check(nf90_inquire_variable(file_id, i, name=tmp_name,&
+                                                  xtype=xtype, ndims=ndims))
+          if (trim(var_name).eq.trim(tmp_name)) then
+            varid = i
+          else
+            i = i+1
+          end if
+        end do
+        lerr_in_read = (varid.eq.-1)
+
+        if (lerr_in_read) then
+          write(*,"(A,A,x,A,A)") "Could not find variable ", trim(var_name), &
+                                 "in ", trim(get_file_name(file_id))
+        else
+          ! A couple more error checks
+          if (xtype.ne.NF90_DOUBLE) then
+            write(*, "(A,x,A,x,A)") "ERROR: variable", trim(var_name), &
+                            "is not a double-precision float!"
+            lerr_in_read = .true.
+          end if
+          if (ndims.ne.2) then
+            write(*,"(A,x,I0,A)") "ERROR: you are trying to read a", ndims, &
+                                  "-dimensional array into a 2D array."
+            lerr_in_read = .true.
+          end if
+        end if
+
+        
+        if (.not.lerr_in_read) then
+          call netcdf_check(nf90_inquire_variable(file_id, varid, dimids=dims1))
+          do i=1,2
+            call netcdf_check(nf90_inquire_dimension(file_id, dims1(i), &
+                              len=dims2(i)))
+          end do
+
+          dims1 = shape(local_copy)
+          if (all(dims1.eq.dims2)) then
+            call netcdf_check(nf90_get_var(file_id, varid, local_copy))
+          else
+            write(*,"(A,x,I0,x,A,x,I0,x,A,x,I0,x,A,x,I0)") &
+                    "ERROR: you are trying to read a", dims2(1), "by", dims2(2), &
+                    "array into a local variable that is", dims1(1), "by", dims1(2)
+            lerr_in_read = .true.
+          end if
+        end if
+#endif
+      case DEFAULT
+        lerr_in_read = .true.
+        write(*,"(A,x,A,x,A)") "ERROR: no read support for binary files,", &
+                               "use netCDF to read", trim(var_name)
+    end select
+
+    if (lerr_in_read) then
+      call cvmix_io_close_all
+      stop 1
+    end if
+!EOC
+
+  end subroutine cvmix_input_read_2d_double
+
+!BOP
+
 ! !IROUTINE: cvmix_output_write_single_col
 ! !INTERFACE:
 
@@ -165,8 +280,8 @@ contains
 
 ! !DESCRIPTION:
 !  Routine to write the requested variables from a single column to a file
-!  (file must be opened using vmix\_output\_open to ensure it is written
-!  correctly). Called with vmix\_output\_write (see interface in PUBLIC
+!  (file must be opened using cvmix\_io\_open to ensure it is written
+!  correctly). Called with cvmix\_output\_write (see interface in PUBLIC
 !  MEMBER FUNCTIONS above).
 !\\
 !\\
@@ -448,6 +563,37 @@ contains
 ! !IROUTINE: cvmix_io_close
 ! !INTERFACE:
 
+  subroutine cvmix_io_close_all
+
+! !DESCRIPTION:
+!  Routine to close all files open (meant to be called prior to an abort)
+!\\
+!\\
+
+! !USES:
+!  Only those used by entire module. 
+
+! !LOCAL VARIABLES:
+    integer :: fid
+
+!EOP
+!BOC
+
+    write(*,"(A)") "Closing all open files..."
+    do while (allocated(file_database))
+      fid = file_database(1)%file_id
+      write(*, "(A,x,A)") "...", trim(get_file_name(fid))
+      call cvmix_io_close(fid)
+    end do
+    write(*,"(A)") "All files closed."
+!EOC
+  end subroutine cvmix_io_close_all
+
+!BOP
+
+! !IROUTINE: cvmix_io_close
+! !INTERFACE:
+
   subroutine cvmix_io_close(file_id)
 
 ! !DESCRIPTION:
@@ -512,6 +658,7 @@ contains
         ifile => file_to_close%prev
         file_database(1)%file_id   = file_to_close%file_id
         file_database(1)%file_type = file_to_close%file_type
+        file_database(1)%file_name = file_to_close%file_name
         nullify(ifile%next)
         deallocate(file_to_close)
       else
@@ -533,6 +680,50 @@ contains
 !EOC
 
   end subroutine cvmix_io_close
+
+!BOP
+
+! !IROUTINE: get_file_name
+! !INTERFACE:
+
+  function get_file_name(file_id)
+
+! !DESCRIPTION:
+!  Returns the name of the file associated with a given file_id. If the file
+!  is not in the database, returns FILE\_NOT\_FOUND.
+!\\
+!\\
+
+! !USES:
+!  Only those used by entire module. 
+
+! !INPUT PARAMETERS:
+    integer, intent(in) :: file_id
+
+! !OUTPUT PARAMETERS:
+    character(len=cvmix_strlen) :: get_file_name
+
+! !LOCAL VARIABLES:
+    type(cvmix_file_entry), pointer :: ifile
+!EOP
+!BOC
+
+    ifile => file_database(1)
+    if (ifile%file_id.eq.file_id) then
+      get_file_name = ifile%file_name
+      return
+    end if
+    do while(associated(ifile%next))
+      ifile => ifile%next
+      if (ifile%file_id.eq.file_id) then
+        get_file_name = ifile%file_name
+        return
+      end if
+    end do
+    get_file_name = "FILE_NOT_FOUND"
+!EOC
+
+  end function get_file_name
 
 !BOP
 
@@ -578,6 +769,7 @@ contains
 
   end function get_file_type
 
+! Routine to handle errors returned from netcdf
   subroutine netcdf_check(status)
 
     integer, intent(in) :: status
@@ -605,10 +797,10 @@ contains
     else
       ifile => file_database(1)
       do while (associated(ifile%next))
-        print*, "file id: ", ifile%file_id, ifile%file_type
+        print*, "file id: ", ifile%file_id, ifile%file_type, trim(ifile%file_name)
         ifile => ifile%next
       end do
-      print*, "file id: ", ifile%file_id, ifile%file_type
+      print*, "file id: ", ifile%file_id, ifile%file_type, trim(ifile%file_name)
     end if
     print*, "----"
 
