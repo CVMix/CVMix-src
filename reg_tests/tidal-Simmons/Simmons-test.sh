@@ -39,6 +39,11 @@ while [ $# -gt 0 ]; do
   shift
 done
 
+if [ "${USE_NETCDF}" != "netcdf" ]; then
+  echo "Note: this test requires netCDF... use -nc flag"
+  exit 1
+fi
+
 CVMix=$PWD/../..
 make -f $CVMix/src/Makefile ${USE_NETCDF}
 # Note: if make error, include CVMIX_ROOT as below
