@@ -222,18 +222,18 @@ contains
         lerr_in_read = (varid.eq.-1)
 
         if (lerr_in_read) then
-          write(*,"(A,A,x,A,A)") "Could not find variable ", trim(var_name), &
-                                 "in ", trim(get_file_name(file_id))
+          write(*,"(A,A,1X,A,A)") "Could not find variable ", trim(var_name), &
+                                  "in ", trim(get_file_name(file_id))
         else
           ! A couple more error checks
           if (xtype.ne.NF90_DOUBLE) then
-            write(*, "(A,x,A,x,A)") "ERROR: variable", trim(var_name), &
-                            "is not a double-precision float!"
+            write(*, "(A,1X,A,1X,A)") "ERROR: variable", trim(var_name), &
+                                      "is not a double-precision float!"
             lerr_in_read = .true.
           end if
           if (ndims.ne.2) then
-            write(*,"(A,x,I0,A)") "ERROR: you are trying to read a", ndims, &
-                                  "-dimensional array into a 2D array."
+            write(*,"(A,1X,I0,A)") "ERROR: you are trying to read a", ndims, &
+                                   "-dimensional array into a 2D array."
             lerr_in_read = .true.
           end if
         end if
@@ -250,7 +250,7 @@ contains
           if (all(dims1.eq.dims2)) then
             call netcdf_check(nf90_get_var(file_id, varid, local_copy))
           else
-            write(*,"(A,x,I0,x,A,x,I0,x,A,x,I0,x,A,x,I0)") &
+            write(*,"(A,1X,I0,1X,A,1X,I0,1X,A,1X,I0,1X,A,1X,I0)") &
                     "ERROR: you are trying to read a", dims2(1), "by", dims2(2), &
                     "array into a local variable that is", dims1(1), "by", dims1(2)
             lerr_in_read = .true.
@@ -259,8 +259,8 @@ contains
 #endif
       case DEFAULT
         lerr_in_read = .true.
-        write(*,"(A,x,A,x,A)") "ERROR: no read support for binary files,", &
-                               "use netCDF to read", trim(var_name)
+        write(*,"(A,1X,A,1X,A)") "ERROR: no read support for binary files,", &
+                                 "use netCDF to read", trim(var_name)
     end select
 
     if (lerr_in_read) then
@@ -582,7 +582,7 @@ contains
     write(*,"(A)") "Closing all open files..."
     do while (allocated(file_database))
       fid = file_database(1)%file_id
-      write(*, "(A,x,A)") "...", trim(get_file_name(fid))
+      write(*, "(A,1X,A)") "...", trim(get_file_name(fid))
       call cvmix_io_close(fid)
     end do
     write(*,"(A)") "All files closed."
