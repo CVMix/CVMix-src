@@ -689,7 +689,7 @@ contains
   function get_file_name(file_id)
 
 ! !DESCRIPTION:
-!  Returns the name of the file associated with a given file_id. If the file
+!  Returns the name of the file associated with a given file\_id. If the file
 !  is not in the database, returns FILE\_NOT\_FOUND.
 !\\
 !\\

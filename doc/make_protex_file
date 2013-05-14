@@ -10,7 +10,7 @@ f90pdf                                       \
        $DRIVE/cvmix_shear_KPP.F90            \
        $DRIVE/cvmix_tidal_Simmons.F90        \
        $DRIVE/cvmix_ddiff_drv.F90            \
-       $SRC/cvmix_output.F90                 \
+       $SRC/cvmix_io.F90                     \
        $SHARE/cvmix_kinds_and_types.F90      \
        $SHARE/cvmix_background.F90           \
        $SHARE/cvmix_shear.F90                \
