@@ -66,7 +66,6 @@ ifneq ($(OBJ_DIR),$(INC_DIR))
 endif
 MODS = $(addprefix $(OBJ_DIR)/,${MODS_TMP:.F90=.mod}) \
        $(INCS)
-$(info $(MODS))
 OBJS = $(addprefix $(OBJ_DIR)/,${MODULES:.F90=.o})
 KINDS_OBJ = $(OBJ_DIR)/cvmix_kinds_and_types.o
 ifeq ($(FC),$(filter $(FC),pgf90 ftn))

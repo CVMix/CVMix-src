@@ -112,17 +112,19 @@ else
   MODS = ${OBJS:.o=.mod}
 endif
 
-SHARED_MODS = cvmix_kinds_and_types.mod \
-              cvmix_background.mod \
-              cvmix_convection.mod \
-              cvmix_ddiff.mod \
-              cvmix_put_get.mod \
-              cvmix_shear.mod \
-              cvmix_tidal.mod
+SHARED_TMP = cvmix_kinds_and_types.mod \
+             cvmix_background.mod \
+             cvmix_convection.mod \
+             cvmix_ddiff.mod \
+             cvmix_put_get.mod \
+             cvmix_shear.mod \
+             cvmix_tidal.mod
 
 ifeq ($(UCASE),TRUE)
-SHARED_TMP = $(shell echo $(SHARED_MODS) | tr [a-z] [A-Z])
-SHARED_MODS = ${SHARED_TMP:.MOD=.mod}
+  SHARED_TMP2 = $(shell echo $(SHARED_TMP) | tr '[a-z]' '[A-Z]')
+  SHARED_MODS = ${SHARED_TMP2:.MOD=.mod}
+else
+  SHARED_MODS = $(SHARED_TMP)
 endif
 SHR_MODS = $(addprefix $(INC_DIR)/,$(SHARED_MODS))
 
@@ -183,7 +185,9 @@ $(OBJ_DIR)/cvmix_io.o: $(SRC_DIR)/cvmix_io.F90 \
 	$(FC) $(FCFLAGS) -c $(SRC_DIR)/cvmix_io.F90 -o $@
 
 lib:
+ifeq ($(NEED_ENV_FILE),FALSE)
 	cd $(SRC_SHARED_DIR) ; $(MAKE)
+endif
 
 # Utilities:
 # 1) check determines if output needs to be rebuilt with (or without) 
