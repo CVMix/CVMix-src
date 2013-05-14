@@ -65,7 +65,12 @@ ifeq ($(USE_NETCDF),TRUE)
   else
     # with netcdf4, need to know whether to include hdf5 or not
     # That comes from $(NETCDF_LIB)/pkgconfig/netcdf.pc
-    NETCDF_PC = $(NETCDF_LIB)/pkgconfig/netcdf.pc
+    # (Note: some distributions now have netcdf-fortran.pc in addition to
+    # netcdf.pc... so check for netcdf-fortran.pc first)
+    NETCDF_PC = $(NETCDF_LIB)/pkgconfig/netcdf-fortran.pc
+    ifeq ($(wildcard $(NETCDF_PC)),)
+      NETCDF_PC = $(NETCDF_LIB)/pkgconfig/netcdf.pc
+    endif
     ifeq ($(wildcard $(NETCDF_PC)),)
       LINKING_FLAGS += -L$(NETCDF_LIB) -lnetcdff -lnetcdf
     else
