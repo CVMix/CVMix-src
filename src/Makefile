@@ -124,7 +124,7 @@ ifeq ($(UCASE),TRUE)
 SHARED_TMP = $(shell echo $(SHARED_MODS) | tr [a-z] [A-Z])
 SHARED_MODS = ${SHARED_TMP:.MOD=.mod}
 endif
-SHR_MODS = $(addprefix($(INC_DIR)/,${SHARED_MODS})
+SHR_MODS = $(addprefix $(INC_DIR)/,$(SHARED_MODS))
 
 ### TARGETS ###
 
@@ -174,10 +174,12 @@ $(OBJ_DIR)/cvmix_ddiff_drv.o: $(OBJ_DIR)/cvmix_io.o \
 	$(FC) $(FCFLAGS) -c $(SRC_DRIVE_DIR)/cvmix_ddiff_drv.F90 -o $@
 
 $(OBJ_DIR)/cvmix_driver.o: $(addprefix $(OBJ_DIR)/,$(DRIVER_OBJS)) \
+                           $(SHR_MODS) \
                            $(SRC_DIR)/cvmix_driver.F90
 	$(FC) $(FCFLAGS) -c $(SRC_DIR)/cvmix_driver.F90 -o $@
 
-$(OBJ_DIR)/cvmix_io.o: $(SRC_DIR)/cvmix_io.F90
+$(OBJ_DIR)/cvmix_io.o: $(SRC_DIR)/cvmix_io.F90 \
+                       $(SHR_MODS)
 	$(FC) $(FCFLAGS) -c $(SRC_DIR)/cvmix_io.F90 -o $@
 
 lib:
