@@ -37,7 +37,7 @@ module cvmix_kinds_and_types
   ! The value for pi is needed for Bryan-Lewis mixing.
   real(cvmix_r8), parameter, public :: one = 1.0_cvmix_r8
   real(cvmix_r8), parameter, public :: cvmix_PI = &
-                      2.0_cvmix_r8*acos(0.0_cvmix_r8)
+                                       3.14159265358979323846_cvmix_r8
 
 ! !PUBLIC TYPES:
 

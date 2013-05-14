@@ -53,13 +53,20 @@ MODULES = cvmix_background.F90 \
           cvmix_shear.F90 \
           cvmix_tidal.F90
 
-ifneq ($(OBJ_DIR),$(INC_DIR))
-  INCS = $(INC_DIR)/cvmix_kinds_and_types.mod \
-         $(addprefix $(INC_DIR)/,${MODULES:.F90=.mod})
+# Some compilers produce ALL_UPPER_CASE.mod files
+ifeq ($(UCASE),TRUE)
+  MODS_TMP = CVMIX_KINDS_AND_TYPES.F90 \
+             $(shell echo $(MODULES) | tr '[a-z]' '[A-Z]')
+else
+  MODS_TMP = cvmix_kinds_and_types.F90 \
+             $(MODULES)
 endif
-MODS = $(OBJ_DIR)/cvmix_kinds_and_types.mod \
-       $(addprefix $(OBJ_DIR)/,${MODULES:.F90=.mod}) \
+ifneq ($(OBJ_DIR),$(INC_DIR))
+  INCS = $(addprefix $(INC_DIR)/,${MODS_TMP:.F90=.mod})
+endif
+MODS = $(addprefix $(OBJ_DIR)/,${MODS_TMP:.F90=.mod}) \
        $(INCS)
+$(info $(MODS))
 OBJS = $(addprefix $(OBJ_DIR)/,${MODULES:.F90=.o})
 KINDS_OBJ = $(OBJ_DIR)/cvmix_kinds_and_types.o
 ifeq ($(FC),$(filter $(FC),pgf90 ftn))
@@ -85,8 +92,13 @@ $(OBJ_DIR)/cvmix_kinds_and_types.o: $(SRC_DIR)/cvmix_kinds_and_types.F90
 	$(FC) $(FCFLAGS) -c $(SRC_DIR)/cvmix_kinds_and_types.F90 -o $@
 
 $(INC_DIR)/cvmix_kinds_and_types.mod: $(SRC_DIR)/cvmix_kinds_and_types.F90 \
-                          $(OBJ_DIR)/cvmix_kinds_and_types.o
+                                      $(OBJ_DIR)/cvmix_kinds_and_types.o
 	cp $(OBJ_DIR)/cvmix_kinds_and_types.mod $@
+
+# Upper-case for Cray and pathscale compilers
+$(INC_DIR)/CVMIX_KINDS_AND_TYPES.mod: $(SRC_DIR)/cvmix_kinds_and_types.F90 \
+                                      $(OBJ_DIR)/cvmix_kinds_and_types.o
+	cp $(OBJ_DIR)/CVMIX_KINDS_AND_TYPES.mod $@
 
 ### cvmix_put_get.F90
 $(OBJ_DIR)/cvmix_put_get.o: $(SRC_DIR)/cvmix_put_get.F90       \
@@ -97,6 +109,10 @@ $(INC_DIR)/cvmix_put_get.mod: $(SRC_DIR)/cvmix_put_get.F90       \
                               $(OBJ_DIR)/cvmix_put_get.o
 	cp $(OBJ_DIR)/cvmix_put_get.mod $@
 
+$(INC_DIR)/CVMIX_PUT_GET.mod: $(SRC_DIR)/cvmix_put_get.F90       \
+                              $(OBJ_DIR)/cvmix_put_get.o
+	cp $(OBJ_DIR)/CVMIX_PUT_GET.mod $@
+
 ### cvmix_background.F90
 $(OBJ_DIR)/cvmix_background.o: $(SRC_DIR)/cvmix_background.F90    \
                                $(OBJ_DIR)/cvmix_put_get.o         \
@@ -104,8 +120,12 @@ $(OBJ_DIR)/cvmix_background.o: $(SRC_DIR)/cvmix_background.F90    \
 	$(FC) $(FCFLAGS) -c $(SRC_DIR)/cvmix_background.F90 -o $@
 
 $(INC_DIR)/cvmix_background.mod: $(SRC_DIR)/cvmix_background.F90       \
-                              $(OBJ_DIR)/cvmix_background.o
+                                 $(OBJ_DIR)/cvmix_background.o
 	cp $(OBJ_DIR)/cvmix_background.mod $@
+
+$(INC_DIR)/CVMIX_BACKGROUND.mod: $(SRC_DIR)/cvmix_background.F90       \
+                                 $(OBJ_DIR)/cvmix_background.o
+	cp $(OBJ_DIR)/CVMIX_BACKGROUND.mod $@
 
 ### cvmix_convection.F90
 $(OBJ_DIR)/cvmix_convection.o: $(SRC_DIR)/cvmix_convection.F90    \
@@ -114,8 +134,12 @@ $(OBJ_DIR)/cvmix_convection.o: $(SRC_DIR)/cvmix_convection.F90    \
 	$(FC) $(FCFLAGS) -c $(SRC_DIR)/cvmix_convection.F90 -o $@
 
 $(INC_DIR)/cvmix_convection.mod: $(SRC_DIR)/cvmix_convection.F90       \
-                              $(OBJ_DIR)/cvmix_convection.o
+                                 $(OBJ_DIR)/cvmix_convection.o
 	cp $(OBJ_DIR)/cvmix_convection.mod $@
+
+$(INC_DIR)/CVMIX_CONVECTION.mod: $(SRC_DIR)/cvmix_convection.F90       \
+                                 $(OBJ_DIR)/cvmix_convection.o
+	cp $(OBJ_DIR)/CVMIX_CONVECTION.mod $@
 
 ### cvmix_shear.F90
 $(OBJ_DIR)/cvmix_shear.o: $(SRC_DIR)/cvmix_shear.F90         \
@@ -124,8 +148,12 @@ $(OBJ_DIR)/cvmix_shear.o: $(SRC_DIR)/cvmix_shear.F90         \
 	$(FC) $(FCFLAGS) -c $(SRC_DIR)/cvmix_shear.F90 -o $@
 
 $(INC_DIR)/cvmix_shear.mod: $(SRC_DIR)/cvmix_shear.F90       \
-                              $(OBJ_DIR)/cvmix_shear.o
+                            $(OBJ_DIR)/cvmix_shear.o
 	cp $(OBJ_DIR)/cvmix_shear.mod $@
+
+$(INC_DIR)/CVMIX_SHEAR.mod: $(SRC_DIR)/cvmix_shear.F90       \
+                            $(OBJ_DIR)/cvmix_shear.o
+	cp $(OBJ_DIR)/CVMIX_SHEAR.mod $@
 
 ### cvmix_tidal.F90
 $(OBJ_DIR)/cvmix_tidal.o: $(SRC_DIR)/cvmix_tidal.F90         \
@@ -133,8 +161,12 @@ $(OBJ_DIR)/cvmix_tidal.o: $(SRC_DIR)/cvmix_tidal.F90         \
 	$(FC) $(FCFLAGS) -c $(SRC_DIR)/cvmix_tidal.F90 -o $@
 
 $(INC_DIR)/cvmix_tidal.mod: $(SRC_DIR)/cvmix_tidal.F90       \
-                              $(OBJ_DIR)/cvmix_tidal.o
+                            $(OBJ_DIR)/cvmix_tidal.o
 	cp $(OBJ_DIR)/cvmix_tidal.mod $@
+
+$(INC_DIR)/CVMIX_TIDAL.mod: $(SRC_DIR)/cvmix_tidal.F90       \
+                            $(OBJ_DIR)/cvmix_tidal.o
+	cp $(OBJ_DIR)/CVMIX_TIDAL.mod $@
 
 ### cvmix_ddiff.F90
 $(OBJ_DIR)/cvmix_ddiff.o: $(SRC_DIR)/cvmix_ddiff.F90         \
@@ -143,8 +175,12 @@ $(OBJ_DIR)/cvmix_ddiff.o: $(SRC_DIR)/cvmix_ddiff.F90         \
 	$(FC) $(FCFLAGS) -c $(SRC_DIR)/cvmix_ddiff.F90 -o $@
 
 $(INC_DIR)/cvmix_ddiff.mod: $(SRC_DIR)/cvmix_ddiff.F90       \
-                              $(OBJ_DIR)/cvmix_ddiff.o
+                            $(OBJ_DIR)/cvmix_ddiff.o
 	cp $(OBJ_DIR)/cvmix_ddiff.mod $@
+
+$(INC_DIR)/CVMIX_DDIFF.mod: $(SRC_DIR)/cvmix_ddiff.F90       \
+                            $(OBJ_DIR)/cvmix_ddiff.o
+	cp $(OBJ_DIR)/CVMIX_DDIFF.mod $@
 
 ### Combine into library
 $(LIB_DIR)/libcvmix.a: $(KINDS_OBJ) $(OBJS)

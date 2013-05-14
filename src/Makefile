@@ -105,7 +105,26 @@ DRIVER_OBJS = cvmix_bgrnd_BL_pointer.o \
               cvmix_shear_KPP.o        \
               cvmix_tidal_Simmons.o    \
               cvmix_ddiff_drv.o
-MODS = ${OBJS:.o=.mod}
+ifeq ($(UCASE),TRUE)
+  MODS_TMP = $(shell echo $(OBJS) | tr '[a-z]' '[A-Z]')
+  MODS = ${MODS_TMP:.O=.mod}
+else
+  MODS = ${OBJS:.o=.mod}
+endif
+
+SHARED_MODS = cvmix_kinds_and_types.mod \
+              cvmix_background.mod \
+              cvmix_convection.mod \
+              cvmix_ddiff.mod \
+              cvmix_put_get.mod \
+              cvmix_shear.mod \
+              cvmix_tidal.mod
+
+ifeq ($(UCASE),TRUE)
+SHARED_TMP = $(shell echo $(SHARED_MODS) | tr [a-z] [A-Z])
+SHARED_MODS = ${SHARED_TMP:.MOD=.mod}
+endif
+SHR_MODS = $(addprefix($(INC_DIR)/,${SHARED_MODS})
 
 ### TARGETS ###
 
@@ -130,37 +149,27 @@ endif
 
 # Create all object and module files
 $(OBJ_DIR)/cvmix_bgrnd_BL_pointer.o: $(OBJ_DIR)/cvmix_io.o \
-                                     $(INC_DIR)/cvmix_kinds_and_types.mod \
-                                     $(INC_DIR)/cvmix_put_get.mod \
-                                     $(INC_DIR)/cvmix_background.mod \
+                                     $(SHR_MODS) \
                                      $(SRC_DRIVE_DIR)/cvmix_bgrnd_BL_pointer.F90
 	$(FC) $(FCFLAGS) -c $(SRC_DRIVE_DIR)/cvmix_bgrnd_BL_pointer.F90 -o $@
 
 $(OBJ_DIR)/cvmix_bgrnd_BL_memcopy.o: $(OBJ_DIR)/cvmix_io.o \
-                                     $(INC_DIR)/cvmix_kinds_and_types.mod \
-                                     $(INC_DIR)/cvmix_put_get.mod \
-                                     $(INC_DIR)/cvmix_background.mod \
+                                     $(SHR_MODS) \
                                      $(SRC_DRIVE_DIR)/cvmix_bgrnd_BL_memcopy.F90
 	$(FC) $(FCFLAGS) -c $(SRC_DRIVE_DIR)/cvmix_bgrnd_BL_memcopy.F90 -o $@
 
 $(OBJ_DIR)/cvmix_tidal_Simmons.o: $(OBJ_DIR)/cvmix_io.o \
-                                  $(INC_DIR)/cvmix_kinds_and_types.mod \
-                                  $(INC_DIR)/cvmix_put_get.mod \
-                                  $(INC_DIR)/cvmix_tidal.mod \
+                                  $(SHR_MODS) \
                                   $(SRC_DRIVE_DIR)/cvmix_tidal_Simmons.F90
 	$(FC) $(FCFLAGS) -c $(SRC_DRIVE_DIR)/cvmix_tidal_Simmons.F90 -o $@
 
 $(OBJ_DIR)/cvmix_shear_KPP.o: $(OBJ_DIR)/cvmix_io.o \
-                              $(INC_DIR)/cvmix_kinds_and_types.mod \
-                              $(INC_DIR)/cvmix_put_get.mod \
-                              $(INC_DIR)/cvmix_shear.mod \
+                              $(SHR_MODS) \
                               $(SRC_DRIVE_DIR)/cvmix_shear_KPP.F90
 	$(FC) $(FCFLAGS) -c $(SRC_DRIVE_DIR)/cvmix_shear_KPP.F90 -o $@
 
 $(OBJ_DIR)/cvmix_ddiff_drv.o: $(OBJ_DIR)/cvmix_io.o \
-                              $(INC_DIR)/cvmix_kinds_and_types.mod \
-                              $(INC_DIR)/cvmix_put_get.mod \
-                              $(INC_DIR)/cvmix_ddiff.mod \
+                              $(SHR_MODS) \
                               $(SRC_DRIVE_DIR)/cvmix_ddiff_drv.F90
 	$(FC) $(FCFLAGS) -c $(SRC_DRIVE_DIR)/cvmix_ddiff_drv.F90 -o $@
 
