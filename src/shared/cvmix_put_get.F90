@@ -88,7 +88,7 @@ contains
       print*, "ERROR: you must specify the number of levels before ", &
               "you can pack data into a cvmix_data_type!"
       print*, "You tried to set ", trim(varname)
-      stop
+      stop 1
     end if
     
     select case (trim(varname))
@@ -115,7 +115,7 @@ contains
 
       case default
         print*, "ERROR: ", trim(varname), " not a valid choice!"
-        stop
+        stop 1
       
     end select
 !EOC
@@ -156,7 +156,7 @@ contains
       print*, "ERROR: you must specify the number of levels before ", &
               "you can pack data into a cvmix_data_type!"
       print*, "You tried to set ", trim(varname)
-      stop
+      stop 1
     end if
     
     select case (trim(varname))
@@ -180,7 +180,7 @@ contains
 
       case default
         print*, "ERROR: ", trim(varname), " not a valid choice!"
-        stop
+        stop 1
       
     end select
 !EOC
@@ -221,7 +221,7 @@ contains
       print*, "ERROR: you must specify the number of levels before ", &
               "you can pack data into a cvmix_data_type!"
       print*, "You tried to set ", trim(varname)
-      stop
+      stop 1
     end if
     
     select case (trim(varname))
@@ -275,7 +275,7 @@ contains
 
       case default
         print*, "ERROR: ", trim(varname), " not a valid choice!"
-        stop
+        stop 1
       
     end select
 
@@ -330,7 +330,7 @@ contains
 
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
-        stop
+        stop 1
       
     end select
 
@@ -375,20 +375,20 @@ contains
     if ((.not.present(ncol)).and.(.not.present(nlev))) then
       print*, "ERROR: when putting 1D data in cvmix_bkgnd_params_type ", &
               "you must specify nlev or ncol!"
-      stop
+      stop 1
     end if
 
     if ((present(ncol)).and.(present(nlev))) then
       print*, "ERROR: when putting 1D data in cvmix_bkgnd_params_type ", &
               "you can not specify both nlev or ncol!"
-      stop
+      stop 1
     end if
 
     data_dims = size(val)
     if (present(ncol)) then
       if (data_dims.gt.ncol) then
         print*, "ERROR: data array is bigger than number of columns specified."
-        stop
+        stop 1
       end if
       lvary_horizontal=.true.
       dims(1) = ncol
@@ -396,7 +396,7 @@ contains
     else
       if (data_dims.gt.nlev+1) then
         print*, "ERROR: data array is bigger than number of levels specified."
-        stop
+        stop 1
       end if
       lvary_horizontal=.false.
       dims(1) = 1
@@ -415,7 +415,7 @@ contains
         if (any(shape(CVmix_bkgnd_params%static_visc).ne.dims)) then
           print*, "ERROR: dimensions of static_visc do not match what was ", &
                   "sent to cvmix_put"
-          stop
+          stop 1
         end if
         if (lvary_horizontal) then
           CVmix_bkgnd_params%static_visc(:,1)           = 0_cvmix_r8
@@ -436,7 +436,7 @@ contains
         if (any(shape(CVmix_bkgnd_params%static_diff).ne.dims)) then
           print*, "ERROR: dimensions of static_diff do not match what was ", &
                   "sent to cvmix_put"
-          stop
+          stop 1
         end if
         if (lvary_horizontal) then
           CVmix_bkgnd_params%static_diff(:,1)           = 0_cvmix_r8
@@ -448,7 +448,7 @@ contains
 
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
-        stop
+        stop 1
       
     end select
 
@@ -491,7 +491,7 @@ contains
     if (any(data_dims.gt.dims)) then
       print*, "ERROR: data being put in cvmix_bkgnd_params_type is larger ", &
               "than (ncol, nlev+1)"
-      stop
+      stop 1
     end if
 
     select case (trim(varname))
@@ -506,7 +506,7 @@ contains
         if (any(shape(CVmix_bkgnd_params%static_visc).ne.dims)) then
           print*, "ERROR: dimensions of static_visc do not match what was ", &
                   "sent to cvmix_put"
-          stop
+          stop 1
         end if
         CVmix_bkgnd_params%static_visc = 0.0_cvmix_r8
         CVmix_bkgnd_params%static_visc(1:data_dims(1), 1:data_dims(2)) = val
@@ -522,14 +522,14 @@ contains
         if (any(shape(CVmix_bkgnd_params%static_diff).ne.dims)) then
           print*, "ERROR: dimensions of static_diff do not match what was ", &
                   "sent to cvmix_put"
-          stop
+          stop 1
         end if
         CVmix_bkgnd_params%static_diff = 0.0_cvmix_r8
         CVmix_bkgnd_params%static_diff(1:data_dims(1), 1:data_dims(2)) = val
 
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
-        stop
+        stop 1
       
     end select
 
@@ -568,7 +568,7 @@ contains
         CVmix_conv_params%convect_visc = val
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
-        stop
+        stop 1
       
     end select
 
@@ -621,7 +621,7 @@ contains
         CVmix_ddiff_params%mol_diff = val
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
-        stop
+        stop 1
       
     end select
 
@@ -668,7 +668,7 @@ contains
         CVmix_shear_params%KPP_exp = val
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
-        stop
+        stop 1
       
     end select
 
@@ -705,7 +705,7 @@ contains
         CVmix_shear_params%mix_scheme = val
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
-        stop
+        stop 1
       
     end select
 
@@ -743,7 +743,7 @@ contains
         
       case default
         print*, "ERROR: ", trim(varname), " not a valid choice!"
-        stop
+        stop 1
       
     end select
 !EOC
@@ -780,7 +780,7 @@ contains
         
       case default
         print*, "ERROR: ", trim(varname), " not a valid choice!"
-        stop
+        stop 1
       
     end select
 !EOC

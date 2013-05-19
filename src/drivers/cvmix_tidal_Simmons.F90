@@ -84,7 +84,14 @@ Subroutine cvmix_tidal_driver(nlev)
   print*, "Min and Max of energy flux (min = 0 with proper missing value support):"
   print*, minval(energy_flux), maxval(energy_flux)
 
-  call cvmix_init_tidal(CVmix_Simmons_params, 'simmons')
+  call cvmix_init_tidal(CVmix_Simmons_params, 'Simmons', 'mks')
+  print*, "Namelist variables:"
+  print*, "mix_scheme = ", trim(CVmix_Simmons_params%mix_scheme)
+  print*, "efficiency = ", CVmix_Simmons_params%efficiency
+  print*, "vertical_decay_scale = ", CVmix_Simmons_params%vertical_decay_scale
+  print*, "max_coefficient = ", CVmix_Simmons_params%max_coefficient
+  print*, "local_mixing_frac = ", CVmix_Simmons_params%local_mixing_frac
+  print*, "depth_cutoff = ", CVmix_Simmons_params%depth_cutoff
   call cvmix_coeffs_tidal(CVmix_vars, CVmix_Simmons_params)
 
   ! Output

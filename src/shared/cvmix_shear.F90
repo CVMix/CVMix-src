@@ -100,7 +100,7 @@
                   present(PP_exp))) then
           print*, "ERROR: you must specify PP_nu_zero, PP_alpha, and PP_exp", &
                   " to use Pacanowski-Philander mixing!"
-          stop
+          stop 1
         end if
         call cvmix_put(CVmix_shear_params, "mix_scheme", "PP")
         call cvmix_put(CVmix_shear_params, "PP_nu_zero", PP_nu_zero)
@@ -112,7 +112,7 @@
                   present(KPP_exp))) then
           print*, "ERROR: you must specify KPP_nu_zero, KPP_alpha, and", &
                   " KPP_exp to use Pacanowski-Philander mixing!"
-          stop
+          stop 1
         end if
         call cvmix_put(CVmix_shear_params, "mix_scheme", "KPP")
         call cvmix_put(CVmix_shear_params, "KPP_nu_zero", KPP_nu_zero)
@@ -122,7 +122,7 @@
       case DEFAULT
         print*, "ERROR: ", trim(mix_scheme), " is not a valid choice for ", &
                 "shear mixing."
-        stop
+        stop 1
 
     end select
 
@@ -181,12 +181,12 @@
         ! Error checks
         if (.not.present(CVmix_bkgnd_params)) then
           print*, "ERROR: can not run PP mixing without background mixing."
-          stop
+          stop 1
         end if
         if (CVmix_bkgnd_params%lvary_horizontal.and.(.not.present(colid))) then
           print*, "ERROR: background visc and diff vary in horizontal so you", &
                   "must pass column index to cvmix_coeffs_shear"
-          stop
+          stop 1
         end if
 
         ! Copy parameters to make the code more legible
@@ -240,7 +240,7 @@
       case DEFAULT
         ! Note: this error should be caught in cvmix_init_shear
         print*, "ERROR: invalid choice for type of shear mixing."
-        stop
+        stop 1
 
     end select
 

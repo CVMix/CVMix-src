@@ -136,7 +136,7 @@ contains
       case ('nc')
 #ifndef _NETCDF
         print*, "ERROR: you must compile -D_NETCDF to open a netCDF file"
-        stop
+        stop 1
 #else
         file_index%file_type = NETCDF_FILE_TYPE
         ! Note: at this point, will either open file with NOWRITE for
@@ -341,7 +341,7 @@ contains
                                              CVmix_vars%strat_param_denom(:)))
             case DEFAULT
               print*, "ERROR: unable to write variable ", var_names(var)
-              stop
+              stop 1
           end select
         end do
 #endif
@@ -371,7 +371,7 @@ contains
                 end if
               case DEFAULT
                 print*, "ERROR: unable to write variable ", var_names(var)
-                stop
+                stop 1
             end select
             if (var.ne.size(var_names)) write(file_id, "(1X)", advance='no')
           end do
@@ -379,7 +379,7 @@ contains
         end do
       case DEFAULT
         print*, "ERROR: Invalid file type"
-        stop
+        stop 1
     end select
 !EOC
 
@@ -439,7 +439,7 @@ contains
 
     if (z_err) then
       print*, "ERROR: z-coordinates are not the same in every column!"
-      stop
+      stop 1
     end if
 
     select case (get_file_type(file_id))
@@ -505,7 +505,7 @@ contains
               deallocate(lcl_Rrho)
             case DEFAULT
               print*, "ERROR: unable to write variable ", var_names(var)
-              stop
+              stop 1
           end select
         end do
 #endif
@@ -544,7 +544,7 @@ contains
                 end do
               case DEFAULT
                 print*, "ERROR: unable to write variable ", var_names(var)
-                stop
+                stop 1
             end select
             if (var.ne.size(var_names)) write(file_id, "(1X)", advance='no')
           end do
@@ -552,7 +552,7 @@ contains
         end do
       case DEFAULT
         print*, "ERROR: Invalid file type"
-        stop
+        stop 1
     end select
 !EOC
 
@@ -782,7 +782,7 @@ contains
 #else
     print*, "ERROR: can not call netcdf_check unless compiling -D_NETCDF"
     print*, "The status you passed in = ", status
-    stop
+    stop 1
 #endif
 
   end subroutine netcdf_check

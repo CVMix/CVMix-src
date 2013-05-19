@@ -184,10 +184,12 @@
         if (.not.present(mol_diff)) then
           call cvmix_put(CVmix_ddiff_params, "mol_diff", 1.5d-2)
         end if
+
       case DEFAULT
         print*, "ERROR: ", trim(units), " is not a valid choice for double ", &
-                "diffusion mixing. Only 'mks' or 'cgs' are supported."
-        stop
+                "diffusion mixing. Only 'mks' and 'cgs' are supported."
+        stop 1
+
     end select
 
 !EOC

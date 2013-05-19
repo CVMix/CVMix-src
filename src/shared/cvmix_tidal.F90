@@ -43,7 +43,10 @@
 ! !IROUTINE: cvmix_init_tidal
 ! !INTERFACE:
 
-  subroutine cvmix_init_tidal(CVmix_tidal_params, mix_scheme)
+  subroutine cvmix_init_tidal(CVmix_tidal_params, mix_scheme, units, &
+                              efficiency, vertical_decay_scale,      &
+                              max_coefficient, local_mixing_frac,    &
+                              depth_cutoff)
 
 ! !DESCRIPTION:
 !  Initialization routine for tidal mixing. There is currently just one
@@ -54,7 +57,13 @@
 !  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
-    character(len=*), intent(in) :: mix_scheme 
+    character(len=*),         intent(in) :: mix_scheme
+    character(len=*),         intent(in) :: units
+    real(cvmix_r8), optional, intent(in) :: efficiency
+    real(cvmix_r8), optional, intent(in) :: vertical_decay_scale
+    real(cvmix_r8), optional, intent(in) :: max_coefficient
+    real(cvmix_r8), optional, intent(in) :: local_mixing_frac
+    real(cvmix_r8), optional, intent(in) :: depth_cutoff
 
 ! !OUTPUT PARAMETERS:
     type(cvmix_tidal_params_type), intent(inout) :: CVmix_tidal_params
@@ -62,13 +71,62 @@
 !BOC
 
     select case (trim(mix_scheme))
-      case ('simmons')
-        CVmix_tidal_params%mix_scheme = "simmons"
+      case ('simmons','Simmons')
+        CVmix_tidal_params%mix_scheme = trim(mix_scheme)
+
+        ! Unitless parameters
+        if (present(efficiency)) then
+          CVmix_tidal_params%efficiency = efficiency
+        else
+          CVmix_tidal_params%efficiency = 0.2_cvmix_r8
+        end if
+        if (present(local_mixing_frac)) then
+          CVmix_tidal_params%local_mixing_frac = local_mixing_frac
+        else
+          CVmix_tidal_params%local_mixing_frac = 1.0_cvmix_r8/3.0_cvmix_r8
+        end if
+
+        ! Parameters with units
+        if (present(vertical_decay_scale)) then
+          CVmix_tidal_params%vertical_decay_scale = vertical_decay_scale
+        end if
+        if (present(max_coefficient)) then
+          CVmix_tidal_params%max_coefficient = max_coefficient
+        end if
+        if (present(depth_cutoff)) then
+          CVmix_tidal_params%depth_cutoff = depth_cutoff
+        else
+          ! Default: no cutoff depth => 0 cm or 0 m
+          CVmix_tidal_params%depth_cutoff = 0.0_cvmix_r8
+        end if
+        select case (trim(units))
+          case ('mks')
+            if (.not.present(vertical_decay_scale)) then
+              CVmix_tidal_params%vertical_decay_scale = 500.0_cvmix_r8
+            end if
+            if (.not.present(max_coefficient)) then
+              CVmix_tidal_params%max_coefficient = 50.0e-4_cvmix_r8
+            end if
+
+          case ('cgs')
+            if (.not.present(vertical_decay_scale)) then
+              CVmix_tidal_params%vertical_decay_scale = 500.0e2_cvmix_r8
+            end if
+            if (.not.present(max_coefficient)) then
+              CVmix_tidal_params%max_coefficient = 50.0_cvmix_r8
+            end if
+
+          case DEFAULT
+            print*, "ERROR: ", trim(units), " is not a valid choice for ",    &
+                    "tidal mixing. Only 'mks' and 'cgs' are supported."
+            stop 1
+
+        end select
 
       case DEFAULT
         print*, "ERROR: ", trim(mix_scheme), " is not a valid choice for ", &
                 "tidal mixing."
-        stop
+        stop 1
 
     end select
 
@@ -101,14 +159,14 @@
 !BOC
 
     select case (trim(CVmix_tidal_params%mix_scheme))
-      case ('simmons')
+      case ('simmons','Simmons')
           CVmix_vars%visc_iface = 0.0_cvmix_r8
           CVmix_vars%diff_iface = 0.0_cvmix_r8
 
       case DEFAULT
         ! Note: this error should be caught in cvmix_init_tidal
         print*, "ERROR: invalid choice for type of tidal mixing."
-        stop
+        stop 1
 
     end select
 
