@@ -44,8 +44,11 @@ module cvmix_kinds_and_types
   ! cvmix_input_type contains every possible necessary input field for all
   ! supported types of mixing.
   type, public :: cvmix_data_type
-      integer :: nlev = -1 ! Number of levels in column
-                           ! Setting default to -1 might be F95...
+      integer        :: nlev = -1  ! Number of levels in column
+                                   ! Setting default to -1 might be F95...
+      real(cvmix_r8) :: ocn_depth, &
+                        surf_hgt   ! pos => above sea level
+                                   ! neg => below sea level
 
       ! Values on interfaces
       ! nlev+1, 2

@@ -139,7 +139,7 @@ contains
 
 ! !INPUT PARAMETERS:
     character(len=*),           intent(in) :: varname
-    real(cvmix_r8),              intent(in) :: val
+    real(cvmix_r8),             intent(in) :: val
     character(len=*), optional, intent(in) :: opts
 
 ! !OUTPUT PARAMETERS:
@@ -160,6 +160,8 @@ contains
     end if
     
     select case (trim(varname))
+      case ('surf_hgt')
+        CVmix_vars%surf_hgt = val
       case ('diff')
       if (.not.associated(CVmix_vars%diff_iface)) then
         allocate(CVmix_vars%diff_iface(nlev+1,2))

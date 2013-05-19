@@ -155,8 +155,25 @@
 
 ! !INPUT/OUTPUT PARAMETERS:
     type(cvmix_data_type), intent(inout) :: CVmix_vars
+
 !EOP
 !BOC
+
+    ! Local variables
+    real(cvmix_r8), allocatable, dimension(:) :: dep_fun ! Deposition Function
+    integer :: nlev !, k
+    real(cvmix_r8) :: surf_hgt, ocn_depth, decay_scale
+
+    nlev      = CVmix_vars%nlev
+    surf_hgt  = CVmix_vars%surf_hgt
+    ocn_depth = CVmix_vars%ocn_depth
+    decay_scale = CVmix_tidal_params%vertical_decay_scale
+    allocate(dep_fun(nlev+1))
+    ! Need to read / set z_iface before doing this loop!
+!    do k=1,nlev+1
+!      dep_fun(k) = exp(-CVmix_vars%z_iface(k)/decay_scale) !/ &
+!         decay_scale*(exp(ocn_depth/decay_scale)-exp(-surf_hgt/decay_scale))
+!    end do
 
     select case (trim(CVmix_tidal_params%mix_scheme))
       case ('simmons','Simmons')
@@ -169,6 +186,8 @@
         stop 1
 
     end select
+
+    deallocate(dep_fun)
 
 !EOC
   end subroutine cvmix_coeffs_tidal
