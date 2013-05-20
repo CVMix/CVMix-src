@@ -17,6 +17,7 @@ Subroutine cvmix_tidal_driver(nlev)
 ! !USES:
 
   use cvmix_kinds_and_types, only : cvmix_r8,                 &
+                                    cvmix_r4,                 &
                                     cvmix_strlen,             &
                                     cvmix_data_type,          &
                                     cvmix_global_params_type, &
@@ -55,6 +56,7 @@ Subroutine cvmix_tidal_driver(nlev)
   ! Local variables
   real(cvmix_r8), dimension(:,:), allocatable :: ocn_depth, energy_flux
   integer,        dimension(:,:), allocatable :: ocn_levels
+  real(cvmix_r4), dimension(61)               :: depth
   real(cvmix_r8) :: depth_fill, flux_fill, my_min, my_max
   integer :: i,j
 
@@ -84,6 +86,7 @@ Subroutine cvmix_tidal_driver(nlev)
   allocate(energy_flux(nlon, nlat), ocn_depth(nlon, nlat))
   allocate(ocn_levels(nlon, nlat))
   call cvmix_io_open(fid, trim(grid_file), 'nc', read_only=.true.)
+  call cvmix_input_read(fid, 'zw', depth)
   call cvmix_input_read(fid, 'H', ocn_depth)
   call cvmix_input_read(fid, 'H_index', ocn_levels)
   call cvmix_io_close(fid)
@@ -91,6 +94,9 @@ Subroutine cvmix_tidal_driver(nlev)
   call cvmix_input_read(fid, trim(energy_flux_var), energy_flux)
   call cvmix_io_close(fid)
   ! Note: at this time, not ignoring missing value
+  print*, "Min and Max of ocean levels:"
+  print*, minval(depth), maxval(depth)
+
   print*, "Min and Max of ocean level index:"
   print*, minval(ocn_levels), maxval(ocn_levels)
 
