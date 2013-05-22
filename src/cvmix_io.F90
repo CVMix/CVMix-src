@@ -19,7 +19,6 @@ module cvmix_io
 ! !USES:
 
    use cvmix_kinds_and_types, only : cvmix_data_type, &
-                                     cvmix_r4,        &
                                      cvmix_r8,        &
                                      cvmix_strlen
 #ifdef _NETCDF
@@ -42,7 +41,7 @@ module cvmix_io
   public :: print_open_files
 
   interface cvmix_input_read
-    module procedure cvmix_input_read_1d_real
+    module procedure cvmix_input_read_1d_double
     module procedure cvmix_input_read_2d_integer
     module procedure cvmix_input_read_2d_double
   end interface
@@ -170,10 +169,10 @@ contains
 
 !BOP
 
-! !IROUTINE: cvmix_input_read_1d_real
+! !IROUTINE: cvmix_input_read_1d_double
 ! !INTERFACE:
 
-  subroutine cvmix_input_read_1d_real(file_id, var_name, local_copy)
+  subroutine cvmix_input_read_1d_double(file_id, var_name, local_copy)
 
 ! !DESCRIPTION:
 !  Routine to read the requested 1D variable from a netcdf file and save it to
@@ -190,7 +189,7 @@ contains
 ! !INPUT PARAMETERS:
     integer,          intent(in)  :: file_id
     character(len=*), intent(in)  :: var_name
-    real(cvmix_r4), dimension(:), intent(out) :: local_copy
+    real(cvmix_r8), dimension(:), intent(out) :: local_copy
 
 ! !LOCAL VARIABLES:
     logical :: lerr_in_read
@@ -230,7 +229,7 @@ contains
                                   "in ", trim(get_file_name(file_id))
         else
           ! A couple more error checks
-          if (xtype.ne.NF90_FLOAT) then
+          if (xtype.ne.NF90_DOUBLE) then
             write(*, "(A,1X,A,1X,A)") "ERROR: variable", trim(var_name), &
                                       "is not a single-precision float!"
             lerr_in_read = .true.
@@ -271,7 +270,7 @@ contains
     end if
 !EOC
 
-  end subroutine cvmix_input_read_1d_real
+  end subroutine cvmix_input_read_1d_double
 
 !BOP
 

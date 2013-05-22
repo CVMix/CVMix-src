@@ -17,7 +17,6 @@ Subroutine cvmix_tidal_driver(nlev)
 ! !USES:
 
   use cvmix_kinds_and_types, only : cvmix_r8,                 &
-                                    cvmix_r4,                 &
                                     cvmix_strlen,             &
                                     cvmix_data_type,          &
                                     cvmix_global_params_type, &
@@ -56,7 +55,7 @@ Subroutine cvmix_tidal_driver(nlev)
   ! Local variables
   real(cvmix_r8), dimension(:,:), allocatable :: ocn_depth, energy_flux
   integer,        dimension(:,:), allocatable :: ocn_levels
-  real(cvmix_r4), dimension(61)               :: depth
+  real(cvmix_r8), dimension(61)               :: depth
   real(cvmix_r8) :: depth_fill, flux_fill, my_min, my_max
   integer :: i,j
 

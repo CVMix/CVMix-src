@@ -30,7 +30,6 @@ module cvmix_kinds_and_types
   ! Kind Types:
   ! The cvmix package uses double precision for floating point computations.
   integer, parameter, public :: cvmix_r8     = selected_real_kind(15, 307), &
-                                cvmix_r4     = selected_real_kind( 6,  37), &
                                 cvmix_strlen = 256
 
   ! Global parameters:
