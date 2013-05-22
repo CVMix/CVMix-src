@@ -44,6 +44,7 @@ module cvmix_io
     module procedure cvmix_input_read_1d_double
     module procedure cvmix_input_read_2d_integer
     module procedure cvmix_input_read_2d_double
+    module procedure cvmix_input_read_3d_double
   end interface
 
   interface cvmix_output_write
@@ -483,6 +484,113 @@ contains
 !EOC
 
   end subroutine cvmix_input_read_2d_double
+
+!BOP
+
+! !IROUTINE: cvmix_input_read_3d_double
+! !INTERFACE:
+
+  subroutine cvmix_input_read_3d_double(file_id, var_name, local_copy)
+
+! !DESCRIPTION:
+!  Routine to read the requested 2D variable from a netcdf file and save it to
+!  a local array (file must be opened using cvmix\_io\_open with the optional
+!  argument readonly = .true.). Called with cvmix\_input\_read (see interface
+!  in PUBLIC MEMBER FUNCTIONS above). At this time, only works with netcdf
+!  files.
+!\\
+!\\
+
+! !USES:
+!  Only those used by entire module. 
+
+! !INPUT PARAMETERS:
+    integer,          intent(in)  :: file_id
+    character(len=*), intent(in)  :: var_name
+    real(cvmix_r8), dimension(:,:,:),  intent(out) :: local_copy
+
+! !LOCAL VARIABLES:
+    logical :: lerr_in_read
+#ifdef _NETCDF
+    integer :: varid, nvar, i, ndims, xtype
+    integer, dimension(3) :: dims1, dims2
+    character(len=cvmix_strlen) :: tmp_name
+#endif
+
+!EOP
+!BOC
+
+  local_copy = 0.0_cvmix_r8
+  lerr_in_read = .false.
+    select case (get_file_type(file_id))
+#ifdef _NETCDF
+      case (NETCDF_FILE_TYPE)
+        varid = -1
+        ! Find number of variables in file
+        call netcdf_check(nf90_inquire(file_id, nVariables=nvar))
+        i = 1
+        do while((i.le.nvar).and.(varid.eq.-1))
+          ! Loop to figure out if var_name is a valid variable in the file
+          call netcdf_check(nf90_inquire_variable(file_id, i, name=tmp_name,&
+                                                  xtype=xtype, ndims=ndims))
+          if (trim(var_name).eq.trim(tmp_name)) then
+            varid = i
+          else
+            i = i+1
+          end if
+        end do
+        lerr_in_read = (varid.eq.-1)
+
+        if (lerr_in_read) then
+          write(*,"(A,A,1X,A,A)") "Could not find variable ", trim(var_name), &
+                                  "in ", trim(get_file_name(file_id))
+        else
+          ! A couple more error checks
+          if (xtype.ne.NF90_DOUBLE) then
+            write(*, "(A,1X,A,1X,A)") "ERROR: variable", trim(var_name), &
+                                      "is not a double-precision float!"
+            lerr_in_read = .true.
+          end if
+          if (ndims.ne.3) then
+            write(*,"(A,1X,I0,A)") "ERROR: you are trying to read a", ndims, &
+                                   "-dimensional array into a 2D array."
+            lerr_in_read = .true.
+          end if
+        end if
+
+        
+        if (.not.lerr_in_read) then
+          call netcdf_check(nf90_inquire_variable(file_id, varid, dimids=dims1))
+          do i=1,3
+            call netcdf_check(nf90_inquire_dimension(file_id, dims1(i), &
+                              len=dims2(i)))
+          end do
+
+          dims1 = shape(local_copy)
+          if (all(dims1.eq.dims2)) then
+            call netcdf_check(nf90_get_var(file_id, varid, local_copy))
+          else
+            write(*,"(A,1X,I0,1X,A,1X,I0,1X,A,1X,I0,1X,A,1X,I0,1X,A,1X,I0,1X,A,1X,I0)") &
+                    "ERROR: you are trying to read a", dims2(1), "by", dims2(2), &
+                    "by", dims2(3), "array into a local variable that is", &
+                    dims1(1), "by", dims1(2), "by", dims1(3)
+            lerr_in_read = .true.
+          end if
+        end if
+#endif
+      case DEFAULT
+        lerr_in_read = .true.
+        write(*,"(A,1X,A,1X,A)") "ERROR: no read support for binary files,", &
+                                 "use netCDF to read", trim(var_name)
+    end select
+
+    if (lerr_in_read) then
+      call cvmix_io_close_all
+      stop 1
+    end if
+!EOC
+
+  end subroutine cvmix_input_read_3d_double
 
 !BOP
 

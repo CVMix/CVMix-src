@@ -49,18 +49,20 @@ Subroutine cvmix_tidal_driver(nlev)
   integer :: fid
 
   ! Namelist variables
-  character(len=cvmix_strlen) :: grid_file, energy_flux_file, energy_flux_var
+  character(len=cvmix_strlen) :: grid_file, physics_file, energy_flux_file, &
+                                 energy_flux_var
   integer :: nlon, nlat
 
   ! Local variables
-  real(cvmix_r8), dimension(:,:), allocatable :: ocn_depth, energy_flux
-  integer,        dimension(:,:), allocatable :: ocn_levels
-  real(cvmix_r8), dimension(61)               :: depth
-  real(cvmix_r8) :: depth_fill, flux_fill, my_min, my_max
-  integer :: i,j
+  real(cvmix_r8), dimension(:,:),   allocatable :: ocn_depth, energy_flux
+  real(cvmix_r8), dimension(:,:,:), allocatable :: buoy
+  integer,        dimension(:,:),   allocatable :: ocn_levels
+  real(cvmix_r8), dimension(:),     allocatable :: depth
+  integer :: i, j, max_nlev
 
   ! Namelists that may be read in, depending on desired mixing scheme
-  namelist/Simmons_nml/grid_file, energy_flux_file, energy_flux_var, nlon, nlat
+  namelist/Simmons_nml/grid_file, physics_file, energy_flux_file, &
+                       energy_flux_var, nlon, nlat
 
   ! Allocate memory to store viscosity and diffusivity values
   allocate(diffusivity(nlev+1,1), viscosity(nlev+1))
@@ -77,55 +79,33 @@ Subroutine cvmix_tidal_driver(nlev)
   ! Read / set Simmons parameters
   ! Default values
   grid_file = "none"
+  physics_file = "none"
   energy_flux_file = "none"
   energy_flux_var = "none"
   nlon = 320
-  nlat = 184
+  nlat = 384
+  max_nlev = 60
   read(*, nml=Simmons_nml)
   allocate(energy_flux(nlon, nlat), ocn_depth(nlon, nlat))
+  allocate(buoy(nlon, nlat,max_nlev))
   allocate(ocn_levels(nlon, nlat))
+  allocate(depth(max_nlev+1))
   call cvmix_io_open(fid, trim(grid_file), 'nc', read_only=.true.)
   call cvmix_input_read(fid, 'zw', depth)
   call cvmix_input_read(fid, 'H', ocn_depth)
   call cvmix_input_read(fid, 'H_index', ocn_levels)
   call cvmix_io_close(fid)
+  call cvmix_io_open(fid, trim(physics_file), 'nc', read_only=.true.)
+  call cvmix_input_read(fid, 'Nsqr', buoy)
+  call cvmix_io_close(fid)
   call cvmix_io_open(fid, trim(energy_flux_file), 'nc', read_only=.true.)
   call cvmix_input_read(fid, trim(energy_flux_var), energy_flux)
   call cvmix_io_close(fid)
-  ! Note: at this time, not ignoring missing value
-  print*, "Min and Max of ocean levels:"
-  print*, minval(depth), maxval(depth)
 
-  print*, "Min and Max of ocean level index:"
-  print*, minval(ocn_levels), maxval(ocn_levels)
-
-  print*, "Min and Max of ocean depth:"
-  depth_fill = maxval(ocn_depth)
-  my_min = 99999.0_cvmix_r8
-  my_max = 0.0_cvmix_r8
-  do i=1,nlon
-    do j=1,nlat
-      if (ocn_depth(i,j).ne.depth_fill) then
-        my_min = min(ocn_depth(i,j),my_min)
-        my_max = max(ocn_depth(i,j),my_max)
-      end if
-    end do
-  end do
-  print*, my_min, my_max
-
-  print*, "Min and Max of energy flux:"
-  flux_fill = minval(energy_flux)
-  my_min = 99999.0_cvmix_r8
-  my_max = 0.0_cvmix_r8
-  do i=1,nlon
-    do j=1,nlat
-      if (energy_flux(i,j).ne.flux_fill) then
-        my_min = min(energy_flux(i,j),my_min)
-        my_max = max(energy_flux(i,j),my_max)
-      end if
-    end do
-  end do
-  print*, my_min, my_max
+  ! For starters, using column from 353.9634 E, 58.84838 N)
+  ! That's i=35, j=345 (compare result to KVMIX(0, :, 344, 34) in NCL)
+  i = 35
+  j = 345
 
   call cvmix_init_tidal(CVmix_Simmons_params, 'Simmons', 'mks')
   print*, "Namelist variables:"
@@ -135,10 +115,9 @@ Subroutine cvmix_tidal_driver(nlev)
   print*, "max_coefficient = ", CVmix_Simmons_params%max_coefficient
   print*, "local_mixing_frac = ", CVmix_Simmons_params%local_mixing_frac
   print*, "depth_cutoff = ", CVmix_Simmons_params%depth_cutoff
-  ! Picking a random column to test (for now)
-  print*, "Depth: ", ocn_depth(228, 125)
-  print*, "Flux: ", energy_flux(228, 125)
-  CVmix_vars%ocn_depth = ocn_depth(228, 125)
+  print*, "Depth: ", ocn_depth(i,j)
+  print*, "Flux: ", energy_flux(i,j)
+  CVmix_vars%ocn_depth = ocn_depth(i,j)
   call cvmix_coeffs_tidal(CVmix_vars, CVmix_Simmons_params)
 
   ! Output
@@ -149,7 +128,7 @@ Subroutine cvmix_tidal_driver(nlev)
   call cvmix_io_open(fid, "data.out", "ascii")
 #endif
 
-  call cvmix_output_write(fid, CVmix_vars, (/"diff", "visc"/))
+  call cvmix_output_write(fid, CVmix_vars, (/"diff"/))
 
   call cvmix_io_close(fid)
 
