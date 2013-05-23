@@ -43,10 +43,10 @@
 ! !IROUTINE: cvmix_init_tidal
 ! !INTERFACE:
 
-  subroutine cvmix_init_tidal(CVmix_tidal_params, mix_scheme, units, &
-                              efficiency, vertical_decay_scale,      &
-                              max_coefficient, local_mixing_frac,    &
-                              depth_cutoff)
+  subroutine cvmix_init_tidal(CVmix_tidal_params, CVmix_vars, mix_scheme, &
+                              units, energy_flux, efficiency,             &
+                              vertical_decay_scale, max_coefficient,      &
+                              local_mixing_frac, depth_cutoff)
 
 ! !DESCRIPTION:
 !  Initialization routine for tidal mixing. There is currently just one
@@ -59,6 +59,7 @@
 ! !INPUT PARAMETERS:
     character(len=*),         intent(in) :: mix_scheme
     character(len=*),         intent(in) :: units
+    real(cvmix_r8),           intent(in) :: energy_flux
     real(cvmix_r8), optional, intent(in) :: efficiency
     real(cvmix_r8), optional, intent(in) :: vertical_decay_scale
     real(cvmix_r8), optional, intent(in) :: max_coefficient
@@ -67,8 +68,17 @@
 
 ! !OUTPUT PARAMETERS:
     type(cvmix_tidal_params_type), intent(inout) :: CVmix_tidal_params
+    type(cvmix_data_type),         intent(inout) :: CVmix_vars
 !EOP
 !BOC
+
+    ! Local variables
+    real(cvmix_r8) :: tot_area, num, denom1, denom2, tmp, thick
+    integer        :: k
+
+    ! energy flux must be passed in (no default value exists)
+    ! user is responsible for keeping track of units
+    CVmix_tidal_params%energy_flux = energy_flux
 
     select case (trim(mix_scheme))
       case ('simmons','Simmons')
@@ -130,6 +140,41 @@
 
     end select
 
+    ! Compute vertical deposition function
+    if(.not.associated(CVmix_vars%vert_dep)) then
+      allocate(CVmix_vars%vert_dep(CVmix_vars%nlev+1))
+    else
+      if (size(CVmix_vars%vert_dep).ne.CVmix_vars%nlev+1) then
+        write(*,"(A,1X,A,1X,I0)") "ERROR: vertical deposition function must", &
+                                  "be array of length", CVmix_vars%nlev+1
+        stop 1
+      end if
+    end if
+
+    tot_area = 0.0_cvmix_r8
+    do k=1,CVmix_vars%nlev+1
+      ! Store vertical decay scale in tmp to save keystrokes
+      tmp = CVmix_tidal_params%vertical_decay_scale
+      num = -CVmix_vars%z_iface(k)/tmp
+      denom1 = CVmix_vars%ocn_depth/tmp
+      denom2 = CVmix_vars%surf_hgt/tmp
+      CVmix_vars%vert_dep(k) = exp(num)/(tmp*(exp(denom1) - exp(denom2)))
+
+      ! Compute integral of vert_dep via trapezoid rule
+      if (k.eq.1) then
+        thick = CVmix_vars%z_iface(1) - CVmix_vars%z(1)
+      else
+        if (k.eq.CVmix_vars%nlev+1) then
+          thick = CVmix_vars%z(k-1) - CVmix_vars%z_iface(k)
+        else
+          thick = CVmix_vars%z(k-1) - CVmix_vars%z(k)
+        end if
+      end if
+      tot_area = tot_area + CVmix_vars%vert_dep(k)*thick
+    end do
+    ! Normalize vert_dep (need integral = 1.0D0)
+    CVmix_vars%vert_dep = CVmix_vars%vert_dep/tot_area
+
 !EOC
 
   end subroutine cvmix_init_tidal
@@ -160,25 +205,21 @@
 !BOC
 
     ! Local variables
-    real(cvmix_r8), allocatable, dimension(:) :: dep_fun ! Deposition Function
-    integer :: nlev !, k
-    real(cvmix_r8) :: surf_hgt, ocn_depth, decay_scale
+    integer        :: nlev, k
+    real(cvmix_r8) :: coef
 
-    nlev      = CVmix_vars%nlev
-    surf_hgt  = CVmix_vars%surf_hgt
-    ocn_depth = CVmix_vars%ocn_depth
-    decay_scale = CVmix_tidal_params%vertical_decay_scale
-    allocate(dep_fun(nlev+1))
-    ! Need to read / set z_iface before doing this loop!
-!    do k=1,nlev+1
-!      dep_fun(k) = exp(-CVmix_vars%z_iface(k)/decay_scale) !/ &
-!         decay_scale*(exp(ocn_depth/decay_scale)-exp(-surf_hgt/decay_scale))
-!    end do
+    nlev = CVmix_vars%nlev
 
     select case (trim(CVmix_tidal_params%mix_scheme))
       case ('simmons','Simmons')
           CVmix_vars%visc_iface = 0.0_cvmix_r8
-          CVmix_vars%diff_iface = 0.0_cvmix_r8
+          coef = CVmix_tidal_params%local_mixing_frac*CVmix_tidal_params%efficiency*CVmix_tidal_params%energy_flux
+          do k=1, nlev+1
+            CVmix_vars%diff_iface(k,1) = coef*CVmix_vars%vert_dep(k)/CVmix_vars%buoy(k)
+            CVmix_vars%diff_iface(k,1) = CVmix_vars%diff_iface(k,1)/1000.0_cvmix_r8
+            if (CVmix_vars%diff_iface(k,1).gt.CVmix_tidal_params%max_coefficient) &
+              CVmix_vars%diff_iface(k,1) = CVmix_tidal_params%max_coefficient
+          end do
 
       case DEFAULT
         ! Note: this error should be caught in cvmix_init_tidal
@@ -186,8 +227,6 @@
         stop 1
 
     end select
-
-    deallocate(dep_fun)
 
 !EOC
   end subroutine cvmix_coeffs_tidal

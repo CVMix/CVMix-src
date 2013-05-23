@@ -46,9 +46,9 @@ module cvmix_kinds_and_types
   type, public :: cvmix_data_type
       integer        :: nlev = -1  ! Number of levels in column
                                    ! Setting default to -1 might be F95...
-      real(cvmix_r8) :: ocn_depth, &
-                        surf_hgt   ! pos => above sea level
-                                   ! neg => below sea level
+      real(cvmix_r8) :: ocn_depth, & ! depth >= 0!
+                        surf_hgt     ! pos => above sea level
+                                     ! neg => below sea level
 
       ! Values on interfaces
       ! nlev+1, 2
@@ -71,6 +71,10 @@ module cvmix_kinds_and_types
       ! denominator is non-zero before performing the division.
       real(cvmix_r8), dimension(:),   pointer :: strat_param_num   => NULL()
       real(cvmix_r8), dimension(:),   pointer :: strat_param_denom => NULL()
+      ! For tidal mixing, we need to calculate the vertical deposition
+      ! function on each column as well as squared buoyancy frequency
+      real(cvmix_r8), dimension(:),   pointer :: vert_dep => NULL()
+      real(cvmix_r8), dimension(:),   pointer :: buoy     => NULL()
   end type cvmix_data_type
 
   ! cvmix_global_params_type contains global parameters used by multiple
@@ -109,6 +113,7 @@ module cvmix_kinds_and_types
   ! (currently just Simmons)
   type, public :: cvmix_tidal_params_type
       character(len=cvmix_strlen) :: mix_scheme
+      real(cvmix_r8)              :: energy_flux
       real(cvmix_r8)              :: efficiency
       real(cvmix_r8)              :: vertical_decay_scale
       real(cvmix_r8)              :: max_coefficient

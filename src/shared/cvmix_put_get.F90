@@ -162,6 +162,8 @@ contains
     select case (trim(varname))
       case ('surf_hgt')
         CVmix_vars%surf_hgt = val
+      case ('ocn_depth','depth')
+        CVmix_vars%ocn_depth = val
       case ('diff')
       if (.not.associated(CVmix_vars%diff_iface)) then
         allocate(CVmix_vars%diff_iface(nlev+1,2))
@@ -258,10 +260,22 @@ contains
       CVmix_vars%dens_lwr(:) = val
 
       case ('zw')
+      if (.not.associated(CVmix_vars%z)) then
+        allocate(CVmix_vars%z(nlev))
+      end if
+      CVmix_vars%z(:) = val
+
+      case ('zw_iface')
       if (.not.associated(CVmix_vars%z_iface)) then
         allocate(CVmix_vars%z_iface(nlev+1))
       end if
       CVmix_vars%z_iface(:) = val
+
+      case ('buoy')
+      if (.not.associated(CVmix_vars%buoy)) then
+        allocate(CVmix_vars%buoy(nlev+1))
+      end if
+      CVmix_vars%buoy(:) = val
 
       case ('strat_param_num')
       if (.not.associated(CVmix_vars%strat_param_num)) then

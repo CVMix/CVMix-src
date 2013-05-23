@@ -51,7 +51,7 @@ Program cvmix_driver
     case ('shear')
       call cvmix_shear_driver(nlev)
     case ('tidal')
-      call cvmix_tidal_driver(nlev)
+      call cvmix_tidal_driver()
     case ('ddiff')
       call cvmix_ddiff_driver(nlev)
     case DEFAULT
