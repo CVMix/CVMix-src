@@ -211,17 +211,17 @@
     select case (trim(CVmix_tidal_params%mix_scheme))
       case ('simmons','Simmons')
           coef = CVmix_tidal_params%local_mixing_frac*CVmix_tidal_params%efficiency*CVmix_tidal_params%energy_flux
-          do k=1, nlev+1
-            buoy = CVmix_vars%buoy(k)
-            ! MNL: I think this is where we want to implement check for
-            !      depth cutoff value (replace the "if (buoy.gt.0)" with
-            !      if statement below
-            z_cut = CVmix_tidal_params%depth_cutoff
-            if ((buoy.gt.0.0_cvmix_r8).and.(CVmix_vars%ocn_depth.ge.z_cut)) &
-              CVmix_vars%diff_iface(k,1) = coef*CVmix_vars%vert_dep(k)/(rho*buoy)
-            if (CVmix_vars%diff_iface(k,1).gt.CVmix_tidal_params%max_coefficient) &
-              CVmix_vars%diff_iface(k,1) = CVmix_tidal_params%max_coefficient
-          end do
+          CVmix_vars%diff_iface = 0.0_cvmix_r8
+          if (CVmix_vars%ocn_depth.ge.CVmix_tidal_params%depth_cutoff) then
+            do k=1, nlev+1
+              buoy = CVmix_vars%buoy(k)
+              z_cut = CVmix_tidal_params%depth_cutoff
+              if (buoy.gt.0.0_cvmix_r8) &
+                CVmix_vars%diff_iface(k,1) = coef*CVmix_vars%vert_dep(k)/(rho*buoy)
+              if (CVmix_vars%diff_iface(k,1).gt.CVmix_tidal_params%max_coefficient) &
+                CVmix_vars%diff_iface(k,1) = CVmix_tidal_params%max_coefficient
+            end do
+          end if
 
       case DEFAULT
         ! Note: this error should be caught in cvmix_init_tidal

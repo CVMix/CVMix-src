@@ -39,7 +39,7 @@ Subroutine cvmix_tidal_driver()
   type(cvmix_global_params_type) :: CVmix_params
   type(cvmix_tidal_params_type)  :: CVmix_Simmons_params
 
-  real(cvmix_r8), dimension(:,:), allocatable, target :: diffusivity
+  real(cvmix_r8), dimension(:,:,:,:), allocatable, target :: diffusivity
 
   ! file index
   integer :: fid
@@ -61,21 +61,34 @@ Subroutine cvmix_tidal_driver()
   namelist/Simmons_nml/grid_file, physics_file, energy_flux_file, &
                        energy_flux_var, nlon, nlat
 
-  ! Read / set Simmons parameters
-  ! Default values
+  ! Hardcode in file dimensions (to do: read in from netCDF)
+  nlon = 320
+  nlat = 384
+  max_nlev = 60
+
+  ! Read namelist variables 
   grid_file = "none"
   physics_file = "none"
   energy_flux_file = "none"
   energy_flux_var = "none"
-  nlon = 320
-  nlat = 384
-  max_nlev = 60
   read(*, nml=Simmons_nml)
+
+  ! Allocate memory for energy flux, ocean depth, number of ocean levels,
+  ! depth of each level / interface, and buoyancy frequency
   allocate(energy_flux(nlon, nlat), ocn_depth(nlon, nlat))
   allocate(buoy(nlon, nlat,max_nlev+1))
-  buoy(:,:,1) = 0.0_cvmix_r8
   allocate(ocn_levels(nlon, nlat))
   allocate(depth(max_nlev), depth_iface(max_nlev+1))
+  ! Set buoyancy frequency = 0 at top interface (POP doesn't store these
+  ! zeroes and the input data set is coming from POP output)
+  buoy(:,:,1) = 0.0_cvmix_r8
+
+  ! Allocate memory to store diffusivity values
+  allocate(diffusivity(nlon, nlat, max_nlev+1,1))
+  ! Set diffusivity to _FillValue
+  diffusivity = 100000.0_cvmix_r8
+
+  ! Read in global data from grid file, physics file, and energy flux file
   call cvmix_io_open(fid, trim(grid_file), 'nc', read_only=.true.)
   call cvmix_input_read(fid, 'zw', depth_iface)
   call cvmix_input_read(fid, 'H', ocn_depth)
@@ -88,7 +101,7 @@ Subroutine cvmix_tidal_driver()
   call cvmix_input_read(fid, trim(energy_flux_var), energy_flux)
   call cvmix_io_close(fid)
 
-  ! Compute center of each layer
+  ! Compute center of each layer (maybe this should be stored in grid file?)
   do k=1, max_nlev
     depth(k) = 0.5_cvmix_r8*(depth_iface(k)+depth_iface(k+1))
   end do
@@ -98,10 +111,6 @@ Subroutine cvmix_tidal_driver()
   i = 35
   j = 345
   nlev = ocn_levels(i,j)
-
-  ! Allocate memory to store diffusivity values
-  allocate(diffusivity(nlev+1,1))
-  diffusivity = 0.0_cvmix_r8
 
   ! Initialization for CVMix data types
   call cvmix_put(CVmix_vars,      'nlev',                  nlev)
@@ -114,24 +123,18 @@ Subroutine cvmix_tidal_driver()
   call cvmix_put(CVmix_params, 'max_nlev',        max_nlev)
   call cvmix_put(CVmix_params,   'fw_rho', 1000.0_cvmix_r8)
   ! Point CVmix_vars values to memory allocated above
-  CVmix_vars%diff_iface => diffusivity
+  CVmix_vars%diff_iface => diffusivity(i,j,1:nlev+1,:)
 
   call cvmix_init_tidal(CVmix_Simmons_params, CVmix_vars, 'Simmons', 'mks', &
                         energy_flux(i,j), local_mixing_frac=0.33D0,         &
                         max_coefficient=0.01D0)
   print*, "Namelist variables:"
   print*, "mix_scheme = ", trim(CVmix_Simmons_params%mix_scheme)
-  print*, "energy_flux = ", CVmix_Simmons_params%energy_flux
   print*, "efficiency = ", CVmix_Simmons_params%efficiency
   print*, "vertical_decay_scale = ", CVmix_Simmons_params%vertical_decay_scale
   print*, "max_coefficient = ", CVmix_Simmons_params%max_coefficient
   print*, "local_mixing_frac = ", CVmix_Simmons_params%local_mixing_frac
   print*, "depth_cutoff = ", CVmix_Simmons_params%depth_cutoff
-  print*, "ocean depth = ", CVmix_vars%ocn_depth
-  print*, "top of layer depth, vert dep, and buoyancy:"
-  do k=1,nlev+1
-    print*, CVmix_vars%z_iface(k), CVmix_vars%vert_dep(k), CVmix_vars%buoy(k)
-  end do
   call cvmix_coeffs_tidal(CVmix_vars, CVmix_Simmons_params, CVmix_params)
 
   ! Output
