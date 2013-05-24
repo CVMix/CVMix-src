@@ -19,9 +19,10 @@
 
 ! !USES:
 
-   use cvmix_kinds_and_types, only : cvmix_r8,                &
-                                     cvmix_data_type,         &
-                                     cvmix_tidal_params_type
+   use cvmix_kinds_and_types, only : cvmix_r8,                 &
+                                     cvmix_data_type,          &
+                                     cvmix_tidal_params_type,  &
+                                     cvmix_global_params_type
 !EOP
 
    implicit none
@@ -152,26 +153,33 @@
     end if
 
     tot_area = 0.0_cvmix_r8
-    do k=1,CVmix_vars%nlev+1
+    do k=1,CVmix_vars%nlev-1
       ! Store vertical decay scale in tmp to save keystrokes
       tmp = CVmix_tidal_params%vertical_decay_scale
-      num = -CVmix_vars%z_iface(k)/tmp
+      !num = -CVmix_vars%z_iface(k)/tmp
       denom1 = CVmix_vars%ocn_depth/tmp
       denom2 = CVmix_vars%surf_hgt/tmp
-      CVmix_vars%vert_dep(k) = exp(num)/(tmp*(exp(denom1) - exp(denom2)))
+      num = -(CVmix_vars%ocn_depth+CVmix_vars%z_iface(k))/tmp
+      ! Simmons vertical deposition
+!      CVmix_vars%vert_dep(k) = exp(num)/(tmp*(exp(denom1) - exp(denom2)))
+      ! POP vertical deposition
+      CVmix_vars%vert_dep(k) = exp(num)
 
       ! Compute integral of vert_dep via trapezoid rule
-      if (k.eq.1) then
-        thick = CVmix_vars%z_iface(1) - CVmix_vars%z(1)
-      else
-        if (k.eq.CVmix_vars%nlev+1) then
-          thick = CVmix_vars%z(k-1) - CVmix_vars%z_iface(k)
-        else
-          thick = CVmix_vars%z(k-1) - CVmix_vars%z(k)
-        end if
-      end if
+!      if (k.eq.1) then
+!        thick = CVmix_vars%surf_hgt - CVmix_vars%z(1)
+!      else
+!        if (k.eq.CVmix_vars%nlev) then
+!          ! CVmix_vars%ocn_depth should be same is -CVmix_vars%z_iface(nlev+1)
+!          thick = CVmix_vars%z(CVmix_vars%nlev-1) - CVmix_vars%z_iface(CVMix_vars%nlev)
+!        else
+          thick = CVmix_vars%z(k) - CVmix_vars%z(k+1)
+!        end if
+!      end if
       tot_area = tot_area + CVmix_vars%vert_dep(k)*thick
     end do
+    CVmix_vars%vert_dep(CVmix_vars%nlev) = 0.0_cvmix_r8
+    CVmix_vars%vert_dep(CVmix_vars%nlev+1) = 0.0_cvmix_r8
     ! Normalize vert_dep (need integral = 1.0D0)
     CVmix_vars%vert_dep = CVmix_vars%vert_dep/tot_area
 
@@ -184,7 +192,7 @@
 ! !IROUTINE: cvmix_coeffs_tidal
 ! !INTERFACE:
 
-  subroutine cvmix_coeffs_tidal(CVmix_vars, CVmix_tidal_params)
+  subroutine cvmix_coeffs_tidal(CVmix_vars, CVmix_tidal_params, CVmix_params)
 
 ! !DESCRIPTION:
 !  Computes vertical diffusion coefficients for tidal mixing
@@ -196,7 +204,8 @@
 !  only those used by entire module.
 
 ! !INPUT PARAMETERS:
-    type(cvmix_tidal_params_type), intent(in) :: CVmix_tidal_params
+    type(cvmix_tidal_params_type),  intent(in) :: CVmix_tidal_params
+    type(cvmix_global_params_type), intent(in) :: CVmix_params
 
 ! !INPUT/OUTPUT PARAMETERS:
     type(cvmix_data_type), intent(inout) :: CVmix_vars
@@ -206,19 +215,20 @@
 
     ! Local variables
     integer        :: nlev, k
-    real(cvmix_r8) :: coef
+    real(cvmix_r8) :: coef, rho, buoy
 
     nlev = CVmix_vars%nlev
+    rho  = CVmix_params%fw_rho
 
     select case (trim(CVmix_tidal_params%mix_scheme))
       case ('simmons','Simmons')
-          CVmix_vars%visc_iface = 0.0_cvmix_r8
           coef = CVmix_tidal_params%local_mixing_frac*CVmix_tidal_params%efficiency*CVmix_tidal_params%energy_flux
           do k=1, nlev+1
-            CVmix_vars%diff_iface(k,1) = coef*CVmix_vars%vert_dep(k)/CVmix_vars%buoy(k)
-            CVmix_vars%diff_iface(k,1) = CVmix_vars%diff_iface(k,1)/1000.0_cvmix_r8
-            if (CVmix_vars%diff_iface(k,1).gt.CVmix_tidal_params%max_coefficient) &
-              CVmix_vars%diff_iface(k,1) = CVmix_tidal_params%max_coefficient
+            buoy = CVmix_vars%buoy(k)
+            if (buoy.gt.0) &
+              CVmix_vars%diff_iface(k,1) = coef*CVmix_vars%vert_dep(k)/(rho*buoy)
+!            if (CVmix_vars%diff_iface(k,1).gt.CVmix_tidal_params%max_coefficient) &
+!              CVmix_vars%diff_iface(k,1) = CVmix_tidal_params%max_coefficient
           end do
 
       case DEFAULT

@@ -82,6 +82,9 @@ module cvmix_kinds_and_types
   type, public :: cvmix_global_params_type
       integer                        :: max_nlev  ! maximum number of levels
       real(cvmix_r8)                 :: prandtl   ! Prandtl number
+      ! For densities, user must keep track of units (kg/m^3 vs g/cm^3)
+      real(cvmix_r8)                 :: fw_rho    ! fresh water density
+      real(cvmix_r8)                 :: sw_rho    ! salt water density
   end type cvmix_global_params_type
 
   ! cvmix_bkgnd_params_type contains the necessary parameters for background

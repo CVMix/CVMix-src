@@ -39,7 +39,6 @@ Subroutine cvmix_tidal_driver()
   type(cvmix_global_params_type) :: CVmix_params
   type(cvmix_tidal_params_type)  :: CVmix_Simmons_params
 
-  real(cvmix_r8), dimension(:),   allocatable, target :: viscosity
   real(cvmix_r8), dimension(:,:), allocatable, target :: diffusivity
 
   ! file index
@@ -51,8 +50,8 @@ Subroutine cvmix_tidal_driver()
   integer :: nlon, nlat
 
   ! Local variables
-  real(cvmix_r8), dimension(:,:),   allocatable :: ocn_depth, energy_flux
   real(cvmix_r8), dimension(:,:,:), allocatable :: buoy
+  real(cvmix_r8), dimension(:,:),   allocatable :: ocn_depth, energy_flux
   integer,        dimension(:,:),   allocatable :: ocn_levels
   real(cvmix_r8), dimension(:),     allocatable :: depth_iface
   real(cvmix_r8), dimension(:),     allocatable :: depth
@@ -99,8 +98,9 @@ Subroutine cvmix_tidal_driver()
   j = 345
   nlev = ocn_levels(i,j)
 
-  ! Allocate memory to store viscosity and diffusivity values
-  allocate(diffusivity(nlev+1,1), viscosity(nlev+1))
+  ! Allocate memory to store diffusivity values
+  allocate(diffusivity(nlev+1,1))
+  diffusivity = 0.0_cvmix_r8
 
   ! Initialization for CVMix data types
   call cvmix_put(CVmix_vars,      'nlev',                  nlev)
@@ -110,14 +110,14 @@ Subroutine cvmix_tidal_driver()
   call cvmix_put(CVmix_vars,      'buoy',    buoy(i,j,1:nlev+1))
   call cvmix_put(CVmix_vars, 'ocn_depth',        ocn_depth(i,j))
 
-  call cvmix_put(CVmix_params, 'max_nlev',      max_nlev)
-  call cvmix_put(CVmix_params,  'prandtl',  0.0_cvmix_r8)
+  call cvmix_put(CVmix_params, 'max_nlev',        max_nlev)
+  call cvmix_put(CVmix_params,   'fw_rho', 1000.0_cvmix_r8)
   ! Point CVmix_vars values to memory allocated above
-  CVmix_vars%visc_iface => viscosity
   CVmix_vars%diff_iface => diffusivity
 
   call cvmix_init_tidal(CVmix_Simmons_params, CVmix_vars, 'Simmons', 'mks', &
-                        energy_flux(i,j))
+                        energy_flux(i,j), local_mixing_frac=0.33D0,         &
+                        max_coefficient=0.01D0)
   print*, "Namelist variables:"
   print*, "mix_scheme = ", trim(CVmix_Simmons_params%mix_scheme)
   print*, "energy_flux = ", CVmix_Simmons_params%energy_flux
@@ -131,7 +131,7 @@ Subroutine cvmix_tidal_driver()
   do k=1,nlev+1
     print*, CVmix_vars%z_iface(k), CVmix_vars%vert_dep(k), CVmix_vars%buoy(k)
   end do
-  call cvmix_coeffs_tidal(CVmix_vars, CVmix_Simmons_params)
+  call cvmix_coeffs_tidal(CVmix_vars, CVmix_Simmons_params, CVmix_params)
 
   ! Output
   ! data will have diffusivity from both columns (needed for NCL script)

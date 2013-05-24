@@ -793,6 +793,10 @@ contains
     select case (trim(varname))
       case ('prandtl')
         CVmix_params%prandtl = val
+      case ('fw_rho')
+        CVmix_params%fw_rho  = val
+      case ('sw_rho')
+        CVmix_params%sw_rho  = val
         
       case default
         print*, "ERROR: ", trim(varname), " not a valid choice!"
