@@ -116,7 +116,6 @@ module cvmix_kinds_and_types
   ! (currently just Simmons)
   type, public :: cvmix_tidal_params_type
       character(len=cvmix_strlen) :: mix_scheme
-      real(cvmix_r8)              :: energy_flux
       real(cvmix_r8)              :: efficiency
       real(cvmix_r8)              :: vertical_decay_scale
       real(cvmix_r8)              :: max_coefficient

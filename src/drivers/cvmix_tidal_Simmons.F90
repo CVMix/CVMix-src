@@ -106,6 +106,17 @@ Subroutine cvmix_tidal_driver()
     depth(k) = 0.5_cvmix_r8*(depth_iface(k)+depth_iface(k+1))
   end do
 
+  ! Initialize tidal mixing parameters
+  call cvmix_init_tidal(CVmix_Simmons_params, 'Simmons', 'mks',         &
+                        local_mixing_frac=0.33D0, max_coefficient=0.01D0)
+  print*, "Namelist variables:"
+  print*, "mix_scheme = ", trim(CVmix_Simmons_params%mix_scheme)
+  print*, "efficiency = ", CVmix_Simmons_params%efficiency
+  print*, "vertical_decay_scale = ", CVmix_Simmons_params%vertical_decay_scale
+  print*, "max_coefficient = ", CVmix_Simmons_params%max_coefficient
+  print*, "local_mixing_frac = ", CVmix_Simmons_params%local_mixing_frac
+  print*, "depth_cutoff = ", CVmix_Simmons_params%depth_cutoff
+
   ! For starters, using column from 353.9634 E, 58.84838 N)
   ! That's i=35, j=345 (compare result to KVMIX(0, :, 344, 34) in NCL)
   i = 35
@@ -125,17 +136,8 @@ Subroutine cvmix_tidal_driver()
   ! Point CVmix_vars values to memory allocated above
   CVmix_vars%diff_iface => diffusivity(i,j,1:nlev+1,:)
 
-  call cvmix_init_tidal(CVmix_Simmons_params, CVmix_vars, 'Simmons', 'mks', &
-                        energy_flux(i,j), local_mixing_frac=0.33D0,         &
-                        max_coefficient=0.01D0)
-  print*, "Namelist variables:"
-  print*, "mix_scheme = ", trim(CVmix_Simmons_params%mix_scheme)
-  print*, "efficiency = ", CVmix_Simmons_params%efficiency
-  print*, "vertical_decay_scale = ", CVmix_Simmons_params%vertical_decay_scale
-  print*, "max_coefficient = ", CVmix_Simmons_params%max_coefficient
-  print*, "local_mixing_frac = ", CVmix_Simmons_params%local_mixing_frac
-  print*, "depth_cutoff = ", CVmix_Simmons_params%depth_cutoff
-  call cvmix_coeffs_tidal(CVmix_vars, CVmix_Simmons_params, CVmix_params)
+  call cvmix_coeffs_tidal(CVmix_vars, CVmix_Simmons_params, CVmix_params, &
+                          energy_flux(i,j))
 
   ! Output
   ! data will have diffusivity from both columns (needed for NCL script)
