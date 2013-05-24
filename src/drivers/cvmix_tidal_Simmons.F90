@@ -35,7 +35,7 @@ Subroutine cvmix_tidal_driver()
 !BOC
 
   ! CVMix datatypes
-  type(cvmix_data_type)          :: CVmix_vars
+  type(cvmix_data_type), dimension(:,:), allocatable :: CVmix_vars
   type(cvmix_global_params_type) :: CVmix_params
   type(cvmix_tidal_params_type)  :: CVmix_Simmons_params
 
@@ -65,6 +65,8 @@ Subroutine cvmix_tidal_driver()
   nlon = 320
   nlat = 384
   max_nlev = 60
+  ! Allocate memory for CVmix columns
+  allocate(CVmix_vars(nlon, nlat))
 
   ! Read namelist variables 
   grid_file = "none"
@@ -119,37 +121,45 @@ Subroutine cvmix_tidal_driver()
 
   ! For starters, using column from 353.9634 E, 58.84838 N)
   ! That's i=35, j=345 (compare result to KVMIX(0, :, 344, 34) in NCL)
-  i = 35
-  j = 345
-  nlev = ocn_levels(i,j)
+  do i=1,nlon
+    do j=1,nlat
+      nlev = ocn_levels(i,j)
 
-  ! Initialization for CVMix data types
-  call cvmix_put(CVmix_vars,      'nlev',                  nlev)
-  call cvmix_put(CVmix_vars,  'surf_hgt',          0.0_cvmix_r8)
-  call cvmix_put(CVmix_vars,  'zw_iface', depth_iface(1:nlev+1))
-  call cvmix_put(CVmix_vars,        'zw',         depth(1:nlev))
-  call cvmix_put(CVmix_vars,      'buoy',    buoy(i,j,1:nlev+1))
-  call cvmix_put(CVmix_vars, 'ocn_depth',        ocn_depth(i,j))
+      ! Initialization for CVMix data types
+      call cvmix_put(CVmix_vars(i,j), 'nlev', nlev)
+      if (nlev.gt.0) then
+        call cvmix_put(CVmix_vars(i,j),  'surf_hgt',          0.0_cvmix_r8)
+        call cvmix_put(CVmix_vars(i,j),  'zw_iface', depth_iface(1:nlev+1))
+        call cvmix_put(CVmix_vars(i,j),        'zw',         depth(1:nlev))
+        call cvmix_put(CVmix_vars(i,j),      'buoy',    buoy(i,j,1:nlev+1))
+        call cvmix_put(CVmix_vars(i,j), 'ocn_depth',        ocn_depth(i,j))
 
-  call cvmix_put(CVmix_params, 'max_nlev',        max_nlev)
-  call cvmix_put(CVmix_params,   'fw_rho', 1000.0_cvmix_r8)
-  ! Point CVmix_vars values to memory allocated above
-  CVmix_vars%diff_iface => diffusivity(i,j,1:nlev+1,:)
+        call cvmix_put(CVmix_params, 'max_nlev',        max_nlev)
+        call cvmix_put(CVmix_params,   'fw_rho', 1000.0_cvmix_r8)
+        ! Point CVmix_vars values to memory allocated above
+        CVmix_vars(i,j)%diff_iface => diffusivity(i,j,1:nlev+1,:)
 
-  call cvmix_coeffs_tidal(CVmix_vars, CVmix_Simmons_params, CVmix_params, &
-                          energy_flux(i,j))
+        call cvmix_coeffs_tidal(CVmix_vars(i,j), CVmix_Simmons_params, &
+                                CVmix_params, energy_flux(i,j))
 
-  ! Output
-  ! data will have diffusivity from both columns (needed for NCL script)
-#ifdef _NETCDF
-  call cvmix_io_open(fid, "data.nc", "nc")
-#else
-  call cvmix_io_open(fid, "data.out", "ascii")
-#endif
+      end if
 
-  call cvmix_output_write(fid, CVmix_vars, (/"diff"/))
+      ! Output
+      if ((i.eq.35).and.(j.eq.345)) then
+        call cvmix_io_open(fid, "data.nc", "nc")
+        call cvmix_output_write(fid, CVmix_vars(i,j), (/"diff"/))
+        call cvmix_io_close(fid)
+      end if
 
-  call cvmix_io_close(fid)
+    end do
+  end do
+
+  ! memory cleanup
+  deallocate(CVmix_vars)
+  deallocate(energy_flux, ocn_depth)
+  deallocate(buoy)
+  deallocate(ocn_levels)
+  deallocate(depth, depth_iface)
 
 !EOC
 
