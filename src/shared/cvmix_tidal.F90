@@ -218,7 +218,6 @@
             !      if statement below
             z_cut = CVmix_tidal_params%depth_cutoff
             if ((buoy.gt.0.0_cvmix_r8).and.(CVmix_vars%ocn_depth.ge.z_cut)) &
-!            if (buoy.gt.0.0_cvmix_r8) &
               CVmix_vars%diff_iface(k,1) = coef*CVmix_vars%vert_dep(k)/(rho*buoy)
             if (CVmix_vars%diff_iface(k,1).gt.CVmix_tidal_params%max_coefficient) &
               CVmix_vars%diff_iface(k,1) = CVmix_tidal_params%max_coefficient
