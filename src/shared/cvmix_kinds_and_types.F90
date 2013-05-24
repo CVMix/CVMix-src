@@ -57,7 +57,11 @@ module cvmix_kinds_and_types
       real(cvmix_r8), dimension(:),   pointer :: visc_iface => NULL()
       real(cvmix_r8), dimension(:),   pointer :: z_iface    => NULL()
       real(cvmix_r8), dimension(:),   pointer :: dw_iface   => NULL()
-      real(cvmix_r8), dimension(:),   pointer :: Ri_iface => NULL()
+      real(cvmix_r8), dimension(:),   pointer :: Ri_iface   => NULL()
+      ! For tidal mixing, we need to calculate the vertical deposition
+      ! function on each column as well as squared buoyancy frequency
+      real(cvmix_r8), dimension(:),   pointer :: vert_dep   => NULL()
+      real(cvmix_r8), dimension(:),   pointer :: buoy       => NULL()
 
       ! Values at tracer points
       ! nlev
@@ -71,10 +75,6 @@ module cvmix_kinds_and_types
       ! denominator is non-zero before performing the division.
       real(cvmix_r8), dimension(:),   pointer :: strat_param_num   => NULL()
       real(cvmix_r8), dimension(:),   pointer :: strat_param_denom => NULL()
-      ! For tidal mixing, we need to calculate the vertical deposition
-      ! function on each column as well as squared buoyancy frequency
-      real(cvmix_r8), dimension(:),   pointer :: vert_dep => NULL()
-      real(cvmix_r8), dimension(:),   pointer :: buoy     => NULL()
   end type cvmix_data_type
 
   ! cvmix_global_params_type contains global parameters used by multiple

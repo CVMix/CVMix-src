@@ -74,9 +74,10 @@
 !BOC
 
     ! Local variables
-    real(cvmix_r8) :: tot_area, num, denom1, denom2, tmp, thick
-    integer        :: k
+    real(cvmix_r8) :: tot_area, num, thick!, denom1, denom2, tmp
+    integer        :: k, nlev
 
+    nlev = CVmix_vars%nlev
     ! energy flux must be passed in (no default value exists)
     ! user is responsible for keeping track of units
     CVmix_tidal_params%energy_flux = energy_flux
@@ -143,43 +144,30 @@
 
     ! Compute vertical deposition function
     if(.not.associated(CVmix_vars%vert_dep)) then
-      allocate(CVmix_vars%vert_dep(CVmix_vars%nlev+1))
+      allocate(CVmix_vars%vert_dep(nlev+1))
     else
-      if (size(CVmix_vars%vert_dep).ne.CVmix_vars%nlev+1) then
+      if (size(CVmix_vars%vert_dep).ne.nlev+1) then
         write(*,"(A,1X,A,1X,I0)") "ERROR: vertical deposition function must", &
-                                  "be array of length", CVmix_vars%nlev+1
+                                  "be array of length", nlev+1
         stop 1
       end if
     end if
 
     tot_area = 0.0_cvmix_r8
-    do k=1,CVmix_vars%nlev-1
-      ! Store vertical decay scale in tmp to save keystrokes
-      tmp = CVmix_tidal_params%vertical_decay_scale
-      !num = -CVmix_vars%z_iface(k)/tmp
-      denom1 = CVmix_vars%ocn_depth/tmp
-      denom2 = CVmix_vars%surf_hgt/tmp
-      num = -(CVmix_vars%ocn_depth+CVmix_vars%z_iface(k))/tmp
+    CVmix_vars%vert_dep(1) = 0.0_cvmix_r8
+    CVmix_vars%vert_dep(nlev+1) = 0.0_cvmix_r8
+    do k=2,nlev
+      num = -CVmix_vars%z_iface(k)/CVmix_tidal_params%vertical_decay_scale
       ! Simmons vertical deposition
-!      CVmix_vars%vert_dep(k) = exp(num)/(tmp*(exp(denom1) - exp(denom2)))
-      ! POP vertical deposition
+      ! Note that it is getting normalized (divide through by tot_area)
+      ! So multiplicative constants that are independent of z are omitted
       CVmix_vars%vert_dep(k) = exp(num)
 
       ! Compute integral of vert_dep via trapezoid rule
-!      if (k.eq.1) then
-!        thick = CVmix_vars%surf_hgt - CVmix_vars%z(1)
-!      else
-!        if (k.eq.CVmix_vars%nlev) then
-!          ! CVmix_vars%ocn_depth should be same is -CVmix_vars%z_iface(nlev+1)
-!          thick = CVmix_vars%z(CVmix_vars%nlev-1) - CVmix_vars%z_iface(CVMix_vars%nlev)
-!        else
-          thick = CVmix_vars%z(k) - CVmix_vars%z(k+1)
-!        end if
-!      end if
+      ! (looks like midpoint rule, but vert_dep = 0 at z=0 and z=-ocn_depth)
+      thick = CVmix_vars%z(k-1) - CVmix_vars%z(k)
       tot_area = tot_area + CVmix_vars%vert_dep(k)*thick
     end do
-    CVmix_vars%vert_dep(CVmix_vars%nlev) = 0.0_cvmix_r8
-    CVmix_vars%vert_dep(CVmix_vars%nlev+1) = 0.0_cvmix_r8
     ! Normalize vert_dep (need integral = 1.0D0)
     CVmix_vars%vert_dep = CVmix_vars%vert_dep/tot_area
 
@@ -215,7 +203,7 @@
 
     ! Local variables
     integer        :: nlev, k
-    real(cvmix_r8) :: coef, rho, buoy
+    real(cvmix_r8) :: coef, rho, buoy, z_cut
 
     nlev = CVmix_vars%nlev
     rho  = CVmix_params%fw_rho
@@ -225,10 +213,15 @@
           coef = CVmix_tidal_params%local_mixing_frac*CVmix_tidal_params%efficiency*CVmix_tidal_params%energy_flux
           do k=1, nlev+1
             buoy = CVmix_vars%buoy(k)
-            if (buoy.gt.0) &
+            ! MNL: I think this is where we want to implement check for
+            !      depth cutoff value (replace the "if (buoy.gt.0)" with
+            !      if statement below
+            z_cut = CVmix_tidal_params%depth_cutoff
+            if ((buoy.gt.0.0_cvmix_r8).and.(CVmix_vars%ocn_depth.ge.z_cut)) &
+!            if (buoy.gt.0.0_cvmix_r8) &
               CVmix_vars%diff_iface(k,1) = coef*CVmix_vars%vert_dep(k)/(rho*buoy)
-!            if (CVmix_vars%diff_iface(k,1).gt.CVmix_tidal_params%max_coefficient) &
-!              CVmix_vars%diff_iface(k,1) = CVmix_tidal_params%max_coefficient
+            if (CVmix_vars%diff_iface(k,1).gt.CVmix_tidal_params%max_coefficient) &
+              CVmix_vars%diff_iface(k,1) = CVmix_tidal_params%max_coefficient
           end do
 
       case DEFAULT
