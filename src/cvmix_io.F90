@@ -50,6 +50,7 @@ module cvmix_io
   interface cvmix_output_write
     module procedure cvmix_output_write_single_col
     module procedure cvmix_output_write_multi_col
+    module procedure cvmix_output_write_3d_double
   end interface
 
 ! !DEFINED PARAMETERS:
@@ -878,6 +879,63 @@ contains
 !EOC
 
   end subroutine cvmix_output_write_multi_col
+
+!BOP
+
+! !IROUTINE: cvmix_write_3d_double
+! !INTERFACE:
+
+  subroutine cvmix_output_write_3d_double(file_id, var_name, dim_names, field)
+
+! !DESCRIPTION:
+!  Routine to write a 3d field to a netcdf file. Called with cvmix\_output\_
+!  write (see interface in PUBLIC MEMBER FUNCTIONS above).
+!\\
+!\\
+
+! !USES:
+!  Only those used by entire module. 
+
+! !INPUT PARAMETERS
+    integer,                             intent(in) :: file_id
+    character(len=*),                    intent(in) :: var_name
+    character(len=*), dimension(3),      intent(in) :: dim_names
+    real(cvmix_r8),   dimension(:,:,:),  intent(in) :: field
+
+!BOC
+
+    ! Local variables
+    integer, dimension(3) :: dims
+#ifdef _NETCDF
+    integer, dimension(3) :: dimids
+    integer               :: varid, i
+#endif
+
+    dims = shape(field)
+    select case(get_file_type(file_id))
+#ifdef _NETCDF
+      case (NETCDF_FILE_TYPE)
+        do i=1,3
+          call netcdf_check(nf90_def_dim(file_id, trim(dim_names(i)), dims(i), &
+                                         dimids(i)))
+        end do
+        call netcdf_check(nf90_def_var(file_id, trim(var_name), NF90_DOUBLE,   &
+                                       dimids, varid))
+        call netcdf_check(nf90_enddef(file_id))
+        call netcdf_check(nf90_put_var(file_id, varid, field))
+#endif
+
+      case DEFAULT
+        print*, "ERROR: cvmix_output_write_3d_double only writes to netcdf"
+        print*, "(attempt to write ", trim(var_name), " with dimensions ", &
+                trim(dim_names(1)), ", ", trim(dim_names(2)), ", and ",    &
+                trim(dim_names(3))
+        call cvmix_io_close_all
+        stop 1
+    end select
+!EOC
+
+  end subroutine cvmix_output_write_3d_double
 
 !BOP
 

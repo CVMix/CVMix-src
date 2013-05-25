@@ -47,7 +47,7 @@ Subroutine cvmix_tidal_driver()
   ! Namelist variables
   character(len=cvmix_strlen) :: grid_file, physics_file, energy_flux_file, &
                                  energy_flux_var
-  integer :: nlon, nlat
+  integer :: lon_out, lat_out
 
   ! Local variables
   real(cvmix_r8), dimension(:,:,:), allocatable :: buoy
@@ -55,11 +55,11 @@ Subroutine cvmix_tidal_driver()
   integer,        dimension(:,:),   allocatable :: ocn_levels
   real(cvmix_r8), dimension(:),     allocatable :: depth_iface
   real(cvmix_r8), dimension(:),     allocatable :: depth
-  integer :: i, j, k, nlev, max_nlev
+  integer :: i, j, k, nlon, nlat, nlev, max_nlev
 
   ! Namelists that may be read in, depending on desired mixing scheme
-  namelist/Simmons_nml/grid_file, physics_file, energy_flux_file, &
-                       energy_flux_var, nlon, nlat
+  namelist/Simmons_nml/grid_file, physics_file, energy_flux_file,             &
+                       energy_flux_var, lon_out, lat_out
 
   ! Hardcode in file dimensions (to do: read in from netCDF)
   nlon = 320
@@ -73,6 +73,8 @@ Subroutine cvmix_tidal_driver()
   physics_file = "none"
   energy_flux_file = "none"
   energy_flux_var = "none"
+  lon_out = 35
+  lat_out = 345
   read(*, nml=Simmons_nml)
 
   ! Allocate memory for energy flux, ocean depth, number of ocean levels,
@@ -111,7 +113,8 @@ Subroutine cvmix_tidal_driver()
   ! Initialize tidal mixing parameters
   call cvmix_init_tidal(CVmix_Simmons_params, 'Simmons', 'mks',         &
                         local_mixing_frac=0.33D0, max_coefficient=0.01D0)
-  print*, "Namelist variables:"
+  print*, "Namelist variables"
+  print*, "------------------"
   print*, "mix_scheme = ", trim(CVmix_Simmons_params%mix_scheme)
   print*, "efficiency = ", CVmix_Simmons_params%efficiency
   print*, "vertical_decay_scale = ", CVmix_Simmons_params%vertical_decay_scale
@@ -145,14 +148,25 @@ Subroutine cvmix_tidal_driver()
       end if
 
       ! Output
-      if ((i.eq.35).and.(j.eq.345)) then
-        call cvmix_io_open(fid, "data.nc", "nc")
-        call cvmix_output_write(fid, CVmix_vars(i,j), (/"diff"/))
-        call cvmix_io_close(fid)
+      if ((i.eq.lon_out).and.(j.eq.lat_out)) then
+        if (nlev.gt.0) then
+          call cvmix_io_open(fid, "single_col.nc", "nc")
+          call cvmix_output_write(fid, CVmix_vars(i,j), (/"diff"/))
+          call cvmix_io_close(fid)
+        else
+          print*, "ERROR: column requested for output is a land cell."
+          stop 1
+        end if
       end if
 
     end do
   end do
+
+  ! Write diffusivity field to netcdf
+  call cvmix_io_open(fid, "diff.nc", "nc")
+  call cvmix_output_write(fid, "diff", (/"nlon  ", "nlat  ", "niface"/),      &
+                          diffusivity(:,:,:,1))
+  call cvmix_io_close(fid)
 
   ! memory cleanup
   deallocate(CVmix_vars)

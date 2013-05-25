@@ -27,8 +27,8 @@ while [ $# -gt 0 ]; do
       USE_NETCDF=netcdf
       ;;
     -clean|--clean)
-      echo "rm -f data.out data.nc"
-      rm -f data.out data.nc
+      echo "rm -f single_col.nc diff.nc"
+      rm -f single_col.nc diff.nc
       exit
       ;;
     * )
@@ -59,8 +59,4 @@ if [ $? != 0 ]; then
   exit 1
 fi
 
-if [ "${USE_NETCDF}" == "netcdf" ]; then
-  ncdump -v diff data.nc
-else
-  cat data.out
-fi
+ncdump -v diff single_col.nc
