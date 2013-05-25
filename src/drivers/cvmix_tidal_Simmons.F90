@@ -53,8 +53,8 @@ Subroutine cvmix_tidal_driver()
   real(cvmix_r8), dimension(:,:,:), allocatable :: buoy
   real(cvmix_r8), dimension(:,:),   allocatable :: ocn_depth, energy_flux
   integer,        dimension(:,:),   allocatable :: ocn_levels
-  real(cvmix_r8), dimension(:),     allocatable :: depth_iface
-  real(cvmix_r8), dimension(:),     allocatable :: depth
+  real(cvmix_r8), dimension(:),     allocatable :: depth_iface, depth
+  real(cvmix_r8)                                :: FillVal
   integer :: i, j, k, nlon, nlat, nlev, max_nlev
 
   ! Namelists that may be read in, depending on desired mixing scheme
@@ -90,7 +90,8 @@ Subroutine cvmix_tidal_driver()
   ! Allocate memory to store diffusivity values
   allocate(diffusivity(nlon, nlat, max_nlev+1,1))
   ! Set diffusivity to _FillValue
-  diffusivity = 100000.0_cvmix_r8
+  FillVal     = 100000.0_cvmix_r8
+  diffusivity = FillVal
 
   ! Read in global data from grid file, physics file, and energy flux file
   call cvmix_io_open(fid, trim(grid_file), 'nc', read_only=.true.)
@@ -165,7 +166,7 @@ Subroutine cvmix_tidal_driver()
   ! Write diffusivity field to netcdf
   call cvmix_io_open(fid, "diff.nc", "nc")
   call cvmix_output_write(fid, "diff", (/"nlon  ", "nlat  ", "niface"/),      &
-                          diffusivity(:,:,:,1))
+                          diffusivity(:,:,:,1), FillVal=FillVal)
   call cvmix_io_close(fid)
 
   ! memory cleanup

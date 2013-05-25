@@ -885,7 +885,8 @@ contains
 ! !IROUTINE: cvmix_write_3d_double
 ! !INTERFACE:
 
-  subroutine cvmix_output_write_3d_double(file_id, var_name, dim_names, field)
+  subroutine cvmix_output_write_3d_double(file_id, var_name, dim_names,       &
+                                          field, FillVal)
 
 ! !DESCRIPTION:
 !  Routine to write a 3d field to a netcdf file. Called with cvmix\_output\_
@@ -901,17 +902,20 @@ contains
     character(len=*),                    intent(in) :: var_name
     character(len=*), dimension(3),      intent(in) :: dim_names
     real(cvmix_r8),   dimension(:,:,:),  intent(in) :: field
+    real(cvmix_r8), optional,            intent(in) :: FillVal
 
 !BOC
 
     ! Local variables
     integer, dimension(3) :: dims
+    logical               :: add_fill
 #ifdef _NETCDF
     integer, dimension(3) :: dimids
     integer               :: varid, i
 #endif
 
     dims = shape(field)
+    add_fill = present(FillVal)
     select case(get_file_type(file_id))
 #ifdef _NETCDF
       case (NETCDF_FILE_TYPE)
@@ -921,6 +925,9 @@ contains
         end do
         call netcdf_check(nf90_def_var(file_id, trim(var_name), NF90_DOUBLE,   &
                                        dimids, varid))
+        if (add_fill) &
+          call netcdf_check(nf90_put_att(file_id, varid, "_FillValue", &
+                                         FillVal))
         call netcdf_check(nf90_enddef(file_id))
         call netcdf_check(nf90_put_var(file_id, varid, field))
 #endif
