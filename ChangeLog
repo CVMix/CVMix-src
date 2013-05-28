@@ -6,6 +6,12 @@ ALL CHANGES SHOULD OCCUR BELOW THIS LINE
 ===============================================================================
 Tag Creator: mlevy
 Developers:  mlevy
+Tag Date:    28 May 2013
+Tag Name:    cvmix_20130528
+Tag Summary: Inclusion of tidal mixing, improved compilation on Cray systems.
+===============================================================================
+Tag Creator: mlevy
+Developers:  mlevy
 Tag Date:    6 May 2013
 Tag Name:    cvmix_20130506
 Tag Summary: Inclusion of double-diffusion mixing, fixed support for building
