@@ -85,10 +85,10 @@ Subroutine cvmix_BL_memcopy_driver(nlev, ocn_depth)
   call cvmix_put(CVmix_params, 'max_nlev', nlev)
   call cvmix_put(CVmix_params, 'prandtl',  0.0_cvmix_r8)
   do icol=1,2
-    call cvmix_put(CVmix_vars(icol), 'nlev', nlev)
-    call cvmix_put(CVmix_vars(icol), 'visc', 0.0_cvmix_r8)
-    call cvmix_put(CVmix_vars(icol), 'diff', 0.0_cvmix_r8)
-    call cvmix_put(CVmix_vars(icol), 'zw',   iface_depth)
+    call cvmix_put(CVmix_vars(icol), 'nlev',     nlev)
+    call cvmix_put(CVmix_vars(icol), 'visc',     0.0_cvmix_r8)
+    call cvmix_put(CVmix_vars(icol), 'diff',     0.0_cvmix_r8)
+    call cvmix_put(CVmix_vars(icol), 'zw_iface', iface_depth)
   end do
 
   ! Read / set B-L parameters for column 1
