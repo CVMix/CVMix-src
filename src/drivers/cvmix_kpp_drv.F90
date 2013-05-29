@@ -42,8 +42,8 @@ Subroutine cvmix_kpp_driver(nlev)
   real(cvmix_r8), dimension(:),   allocatable, target :: viscosity
   integer :: fid
 
-  allocate(diffusivity(nlev,2))
-  allocate(viscosity(nlev))
+  allocate(diffusivity(nlev+1,2))
+  allocate(viscosity(nlev+1))
 
   call cvmix_put(CVmix_vars, 'nlev', nlev)
   CVmix_vars%diff_iface => diffusivity(:,:)
