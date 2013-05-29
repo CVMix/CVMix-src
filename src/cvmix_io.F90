@@ -160,7 +160,11 @@ contains
 #endif
       case ('ascii')
         file_index%file_type = ASCII_FILE_TYPE
-        open(file_id, file = file_name, status="replace")
+        if (readonly) then
+          open(file_id, file = file_name, status="old")
+        else
+          open(file_id, file = file_name, status="replace")
+        end if
       case default
         print*, "ERROR: ", trim(file_format)," is not a valid file type"
 
@@ -731,10 +735,10 @@ contains
     character(len=*),      dimension(:), intent(in) :: var_names
 
 ! !LOCAL VARIABLES:
-    integer :: ncol, nw, nt, icol, kw, var
+    integer :: ncol, nw, icol, kw, var
     logical :: z_err
 #ifdef _NETCDF
-    integer                                          :: nt_id, nw_id, ncol_id
+    integer                                          :: nt, nt_id, nw_id, ncol_id
     integer,             dimension(:),   allocatable :: var_id
     real(kind=cvmix_r8), dimension(:,:), allocatable :: lcl_visc, lcl_diff, lcl_Rrho
 #endif
@@ -743,7 +747,6 @@ contains
 
     z_err = .false.
     ncol = size(CVmix_vars)
-    nt = CVmix_vars(1)%nlev
     nw = CVmix_vars(1)%nlev+1
     ! Make sure all levels are the same
     do icol=2,ncol
@@ -767,6 +770,7 @@ contains
     select case (get_file_type(file_id))
 #ifdef _NETCDF
       case (NETCDF_FILE_TYPE)
+        nt = CVmix_vars(1)%nlev
         call netcdf_check(nf90_def_dim(file_id, "nt",   nt,   nt_id))
         call netcdf_check(nf90_def_dim(file_id, "nw",   nw,   nw_id))
         call netcdf_check(nf90_def_dim(file_id, "ncol", ncol, ncol_id))
@@ -939,6 +943,9 @@ contains
                 trim(dim_names(3))
         call cvmix_io_close_all
         stop 1
+        ! Dummy code to supress unused variable warnings
+        if (add_fill) &
+          dims(1) = dims(2)
     end select
 !EOC
 
