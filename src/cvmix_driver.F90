@@ -54,6 +54,8 @@ Program cvmix_driver
       call cvmix_tidal_driver()
     case ('ddiff')
       call cvmix_ddiff_driver(nlev)
+    case ('kpp')
+      call cvmix_kpp_driver(nlev)
     case DEFAULT
       print*, "WARNING: mix_type = '", trim(mix_type), "' is not supported by this driver."
   end select

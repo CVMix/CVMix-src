@@ -109,7 +109,8 @@ DRIVER_OBJS = cvmix_bgrnd_BL_pointer.o \
               cvmix_bgrnd_BL_memcopy.o \
               cvmix_shear_KPP.o        \
               cvmix_tidal_Simmons.o    \
-              cvmix_ddiff_drv.o
+              cvmix_ddiff_drv.o        \
+              cvmix_kpp_drv.o
 ifeq ($(UCASE),TRUE)
   MODS_TMP = $(shell echo $(OBJS) | tr '[a-z]' '[A-Z]')
   MODS = ${MODS_TMP:.O=.mod}
@@ -118,11 +119,12 @@ else
 endif
 
 SHARED_TMP = cvmix_kinds_and_types.mod \
-             cvmix_background.mod \
-             cvmix_convection.mod \
-             cvmix_ddiff.mod \
-             cvmix_put_get.mod \
-             cvmix_shear.mod \
+             cvmix_background.mod      \
+             cvmix_convection.mod      \
+             cvmix_ddiff.mod           \
+             cvmix_kpp.mod             \
+             cvmix_put_get.mod         \
+             cvmix_shear.mod           \
              cvmix_tidal.mod
 
 ifeq ($(UCASE),TRUE)
@@ -179,6 +181,11 @@ $(OBJ_DIR)/cvmix_ddiff_drv.o: $(OBJ_DIR)/cvmix_io.o \
                               $(SHR_MODS) \
                               $(SRC_DRIVE_DIR)/cvmix_ddiff_drv.F90
 	$(FC) $(FCFLAGS) -c $(SRC_DRIVE_DIR)/cvmix_ddiff_drv.F90 -o $@
+
+$(OBJ_DIR)/cvmix_kpp_drv.o: $(OBJ_DIR)/cvmix_io.o \
+                            $(SHR_MODS) \
+                            $(SRC_DRIVE_DIR)/cvmix_kpp_drv.F90
+	$(FC) $(FCFLAGS) -c $(SRC_DRIVE_DIR)/cvmix_kpp_drv.F90 -o $@
 
 $(OBJ_DIR)/cvmix_driver.o: $(addprefix $(OBJ_DIR)/,$(DRIVER_OBJS)) \
                            $(SHR_MODS) \

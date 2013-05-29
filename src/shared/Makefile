@@ -49,6 +49,7 @@ endif
 MODULES = cvmix_background.F90 \
           cvmix_convection.F90 \
           cvmix_ddiff.F90 \
+          cvmix_kpp.F90 \
           cvmix_put_get.F90 \
           cvmix_shear.F90 \
           cvmix_tidal.F90
@@ -180,6 +181,20 @@ $(INC_DIR)/cvmix_ddiff.mod: $(SRC_DIR)/cvmix_ddiff.F90       \
 $(INC_DIR)/CVMIX_DDIFF.mod: $(SRC_DIR)/cvmix_ddiff.F90       \
                             $(OBJ_DIR)/cvmix_ddiff.o
 	cp $(OBJ_DIR)/CVMIX_DDIFF.mod $@
+
+### cvmix_kpp.F90
+$(OBJ_DIR)/cvmix_kpp.o: $(SRC_DIR)/cvmix_kpp.F90           \
+                        $(OBJ_DIR)/cvmix_put_get.o         \
+                        $(OBJ_DIR)/cvmix_kinds_and_types.o
+	$(FC) $(FCFLAGS) -c $(SRC_DIR)/cvmix_kpp.F90 -o $@
+
+$(INC_DIR)/cvmix_kpp.mod: $(SRC_DIR)/cvmix_kpp.F90         \
+                          $(OBJ_DIR)/cvmix_kpp.o
+	cp $(OBJ_DIR)/cvmix_kpp.mod $@
+
+$(INC_DIR)/CVMIX_KPP.mod: $(SRC_DIR)/cvmix_kpp.F90         \
+                          $(OBJ_DIR)/cvmix_kpp.o
+	cp $(OBJ_DIR)/CVMIX_KPP.mod $@
 
 ### Combine into library
 $(LIB_DIR)/libcvmix.a: $(KINDS_OBJ) $(OBJS)
