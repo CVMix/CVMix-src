@@ -228,14 +228,16 @@
         ! Large, et al
         do kw=1,CVmix_vars%nlev+1
             if (RICH(kw).lt.0) then
-              CVmix_vars%visc_iface(kw) = nu_zero
+              CVmix_vars%diff_iface(kw,1) = nu_zero
             else if (RICH(kw).lt.KPP_Ri_zero) then
-              CVmix_vars%visc_iface(kw) = nu_zero * (one -                  &
+              CVmix_vars%diff_iface(kw,1) = nu_zero * (one -                  &
                    (RICH(kw)/KPP_Ri_zero)**2)**loc_exp
             else ! Ri_g >= Ri_zero
-              CVmix_vars%visc_iface(kw) = 0
+              CVmix_vars%diff_iface(kw,1) = 0
             end if
         end do
+        ! to do: include global params for prandtl number!
+        CVmix_vars%visc_iface = CVmix_vars%diff_iface(:,1)
 
       case DEFAULT
         ! Note: this error should be caught in cvmix_init_shear

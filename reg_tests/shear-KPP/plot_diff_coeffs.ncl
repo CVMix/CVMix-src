@@ -14,7 +14,7 @@ begin
     print((/"Reading netCDF data"/))
     f = addfile("data.nc", "r")
     x = f->Ri
-    y = f->visc
+    y = f->diff
   else
     if (isfilepresent("data.out")) then
       print((/"Reading ascii data"/))
@@ -79,7 +79,7 @@ begin
   ; Title / axes labels
   res@tiMainString  = "Shear Instability"
   res@tiXAxisString = "Ri:B:g:E:"
-  res@tiYAxisString = ":F8:n:F10::S:s:E::B:x:E::F8: /n:F10::S:0:E:"
+  res@tiYAxisString = ":F8:k/k:F10::B:0:E:"
 
   plot = gsn_csm_xy(wks, x, y/5e-3, res)
 

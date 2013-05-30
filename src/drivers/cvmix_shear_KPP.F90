@@ -4,7 +4,7 @@
 
 ! !DESCRIPTION: A routine to test the Large, et al., implementation of shear
 !  mixing. Inputs are the coefficients used in Equation (28) of the paper.
-!  The viscosity coefficient is output from a single column to allow
+!  The diffusivity coefficient is output from a single column to allow
 !  recreation of the paper's Figure 3. Note that here each "level" of the
 !  column denotes a different local gradient Richardson number rather than a
 !  physical ocean level. All memory is declared in the driver, and the CVMix
@@ -74,7 +74,7 @@ Subroutine cvmix_shear_driver(nlev)
 
   ! Initialization for CVMix data types
   call cvmix_put(CVmix_params,  'max_nlev', nlev)
-  call cvmix_put(CVmix_params,  'prandtl',  0.0_cvmix_r8)
+  call cvmix_put(CVmix_params,  'prandtl',  1.0_cvmix_r8)
   call cvmix_put(CVmix_vars,    'nlev',     nlev)
   ! Point CVmix_vars values to memory allocated above
   CVmix_vars%visc_iface => viscosity
@@ -96,7 +96,7 @@ Subroutine cvmix_shear_driver(nlev)
   call cvmix_io_open(fid, "data.out", "ascii")
 #endif
 
-  call cvmix_output_write(fid, CVmix_vars, (/"Ri  ", "visc"/))
+  call cvmix_output_write(fid, CVmix_vars, (/"Ri  ", "diff"/))
 
   call cvmix_io_close(fid)
 
