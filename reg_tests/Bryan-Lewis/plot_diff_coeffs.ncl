@@ -47,9 +47,8 @@ begin
   res@xyDashPatterns     = (/0,0/)
   res@trXMinF            = 0
   res@trXMaxF            = 1.4
-  res@trYMinF            = 0
-  res@trYMaxF            = 5500
-  res@trYReverse         = True
+  res@trYMinF            = -5500
+  res@trYMaxF            = 0
 
   ; Plot / font size, tick marks
   res@vpHeightF               = 0.55

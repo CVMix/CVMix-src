@@ -76,8 +76,10 @@ Subroutine cvmix_BL_memcopy_driver(nlev, ocn_depth)
   ! depth
   allocate(iface_depth(nlev+1))
   iface_depth(1) = 0.0_cvmix_r8
+  
+  ! Depth is 0 at sea level and negative at ocean bottom in CVMix
   do kw = 2,nlev+1
-    iface_depth(kw) = iface_depth(kw-1) + ocn_depth/dble(nlev)
+    iface_depth(kw) = iface_depth(kw-1) - ocn_depth/dble(nlev)
   end do
 
   ! Initialization for CVMix data types

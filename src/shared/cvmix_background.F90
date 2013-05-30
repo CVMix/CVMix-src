@@ -223,7 +223,7 @@ contains
 !  The Bryan-Lewis parameterization is based on the following:
 !  \begin{eqnarray*}
 !  \kappa_{BL} &=& \textrm{bl1} + \frac{\textrm{bl2}}{\pi}\tan^{-1}\bigg(
-!                  \textrm{bl3}(z-\textrm{bl4})\bigg)\\
+!                  \textrm{bl3}(|z|-\textrm{bl4})\bigg)\\
 !  \nu_{BL} &=& \textrm{Pr}\cdot\kappa_{BL}
 !  \end{eqnarray*}
 !  This method is based on the following paper:
@@ -272,7 +272,7 @@ contains
     allocate(diff(nlev+1))
     
     ! Set static_visc and static_diff in background_input_type
-    z    = CVmix_vars%z_iface
+    z    = abs(CVmix_vars%z_iface)
     diff = bl1 + (bl2/cvmix_PI)*atan(bl3*(z-bl4))
     visc = CVmix_params%prandtl*diff
 
