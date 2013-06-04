@@ -376,17 +376,56 @@ contains
 
   end subroutine cvmix_coeffs_bkgnd
 
-  logical function cvmix_bkgnd_lvary_horizontal(CVmix_bkgnd_params)
+! !IROUTINE: cvmix_bkgnd_lvary_horizontal
+! !INTERFACE:
+
+  function cvmix_bkgnd_lvary_horizontal(CVmix_bkgnd_params)
+
+! !DESCRIPTION:
+!  Returns whether the background viscosity and diffusivity are
+!  varying with horizontal position.
+!\\
+!\\
+
+! !USES:
+!  Only those used by entire module. 
+
+! !INPUT PARAMETERS:
     type(cvmix_bkgnd_params_type), intent(in) :: CVmix_bkgnd_params
+
+! !OUTPUT PARAMETERS:
+  logical :: cvmix_bkgnd_lvary_horizontal
+!EOP
+!BOC
 
     cvmix_bkgnd_lvary_horizontal = CVmix_bkgnd_params%lvary_horizontal
 
+!EOC
+
   end function cvmix_bkgnd_lvary_horizontal
 
-  real(cvmix_r8) function cvmix_bkgnd_static_diff(CVmix_bkgnd_params,kw,colid)
+! !IROUTINE: cvmix_bkgnd_static_diff
+! !INTERFACE:
+
+  function cvmix_bkgnd_static_diff(CVmix_bkgnd_params,kw,colid)
+
+! !DESCRIPTION:
+!  Obtain the background diffusivity value at a position in a water column.
+!\\
+!\\
+
+! !USES:
+!  Only those used by entire module. 
+
+! !INPUT PARAMETERS:
     type(cvmix_bkgnd_params_type), intent(in) :: CVmix_bkgnd_params
     integer, intent(in) :: kw
     integer, optional, intent(in) :: colid
+
+! !OUTPUT PARAMETERS:
+    real(cvmix_r8) :: cvmix_bkgnd_static_diff
+!EOP
+!BOC
 
     if (CVmix_bkgnd_params%lvary_horizontal) then
       if (CVmix_bkgnd_params%lvary_vertical) then
@@ -402,12 +441,32 @@ contains
       end if
     end if
 
+!EOC
+
   end function cvmix_bkgnd_static_diff
 
-  real(cvmix_r8) function cvmix_bkgnd_static_visc(CVmix_bkgnd_params,kw,colid)
+! !IROUTINE: cvmix_bkgnd_static_visc
+! !INTERFACE:
+
+  function cvmix_bkgnd_static_visc(CVmix_bkgnd_params,kw,colid)
+
+! !DESCRIPTION:
+!  Obtain the background viscosity value at a position in a water column.
+!\\
+!\\
+
+! !USES:
+!  Only those used by entire module. 
+
+! !INPUT PARAMETERS:
     type(cvmix_bkgnd_params_type), intent(in) :: CVmix_bkgnd_params
     integer, intent(in) :: kw
     integer, optional, intent(in) :: colid
+
+! !OUTPUT PARAMETERS:
+    real(cvmix_r8) :: cvmix_bkgnd_static_visc
+!EOP
+!BOC
 
     if (CVmix_bkgnd_params%lvary_horizontal) then
       if (CVmix_bkgnd_params%lvary_vertical) then
@@ -422,6 +481,8 @@ contains
         cvmix_bkgnd_static_visc = CVmix_bkgnd_params%static_visc(1, 1)
       end if
     end if
+
+!EOC
 
   end function cvmix_bkgnd_static_visc
 
