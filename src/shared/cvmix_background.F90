@@ -34,9 +34,6 @@ module cvmix_background
 ! !PUBLIC MEMBER FUNCTIONS:
    public :: cvmix_init_bkgnd
    public :: cvmix_coeffs_bkgnd
-   public :: cvmix_put_bkgnd_real    ! untested
-   public :: cvmix_put_bkgnd_real_1D
-   public :: cvmix_put_bkgnd_real_2D ! untested
    public :: cvmix_bkgnd_lvary_horizontal
    public :: cvmix_bkgnd_static_diff
    public :: cvmix_bkgnd_static_visc
@@ -50,11 +47,10 @@ module cvmix_background
   end interface cvmix_init_bkgnd
 
   interface cvmix_bkgnd_put
-    module procedure cvmix_put_bkgnd_real
+    module procedure cvmix_put_bkgnd_real    ! untested
     module procedure cvmix_put_bkgnd_real_1D
-    module procedure cvmix_put_bkgnd_real_2D
+    module procedure cvmix_put_bkgnd_real_2D ! untested
   end interface cvmix_bkgnd_put
-!EOP
 
   ! cvmix_bkgnd_params_type contains the necessary parameters for background
   ! mixing. Background mixing fields can vary from level to level as well as
@@ -69,6 +65,8 @@ module cvmix_background
       logical                     :: lvary_vertical   ! True => second dim not 1
       logical                     :: lvary_horizontal ! True => first dim not 1
   end type cvmix_bkgnd_params_type
+
+!EOP
 
 contains
 
@@ -376,6 +374,8 @@ contains
 
   end subroutine cvmix_coeffs_bkgnd
 
+!BOP
+
 ! !IROUTINE: cvmix_bkgnd_lvary_horizontal
 ! !INTERFACE:
 
@@ -404,6 +404,8 @@ contains
 
   end function cvmix_bkgnd_lvary_horizontal
 
+!BOP
+
 ! !IROUTINE: cvmix_bkgnd_static_diff
 ! !INTERFACE:
 
@@ -419,13 +421,29 @@ contains
 
 ! !INPUT PARAMETERS:
     type(cvmix_bkgnd_params_type), intent(in) :: CVmix_bkgnd_params
-    integer, intent(in) :: kw
-    integer, optional, intent(in) :: colid
+    integer, optional, intent(in) :: kw, colid
 
 ! !OUTPUT PARAMETERS:
     real(cvmix_r8) :: cvmix_bkgnd_static_diff
 !EOP
 !BOC
+
+    ! Error checks
+    if (CVmix_bkgnd_params%lvary_horizontal) then
+      if (.not.present(colid)) then
+        print*, "ERROR: need to pass colid when static_diff varies across", &
+                " columns."
+        stop 1
+      end if
+    end if
+
+    if (CVmix_bkgnd_params%lvary_vertical) then
+      if (.not.present(kw)) then
+        print*, "ERROR: need to pass kw (level id) when static_diff varies", &
+                "across levels columns."
+        stop 1
+      end if
+    end if
 
     if (CVmix_bkgnd_params%lvary_horizontal) then
       if (CVmix_bkgnd_params%lvary_vertical) then
@@ -445,6 +463,8 @@ contains
 
   end function cvmix_bkgnd_static_diff
 
+!BOP
+
 ! !IROUTINE: cvmix_bkgnd_static_visc
 ! !INTERFACE:
 
@@ -460,13 +480,29 @@ contains
 
 ! !INPUT PARAMETERS:
     type(cvmix_bkgnd_params_type), intent(in) :: CVmix_bkgnd_params
-    integer, intent(in) :: kw
-    integer, optional, intent(in) :: colid
+    integer, optional, intent(in) :: kw, colid
 
 ! !OUTPUT PARAMETERS:
     real(cvmix_r8) :: cvmix_bkgnd_static_visc
 !EOP
 !BOC
+
+    ! Error checks
+    if (CVmix_bkgnd_params%lvary_horizontal) then
+      if (.not.present(colid)) then
+        print*, "ERROR: need to pass colid when static_visc varies across", &
+                " columns."
+        stop 1
+      end if
+    end if
+
+    if (CVmix_bkgnd_params%lvary_vertical) then
+      if (.not.present(kw)) then
+        print*, "ERROR: need to pass kw (level id) when static_visc varies", &
+                "across levels columns."
+        stop 1
+      end if
+    end if
 
     if (CVmix_bkgnd_params%lvary_horizontal) then
       if (CVmix_bkgnd_params%lvary_vertical) then
