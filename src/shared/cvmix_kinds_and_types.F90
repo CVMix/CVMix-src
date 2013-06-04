@@ -87,19 +87,6 @@ module cvmix_kinds_and_types
       real(cvmix_r8)                 :: sw_rho    ! salt water density
   end type cvmix_global_params_type
 
-  ! cvmix_bkgnd_params_type contains the necessary parameters for background
-  ! mixing. Background mixing fields can vary from level to level as well as
-  ! over latitude and longitude.
-  type, public :: cvmix_bkgnd_params_type
-      real(cvmix_r8), allocatable :: static_visc(:,:) ! ncol, nlev+1
-      real(cvmix_r8), allocatable :: static_diff(:,:) ! ncol, nlev+1
-
-      ! Note: need to include some logic to avoid excessive memory use
-      !       when static_visc and static_diff are constant or 1-D
-      logical                     :: lvary_vertical   ! True => second dim not 1
-      logical                     :: lvary_horizontal ! True => first dim not 1
-  end type cvmix_bkgnd_params_type
-
   ! cvmix_shear_params_type contains the necessary parameters for shear mixing
   ! (currently Pacanowski-Philander or Large et al)
   type, public :: cvmix_shear_params_type

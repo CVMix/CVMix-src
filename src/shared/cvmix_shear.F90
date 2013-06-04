@@ -23,8 +23,11 @@
    use cvmix_kinds_and_types, only : one,                     &
                                      cvmix_r8,                &
                                      cvmix_data_type,         &
-                                     cvmix_bkgnd_params_type, &
                                      cvmix_shear_params_type
+   use cvmix_background, only : cvmix_bkgnd_params_type, &
+                                cvmix_bkgnd_lvary_horizontal, &
+                                cvmix_bkgnd_static_diff, &
+                                cvmix_bkgnd_static_visc
    use cvmix_put_get, only : cvmix_put
 !EOP
 
@@ -183,7 +186,7 @@
           print*, "ERROR: can not run PP mixing without background mixing."
           stop 1
         end if
-        if (CVmix_bkgnd_params%lvary_horizontal.and.(.not.present(colid))) then
+        if (cvmix_bkgnd_lvary_horizontal(CVmix_bkgnd_params).and.(.not.present(colid))) then
           print*, "ERROR: background visc and diff vary in horizontal so you", &
                   "must pass column index to cvmix_coeffs_shear"
           stop 1
@@ -196,23 +199,8 @@
 
         ! Pacanowski-Philander
         do kw=1,CVmix_vars%nlev+1
-          if (CVmix_bkgnd_params%lvary_horizontal) then
-            if (CVmix_bkgnd_params%lvary_vertical) then
-              bkgnd_diff = CVmix_bkgnd_params%static_diff(colid, kw)
-              bkgnd_visc = CVmix_bkgnd_params%static_visc(colid, kw)
-            else
-              bkgnd_diff = CVmix_bkgnd_params%static_diff(colid, 1)
-              bkgnd_visc = CVmix_bkgnd_params%static_visc(colid, 1)
-            end if
-          else
-            if (CVmix_bkgnd_params%lvary_vertical) then
-              bkgnd_diff = CVmix_bkgnd_params%static_diff(1, kw)
-              bkgnd_visc = CVmix_bkgnd_params%static_visc(1, kw)
-            else
-              bkgnd_diff = CVmix_bkgnd_params%static_diff(1, 1)
-              bkgnd_visc = CVmix_bkgnd_params%static_visc(1, 1)
-            end if
-          end if
+          bkgnd_diff = cvmix_bkgnd_static_diff(CVmix_bkgnd_params, kw, colid)
+          bkgnd_visc = cvmix_bkgnd_static_visc(CVmix_bkgnd_params, kw, colid)
           nu = nu_zero/((one+PP_alpha*RICH(kw))**loc_exp)+bkgnd_visc
           CVmix_vars%visc_iface(kw) = nu
           if (calc_diff) &

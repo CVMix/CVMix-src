@@ -102,6 +102,7 @@ $(INC_DIR)/CVMIX_KINDS_AND_TYPES.mod: $(SRC_DIR)/cvmix_kinds_and_types.F90 \
 
 ### cvmix_put_get.F90
 $(OBJ_DIR)/cvmix_put_get.o: $(SRC_DIR)/cvmix_put_get.F90       \
+                            $(OBJ_DIR)/cvmix_background.o      \
                             $(OBJ_DIR)/cvmix_kinds_and_types.o
 	$(FC) $(FCFLAGS) -c $(SRC_DIR)/cvmix_put_get.F90 -o $@
 
@@ -115,7 +116,6 @@ $(INC_DIR)/CVMIX_PUT_GET.mod: $(SRC_DIR)/cvmix_put_get.F90       \
 
 ### cvmix_background.F90
 $(OBJ_DIR)/cvmix_background.o: $(SRC_DIR)/cvmix_background.F90    \
-                               $(OBJ_DIR)/cvmix_put_get.o         \
                                $(OBJ_DIR)/cvmix_kinds_and_types.o
 	$(FC) $(FCFLAGS) -c $(SRC_DIR)/cvmix_background.F90 -o $@
 

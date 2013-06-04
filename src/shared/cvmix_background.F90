@@ -22,10 +22,7 @@ module cvmix_background
   use cvmix_kinds_and_types, only : cvmix_PI,                  &
                                     cvmix_r8,                  &
                                     cvmix_data_type,           &
-                                    cvmix_global_params_type,  &
-                                    cvmix_bkgnd_params_type
-  use cvmix_put_get, only         : cvmix_put
-
+                                    cvmix_global_params_type
 !EOP
 
   implicit none
@@ -37,6 +34,13 @@ module cvmix_background
 ! !PUBLIC MEMBER FUNCTIONS:
    public :: cvmix_init_bkgnd
    public :: cvmix_coeffs_bkgnd
+   public :: cvmix_put_bkgnd_real    ! untested
+   public :: cvmix_put_bkgnd_real_1D
+   public :: cvmix_put_bkgnd_real_2D ! untested
+   public :: cvmix_bkgnd_lvary_horizontal
+   public :: cvmix_bkgnd_static_diff
+   public :: cvmix_bkgnd_static_visc
+   public :: cvmix_bkgnd_put
 
   interface cvmix_init_bkgnd
     module procedure cvmix_init_bkgnd_scalar
@@ -44,7 +48,27 @@ module cvmix_background
     module procedure cvmix_init_bkgnd_2D
     module procedure cvmix_init_bkgnd_BryanLewis
   end interface cvmix_init_bkgnd
+
+  interface cvmix_bkgnd_put
+    module procedure cvmix_put_bkgnd_real
+    module procedure cvmix_put_bkgnd_real_1D
+    module procedure cvmix_put_bkgnd_real_2D
+  end interface cvmix_bkgnd_put
 !EOP
+
+  ! cvmix_bkgnd_params_type contains the necessary parameters for background
+  ! mixing. Background mixing fields can vary from level to level as well as
+  ! over latitude and longitude.
+  type, public :: cvmix_bkgnd_params_type
+      private
+      real(cvmix_r8), allocatable :: static_visc(:,:) ! ncol, nlev+1
+      real(cvmix_r8), allocatable :: static_diff(:,:) ! ncol, nlev+1
+
+      ! Note: need to include some logic to avoid excessive memory use
+      !       when static_visc and static_diff are constant or 1-D
+      logical                     :: lvary_vertical   ! True => second dim not 1
+      logical                     :: lvary_horizontal ! True => first dim not 1
+  end type cvmix_bkgnd_params_type
 
 contains
 
@@ -276,8 +300,8 @@ contains
     diff = bl1 + (bl2/cvmix_PI)*atan(bl3*(z-bl4))
     visc = CVmix_params%prandtl*diff
 
-    call cvmix_put(CVmix_bkgnd_params, "static_diff", diff, nlev=nlev)
-    call cvmix_put(CVmix_bkgnd_params, "static_visc", visc, nlev=nlev)
+    call cvmix_bkgnd_put(CVmix_bkgnd_params, "static_diff", diff, nlev=nlev)
+    call cvmix_bkgnd_put(CVmix_bkgnd_params, "static_visc", visc, nlev=nlev)
     deallocate(z, visc, diff)
 
 !EOC
@@ -351,6 +375,309 @@ contains
 !EOC
 
   end subroutine cvmix_coeffs_bkgnd
+
+  logical function cvmix_bkgnd_lvary_horizontal(CVmix_bkgnd_params)
+    type(cvmix_bkgnd_params_type), intent(in) :: CVmix_bkgnd_params
+
+    cvmix_bkgnd_lvary_horizontal = CVmix_bkgnd_params%lvary_horizontal
+
+  end function cvmix_bkgnd_lvary_horizontal
+
+  real(cvmix_r8) function cvmix_bkgnd_static_diff(CVmix_bkgnd_params,kw,colid)
+    type(cvmix_bkgnd_params_type), intent(in) :: CVmix_bkgnd_params
+    integer, intent(in) :: kw
+    integer, optional, intent(in) :: colid
+
+    if (CVmix_bkgnd_params%lvary_horizontal) then
+      if (CVmix_bkgnd_params%lvary_vertical) then
+        cvmix_bkgnd_static_diff = CVmix_bkgnd_params%static_diff(colid, kw)
+      else
+        cvmix_bkgnd_static_diff = CVmix_bkgnd_params%static_diff(colid, 1)
+      end if
+    else
+      if (CVmix_bkgnd_params%lvary_vertical) then
+        cvmix_bkgnd_static_diff = CVmix_bkgnd_params%static_diff(1, kw)
+      else
+        cvmix_bkgnd_static_diff = CVmix_bkgnd_params%static_diff(1, 1)
+      end if
+    end if
+
+  end function cvmix_bkgnd_static_diff
+
+  real(cvmix_r8) function cvmix_bkgnd_static_visc(CVmix_bkgnd_params,kw,colid)
+    type(cvmix_bkgnd_params_type), intent(in) :: CVmix_bkgnd_params
+    integer, intent(in) :: kw
+    integer, optional, intent(in) :: colid
+
+    if (CVmix_bkgnd_params%lvary_horizontal) then
+      if (CVmix_bkgnd_params%lvary_vertical) then
+        cvmix_bkgnd_static_visc = CVmix_bkgnd_params%static_visc(colid, kw)
+      else
+        cvmix_bkgnd_static_visc = CVmix_bkgnd_params%static_visc(colid, 1)
+      end if
+    else
+      if (CVmix_bkgnd_params%lvary_vertical) then
+        cvmix_bkgnd_static_visc = CVmix_bkgnd_params%static_visc(1, kw)
+      else
+        cvmix_bkgnd_static_visc = CVmix_bkgnd_params%static_visc(1, 1)
+      end if
+    end if
+
+  end function cvmix_bkgnd_static_visc
+
+!BOP
+
+! !IROUTINE: cvmix_put_bkgnd_real
+! !INTERFACE:
+
+  subroutine cvmix_put_bkgnd_real(CVmix_bkgnd_params, varname, val)
+
+! !DESCRIPTION:
+!  Write a real value into a cvmix\_bkgnd\_params\_type variable.
+!\\
+!\\
+
+! !USES:
+!  Only those used by entire module. 
+
+! !INPUT PARAMETERS:
+    character(len=*), intent(in) :: varname
+    real(cvmix_r8),   intent(in) :: val
+
+! !OUTPUT PARAMETERS:
+    type(cvmix_bkgnd_params_type), intent(inout) :: CVmix_bkgnd_params
+!EOP
+!BOC
+
+    select case (trim(varname))
+      case ('static_visc')
+        if (.not.allocated(CVmix_bkgnd_params%static_visc)) then
+          allocate(CVmix_bkgnd_params%static_visc(1,1))
+          CVmix_bkgnd_params%lvary_horizontal=.false.
+          CVmix_bkgnd_params%lvary_vertical=.false.
+        else
+          print*, "WARNING: overwriting static_visc in cvmix_bkgnd_params_type."
+        end if
+        CVmix_bkgnd_params%static_visc(:,:) = val
+
+      case ('static_diff')
+        if (.not.allocated(CVmix_bkgnd_params%static_diff)) then
+          allocate(CVmix_bkgnd_params%static_diff(1,1))
+          CVmix_bkgnd_params%lvary_horizontal=.false.
+          CVmix_bkgnd_params%lvary_vertical=.false.
+        else
+          print*, "WARNING: overwriting static_diff in cvmix_bkgnd_params_type."
+        end if
+        CVmix_bkgnd_params%static_diff(:,:) = val
+
+      case DEFAULT
+        print*, "ERROR: ", trim(varname), " not a valid choice!"
+        stop 1
+      
+    end select
+
+!EOC
+
+  end subroutine cvmix_put_bkgnd_real
+
+!BOP
+
+! !IROUTINE: cvmix_put_bkgnd_real_1D
+! !INTERFACE:
+
+  subroutine cvmix_put_bkgnd_real_1D(CVmix_bkgnd_params, varname, val, &
+                                    ncol, nlev)
+
+! !DESCRIPTION:
+!  Write an array of real values into a cvmix\_bkgnd\_params\_type variable.
+!  You must use \verb|opt='horiz'| to specify that the field varies in the
+!  horizontal direction, otherwise it is assumed to vary in the vertical.
+!\\
+!\\
+
+! !USES:
+!  Only those used by entire module. 
+
+! !INPUT PARAMETERS:
+    character(len=*),             intent(in) :: varname
+    real(cvmix_r8), dimension(:), intent(in) :: val
+    integer, optional,            intent(in) :: ncol, nlev
+
+! !OUTPUT PARAMETERS:
+    type (cvmix_bkgnd_params_type), intent(inout) :: CVmix_bkgnd_params
+!EOP
+!BOC
+
+    ! Local vars
+    integer, dimension(2) :: dims
+    integer               :: data_dims
+    logical               :: lvary_horizontal
+
+    ! Error checking to make sure dimension is specified
+    if ((.not.present(ncol)).and.(.not.present(nlev))) then
+      print*, "ERROR: when putting 1D data in cvmix_bkgnd_params_type ", &
+              "you must specify nlev or ncol!"
+      stop 1
+    end if
+
+    if ((present(ncol)).and.(present(nlev))) then
+      print*, "ERROR: when putting 1D data in cvmix_bkgnd_params_type ", &
+              "you can not specify both nlev or ncol!"
+      stop 1
+    end if
+
+    data_dims = size(val)
+    if (present(ncol)) then
+      if (data_dims.gt.ncol) then
+        print*, "ERROR: data array is bigger than number of columns specified."
+        stop 1
+      end if
+      lvary_horizontal=.true.
+      dims(1) = ncol
+      dims(2) = 1
+    else
+      if (data_dims.gt.nlev+1) then
+        print*, "ERROR: data array is bigger than number of levels specified."
+        stop 1
+      end if
+      lvary_horizontal=.false.
+      dims(1) = 1
+      dims(2) = nlev+1
+    end if
+
+    select case (trim(varname))
+      case ('static_visc')
+        if (.not.allocated(CVmix_bkgnd_params%static_visc)) then
+          allocate(CVmix_bkgnd_params%static_visc(dims(1),dims(2)))
+          CVmix_bkgnd_params%lvary_horizontal = lvary_horizontal
+          CVmix_bkgnd_params%lvary_vertical = .not.lvary_horizontal
+        else
+          print*, "WARNING: overwriting static_visc in cvmix_bkgnd_params_type."
+        end if
+        if (any(shape(CVmix_bkgnd_params%static_visc).ne.dims)) then
+          print*, "ERROR: dimensions of static_visc do not match what was ", &
+                  "sent to cvmix_put"
+          stop 1
+        end if
+        if (lvary_horizontal) then
+          CVmix_bkgnd_params%static_visc(:,1)           = 0_cvmix_r8
+          CVmix_bkgnd_params%static_visc(1:data_dims,1) = val
+        else
+          CVmix_bkgnd_params%static_visc(1,:)           = 0_cvmix_r8
+          CVmix_bkgnd_params%static_visc(1,1:data_dims) = val
+        end if
+
+      case ('static_diff')
+        if (.not.allocated(CVmix_bkgnd_params%static_diff)) then
+          allocate(CVmix_bkgnd_params%static_diff(dims(1),dims(2)))
+          CVmix_bkgnd_params%lvary_horizontal = lvary_horizontal
+          CVmix_bkgnd_params%lvary_vertical = .not.lvary_horizontal
+        else
+          print*, "WARNING: overwriting static_diff in cvmix_bkgnd_params_type."
+        end if
+        if (any(shape(CVmix_bkgnd_params%static_diff).ne.dims)) then
+          print*, "ERROR: dimensions of static_diff do not match what was ", &
+                  "sent to cvmix_put"
+          stop 1
+        end if
+        if (lvary_horizontal) then
+          CVmix_bkgnd_params%static_diff(:,1)           = 0_cvmix_r8
+          CVmix_bkgnd_params%static_diff(1:data_dims,1) = val
+        else
+          CVmix_bkgnd_params%static_diff(1,:)           = 0_cvmix_r8
+          CVmix_bkgnd_params%static_diff(1,1:data_dims) = val
+        end if
+
+      case DEFAULT
+        print*, "ERROR: ", trim(varname), " not a valid choice!"
+        stop 1
+      
+    end select
+
+!EOC
+
+  end subroutine cvmix_put_bkgnd_real_1D
+
+!BOP
+
+! !IROUTINE: cvmix_put_bkgnd_real_2D
+! !INTERFACE:
+
+  subroutine cvmix_put_bkgnd_real_2D(CVmix_bkgnd_params, varname, val, &
+                                    ncol, nlev)
+
+! !DESCRIPTION:
+!  Write a 2D array of real values into a cvmix\_bkgnd\_params\_type variable.
+!\\
+!\\
+
+! !USES:
+!  Only those used by entire module. 
+
+! !INPUT PARAMETERS:
+    character(len=*),               intent(in) :: varname
+    real(cvmix_r8), dimension(:,:), intent(in) :: val
+    integer,                        intent(in) :: ncol, nlev
+
+! !OUTPUT PARAMETERS:
+    type (cvmix_bkgnd_params_type), intent(out) :: CVmix_bkgnd_params
+!EOP
+!BOC
+
+    ! Local vars
+    integer, dimension(2) :: dims, data_dims
+
+    dims      = (/ncol, nlev+1/)
+    data_dims = shape(val)
+
+    if (any(data_dims.gt.dims)) then
+      print*, "ERROR: data being put in cvmix_bkgnd_params_type is larger ", &
+              "than (ncol, nlev+1)"
+      stop 1
+    end if
+
+    select case (trim(varname))
+      case ('static_visc')
+        if (.not.allocated(CVmix_bkgnd_params%static_visc)) then
+          allocate(CVmix_bkgnd_params%static_visc(dims(1),dims(2)))
+          CVmix_bkgnd_params%lvary_horizontal=.true.
+          CVmix_bkgnd_params%lvary_vertical=.true.
+        else
+          print*, "WARNING: overwriting static_visc in cvmix_bkgnd_params_type."
+        end if
+        if (any(shape(CVmix_bkgnd_params%static_visc).ne.dims)) then
+          print*, "ERROR: dimensions of static_visc do not match what was ", &
+                  "sent to cvmix_put"
+          stop 1
+        end if
+        CVmix_bkgnd_params%static_visc = 0.0_cvmix_r8
+        CVmix_bkgnd_params%static_visc(1:data_dims(1), 1:data_dims(2)) = val
+
+      case ('static_diff')
+        if (.not.allocated(CVmix_bkgnd_params%static_diff)) then
+          allocate(CVmix_bkgnd_params%static_diff(dims(1),dims(2)))
+          CVmix_bkgnd_params%lvary_horizontal=.true.
+          CVmix_bkgnd_params%lvary_vertical=.true.
+        else
+          print*, "WARNING: overwriting static_diff in cvmix_bkgnd_params_type."
+        end if
+        if (any(shape(CVmix_bkgnd_params%static_diff).ne.dims)) then
+          print*, "ERROR: dimensions of static_diff do not match what was ", &
+                  "sent to cvmix_put"
+          stop 1
+        end if
+        CVmix_bkgnd_params%static_diff = 0.0_cvmix_r8
+        CVmix_bkgnd_params%static_diff(1:data_dims(1), 1:data_dims(2)) = val
+
+      case DEFAULT
+        print*, "ERROR: ", trim(varname), " not a valid choice!"
+        stop 1
+      
+    end select
+
+!EOC
+
+  end subroutine cvmix_put_bkgnd_real_2D
 
 end module cvmix_background
 
