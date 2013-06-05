@@ -22,7 +22,8 @@ Subroutine cvmix_shear_driver(nlev)
 
 ! !USES:
 
-  use cvmix_kinds_and_types, only : cvmix_r8,                 &
+  use cvmix_kinds_and_types, only : one,                      &
+                                    cvmix_r8,                 &
                                     cvmix_data_type,          &
                                     cvmix_global_params_type, &
                                     cvmix_shear_params_type
@@ -66,7 +67,7 @@ Subroutine cvmix_shear_driver(nlev)
   allocate(Ri_g(nlev+1))
   Ri_g(1) = 0.0_cvmix_r8
   do kw = 2,nlev+1
-    Ri_g(kw) = Ri_g(kw-1) + 1.0_cvmix_r8/(1.0_cvmix_r8*nlev)
+    Ri_g(kw) = Ri_g(kw-1) + one/real(nlev,cvmix_r8)
   end do
 
   ! Allocate memory to store viscosity and diffusivity values
@@ -74,7 +75,7 @@ Subroutine cvmix_shear_driver(nlev)
 
   ! Initialization for CVMix data types
   call cvmix_put(CVmix_params,  'max_nlev', nlev)
-  call cvmix_put(CVmix_params,  'prandtl',  1.0_cvmix_r8)
+  call cvmix_put(CVmix_params,  'prandtl',  one)
   call cvmix_put(CVmix_vars,    'nlev',     nlev)
   ! Point CVmix_vars values to memory allocated above
   CVmix_vars%visc_iface => viscosity
