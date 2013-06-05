@@ -37,7 +37,7 @@ module cvmix_background
    public :: cvmix_bkgnd_lvary_horizontal
    public :: cvmix_bkgnd_static_diff
    public :: cvmix_bkgnd_static_visc
-   public :: cvmix_bkgnd_put
+   public :: cvmix_put_bkgnd
 
   interface cvmix_init_bkgnd
     module procedure cvmix_init_bkgnd_scalar
@@ -46,11 +46,11 @@ module cvmix_background
     module procedure cvmix_init_bkgnd_BryanLewis
   end interface cvmix_init_bkgnd
 
-  interface cvmix_bkgnd_put
+  interface cvmix_put_bkgnd
     module procedure cvmix_put_bkgnd_real    ! untested
     module procedure cvmix_put_bkgnd_real_1D
     module procedure cvmix_put_bkgnd_real_2D ! untested
-  end interface cvmix_bkgnd_put
+  end interface cvmix_put_bkgnd
 
   ! cvmix_bkgnd_params_type contains the necessary parameters for background
   ! mixing. Background mixing fields can vary from level to level as well as
@@ -298,8 +298,8 @@ contains
     diff = bl1 + (bl2/cvmix_PI)*atan(bl3*(z-bl4))
     visc = CVmix_params%prandtl*diff
 
-    call cvmix_bkgnd_put(CVmix_bkgnd_params, "static_diff", diff, nlev=nlev)
-    call cvmix_bkgnd_put(CVmix_bkgnd_params, "static_visc", visc, nlev=nlev)
+    call cvmix_put_bkgnd(CVmix_bkgnd_params, "static_diff", diff, nlev=nlev)
+    call cvmix_put_bkgnd(CVmix_bkgnd_params, "static_visc", visc, nlev=nlev)
     deallocate(z, visc, diff)
 
 !EOC
