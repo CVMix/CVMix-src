@@ -39,6 +39,7 @@ module cvmix_io
   public :: cvmix_io_close
   public :: cvmix_io_close_all
   public :: print_open_files
+  public :: cvmix_output_write_att
 
   interface cvmix_input_read
     module procedure cvmix_input_read_1d_double
@@ -51,6 +52,10 @@ module cvmix_io
     module procedure cvmix_output_write_single_col
     module procedure cvmix_output_write_multi_col
     module procedure cvmix_output_write_3d_double
+  end interface
+
+  interface cvmix_output_write_att
+    module procedure cvmix_output_write_att_string
   end interface
 
 ! !DEFINED PARAMETERS:
@@ -950,6 +955,48 @@ contains
 !EOC
 
   end subroutine cvmix_output_write_3d_double
+
+!BOP
+
+! !IROUTINE: cvmix_write_att_string
+! !INTERFACE:
+
+  subroutine cvmix_output_write_att_string(file_id, att_name, att_val)
+
+! !DESCRIPTION:
+!  Routine to write a global attribute with a string value to a netcdf file.
+!  Called with cvmix\_output\_write_att (see interface in PUBLIC MEMBER
+!  FUNCTIONS above).
+!\\
+!\\
+
+! !USES:
+!  Only those used by entire module. 
+
+! !INPUT PARAMETERS
+    integer,                             intent(in) :: file_id
+    character(len=*),                    intent(in) :: att_name, att_val
+
+!BOC
+
+    select case(get_file_type(file_id))
+#ifdef _NETCDF
+      case (NETCDF_FILE_TYPE)
+        call netcdf_check(nf90_redef(file_id))
+        call netcdf_check(nf90_put_att(file_id, NF90_GLOBAL, trim(att_name), &
+                          trim(att_val)))
+        call netcdf_check(nf90_enddef(file_id))
+#endif
+      case DEFAULT
+        print*, "ERROR: cvmix_output_write_att_string only writes to netcdf"
+        print*, "(attempted to set attribute ", trim(att_name), " to ", &
+                trim(att_val)
+        call cvmix_io_close_all
+        stop 1
+    end select
+!EOC
+
+  end subroutine cvmix_output_write_att_string
 
 !BOP
 

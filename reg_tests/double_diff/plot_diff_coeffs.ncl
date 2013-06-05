@@ -36,7 +36,7 @@ begin
 
   out_type = "ps"
   ; out_type = "X11"
-  wks = gsn_open_wks(out_type, "Double-Diffusion-Salt")
+  wks = gsn_open_wks(out_type, "ddiff-salt_CVMix")
   gsn_define_colormap(wks, my_color_map)
 
   ; Basic Graphics set up (don't draw / advance frame to add legend!)
@@ -81,7 +81,7 @@ begin
   ; Title / axes labels
   res@tiMainString  = "Diffusivity in Salt Fingering regime"
   res@tiXAxisString = "R:B::F8:r:E:"
-  res@tiYAxisString = ":F8:n:F10::S:d:E::B:s:E::F8: /n:F10::B:f:E:"
+  res@tiYAxisString = ":F8:k/k:F10::B:0:E:"
 
   plot = gsn_csm_xy(wks, x1(:,0), 1e3*y1(:,0), res)
 
@@ -90,7 +90,7 @@ begin
 
   delete(wks)
 
-  wks = gsn_open_wks(out_type, "Double-Diffusion-Diffusive")
+  wks = gsn_open_wks(out_type, "ddiff-diffuse_CVMix")
   gsn_define_colormap(wks, my_color_map)
 
   ; line & marker styles / axes ranges
@@ -115,7 +115,7 @@ begin
   ; Title / axes labels
   res@tiMainString  = "Diffusivity in Diffusive Convection Regime"
   res@tiXAxisString = "1/R:B::F8:r:E:"
-  res@tiYAxisString = ":F8:n:F10::S:d:E::F8::B:Q:E: /n"
+  res@tiYAxisString = ":F8:k/n:F10::B:mol:E:"
 
   plot = gsn_csm_xy(wks, 1.d/x1(0:nlev-1,1), y1(0:nlev-1,1)/1.5e-6, res)
 

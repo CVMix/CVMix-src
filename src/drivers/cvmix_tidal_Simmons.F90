@@ -27,6 +27,7 @@ Subroutine cvmix_tidal_driver()
   use cvmix_io,              only : cvmix_io_open,            &
                                     cvmix_input_read,         &
                                     cvmix_output_write,       &
+                                    cvmix_output_write_att,   &
                                     cvmix_io_close
 
   Implicit None
@@ -51,10 +52,12 @@ Subroutine cvmix_tidal_driver()
 
   ! Local variables
   real(cvmix_r8), dimension(:,:,:), allocatable :: buoy
-  real(cvmix_r8), dimension(:,:),   allocatable :: ocn_depth, energy_flux
+  real(cvmix_r8), dimension(:,:),   allocatable :: ocn_depth, energy_flux, &
+                                                   lat, lon
   integer,        dimension(:,:),   allocatable :: ocn_levels
   real(cvmix_r8), dimension(:),     allocatable :: depth_iface, depth
-  real(cvmix_r8)                                :: FillVal
+  real(cvmix_r8)                                :: FillVal, this_lon, this_lat
+  character(len=cvmix_strlen) :: lonstr, latstr
   integer :: i, j, k, nlon, nlat, nlev, max_nlev
 
   ! Namelists that may be read in, depending on desired mixing scheme
@@ -67,6 +70,7 @@ Subroutine cvmix_tidal_driver()
   max_nlev = 60
   ! Allocate memory for CVmix columns
   allocate(CVmix_vars(nlon, nlat))
+  allocate(lat(nlon, nlat),lon(nlon, nlat))
 
   ! Read namelist variables 
   grid_file = "none"
@@ -95,6 +99,8 @@ Subroutine cvmix_tidal_driver()
 
   ! Read in global data from grid file, physics file, and energy flux file
   call cvmix_io_open(fid, trim(grid_file), 'nc', read_only=.true.)
+  call cvmix_input_read(fid, 'lon', lon)
+  call cvmix_input_read(fid, 'lat', lat)
   call cvmix_input_read(fid, 'zw', depth_iface)
   call cvmix_input_read(fid, 'H', ocn_depth)
   call cvmix_input_read(fid, 'H_index', ocn_levels)
@@ -152,8 +158,29 @@ Subroutine cvmix_tidal_driver()
       ! Output
       if ((i.eq.lon_out).and.(j.eq.lat_out)) then
         if (nlev.gt.0) then
+          this_lon = lon(lon_out, lat_out)
+          ! Need this_lon between -180 and 180
+          do while(this_lon.lt.-180.0_cvmix_r8)
+            this_lon = this_lon + 360.0_cvmix_r8
+          end do
+          do while(this_lon.gt.180.0_cvmix_r8)
+            this_lon = this_lon - 360.0_cvmix_r8
+          end do
+          this_lat = lat(lon_out, lat_out)
           call cvmix_io_open(fid, "single_col.nc", "nc")
-          call cvmix_output_write(fid, CVmix_vars(i,j), (/"diff"/))
+          call cvmix_output_write(fid, CVmix_vars(i,j), (/"depth", "diff "/))
+          if (this_lon.ge.0) then
+            write(lonstr,"(F6.2,1X,A)") this_lon, "E"
+          else
+            write(lonstr,"(F6.2,1X,A)") abs(this_lon), "W"
+          end if
+          if (this_lat.ge.0) then
+            write(latstr,"(F6.2,1X,A)") this_lat, "N"
+          else
+            write(latstr,"(F6.2,1X,A)") abs(this_lat), "S"
+          end if
+          call cvmix_output_write_att(fid, "column_lon", lonstr)
+          call cvmix_output_write_att(fid, "column_lat", latstr)
           call cvmix_io_close(fid)
         else
           print*, "ERROR: column requested for output is a land cell."
