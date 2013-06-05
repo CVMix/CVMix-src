@@ -66,7 +66,7 @@ Subroutine cvmix_shear_driver(nlev)
   allocate(Ri_g(nlev+1))
   Ri_g(1) = 0.0_cvmix_r8
   do kw = 2,nlev+1
-    Ri_g(kw) = Ri_g(kw-1) + 1.0_cvmix_r8/dble(nlev)
+    Ri_g(kw) = Ri_g(kw-1) + 1.0_cvmix_r8/(1.0_cvmix_r8*nlev)
   end do
 
   ! Allocate memory to store viscosity and diffusivity values

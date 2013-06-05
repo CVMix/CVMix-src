@@ -112,8 +112,9 @@ Subroutine cvmix_tidal_driver()
   end do
 
   ! Initialize tidal mixing parameters
-  call cvmix_init_tidal(CVmix_Simmons_params, 'Simmons', 'mks',         &
-                        local_mixing_frac=0.33D0, max_coefficient=0.01D0)
+  call cvmix_init_tidal(CVmix_Simmons_params, 'Simmons', 'mks', &
+                        local_mixing_frac=0.33_cvmix_r8,        &
+                        max_coefficient=0.01_cvmix_r8)
   print*, "Namelist variables"
   print*, "------------------"
   print*, "mix_scheme = ", trim(CVmix_Simmons_params%mix_scheme)

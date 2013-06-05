@@ -166,23 +166,23 @@
     select case (trim(units))
       case ('mks')
         if (.not.present(kappa_ddiff_t)) then
-          call cvmix_put(CVmix_ddiff_params, "kappa_ddiff_t", 7d-5)
+          call cvmix_put(CVmix_ddiff_params, "kappa_ddiff_t", 7e-5_cvmix_r8)
         end if
         if (.not.present(kappa_ddiff_s)) then
-          call cvmix_put(CVmix_ddiff_params, "kappa_ddiff_s", 1d-4)
+          call cvmix_put(CVmix_ddiff_params, "kappa_ddiff_s", 1e-4_cvmix_r8)
         end if
         if (.not.present(mol_diff)) then
-          call cvmix_put(CVmix_ddiff_params, "mol_diff", 1.5d-6)
+          call cvmix_put(CVmix_ddiff_params, "mol_diff", 1.5e-6_cvmix_r8)
         end if
       case ('cgs')
         if (.not.present(kappa_ddiff_t)) then
-          call cvmix_put(CVmix_ddiff_params, "kappa_ddiff_t", 7d-1)
+          call cvmix_put(CVmix_ddiff_params, "kappa_ddiff_t", 7e-1_cvmix_r8)
         end if
         if (.not.present(kappa_ddiff_s)) then
           call cvmix_put(CVmix_ddiff_params, "kappa_ddiff_s", 1.0_cvmix_r8)
         end if
         if (.not.present(mol_diff)) then
-          call cvmix_put(CVmix_ddiff_params, "mol_diff", 1.5d-2)
+          call cvmix_put(CVmix_ddiff_params, "mol_diff", 1.5e-2_cvmix_r8)
         end if
 
       case DEFAULT
