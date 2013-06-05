@@ -22,7 +22,6 @@ module cvmix_put_get
                                      cvmix_data_type,           &
                                      cvmix_global_params_type,  &
                                      cvmix_conv_params_type,    &
-                                     cvmix_ddiff_params_type,   &
                                      cvmix_shear_params_type
 !EOP
 
@@ -40,7 +39,6 @@ module cvmix_put_get
     module procedure cvmix_put_real
     module procedure cvmix_put_real_1D
     module procedure cvmix_put_conv_real
-    module procedure cvmix_put_ddiff_real
     module procedure cvmix_put_shear_real
     module procedure cvmix_put_shear_str
     module procedure cvmix_put_global_params_int
@@ -333,59 +331,6 @@ contains
 !EOC
 
   end subroutine cvmix_put_conv_real
-
-!BOP
-
-! !IROUTINE: cvmix_put_ddiff_real
-! !INTERFACE:
-
-  subroutine cvmix_put_ddiff_real(CVmix_ddiff_params, varname, val)
-
-! !DESCRIPTION:
-!  Write a real value into a cvmix\_ddiff\_params\_type variable.
-!\\
-!\\
-
-! !USES:
-!  Only those used by entire module. 
-
-! !INPUT PARAMETERS:
-    character(len=*), intent(in) :: varname
-    real(cvmix_r8),   intent(in) :: val
-
-! !OUTPUT PARAMETERS:
-    type(cvmix_ddiff_params_type), intent(inout) :: CVmix_ddiff_params
-!EOP
-!BOC
-
-    select case (trim(varname))
-      case ('strat_param_max')
-        CVmix_ddiff_params%strat_param_max = val
-      case ('ddiff_exp1')
-        CVmix_ddiff_params%ddiff_exp1 = val
-      case ('ddiff_exp2')
-        CVmix_ddiff_params%ddiff_exp2 = val
-      case ('kappa_ddiff_param1')
-        CVmix_ddiff_params%kappa_ddiff_param1 = val
-      case ('kappa_ddiff_param2')
-        CVmix_ddiff_params%kappa_ddiff_param2 = val
-      case ('kappa_ddiff_param3')
-        CVmix_ddiff_params%kappa_ddiff_param3 = val
-      case ('kappa_ddiff_t')
-        CVmix_ddiff_params%kappa_ddiff_t = val
-      case ('kappa_ddiff_s')
-        CVmix_ddiff_params%kappa_ddiff_s = val
-      case ('mol_diff')
-        CVmix_ddiff_params%mol_diff = val
-      case DEFAULT
-        print*, "ERROR: ", trim(varname), " not a valid choice!"
-        stop 1
-      
-    end select
-
-!EOC
-
-  end subroutine cvmix_put_ddiff_real
 
 !BOP
 

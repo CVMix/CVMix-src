@@ -110,20 +110,6 @@ module cvmix_kinds_and_types
       real(cvmix_r8)              :: depth_cutoff
   end type cvmix_tidal_params_type
 
-  ! cvmix_ddiff_params_type contains the necessary parameters for double
-  ! diffusion mixing
-  type, public :: cvmix_ddiff_params_type
-      real(cvmix_r8)              :: strat_param_max
-      real(cvmix_r8)              :: kappa_ddiff_t
-      real(cvmix_r8)              :: kappa_ddiff_s
-      real(cvmix_r8)              :: ddiff_exp1
-      real(cvmix_r8)              :: ddiff_exp2
-      real(cvmix_r8)              :: kappa_ddiff_param1
-      real(cvmix_r8)              :: kappa_ddiff_param2
-      real(cvmix_r8)              :: kappa_ddiff_param3
-      real(cvmix_r8)              :: mol_diff
-  end type cvmix_ddiff_params_type
-
   ! cvmix_kpp_params_type contains the necessary parameters for KPP mixing
   type, public :: cvmix_kpp_params_type
       real(cvmix_r8) :: deleteme
