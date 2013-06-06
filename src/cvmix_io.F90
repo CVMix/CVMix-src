@@ -205,10 +205,9 @@ contains
 ! !LOCAL VARIABLES:
     logical :: lerr_in_read
 #ifdef _NETCDF
-    integer :: varid, nvar, i, ndims, xtype
+    integer :: varid, ndims, xtype
     integer :: dims1, dims2
     integer, dimension(1) :: dims
-    character(len=cvmix_strlen) :: tmp_name
 #endif
 
 !EOP
@@ -219,20 +218,7 @@ contains
     select case (get_file_type(file_id))
 #ifdef _NETCDF
       case (NETCDF_FILE_TYPE)
-        varid = -1
-        ! Find number of variables in file
-        call netcdf_check(nf90_inquire(file_id, nVariables=nvar))
-        i = 1
-        do while((i.le.nvar).and.(varid.eq.-1))
-          ! Loop to figure out if var_name is a valid variable in the file
-          call netcdf_check(nf90_inquire_variable(file_id, i, name=tmp_name,&
-                                                  xtype=xtype, ndims=ndims))
-          if (trim(var_name).eq.trim(tmp_name)) then
-            varid = i
-          else
-            i = i+1
-          end if
-        end do
+        varid = get_netcdf_varid(file_id, var_name, xtype, ndims)
         lerr_in_read = (varid.eq.-1)
 
         if (lerr_in_read) then
@@ -310,9 +296,8 @@ contains
 ! !LOCAL VARIABLES:
     logical :: lerr_in_read
 #ifdef _NETCDF
-    integer :: varid, nvar, i, ndims, xtype
+    integer :: varid, ndims, xtype, i
     integer, dimension(2) :: dims1, dims2
-    character(len=cvmix_strlen) :: tmp_name
 #endif
 
 !EOP
@@ -323,20 +308,7 @@ contains
     select case (get_file_type(file_id))
 #ifdef _NETCDF
       case (NETCDF_FILE_TYPE)
-        varid = -1
-        ! Find number of variables in file
-        call netcdf_check(nf90_inquire(file_id, nVariables=nvar))
-        i = 1
-        do while((i.le.nvar).and.(varid.eq.-1))
-          ! Loop to figure out if var_name is a valid variable in the file
-          call netcdf_check(nf90_inquire_variable(file_id, i, name=tmp_name,&
-                                                  xtype=xtype, ndims=ndims))
-          if (trim(var_name).eq.trim(tmp_name)) then
-            varid = i
-          else
-            i = i+1
-          end if
-        end do
+        varid = get_netcdf_varid(file_id, var_name, xtype, ndims)
         lerr_in_read = (varid.eq.-1)
 
         if (lerr_in_read) then
@@ -416,9 +388,8 @@ contains
 ! !LOCAL VARIABLES:
     logical :: lerr_in_read
 #ifdef _NETCDF
-    integer :: varid, nvar, i, ndims, xtype
+    integer :: varid, i, ndims, xtype
     integer, dimension(2) :: dims1, dims2
-    character(len=cvmix_strlen) :: tmp_name
 #endif
 
 !EOP
@@ -429,20 +400,7 @@ contains
     select case (get_file_type(file_id))
 #ifdef _NETCDF
       case (NETCDF_FILE_TYPE)
-        varid = -1
-        ! Find number of variables in file
-        call netcdf_check(nf90_inquire(file_id, nVariables=nvar))
-        i = 1
-        do while((i.le.nvar).and.(varid.eq.-1))
-          ! Loop to figure out if var_name is a valid variable in the file
-          call netcdf_check(nf90_inquire_variable(file_id, i, name=tmp_name,&
-                                                  xtype=xtype, ndims=ndims))
-          if (trim(var_name).eq.trim(tmp_name)) then
-            varid = i
-          else
-            i = i+1
-          end if
-        end do
+        varid = get_netcdf_varid(file_id, var_name, xtype, ndims)
         lerr_in_read = (varid.eq.-1)
 
         if (lerr_in_read) then
@@ -522,9 +480,8 @@ contains
 ! !LOCAL VARIABLES:
     logical :: lerr_in_read
 #ifdef _NETCDF
-    integer :: varid, nvar, i, ndims, xtype
+    integer :: varid, i, ndims, xtype
     integer, dimension(3) :: dims1, dims2
-    character(len=cvmix_strlen) :: tmp_name
 #endif
 
 !EOP
@@ -535,20 +492,7 @@ contains
     select case (get_file_type(file_id))
 #ifdef _NETCDF
       case (NETCDF_FILE_TYPE)
-        varid = -1
-        ! Find number of variables in file
-        call netcdf_check(nf90_inquire(file_id, nVariables=nvar))
-        i = 1
-        do while((i.le.nvar).and.(varid.eq.-1))
-          ! Loop to figure out if var_name is a valid variable in the file
-          call netcdf_check(nf90_inquire_variable(file_id, i, name=tmp_name,&
-                                                  xtype=xtype, ndims=ndims))
-          if (trim(var_name).eq.trim(tmp_name)) then
-            varid = i
-          else
-            i = i+1
-          end if
-        end do
+        varid = get_netcdf_varid(file_id, var_name, xtype, ndims)
         lerr_in_read = (varid.eq.-1)
 
         if (lerr_in_read) then
@@ -1208,6 +1152,58 @@ contains
 !EOC
 
   end function get_file_type
+
+#ifdef _NETCDF
+!BOP
+
+! !IROUTINE: get_netcdf_varid
+! !INTERFACE:
+
+  function get_netcdf_varid(file_id, var_name, xtype, ndims)
+
+! !DESCRIPTION:
+!  Returns the varid associated with the variable var_name in the netcdf file
+!  file_id. If the variable does not exist, returns -1.
+!\\
+!\\
+
+! !USES:
+!  Only those used by entire module. 
+
+! !INPUT PARAMETERS:
+    integer,          intent(in) :: file_id
+    character(len=*), intent(in) :: var_name
+
+! !OUTPUT PARAMETERS:
+    integer, intent(out) :: xtype, ndims
+    integer              :: get_netcdf_varid
+!EOP
+!BOC
+
+! !LOCAL VARIABLES:
+    character(len=cvmix_strlen) :: tmp_name
+    integer                     :: i, nvar
+
+    get_netcdf_varid = -1
+    ! Find number of variables in file
+    call netcdf_check(nf90_inquire(file_id, nVariables=nvar))
+    i = 1
+    do while((i.le.nvar).and.(get_netcdf_varid.eq.-1))
+      ! Loop to figure out if var_name is a valid variable in the file
+      call netcdf_check(nf90_inquire_variable(file_id, i, name=tmp_name, &
+                                              xtype=xtype, ndims=ndims))
+      if (trim(var_name).eq.trim(tmp_name)) then
+        get_netcdf_varid = i
+      else
+        i = i+1
+      end if
+    end do
+
+!EOC
+
+  end function get_netcdf_varid
+
+#endif
 
 ! Routine to handle errors returned from netcdf
   subroutine netcdf_check(status)
