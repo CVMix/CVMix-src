@@ -87,19 +87,7 @@ module cvmix_kinds_and_types
       real(cvmix_r8)                 :: sw_rho    ! salt water density
   end type cvmix_global_params_type
 
-  ! cvmix_shear_params_type contains the necessary parameters for shear mixing
-  ! (currently Pacanowski-Philander or Large et al)
-  type, public :: cvmix_shear_params_type
-      character(len=cvmix_strlen) :: mix_scheme
-      real(cvmix_r8)              :: PP_nu_zero
-      real(cvmix_r8)              :: PP_alpha
-      real(cvmix_r8)              :: PP_exp
-      real(cvmix_r8)              :: KPP_nu_zero
-      real(cvmix_r8)              :: KPP_Ri_zero
-      real(cvmix_r8)              :: KPP_exp
-  end type cvmix_shear_params_type
-
-  ! cvmix_tidal_params_type contains the necessary parameters for shear mixing
+  ! cvmix_tidal_params_type contains the necessary parameters for tidal mixing
   ! (currently just Simmons)
   type, public :: cvmix_tidal_params_type
       character(len=cvmix_strlen) :: mix_scheme

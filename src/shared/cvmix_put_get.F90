@@ -20,8 +20,7 @@ module cvmix_put_get
 
    use cvmix_kinds_and_types, only : cvmix_r8,                  &
                                      cvmix_data_type,           &
-                                     cvmix_global_params_type,  &
-                                     cvmix_shear_params_type
+                                     cvmix_global_params_type
 !EOP
 
   implicit none
@@ -37,8 +36,6 @@ module cvmix_put_get
     module procedure cvmix_put_int
     module procedure cvmix_put_real
     module procedure cvmix_put_real_1D
-    module procedure cvmix_put_shear_real
-    module procedure cvmix_put_shear_str
     module procedure cvmix_put_global_params_int
     module procedure cvmix_put_global_params_real
   end interface cvmix_put
@@ -290,90 +287,6 @@ contains
 !EOC
 
   end subroutine cvmix_put_real_1D
-
-!BOP
-
-! !IROUTINE: cvmix_put_shear_real
-! !INTERFACE:
-
-  subroutine cvmix_put_shear_real(CVmix_shear_params, varname, val)
-
-! !DESCRIPTION:
-!  Write a real value into a cvmix\_shear\_params\_type variable.
-!\\
-!\\
-
-! !USES:
-!  Only those used by entire module. 
-
-! !INPUT PARAMETERS:
-    character(len=*), intent(in) :: varname
-    real(cvmix_r8),   intent(in) :: val
-
-! !OUTPUT PARAMETERS:
-    type(cvmix_shear_params_type), intent(inout) :: CVmix_shear_params
-!EOP
-!BOC
-
-    select case (trim(varname))
-      case ('PP_nu_zero')
-        CVmix_shear_params%PP_nu_zero = val
-      case ('PP_alpha')
-        CVmix_shear_params%PP_alpha = val
-      case ('PP_exp')
-        CVmix_shear_params%PP_exp = val
-      case ('KPP_nu_zero')
-        CVmix_shear_params%KPP_nu_zero = val
-      case ('KPP_Ri_zero')
-        CVmix_shear_params%KPP_Ri_zero = val
-      case ('KPP_exp')
-        CVmix_shear_params%KPP_exp = val
-      case DEFAULT
-        print*, "ERROR: ", trim(varname), " not a valid choice!"
-        stop 1
-      
-    end select
-
-!EOC
-
-  end subroutine cvmix_put_shear_real
-
-!BOP
-
-! !IROUTINE: cvmix_put_shear_str
-! !INTERFACE:
-
-  subroutine cvmix_put_shear_str(CVmix_shear_params, varname, val)
-
-! !DESCRIPTION:
-!  Write a string into a cvmix\_shear\_params\_type variable.
-!\\
-!\\
-
-! !USES:
-!  Only those used by entire module. 
-
-! !INPUT PARAMETERS:
-    character(len=*), intent(in) :: varname
-    character(len=*), intent(in) :: val
-
-! !OUTPUT PARAMETERS:
-    type(cvmix_shear_params_type), intent(inout) :: CVmix_shear_params
-!EOP
-!BOC
-
-    select case (trim(varname))
-      case ('mix_scheme')
-        CVmix_shear_params%mix_scheme = val
-      case DEFAULT
-        print*, "ERROR: ", trim(varname), " not a valid choice!"
-        stop 1
-      
-    end select
-
-!EOC
-
-  end subroutine cvmix_put_shear_str
 
 !BOP
 
