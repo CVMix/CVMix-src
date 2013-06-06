@@ -87,17 +87,6 @@ module cvmix_kinds_and_types
       real(cvmix_r8)                 :: sw_rho    ! salt water density
   end type cvmix_global_params_type
 
-  ! cvmix_tidal_params_type contains the necessary parameters for tidal mixing
-  ! (currently just Simmons)
-  type, public :: cvmix_tidal_params_type
-      character(len=cvmix_strlen) :: mix_scheme
-      real(cvmix_r8)              :: efficiency
-      real(cvmix_r8)              :: vertical_decay_scale
-      real(cvmix_r8)              :: max_coefficient
-      real(cvmix_r8)              :: local_mixing_frac
-      real(cvmix_r8)              :: depth_cutoff
-  end type cvmix_tidal_params_type
-
   ! cvmix_kpp_params_type contains the necessary parameters for KPP mixing
   type, public :: cvmix_kpp_params_type
       real(cvmix_r8) :: deleteme

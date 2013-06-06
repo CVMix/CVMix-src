@@ -19,8 +19,11 @@ Subroutine cvmix_tidal_driver()
   use cvmix_kinds_and_types, only : cvmix_r8,                 &
                                     cvmix_strlen,             &
                                     cvmix_data_type,          &
-                                    cvmix_global_params_type, &
-                                    cvmix_tidal_params_type
+                                    cvmix_global_params_type
+  use cvmix_tidal,           only : cvmix_tidal_params_type,  &
+                                    cvmix_put_tidal,          &
+                                    cvmix_get_tidal_str,      &
+                                    cvmix_get_tidal
   use cvmix_tidal,           only : cvmix_init_tidal,         &
                                     cvmix_coeffs_tidal
   use cvmix_put_get,         only : cvmix_put
@@ -117,12 +120,12 @@ Subroutine cvmix_tidal_driver()
                         max_coefficient=0.01_cvmix_r8)
   print*, "Namelist variables"
   print*, "------------------"
-  print*, "mix_scheme = ", trim(CVmix_Simmons_params%mix_scheme)
-  print*, "efficiency = ", CVmix_Simmons_params%efficiency
-  print*, "vertical_decay_scale = ", CVmix_Simmons_params%vertical_decay_scale
-  print*, "max_coefficient = ", CVmix_Simmons_params%max_coefficient
-  print*, "local_mixing_frac = ", CVmix_Simmons_params%local_mixing_frac
-  print*, "depth_cutoff = ", CVmix_Simmons_params%depth_cutoff
+  print*, "mix_scheme = ", trim(cvmix_get_tidal_str(CVmix_Simmons_params,'mix_scheme'))
+  print*, "efficiency = ", cvmix_get_tidal(CVmix_Simmons_params,'efficiency')
+  print*, "vertical_decay_scale = ", cvmix_get_tidal(CVmix_Simmons_params,'vertical_decay_scale')
+  print*, "max_coefficient = ", cvmix_get_tidal(CVmix_Simmons_params,'max_coefficient')
+  print*, "local_mixing_frac = ", cvmix_get_tidal(CVmix_Simmons_params,'local_mixing_frac')
+  print*, "depth_cutoff = ", cvmix_get_tidal(CVmix_Simmons_params,'depth_cutoff')
 
   ! For starters, using column from 353.9634 E, 58.84838 N)
   ! That's i=35, j=345 (compare result to KVMIX(0, :, 344, 34) in NCL)
