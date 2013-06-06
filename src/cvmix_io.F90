@@ -87,12 +87,13 @@ contains
   subroutine cvmix_io_open(file_id, file_name, file_format, read_only)
 
 ! !DESCRIPTION:
-!  Routine to open a file for writing. Goal is to support writing files
-!  in plain text (currently working), netCDF, and plain binary. Besides
-!  opening the file, this routine also adds an entry to file\_database,
-!  a linked list that keeps track of what files are open and what type
-!  of file each identifier refers to. So it will be possible to output
-!  the same data in ascii and netCDF, for example.
+!  Routine to open a file for reading and / or writing. The goal is to support
+!  plain text (currently working for writing only), netCDF (working for both
+!  reading and writing), and plain binary (not supported at this time). Besides
+!  opening the file, this routine also adds an entry to file\_database, a
+!  linked list that keeps track of what files are open and what type of file
+!  each identifier refers to. So it will be possible to output the same data in
+!  ascii and netCDF, for example.
 !\\
 !\\
 
@@ -209,7 +210,6 @@ contains
     integer :: dims1, dims2
     integer, dimension(1) :: dims
 #endif
-
 !EOP
 !BOC
 
@@ -299,7 +299,6 @@ contains
     integer :: varid, ndims, xtype, i
     integer, dimension(2) :: dims1, dims2
 #endif
-
 !EOP
 !BOC
 
@@ -391,7 +390,6 @@ contains
     integer :: varid, i, ndims, xtype
     integer, dimension(2) :: dims1, dims2
 #endif
-
 !EOP
 !BOC
 
@@ -483,7 +481,6 @@ contains
     integer :: varid, i, ndims, xtype
     integer, dimension(3) :: dims1, dims2
 #endif
-
 !EOP
 !BOC
 
@@ -850,22 +847,22 @@ contains
 ! !USES:
 !  Only those used by entire module. 
 
-! !INPUT PARAMETERS
+! !INPUT PARAMETERS:
     integer,                             intent(in) :: file_id
     character(len=*),                    intent(in) :: var_name
     character(len=*), dimension(3),      intent(in) :: dim_names
     real(cvmix_r8),   dimension(:,:,:),  intent(in) :: field
     real(cvmix_r8), optional,            intent(in) :: FillVal
 
-!BOC
-
-    ! Local variables
+! !LOCAL VARIABLES:
     integer, dimension(3) :: dims
     logical               :: add_fill
 #ifdef _NETCDF
     integer, dimension(3) :: dimids
     integer               :: varid, i
 #endif
+!EOP
+!BOC
 
     dims = shape(field)
     add_fill = present(FillVal)
@@ -908,25 +905,27 @@ contains
   subroutine cvmix_output_write_att_string(file_id, att_name, att_val, var_name)
 
 ! !DESCRIPTION:
-!  Routine to write a global attribute with a string value to a netcdf file.
-!  Called with cvmix\_output\_write_att (see interface in PUBLIC MEMBER
-!  FUNCTIONS above).
+!  Routine to write an attribute with a string value to a netcdf file. If
+!  var\_name is omitted, routine writes a global attribute. Called with
+!  cvmix\_output\_write\_att (see interface in PUBLIC MEMBER FUNCTIONS above).
 !\\
 !\\
 
 ! !USES:
 !  Only those used by entire module. 
 
-! !INPUT PARAMETERS
+! !INPUT PARAMETERS:
     integer,          intent(in)           :: file_id
     character(len=*), intent(in)           :: att_name, att_val
     character(len=*), intent(in), optional :: var_name
 
-!BOC
+! !LOCAL VARIABLES:
 #ifdef _NETCDF
     integer :: varid
     logical :: var_found
 #endif
+!EOP
+!BOC
 
     select case(get_file_type(file_id))
 #ifdef _NETCDF
@@ -961,37 +960,6 @@ contains
 !EOC
 
   end subroutine cvmix_output_write_att_string
-
-!BOP
-
-! !IROUTINE: cvmix_io_close
-! !INTERFACE:
-
-  subroutine cvmix_io_close_all
-
-! !DESCRIPTION:
-!  Routine to close all files open (meant to be called prior to an abort)
-!\\
-!\\
-
-! !USES:
-!  Only those used by entire module. 
-
-! !LOCAL VARIABLES:
-    integer :: fid
-
-!EOP
-!BOC
-
-    write(*,"(A)") "Closing all open files..."
-    do while (allocated(file_database))
-      fid = file_database(1)%file_id
-      write(*, "(A,1X,A)") "...", trim(get_file_name(fid))
-      call cvmix_io_close(fid)
-    end do
-    write(*,"(A)") "All files closed."
-!EOC
-  end subroutine cvmix_io_close_all
 
 !BOP
 
@@ -1084,6 +1052,37 @@ contains
 !EOC
 
   end subroutine cvmix_io_close
+
+!BOP
+
+! !IROUTINE: cvmix_io_close_all
+! !INTERFACE:
+
+  subroutine cvmix_io_close_all
+
+! !DESCRIPTION:
+!  Routine to close all files open (meant to be called prior to an abort)
+!\\
+!\\
+
+! !USES:
+!  Only those used by entire module. 
+
+! !LOCAL VARIABLES:
+    integer :: fid
+
+!EOP
+!BOC
+
+    write(*,"(A)") "Closing all open files..."
+    do while (allocated(file_database))
+      fid = file_database(1)%file_id
+      write(*, "(A,1X,A)") "...", trim(get_file_name(fid))
+      call cvmix_io_close(fid)
+    end do
+    write(*,"(A)") "All files closed."
+!EOC
+  end subroutine cvmix_io_close_all
 
 !BOP
 
@@ -1182,8 +1181,8 @@ contains
   function get_netcdf_varid(file_id, var_name, xtype, ndims)
 
 ! !DESCRIPTION:
-!  Returns the varid associated with the variable var_name in the netcdf file
-!  file_id. If the variable does not exist, returns -1.
+!  Returns the varid associated with the variable var\_name in the netcdf file
+!  file\_id. If the variable does not exist, returns -1.
 !\\
 !\\
 
@@ -1197,12 +1196,12 @@ contains
 ! !OUTPUT PARAMETERS:
     integer, optional, intent(out) :: xtype, ndims
     integer                        :: get_netcdf_varid
-!EOP
-!BOC
 
 ! !LOCAL VARIABLES:
     character(len=cvmix_strlen) :: tmp_name
     integer                     :: i, nvar
+!EOP
+!BOC
 
     get_netcdf_varid = -1
     ! Find number of variables in file
