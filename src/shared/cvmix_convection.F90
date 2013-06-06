@@ -18,9 +18,7 @@ module cvmix_convection
 
 ! !USES:
    use cvmix_kinds_and_types, only : cvmix_r8,               &
-                                     cvmix_data_type,        &
-                                     cvmix_conv_params_type
-   use cvmix_put_get, only : cvmix_put
+                                     cvmix_data_type
 !EOP
 
   implicit none
@@ -33,6 +31,19 @@ module cvmix_convection
 
    public :: cvmix_init_conv
    public :: cvmix_coeffs_conv
+   public :: cvmix_put_conv
+
+   interface cvmix_put_conv
+     module procedure cvmix_put_conv_real
+   end interface cvmix_put_conv
+
+  ! cvmix_conv_params_type contains the necessary parameters for convective
+  ! mixing.
+  type, public :: cvmix_conv_params_type
+    private
+    real(cvmix_r8) :: convect_diff
+    real(cvmix_r8) :: convect_visc
+  end type cvmix_conv_params_type
 !EOP
 
 contains
@@ -63,8 +74,8 @@ contains
 !BOC
 
     ! Set convect_diff and convect_visc in conv_params_type
-    call cvmix_put(CVmix_conv_params, "convect_diff", convect_diff)
-    call cvmix_put(CVmix_conv_params, "convect_visc", convect_visc)
+    call cvmix_put_conv(CVmix_conv_params, "convect_diff", convect_diff)
+    call cvmix_put_conv(CVmix_conv_params, "convect_visc", convect_visc)
 
 !EOC
   end subroutine cvmix_init_conv
@@ -126,6 +137,45 @@ contains
 !EOC
 
   end subroutine cvmix_coeffs_conv
+
+!BOP
+
+! !IROUTINE: cvmix_put_conv_real
+! !INTERFACE:
+
+  subroutine cvmix_put_conv_real(CVmix_conv_params, varname, val)
+
+! !DESCRIPTION:
+!  Write a real value into a cvmix\_conv\_params\_type variable.
+!\\
+!\\
+
+! !USES:
+!  Only those used by entire module. 
+
+! !INPUT PARAMETERS:
+    character(len=*), intent(in) :: varname
+    real(cvmix_r8),   intent(in) :: val
+
+! !OUTPUT PARAMETERS:
+    type(cvmix_conv_params_type), intent(inout) :: CVmix_conv_params
+!EOP
+!BOC
+
+    select case (trim(varname))
+      case ('convect_diff')
+        CVmix_conv_params%convect_diff = val
+      case ('convect_visc')
+        CVmix_conv_params%convect_visc = val
+      case DEFAULT
+        print*, "ERROR: ", trim(varname), " not a valid choice!"
+        stop 1
+      
+    end select
+
+!EOC
+
+  end subroutine cvmix_put_conv_real
 
 end module cvmix_convection
 

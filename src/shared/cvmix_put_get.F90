@@ -21,7 +21,6 @@ module cvmix_put_get
    use cvmix_kinds_and_types, only : cvmix_r8,                  &
                                      cvmix_data_type,           &
                                      cvmix_global_params_type,  &
-                                     cvmix_conv_params_type,    &
                                      cvmix_shear_params_type
 !EOP
 
@@ -38,7 +37,6 @@ module cvmix_put_get
     module procedure cvmix_put_int
     module procedure cvmix_put_real
     module procedure cvmix_put_real_1D
-    module procedure cvmix_put_conv_real
     module procedure cvmix_put_shear_real
     module procedure cvmix_put_shear_str
     module procedure cvmix_put_global_params_int
@@ -292,45 +290,6 @@ contains
 !EOC
 
   end subroutine cvmix_put_real_1D
-
-!BOP
-
-! !IROUTINE: cvmix_put_conv_real
-! !INTERFACE:
-
-  subroutine cvmix_put_conv_real(CVmix_conv_params, varname, val)
-
-! !DESCRIPTION:
-!  Write a real value into a cvmix\_conv\_params\_type variable.
-!\\
-!\\
-
-! !USES:
-!  Only those used by entire module. 
-
-! !INPUT PARAMETERS:
-    character(len=*), intent(in) :: varname
-    real(cvmix_r8),   intent(in) :: val
-
-! !OUTPUT PARAMETERS:
-    type(cvmix_conv_params_type), intent(inout) :: CVmix_conv_params
-!EOP
-!BOC
-
-    select case (trim(varname))
-      case ('convect_diff')
-        CVmix_conv_params%convect_diff = val
-      case ('convect_visc')
-        CVmix_conv_params%convect_visc = val
-      case DEFAULT
-        print*, "ERROR: ", trim(varname), " not a valid choice!"
-        stop 1
-      
-    end select
-
-!EOC
-
-  end subroutine cvmix_put_conv_real
 
 !BOP
 

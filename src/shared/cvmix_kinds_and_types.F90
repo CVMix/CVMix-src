@@ -114,13 +114,6 @@ module cvmix_kinds_and_types
   type, public :: cvmix_kpp_params_type
       real(cvmix_r8) :: deleteme
   end type cvmix_kpp_params_type
-
-  ! cvmix_conv_params_type contains the necessary parameters for convective
-  ! mixing.
-  type, public :: cvmix_conv_params_type
-      real(cvmix_r8)              :: convect_diff
-      real(cvmix_r8)              :: convect_visc
-  end type cvmix_conv_params_type
 !EOP
 
 end module cvmix_kinds_and_types
