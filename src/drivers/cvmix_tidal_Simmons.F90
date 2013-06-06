@@ -16,18 +16,19 @@ Subroutine cvmix_tidal_driver()
 
 ! !USES:
 
-  use cvmix_kinds_and_types, only : cvmix_r8,                 &
-                                    cvmix_strlen,             &
-                                    cvmix_data_type,          &
-                                    cvmix_global_params_type, &
+  use cvmix_kinds_and_types, only : cvmix_r8,                   &
+                                    cvmix_strlen,               &
+                                    cvmix_data_type,            &
+                                    cvmix_global_params_type,   &
                                     cvmix_tidal_params_type
-  use cvmix_tidal,           only : cvmix_init_tidal,         &
+  use cvmix_tidal,           only : cvmix_init_tidal,           &
                                     cvmix_coeffs_tidal
   use cvmix_put_get,         only : cvmix_put
-  use cvmix_io,              only : cvmix_io_open,            &
-                                    cvmix_input_read,         &
-                                    cvmix_output_write,       &
-                                    cvmix_output_write_att,   &
+  use cvmix_io,              only : cvmix_io_open,              &
+                                    cvmix_input_read,           &
+                                    cvmix_input_get_netcdf_dim, &
+                                    cvmix_output_write,         &
+                                    cvmix_output_write_att,     &
                                     cvmix_io_close
 
   Implicit None
@@ -64,14 +65,6 @@ Subroutine cvmix_tidal_driver()
   namelist/Simmons_nml/grid_file, physics_file, energy_flux_file,             &
                        energy_flux_var, lon_out, lat_out
 
-  ! Hardcode in file dimensions (to do: read in from netCDF)
-  nlon = 320
-  nlat = 384
-  max_nlev = 60
-  ! Allocate memory for CVmix columns
-  allocate(CVmix_vars(nlon, nlat))
-  allocate(lat(nlon, nlat),lon(nlon, nlat))
-
   ! Read namelist variables 
   grid_file = "none"
   physics_file = "none"
@@ -80,6 +73,31 @@ Subroutine cvmix_tidal_driver()
   lon_out = 35
   lat_out = 345
   read(*, nml=Simmons_nml)
+
+  ! Get dimensions from grid file
+  call cvmix_io_open(fid, trim(grid_file), 'nc', read_only=.true.)
+  nlon = cvmix_input_get_netcdf_dim(fid, 'lon')
+  nlat = cvmix_input_get_netcdf_dim(fid, 'lat')
+  max_nlev = cvmix_input_get_netcdf_dim(fid, 'nlev')
+  call cvmix_io_close(fid)
+
+  ! Print dimensions to screen
+  write(*,*) "Grid dimensions"
+  write(*,*) "---------------"
+  write(*,"(1X,A,I0)") "nlon = ", nlon
+  write(*,"(1X,A,I0)") "nlat = ", nlat
+  write(*,"(1X,A,I0)") "max_nlev = ", max_nlev
+  write(*,*) ""
+
+  ! Make sure all dimensions are valid
+  if (any((/nlon, nlat, max_nlev/).eq.-1)) then
+    print*, "Error reading dimensions!"
+    stop 1
+  end if
+
+  ! Allocate memory for CVmix columns
+  allocate(CVmix_vars(nlon, nlat))
+  allocate(lat(nlon, nlat),lon(nlon, nlat))
 
   ! Allocate memory for energy flux, ocean depth, number of ocean levels,
   ! depth of each level / interface, and buoyancy frequency
@@ -121,6 +139,8 @@ Subroutine cvmix_tidal_driver()
   call cvmix_init_tidal(CVmix_Simmons_params, 'Simmons', 'mks', &
                         local_mixing_frac=0.33_cvmix_r8,        &
                         max_coefficient=0.01_cvmix_r8)
+
+  ! Print parameter values to screen
   print*, "Namelist variables"
   print*, "------------------"
   print*, "mix_scheme = ", trim(CVmix_Simmons_params%mix_scheme)

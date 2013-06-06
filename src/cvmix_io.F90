@@ -35,6 +35,9 @@ module cvmix_io
 ! !PUBLIC MEMBER FUNCTIONS:
   public :: cvmix_io_open
   public :: cvmix_input_read
+#ifdef _NETCDF
+  public :: cvmix_input_get_netcdf_dim
+#endif
   public :: cvmix_output_write
   public :: cvmix_io_close
   public :: cvmix_io_close_all
@@ -1175,6 +1178,63 @@ contains
 #ifdef _NETCDF
 !BOP
 
+! !IROUTINE: cvmix_input_get_netcdf_dim
+! !INTERFACE:
+
+  function cvmix_input_get_netcdf_dim(file_id, dim_name)
+
+! !DESCRIPTION:
+!  Returns the value of the dimension dim\_name in the netcdf file file\_id. If
+!  the dimension does not exist, returns -1.
+!\\
+!\\
+
+! !USES:
+!  Only those used by entire module. 
+
+! !INPUT PARAMETERS:
+    integer,          intent(in) :: file_id
+    character(len=*), intent(in) :: dim_name
+
+! !OUTPUT PARAMETERS:
+    integer                        :: cvmix_input_get_netcdf_dim
+
+! !LOCAL VARIABLES:
+    character(len=cvmix_strlen) :: tmp_name
+    integer                     :: i, ndim, dimid
+!EOP
+!BOC
+
+    cvmix_input_get_netcdf_dim = -1
+    if (get_file_type(file_id).ne.NETCDF_FILE_TYPE) then
+      print*, "WARNING: can not find dimid, ", trim(get_file_name(file_id)), &
+              " is not a netcdf file."
+      return
+    end if
+
+    dimid = -1
+    ! Find number of variables in file
+    call netcdf_check(nf90_inquire(file_id, nDimensions=ndim))
+    i = 1
+    do while((i.le.ndim).and.(dimid.eq.-1))
+      ! Loop to figure out if var_name is a valid variable in the file
+      call netcdf_check(nf90_inquire_dimension(file_id, i, name=tmp_name))
+      if (trim(dim_name).eq.trim(tmp_name)) then
+        dimid = i
+      else
+        i = i+1
+      end if
+    end do
+    if (dimid.ne.-1) &
+      call netcdf_check(nf90_inquire_dimension(file_id, dimid, &
+                        len=cvmix_input_get_netcdf_dim))
+
+!EOC
+
+  end function cvmix_input_get_netcdf_dim
+
+!BOP
+
 ! !IROUTINE: get_netcdf_varid
 ! !INTERFACE:
 
@@ -1204,6 +1264,12 @@ contains
 !BOC
 
     get_netcdf_varid = -1
+    if (get_file_type(file_id).ne.NETCDF_FILE_TYPE) then
+      print*, "WARNING: can not find varid, ", trim(get_file_name(file_id)), &
+              " is not a netcdf file."
+      return
+    end if
+
     ! Find number of variables in file
     call netcdf_check(nf90_inquire(file_id, nVariables=nvar))
     i = 1

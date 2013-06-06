@@ -40,7 +40,7 @@ Program cvmix_driver
 
   mix_type = 'unset'
   nlev = 0
-  ocn_depth = 0.0d0
+  ocn_depth = 0.0_cvmix_r8
   read(*, nml=cvmix_nml)
 
   select case (trim(mix_type))
