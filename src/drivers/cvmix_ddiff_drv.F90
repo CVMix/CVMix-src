@@ -26,6 +26,7 @@ Subroutine cvmix_ddiff_driver(nlev)
   use cvmix_put_get,         only : cvmix_put
   use cvmix_io,              only : cvmix_io_open,            &
                                     cvmix_output_write,       &
+                                    cvmix_output_write_att,   &
                                     cvmix_io_close
 
   Implicit None
@@ -98,7 +99,14 @@ Subroutine cvmix_ddiff_driver(nlev)
 #endif
 
   call cvmix_output_write(fid, CVmix_vars, (/"Rrho", "diff"/))
-
+#ifdef _NETCDF
+  call cvmix_output_write_att(fid, "long_name", "double diffusion " //        &
+                              "stratification parameter", var_name="Rrho")
+  call cvmix_output_write_att(fid, "units", "unitless", var_name="Rrho")
+  call cvmix_output_write_att(fid, "long_name", "tracer diffusivity",         &
+                              var_name="diff")
+  call cvmix_output_write_att(fid, "units", "m^2/s", var_name="diff")
+#endif
   call cvmix_io_close(fid)
 
 !EOC

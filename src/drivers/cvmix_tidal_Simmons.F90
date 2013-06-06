@@ -205,6 +205,9 @@ Subroutine cvmix_tidal_driver()
   call cvmix_io_open(fid, "diff.nc", "nc")
   call cvmix_output_write(fid, "diff", (/"nlon  ", "nlat  ", "niface"/),      &
                           diffusivity(:,:,:,1), FillVal=FillVal)
+  call cvmix_output_write_att(fid, "long_name", "tracer diffusivity",         &
+                              var_name="diff")
+  call cvmix_output_write_att(fid, "units", "m^2/s", var_name="diff")
   call cvmix_io_close(fid)
 
   ! memory cleanup
