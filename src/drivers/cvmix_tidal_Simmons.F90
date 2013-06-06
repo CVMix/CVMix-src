@@ -179,8 +179,18 @@ Subroutine cvmix_tidal_driver()
           else
             write(latstr,"(F6.2,1X,A)") abs(this_lat), "S"
           end if
+          ! Global Attributes
           call cvmix_output_write_att(fid, "column_lon", lonstr)
           call cvmix_output_write_att(fid, "column_lat", latstr)
+
+          ! Variable Attributes
+          call cvmix_output_write_att(fid, "long_name", "tracer diffusivity", &
+                                      var_name="diff")
+          call cvmix_output_write_att(fid, "units", "m^2/s", var_name="diff")
+          call cvmix_output_write_att(fid, "long_name", "depth to interface", &
+                                      var_name="depth")
+          call cvmix_output_write_att(fid, "positive", "up", var_name="depth")
+          call cvmix_output_write_att(fid, "units", "m", var_name="depth")
           call cvmix_io_close(fid)
         else
           print*, "ERROR: column requested for output is a land cell."

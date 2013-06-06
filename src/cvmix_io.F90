@@ -905,7 +905,7 @@ contains
 ! !IROUTINE: cvmix_write_att_string
 ! !INTERFACE:
 
-  subroutine cvmix_output_write_att_string(file_id, att_name, att_val)
+  subroutine cvmix_output_write_att_string(file_id, att_name, att_val, var_name)
 
 ! !DESCRIPTION:
 !  Routine to write a global attribute with a string value to a netcdf file.
@@ -918,23 +918,43 @@ contains
 !  Only those used by entire module. 
 
 ! !INPUT PARAMETERS
-    integer,                             intent(in) :: file_id
-    character(len=*),                    intent(in) :: att_name, att_val
+    integer,          intent(in)           :: file_id
+    character(len=*), intent(in)           :: att_name, att_val
+    character(len=*), intent(in), optional :: var_name
 
 !BOC
+#ifdef _NETCDF
+    integer :: varid
+    logical :: var_found
+#endif
 
     select case(get_file_type(file_id))
 #ifdef _NETCDF
       case (NETCDF_FILE_TYPE)
-        call netcdf_check(nf90_redef(file_id))
-        call netcdf_check(nf90_put_att(file_id, NF90_GLOBAL, trim(att_name), &
-                          trim(att_val)))
-        call netcdf_check(nf90_enddef(file_id))
+        var_found = .true.
+        if (present(var_name)) then
+          varid = get_netcdf_varid(file_id, var_name)
+          if (varid.eq.-1) then
+            print*, "WARNING: can not find variable ", trim(var_name), " in ", &
+                    trim(get_file_name(file_id)), "... can not add attribute."
+            var_found = .false.
+          end if
+        else
+          varid=NF90_GLOBAL
+        end if
+        if (var_found) then
+          call netcdf_check(nf90_redef(file_id))
+          call netcdf_check(nf90_put_att(file_id, varid, trim(att_name), &
+                            trim(att_val)))
+          call netcdf_check(nf90_enddef(file_id))
+        end if
 #endif
       case DEFAULT
         print*, "ERROR: cvmix_output_write_att_string only writes to netcdf"
         print*, "(attempted to set attribute ", trim(att_name), " to ", &
                 trim(att_val)
+        if (present(var_name)) &
+          print*, "(for variable ", trim(var_name), ")"
         call cvmix_io_close_all
         stop 1
     end select
@@ -1175,8 +1195,8 @@ contains
     character(len=*), intent(in) :: var_name
 
 ! !OUTPUT PARAMETERS:
-    integer, intent(out) :: xtype, ndims
-    integer              :: get_netcdf_varid
+    integer, optional, intent(out) :: xtype, ndims
+    integer                        :: get_netcdf_varid
 !EOP
 !BOC
 
