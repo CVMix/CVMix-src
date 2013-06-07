@@ -171,8 +171,8 @@ Subroutine cvmix_tidal_driver()
       call cvmix_put(CVmix_vars(i,j), 'nlev', nlev)
       if (nlev.gt.0) then
         call cvmix_put(CVmix_vars(i,j),  'surf_hgt',          0.0_cvmix_r8)
-        call cvmix_put(CVmix_vars(i,j),  'zw_iface', depth_iface(1:nlev+1))
-        call cvmix_put(CVmix_vars(i,j),        'zw',         depth(1:nlev))
+        call cvmix_put(CVmix_vars(i,j),        'zw', depth_iface(1:nlev+1))
+        call cvmix_put(CVmix_vars(i,j),        'zt',         depth(1:nlev))
         call cvmix_put(CVmix_vars(i,j),      'buoy',    buoy(i,j,1:nlev+1))
         call cvmix_put(CVmix_vars(i,j), 'ocn_depth',        ocn_depth(i,j))
 

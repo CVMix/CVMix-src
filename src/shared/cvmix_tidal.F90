@@ -200,7 +200,7 @@
         CVmix_vars%diff_iface = 0.0_cvmix_r8
         if (CVmix_vars%ocn_depth.ge.CVmix_tidal_params%depth_cutoff) then
           do k=1, nlev+1
-            buoy = CVmix_vars%buoy(k)
+            buoy = CVmix_vars%buoy_iface(k)
             z_cut = CVmix_tidal_params%depth_cutoff
             if (buoy.gt.0.0_cvmix_r8) &
               CVmix_vars%diff_iface(k,1) = coef*CVmix_vars%vert_dep(k)/(rho*buoy)

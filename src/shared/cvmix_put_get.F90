@@ -155,6 +155,78 @@ contains
       end if
       CVmix_vars%visc_iface(:) = val
 
+      case ('dens')
+      print*, "WARNING: you are setting the density in all levels to a", &
+              "constant value"
+      if (.not.associated(CVmix_vars%dens)) then
+        allocate(CVmix_vars%dens(nlev))
+      end if
+      CVmix_vars%dens(:) = val
+
+      case ('dens_lwr')
+      print*, "WARNING: you are setting the density in all levels to a", &
+              "constant value"
+      if (.not.associated(CVmix_vars%dens_lwr)) then
+        allocate(CVmix_vars%dens_lwr(nlev))
+      end if
+      CVmix_vars%dens_lwr(:) = val
+
+      case ('Ri')
+      print*, "WARNING: you are setting the Richardson number in all", &
+              "levels to a constant value"
+      if (.not.associated(CVmix_vars%Ri_iface)) then
+        allocate(CVmix_vars%Ri_iface(nlev+1))
+      end if
+      CVmix_vars%Ri_iface(:) = val
+
+      case ('dzt')
+      print*, "WARNING: you are setting the cell thickness in all levels to", &
+              "a constant value"
+      if (.not.associated(CVmix_vars%dz)) then
+        allocate(CVmix_vars%dz(nlev))
+      end if
+      CVmix_vars%dz(:) = val
+
+      case ('dzw_iface')
+      print*, "WARNING: you are setting the cell midpoint to midpoint", &
+              "distance in all levels to a constant value"
+      if (.not.associated(CVmix_vars%dw_iface)) then
+        allocate(CVmix_vars%dw_iface(nlev+1))
+      end if
+      CVmix_vars%dw_iface(:) = val
+
+      case ('buoy_iface')
+      print*, "WARNING: you are setting the buoyancy in all levels to a", &
+              "constant value"
+      if (.not.associated(CVmix_vars%buoy_iface)) then
+        allocate(CVmix_vars%buoy_iface(nlev+1))
+      end if
+      CVmix_vars%buoy_iface(:) = val
+
+      case ('vert_dep')
+      print*, "WARNING: you are setting the vertical deposition function", & 
+              "to a constant value in all levels"
+      if (.not.associated(CVmix_vars%vert_dep)) then
+        allocate(CVmix_vars%vert_dep(nlev+1))
+      end if
+      CVmix_vars%vert_dep(:) = val
+
+      case ('strat_param_num')
+      print*, "WARNING: you are setting the numerator of the statification", & 
+              "parameter in all levels to a constant value"
+      if (.not.associated(CVmix_vars%strat_param_num)) then
+        allocate(CVmix_vars%strat_param_num(nlev))
+      end if
+      CVmix_vars%strat_param_num(:) = val
+
+      case ('strat_param_denom')
+      print*, "WARNING: you are setting the denominator of the statification",& 
+              "parameter in all levels to a constant value"
+      if (.not.associated(CVmix_vars%strat_param_denom)) then
+        allocate(CVmix_vars%strat_param_denom(nlev))
+      end if
+      CVmix_vars%strat_param_denom(:) = val
+
       case default
         print*, "ERROR: ", trim(varname), " not a valid choice!"
         stop 1
@@ -237,23 +309,47 @@ contains
       end if
       CVmix_vars%dens_lwr(:) = val
 
-      case ('zw')
+      case ('Ri', 'Ri_iface')
+      if (.not.associated(CVmix_vars%Ri_iface)) then
+        allocate(CVmix_vars%Ri_iface(nlev+1))
+      end if
+      CVmix_vars%Ri_iface(:) = val
+
+      case ('z', 'zt')
       if (.not.associated(CVmix_vars%z)) then
         allocate(CVmix_vars%z(nlev))
       end if
       CVmix_vars%z(:) = val
 
-      case ('zw_iface')
+      case ('dz', 'dzt')
+      if (.not.associated(CVmix_vars%dz)) then
+        allocate(CVmix_vars%dz(nlev))
+      end if
+      CVmix_vars%dz(:) = val
+
+      case ('zw', 'zw_iface')
       if (.not.associated(CVmix_vars%z_iface)) then
         allocate(CVmix_vars%z_iface(nlev+1))
       end if
       CVmix_vars%z_iface(:) = val
 
-      case ('buoy')
-      if (.not.associated(CVmix_vars%buoy)) then
-        allocate(CVmix_vars%buoy(nlev+1))
+      case ('dzw', 'dzw_iface')
+      if (.not.associated(CVmix_vars%dw_iface)) then
+        allocate(CVmix_vars%dw_iface(nlev+1))
       end if
-      CVmix_vars%buoy(:) = val
+      CVmix_vars%dw_iface(:) = val
+
+      case ('buoy', 'buoy_iface')
+      if (.not.associated(CVmix_vars%buoy_iface)) then
+        allocate(CVmix_vars%buoy_iface(nlev+1))
+      end if
+      CVmix_vars%buoy_iface(:) = val
+
+      case ('vert_dep', 'vert_dep_iface')
+      if (.not.associated(CVmix_vars%vert_dep)) then
+        allocate(CVmix_vars%vert_dep(nlev+1))
+      end if
+      CVmix_vars%vert_dep(:) = val
 
       case ('strat_param_num')
       if (.not.associated(CVmix_vars%strat_param_num)) then
