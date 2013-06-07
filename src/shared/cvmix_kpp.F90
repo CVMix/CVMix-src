@@ -20,8 +20,7 @@
 ! !USES:
 
    use cvmix_kinds_and_types, only : cvmix_r8,                &
-                                     cvmix_data_type,         &
-                                     cvmix_kpp_params_type
+                                     cvmix_data_type
 !EOP
 
    implicit none
@@ -34,6 +33,15 @@
 
    public :: cvmix_init_kpp
    public :: cvmix_coeffs_kpp
+
+! !PUBLIC TYPES:
+
+  ! cvmix_kpp_params_type contains the necessary parameters for KPP mixing
+  type, public :: cvmix_kpp_params_type
+      private
+      real(cvmix_r8) :: deleteme
+  end type cvmix_kpp_params_type
+
 !EOP
 
  contains

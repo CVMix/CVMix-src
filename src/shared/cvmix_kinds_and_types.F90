@@ -41,8 +41,10 @@ module cvmix_kinds_and_types
 
 ! !PUBLIC TYPES:
 
-  ! cvmix_input_type contains every possible necessary input field for all
-  ! supported types of mixing.
+  ! cvmix_data_type contains variables for time-dependent and column-specific
+  ! mixing. Time-independent physical parameters should be stored in
+  ! cvmix_global_params_type and *-mixing specific parameters should be
+  ! stored in cvmix_*_params_type (found in the cvmix_* module).
   type, public :: cvmix_data_type
       integer        :: nlev = -1  ! Number of levels in column
                                    ! Setting default to -1 might be F95...
@@ -87,10 +89,6 @@ module cvmix_kinds_and_types
       real(cvmix_r8)                 :: sw_rho    ! salt water density
   end type cvmix_global_params_type
 
-  ! cvmix_kpp_params_type contains the necessary parameters for KPP mixing
-  type, public :: cvmix_kpp_params_type
-      real(cvmix_r8) :: deleteme
-  end type cvmix_kpp_params_type
 !EOP
 
 end module cvmix_kinds_and_types

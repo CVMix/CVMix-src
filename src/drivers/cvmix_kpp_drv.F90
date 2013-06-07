@@ -17,10 +17,10 @@ Subroutine cvmix_kpp_driver(nlev)
 ! !USES:
 
   use cvmix_kinds_and_types, only : cvmix_r8,                 &
-                                    cvmix_data_type,          &
-                                    cvmix_kpp_params_type
+                                    cvmix_data_type
   use cvmix_kpp,             only : cvmix_init_kpp,           &
-                                    cvmix_coeffs_kpp  
+                                    cvmix_coeffs_kpp,         &
+                                    cvmix_kpp_params_type
   use cvmix_put_get,         only : cvmix_put
   use cvmix_io,              only : cvmix_io_open,            &
                                     cvmix_output_write,       &
