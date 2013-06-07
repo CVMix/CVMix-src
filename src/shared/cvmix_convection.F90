@@ -38,6 +38,8 @@ module cvmix_convection
      module procedure cvmix_put_conv_real
    end interface cvmix_put_conv
 
+! !PUBLIC TYPES:
+
   ! cvmix_conv_params_type contains the necessary parameters for convective
   ! mixing.
   type, public :: cvmix_conv_params_type
@@ -45,6 +47,7 @@ module cvmix_convection
     real(cvmix_r8) :: convect_diff
     real(cvmix_r8) :: convect_visc
   end type cvmix_conv_params_type
+
 !EOP
 
 contains
@@ -79,8 +82,8 @@ contains
     call cvmix_put_conv(CVmix_conv_params, "convect_visc", convect_visc)
 
 !EOC
-  end subroutine cvmix_init_conv
 
+  end subroutine cvmix_init_conv
 
 !BOP
 

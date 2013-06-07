@@ -1,6 +1,4 @@
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-
- module cvmix_ddiff
+module cvmix_ddiff
 
 !BOP
 !\newpage
@@ -19,47 +17,45 @@
 
 ! !USES:
 
-   use cvmix_kinds_and_types, only : one,                     &
-                                     cvmix_r8,                &
-                                     cvmix_data_type
+  use cvmix_kinds_and_types, only : one,                     &
+                                    cvmix_r8,                &
+                                    cvmix_data_type
 !EOP
 
-   implicit none
-   private
-   save
+  implicit none
+  private
+  save
 
 !BOP
 
 ! !PUBLIC MEMBER FUNCTIONS:
 
-   public :: cvmix_init_ddiff
-   public :: cvmix_coeffs_ddiff
-   public :: cvmix_put_ddiff
-   public :: cvmix_get_ddiff_real
+  public :: cvmix_init_ddiff
+  public :: cvmix_coeffs_ddiff
+  public :: cvmix_put_ddiff
+  public :: cvmix_get_ddiff_real
 
-   interface cvmix_put_ddiff
-     module procedure cvmix_put_ddiff_real
-   end interface cvmix_put_ddiff
-!EOP
+  interface cvmix_put_ddiff
+    module procedure cvmix_put_ddiff_real
+  end interface cvmix_put_ddiff
 
-
-! !PUBLIC MEMBER FUNCTIONS:
 ! !PUBLIC TYPES:
 
   ! cvmix_ddiff_params_type contains the necessary parameters for double
   ! diffusion mixing
   type, public :: cvmix_ddiff_params_type
-      private
-      real(cvmix_r8)              :: strat_param_max
-      real(cvmix_r8)              :: kappa_ddiff_t
-      real(cvmix_r8)              :: kappa_ddiff_s
-      real(cvmix_r8)              :: ddiff_exp1
-      real(cvmix_r8)              :: ddiff_exp2
-      real(cvmix_r8)              :: kappa_ddiff_param1
-      real(cvmix_r8)              :: kappa_ddiff_param2
-      real(cvmix_r8)              :: kappa_ddiff_param3
-      real(cvmix_r8)              :: mol_diff
+    private
+    real(cvmix_r8) :: strat_param_max
+    real(cvmix_r8) :: kappa_ddiff_t
+    real(cvmix_r8) :: kappa_ddiff_s
+    real(cvmix_r8) :: ddiff_exp1
+    real(cvmix_r8) :: ddiff_exp2
+    real(cvmix_r8) :: kappa_ddiff_param1
+    real(cvmix_r8) :: kappa_ddiff_param2
+    real(cvmix_r8) :: kappa_ddiff_param3
+    real(cvmix_r8) :: mol_diff
   end type cvmix_ddiff_params_type
+
 !EOP
 
  contains
@@ -70,8 +66,8 @@
 ! !INTERFACE:
 
   subroutine cvmix_init_ddiff(CVmix_ddiff_params, units, strat_param_max, &
-                              kappa_ddiff_t, kappa_ddiff_s, ddiff_exp1, &
-                              ddiff_exp2, mol_diff, kappa_ddiff_param1, &
+                              kappa_ddiff_t, kappa_ddiff_s, ddiff_exp1,   &
+                              ddiff_exp2, mol_diff, kappa_ddiff_param1,   &
                               kappa_ddiff_param2, kappa_ddiff_param3)
 
 ! !DESCRIPTION:
@@ -220,8 +216,8 @@
 
   end subroutine cvmix_init_ddiff
 
-!***********************************************************************
 !BOP
+
 ! !IROUTINE: cvmix_coeffs_ddiff
 ! !INTERFACE:
 
@@ -281,6 +277,7 @@
     CVmix_vars%diff_iface(CVmix_vars%nlev+1,:) = 0.0_cvmix_r8
 
 !EOC
+
   end subroutine cvmix_coeffs_ddiff
 
 !BOP

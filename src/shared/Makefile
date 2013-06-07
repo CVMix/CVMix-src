@@ -141,6 +141,7 @@ $(INC_DIR)/CVMIX_CONVECTION.mod: $(SRC_DIR)/cvmix_convection.F90       \
 
 ### cvmix_shear.F90
 $(OBJ_DIR)/cvmix_shear.o: $(SRC_DIR)/cvmix_shear.F90         \
+                          $(OBJ_DIR)/cvmix_background.o      \
                           $(OBJ_DIR)/cvmix_kinds_and_types.o
 	$(FC) $(FCFLAGS) -c $(SRC_DIR)/cvmix_shear.F90 -o $@
 

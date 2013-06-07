@@ -1,5 +1,3 @@
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-
  module cvmix_shear
 
 !BOP
@@ -48,6 +46,8 @@
      module procedure cvmix_put_shear_real
      module procedure cvmix_put_shear_str
    end interface cvmix_put_shear
+
+! !PUBLIC TYPES:
 
   ! cvmix_shear_params_type contains the necessary parameters for shear mixing
   ! (currently Pacanowski-Philander or Large et al)
@@ -153,8 +153,8 @@
 
   end subroutine cvmix_init_shear
 
-!***********************************************************************
 !BOP
+
 ! !IROUTINE: cvmix_coeffs_shear
 ! !INTERFACE:
 
@@ -255,6 +255,7 @@
     end select
 
 !EOC
+
   end subroutine cvmix_coeffs_shear
 
 !BOP
@@ -306,6 +307,43 @@
 
 !BOP
 
+! !IROUTINE: cvmix_put_shear_str
+! !INTERFACE:
+
+  subroutine cvmix_put_shear_str(CVmix_shear_params, varname, val)
+
+! !DESCRIPTION:
+!  Write a string into a cvmix\_shear\_params\_type variable.
+!\\
+!\\
+
+! !USES:
+!  Only those used by entire module. 
+
+! !INPUT PARAMETERS:
+    character(len=*), intent(in) :: varname
+    character(len=*), intent(in) :: val
+
+! !OUTPUT PARAMETERS:
+    type(cvmix_shear_params_type), intent(inout) :: CVmix_shear_params
+!EOP
+!BOC
+
+    select case (trim(varname))
+      case ('mix_scheme')
+        CVmix_shear_params%mix_scheme = val
+      case DEFAULT
+        print*, "ERROR: ", trim(varname), " not a valid choice!"
+        stop 1
+      
+    end select
+
+!EOC
+
+  end subroutine cvmix_put_shear_str
+
+!BOP
+
 ! !IROUTINE: cvmix_get_shear_real
 ! !INTERFACE:
 
@@ -351,43 +389,6 @@
 !EOC
 
   end function cvmix_get_shear_real
-
-!BOP
-
-! !IROUTINE: cvmix_put_shear_str
-! !INTERFACE:
-
-  subroutine cvmix_put_shear_str(CVmix_shear_params, varname, val)
-
-! !DESCRIPTION:
-!  Write a string into a cvmix\_shear\_params\_type variable.
-!\\
-!\\
-
-! !USES:
-!  Only those used by entire module. 
-
-! !INPUT PARAMETERS:
-    character(len=*), intent(in) :: varname
-    character(len=*), intent(in) :: val
-
-! !OUTPUT PARAMETERS:
-    type(cvmix_shear_params_type), intent(inout) :: CVmix_shear_params
-!EOP
-!BOC
-
-    select case (trim(varname))
-      case ('mix_scheme')
-        CVmix_shear_params%mix_scheme = val
-      case DEFAULT
-        print*, "ERROR: ", trim(varname), " not a valid choice!"
-        stop 1
-      
-    end select
-
-!EOC
-
-  end subroutine cvmix_put_shear_str
 
 !BOP
 

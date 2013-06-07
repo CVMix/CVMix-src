@@ -32,6 +32,7 @@ module cvmix_background
 !BOP
 
 ! !PUBLIC MEMBER FUNCTIONS:
+
    public :: cvmix_init_bkgnd
    public :: cvmix_coeffs_bkgnd
    public :: cvmix_bkgnd_lvary_horizontal
@@ -52,6 +53,8 @@ module cvmix_background
     module procedure cvmix_put_bkgnd_real_1D
     module procedure cvmix_put_bkgnd_real_2D
   end interface cvmix_put_bkgnd
+
+! !PUBLIC TYPES:
 
   ! cvmix_bkgnd_params_type contains the necessary parameters for background
   ! mixing. Background mixing fields can vary from level to level as well as
@@ -580,49 +583,6 @@ contains
 
 !BOP
 
-! !IROUTINE: cvmix_get_bkgnd_real_2D
-! !INTERFACE:
-
-  function cvmix_get_bkgnd_real_2D(CVmix_bkgnd_params, varname)
-
-! !DESCRIPTION:
-!  Read the real values of a cvmix\_bkgnd\_params\_type 2D array variable.
-!\\
-!\\
-
-! !USES:
-!  Only those used by entire module. 
-
-! !INPUT PARAMETERS:
-    type(cvmix_bkgnd_params_type), intent(in) :: CVmix_bkgnd_params
-    character(len=*),              intent(in) :: varname
-
-! !OUTPUT PARAMETERS:
-    real(cvmix_r8), dimension( size(CVmix_bkgnd_params%static_visc,1), size(CVmix_bkgnd_params%static_visc,2)) :: &
-            cvmix_get_bkgnd_real_2D
-!EOP
-!BOC
-
-    select case (trim(varname))
-      case ('static_visc')
-        cvmix_get_bkgnd_real_2D = CVmix_bkgnd_params%static_visc(:,:)
-
-      case ('static_diff')
-        cvmix_get_bkgnd_real_2D = CVmix_bkgnd_params%static_diff(:,:)
-
-      case DEFAULT
-        print*, "ERROR: ", trim(varname), " not a valid choice!"
-        stop 1
-      
-    end select
-
-!EOC
-
-  end function cvmix_get_bkgnd_real_2D
-
-
-!BOP
-
 ! !IROUTINE: cvmix_put_bkgnd_real_1D
 ! !INTERFACE:
 
@@ -819,6 +779,50 @@ contains
 !EOC
 
   end subroutine cvmix_put_bkgnd_real_2D
+
+!BOP
+
+! !IROUTINE: cvmix_get_bkgnd_real_2D
+! !INTERFACE:
+
+  function cvmix_get_bkgnd_real_2D(CVmix_bkgnd_params, varname)
+
+! !DESCRIPTION:
+!  Read the real values of a cvmix\_bkgnd\_params\_type 2D array variable.
+!\\
+!\\
+
+! !USES:
+!  Only those used by entire module. 
+
+! !INPUT PARAMETERS:
+    type(cvmix_bkgnd_params_type), intent(in) :: CVmix_bkgnd_params
+    character(len=*),              intent(in) :: varname
+
+! !OUTPUT PARAMETERS:
+    real(cvmix_r8), dimension(size(CVmix_bkgnd_params%static_visc,1),    &
+                              size(CVmix_bkgnd_params%static_visc,2)) :: &
+                    cvmix_get_bkgnd_real_2D
+!EOP
+!BOC
+
+    select case (trim(varname))
+      case ('static_visc')
+        cvmix_get_bkgnd_real_2D = CVmix_bkgnd_params%static_visc(:,:)
+
+      case ('static_diff')
+        cvmix_get_bkgnd_real_2D = CVmix_bkgnd_params%static_diff(:,:)
+
+      case DEFAULT
+        print*, "ERROR: ", trim(varname), " not a valid choice!"
+        stop 1
+      
+    end select
+
+!EOC
+
+  end function cvmix_get_bkgnd_real_2D
+
 
 end module cvmix_background
 
