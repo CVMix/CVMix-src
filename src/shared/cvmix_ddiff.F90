@@ -35,15 +35,11 @@
    public :: cvmix_init_ddiff
    public :: cvmix_coeffs_ddiff
    public :: cvmix_put_ddiff
-   public :: cvmix_get_ddiff
+   public :: cvmix_get_ddiff_real
 
    interface cvmix_put_ddiff
      module procedure cvmix_put_ddiff_real
    end interface cvmix_put_ddiff
-
-   interface cvmix_get_ddiff
-     module procedure cvmix_get_ddiff_real
-   end interface cvmix_get_ddiff
 !EOP
 
 
@@ -359,7 +355,7 @@
 
 ! !INPUT PARAMETERS:
     type(cvmix_ddiff_params_type), intent(in) :: CVmix_ddiff_params
-    character(len=*), intent(in) :: varname
+    character(len=*),              intent(in) :: varname
 
 ! !OUTPUT PARAMETERS:
     real(cvmix_r8) :: cvmix_get_ddiff_real

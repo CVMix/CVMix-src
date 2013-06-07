@@ -32,6 +32,7 @@ module cvmix_convection
    public :: cvmix_init_conv
    public :: cvmix_coeffs_conv
    public :: cvmix_put_conv
+   public :: cvmix_get_conv_real
 
    interface cvmix_put_conv
      module procedure cvmix_put_conv_real
@@ -176,6 +177,45 @@ contains
 !EOC
 
   end subroutine cvmix_put_conv_real
+
+!BOP
+
+! !IROUTINE: cvmix_get_conv_real
+! !INTERFACE:
+
+  function cvmix_get_conv_real(CVmix_conv_params, varname)
+
+! !DESCRIPTION:
+!  Read the real value of a cvmix\_conv\_params\_type variable.
+!\\
+!\\
+
+! !USES:
+!  Only those used by entire module. 
+
+! !INPUT PARAMETERS:
+    type(cvmix_conv_params_type), intent(in) :: CVmix_conv_params
+    character(len=*),             intent(in) :: varname
+
+! !OUTPUT PARAMETERS:
+    real(cvmix_r8) :: cvmix_get_conv_real
+!EOP
+!BOC
+
+    select case (trim(varname))
+      case ('convect_diff')
+        cvmix_get_conv_real = CVmix_conv_params%convect_diff
+      case ('convect_visc')
+        cvmix_get_conv_real = CVmix_conv_params%convect_visc
+      case DEFAULT
+        print*, "ERROR: ", trim(varname), " not a valid choice!"
+        stop 1
+      
+    end select
+
+!EOC
+
+  end function cvmix_get_conv_real
 
 end module cvmix_convection
 

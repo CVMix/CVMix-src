@@ -37,17 +37,13 @@
    public :: cvmix_compute_vert_dep
    public :: cvmix_coeffs_tidal
    public :: cvmix_put_tidal
-   public :: cvmix_get_tidal
+   public :: cvmix_get_tidal_real
    public :: cvmix_get_tidal_str
 
    interface cvmix_put_tidal
      module procedure cvmix_put_tidal_real
      module procedure cvmix_put_tidal_str
    end interface cvmix_put_tidal
-
-   interface cvmix_get_tidal
-     module procedure cvmix_get_tidal_real
-   end interface cvmix_get_tidal
 
    ! cvmix_tidal_params_type contains the necessary parameters for tidal mixing
    ! (currently just Simmons)

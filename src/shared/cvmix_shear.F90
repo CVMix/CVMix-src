@@ -41,6 +41,8 @@
    public :: cvmix_init_shear
    public :: cvmix_coeffs_shear
    public :: cvmix_put_shear
+   public :: cvmix_get_shear_real
+   public :: cvmix_get_shear_str
 
    interface cvmix_put_shear
      module procedure cvmix_put_shear_real
@@ -304,6 +306,53 @@
 
 !BOP
 
+! !IROUTINE: cvmix_get_shear_real
+! !INTERFACE:
+
+  function cvmix_get_shear_real(CVmix_shear_params, varname)
+
+! !DESCRIPTION:
+!  Read the real value of a cvmix\_shear\_params\_type variable.
+!\\
+!\\
+
+! !USES:
+!  Only those used by entire module. 
+
+! !INPUT PARAMETERS:
+    type(cvmix_shear_params_type), intent(in) :: CVmix_shear_params
+    character(len=*),              intent(in) :: varname
+
+! !OUTPUT PARAMETERS:
+    real(cvmix_r8) :: cvmix_get_shear_real
+!EOP
+!BOC
+
+    select case (trim(varname))
+      case ('PP_nu_zero')
+        cvmix_get_shear_real =CVmix_shear_params%PP_nu_zero
+      case ('PP_alpha')
+        cvmix_get_shear_real =CVmix_shear_params%PP_alpha
+      case ('PP_exp')
+        cvmix_get_shear_real =CVmix_shear_params%PP_exp
+      case ('KPP_nu_zero')
+        cvmix_get_shear_real =CVmix_shear_params%KPP_nu_zero
+      case ('KPP_Ri_zero')
+        cvmix_get_shear_real =CVmix_shear_params%KPP_Ri_zero
+      case ('KPP_exp')
+        cvmix_get_shear_real =CVmix_shear_params%KPP_exp
+      case DEFAULT
+        print*, "ERROR: ", trim(varname), " not a valid choice!"
+        stop 1
+      
+    end select
+
+!EOC
+
+  end function cvmix_get_shear_real
+
+!BOP
+
 ! !IROUTINE: cvmix_put_shear_str
 ! !INTERFACE:
 
@@ -338,5 +387,43 @@
 !EOC
 
   end subroutine cvmix_put_shear_str
+
+!BOP
+
+! !IROUTINE: cvmix_get_shear_str
+! !INTERFACE:
+
+  function cvmix_get_shear_str(CVmix_shear_params, varname)
+
+! !DESCRIPTION:
+!  Read the string contents of a cvmix\_shear\_params\_type variable.
+!\\
+!\\
+
+! !USES:
+!  Only those used by entire module. 
+
+! !INPUT PARAMETERS:
+    type(cvmix_shear_params_type), intent(in) :: CVmix_shear_params
+    character(len=*),              intent(in) :: varname
+
+! !OUTPUT PARAMETERS:
+    character(len=cvmix_strlen) :: cvmix_get_shear_str
+!EOP
+!BOC
+
+    select case (trim(varname))
+      case ('mix_scheme')
+        cvmix_get_shear_str =CVmix_shear_params%mix_scheme
+      case DEFAULT
+        print*, "ERROR: ", trim(varname), " not a valid choice!"
+        stop 1
+      
+    end select
+
+!EOC
+
+  end function cvmix_get_shear_str
+
 
 end module cvmix_shear
