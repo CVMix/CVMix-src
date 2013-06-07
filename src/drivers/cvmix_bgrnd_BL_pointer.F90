@@ -22,14 +22,16 @@ Subroutine cvmix_BL_pointer_driver(nlev, ocn_depth)
 
   use cvmix_kinds_and_types, only : cvmix_r8,                 &
                                     cvmix_data_type,          &
-                                    cvmix_global_params_type, &
-                                    cvmix_bkgnd_params_type
+                                    cvmix_global_params_type
   use cvmix_background,      only : cvmix_init_bkgnd,         &
-                                    cvmix_coeffs_bkgnd
+                                    cvmix_coeffs_bkgnd,       &
+                                    cvmix_bkgnd_params_type
   use cvmix_put_get,         only : cvmix_put
   use cvmix_io,              only : cvmix_io_open,            &
                                     cvmix_output_write,       &
+#ifdef _NETCDF
                                     cvmix_output_write_att,   &
+#endif
                                     cvmix_io_close
 
   Implicit None

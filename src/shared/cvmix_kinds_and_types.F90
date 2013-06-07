@@ -87,67 +87,10 @@ module cvmix_kinds_and_types
       real(cvmix_r8)                 :: sw_rho    ! salt water density
   end type cvmix_global_params_type
 
-  ! cvmix_bkgnd_params_type contains the necessary parameters for background
-  ! mixing. Background mixing fields can vary from level to level as well as
-  ! over latitude and longitude.
-  type, public :: cvmix_bkgnd_params_type
-      real(cvmix_r8), allocatable :: static_visc(:,:) ! ncol, nlev+1
-      real(cvmix_r8), allocatable :: static_diff(:,:) ! ncol, nlev+1
-
-      ! Note: need to include some logic to avoid excessive memory use
-      !       when static_visc and static_diff are constant or 1-D
-      logical                     :: lvary_vertical   ! True => second dim not 1
-      logical                     :: lvary_horizontal ! True => first dim not 1
-  end type cvmix_bkgnd_params_type
-
-  ! cvmix_shear_params_type contains the necessary parameters for shear mixing
-  ! (currently Pacanowski-Philander or Large et al)
-  type, public :: cvmix_shear_params_type
-      character(len=cvmix_strlen) :: mix_scheme
-      real(cvmix_r8)              :: PP_nu_zero
-      real(cvmix_r8)              :: PP_alpha
-      real(cvmix_r8)              :: PP_exp
-      real(cvmix_r8)              :: KPP_nu_zero
-      real(cvmix_r8)              :: KPP_Ri_zero
-      real(cvmix_r8)              :: KPP_exp
-  end type cvmix_shear_params_type
-
-  ! cvmix_tidal_params_type contains the necessary parameters for shear mixing
-  ! (currently just Simmons)
-  type, public :: cvmix_tidal_params_type
-      character(len=cvmix_strlen) :: mix_scheme
-      real(cvmix_r8)              :: efficiency
-      real(cvmix_r8)              :: vertical_decay_scale
-      real(cvmix_r8)              :: max_coefficient
-      real(cvmix_r8)              :: local_mixing_frac
-      real(cvmix_r8)              :: depth_cutoff
-  end type cvmix_tidal_params_type
-
-  ! cvmix_ddiff_params_type contains the necessary parameters for double
-  ! diffusion mixing
-  type, public :: cvmix_ddiff_params_type
-      real(cvmix_r8)              :: strat_param_max
-      real(cvmix_r8)              :: kappa_ddiff_t
-      real(cvmix_r8)              :: kappa_ddiff_s
-      real(cvmix_r8)              :: ddiff_exp1
-      real(cvmix_r8)              :: ddiff_exp2
-      real(cvmix_r8)              :: kappa_ddiff_param1
-      real(cvmix_r8)              :: kappa_ddiff_param2
-      real(cvmix_r8)              :: kappa_ddiff_param3
-      real(cvmix_r8)              :: mol_diff
-  end type cvmix_ddiff_params_type
-
   ! cvmix_kpp_params_type contains the necessary parameters for KPP mixing
   type, public :: cvmix_kpp_params_type
       real(cvmix_r8) :: deleteme
   end type cvmix_kpp_params_type
-
-  ! cvmix_conv_params_type contains the necessary parameters for convective
-  ! mixing.
-  type, public :: cvmix_conv_params_type
-      real(cvmix_r8)              :: convect_diff
-      real(cvmix_r8)              :: convect_visc
-  end type cvmix_conv_params_type
 !EOP
 
 end module cvmix_kinds_and_types

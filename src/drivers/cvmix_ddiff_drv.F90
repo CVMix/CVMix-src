@@ -16,17 +16,19 @@ Subroutine cvmix_ddiff_driver(nlev)
 
 ! !USES:
 
-  use cvmix_kinds_and_types, only : one,                      &
-                                    cvmix_r8,                 &
-                                    cvmix_data_type,          &
-                                    cvmix_global_params_type, &
+  use cvmix_kinds_and_types, only : one,                     &
+                                    cvmix_r8,                &
+                                    cvmix_data_type
+  use cvmix_ddiff,           only : cvmix_init_ddiff,        &
+                                    cvmix_coeffs_ddiff,      &
+                                    cvmix_get_ddiff_real,    &
                                     cvmix_ddiff_params_type
-  use cvmix_ddiff,           only : cvmix_init_ddiff,         &
-                                    cvmix_coeffs_ddiff
   use cvmix_put_get,         only : cvmix_put
-  use cvmix_io,              only : cvmix_io_open,            &
-                                    cvmix_output_write,       &
-                                    cvmix_output_write_att,   &
+  use cvmix_io,              only : cvmix_io_open,           &
+                                    cvmix_output_write,      &
+#ifdef _NETCDF
+                                    cvmix_output_write_att,  &
+#endif
                                     cvmix_io_close
 
   Implicit None
@@ -85,10 +87,14 @@ Subroutine cvmix_ddiff_driver(nlev)
   call cvmix_coeffs_ddiff(CVmix_vars(1), CVmix_ddiff_params)
   call cvmix_coeffs_ddiff(CVmix_vars(2), CVmix_ddiff_params)
   ! For continuity of plot, set diffusivity when Rrho = 1
-  diffusivity(1,1,1) = CVmix_ddiff_params%kappa_ddiff_t
-  diffusivity(1,1,2) = CVmix_ddiff_params%mol_diff*&
-                       CVmix_ddiff_params%kappa_ddiff_param1*&
-                       exp(CVmix_ddiff_params%kappa_ddiff_param2)
+ !diffusivity(1,1,1) = CVmix_ddiff_params%kappa_ddiff_t
+ !diffusivity(1,1,2) = CVmix_ddiff_params%mol_diff*&
+ !                     CVmix_ddiff_params%kappa_ddiff_param1*&
+ !                     exp(CVmix_ddiff_params%kappa_ddiff_param2)
+  diffusivity(1,1,1) = kappa_ddiff_t
+  diffusivity(1,1,2) = cvmix_get_ddiff_real(CVmix_ddiff_params,'mol_diff')*&
+                       cvmix_get_ddiff_real(CVmix_ddiff_params,'kappa_ddiff_param1')*&
+                       exp(cvmix_get_ddiff_real(CVmix_ddiff_params,'kappa_ddiff_param2'))
 
   ! Output
   ! data will have diffusivity from both columns (needed for NCL script)

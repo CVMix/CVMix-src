@@ -1,5 +1,3 @@
-!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-
  module cvmix_tidal
 
 !BOP
@@ -21,7 +19,7 @@
 
    use cvmix_kinds_and_types, only : cvmix_r8,                 &
                                      cvmix_data_type,          &
-                                     cvmix_tidal_params_type,  &
+                                     cvmix_strlen,             &
                                      cvmix_global_params_type
 !EOP
 
@@ -36,6 +34,28 @@
    public :: cvmix_init_tidal
    public :: cvmix_compute_vert_dep
    public :: cvmix_coeffs_tidal
+   public :: cvmix_put_tidal
+   public :: cvmix_get_tidal_real
+   public :: cvmix_get_tidal_str
+
+   interface cvmix_put_tidal
+     module procedure cvmix_put_tidal_real
+     module procedure cvmix_put_tidal_str
+   end interface cvmix_put_tidal
+
+! !PUBLIC TYPES:
+
+   ! cvmix_tidal_params_type contains the necessary parameters for tidal mixing
+   ! (currently just Simmons)
+   type, public :: cvmix_tidal_params_type
+      private
+      character(len=cvmix_strlen) :: mix_scheme
+      real(cvmix_r8)              :: efficiency
+      real(cvmix_r8)              :: vertical_decay_scale
+      real(cvmix_r8)              :: max_coefficient
+      real(cvmix_r8)              :: local_mixing_frac
+      real(cvmix_r8)              :: depth_cutoff
+   end type cvmix_tidal_params_type
 !EOP
 
  contains
@@ -135,8 +155,73 @@
 
   end subroutine cvmix_init_tidal
 
-!***********************************************************************
 !BOP
+
+! !IROUTINE: cvmix_coeffs_tidal
+! !INTERFACE:
+
+  subroutine cvmix_coeffs_tidal(CVmix_vars, CVmix_tidal_params, CVmix_params, &
+                                energy_flux)
+
+! !DESCRIPTION:
+!  Computes vertical diffusion coefficients for tidal mixing
+!  parameterizatiions.
+!\\
+!\\
+!
+! !USES:
+!  only those used by entire module.
+
+! !INPUT PARAMETERS:
+    type(cvmix_tidal_params_type),  intent(in) :: CVmix_tidal_params
+    type(cvmix_global_params_type), intent(in) :: CVmix_params
+    real(cvmix_r8),                 intent(in) :: energy_flux
+
+! !INPUT/OUTPUT PARAMETERS:
+    type(cvmix_data_type), intent(inout) :: CVmix_vars
+
+!EOP
+!BOC
+
+    ! Local variables
+    integer        :: nlev, k
+    real(cvmix_r8) :: coef, rho, buoy, z_cut
+
+    nlev = CVmix_vars%nlev
+    rho  = CVmix_params%fw_rho
+
+    select case (trim(CVmix_tidal_params%mix_scheme))
+      case ('simmons','Simmons')
+        if(.not.associated(CVmix_vars%vert_dep)) &
+          call cvmix_compute_vert_dep(CVmix_vars, CVmix_tidal_params)
+        coef = CVmix_tidal_params%local_mixing_frac * &
+               CVmix_tidal_params%efficiency *        &
+               energy_flux
+        CVmix_vars%diff_iface = 0.0_cvmix_r8
+        if (CVmix_vars%ocn_depth.ge.CVmix_tidal_params%depth_cutoff) then
+          do k=1, nlev+1
+            buoy = CVmix_vars%buoy(k)
+            z_cut = CVmix_tidal_params%depth_cutoff
+            if (buoy.gt.0.0_cvmix_r8) &
+              CVmix_vars%diff_iface(k,1) = coef*CVmix_vars%vert_dep(k)/(rho*buoy)
+            if (CVmix_vars%diff_iface(k,1).gt.CVmix_tidal_params%max_coefficient) &
+              CVmix_vars%diff_iface(k,1) = CVmix_tidal_params%max_coefficient
+          end do
+        end if
+
+      case DEFAULT
+        ! Note: this error should be caught in cvmix_init_tidal
+        print*, "ERROR: invalid choice for type of tidal mixing."
+        stop 1
+
+    end select
+
+!EOC
+
+  end subroutine cvmix_coeffs_tidal
+
+!BOP
+
 ! !IROUTINE: cvmix_compute_vert_dep
 ! !INTERFACE:
 
@@ -200,68 +285,169 @@
 
   end subroutine cvmix_compute_vert_dep
 
-!***********************************************************************
 !BOP
-! !IROUTINE: cvmix_coeffs_tidal
+
+! !IROUTINE: cvmix_put_tidal_real
 ! !INTERFACE:
 
-  subroutine cvmix_coeffs_tidal(CVmix_vars, CVmix_tidal_params, CVmix_params, &
-                                energy_flux)
+  subroutine cvmix_put_tidal_real(CVmix_tidal_params, varname, val)
 
 ! !DESCRIPTION:
-!  Computes vertical diffusion coefficients for tidal mixing
-!  parameterizatiions.
+!  Write a real value into a cvmix\_tidal\_params\_type variable.
 !\\
 !\\
-!
+
 ! !USES:
-!  only those used by entire module.
+!  Only those used by entire module. 
 
 ! !INPUT PARAMETERS:
-    type(cvmix_tidal_params_type),  intent(in) :: CVmix_tidal_params
-    type(cvmix_global_params_type), intent(in) :: CVmix_params
-    real(cvmix_r8),                 intent(in) :: energy_flux
+    character(len=*), intent(in) :: varname
+    real(cvmix_r8),   intent(in) :: val
 
-! !INPUT/OUTPUT PARAMETERS:
-    type(cvmix_data_type), intent(inout) :: CVmix_vars
-
+! !OUTPUT PARAMETERS:
+    type(cvmix_tidal_params_type), intent(inout) :: CVmix_tidal_params
 !EOP
 !BOC
 
-    ! Local variables
-    integer        :: nlev, k
-    real(cvmix_r8) :: coef, rho, buoy, z_cut
-
-    nlev = CVmix_vars%nlev
-    rho  = CVmix_params%fw_rho
-
-    select case (trim(CVmix_tidal_params%mix_scheme))
-      case ('simmons','Simmons')
-        if(.not.associated(CVmix_vars%vert_dep)) &
-          call cvmix_compute_vert_dep(CVmix_vars, CVmix_tidal_params)
-        coef = CVmix_tidal_params%local_mixing_frac * &
-               CVmix_tidal_params%efficiency *        &
-               energy_flux
-        CVmix_vars%diff_iface = 0.0_cvmix_r8
-        if (CVmix_vars%ocn_depth.ge.CVmix_tidal_params%depth_cutoff) then
-          do k=1, nlev+1
-            buoy = CVmix_vars%buoy(k)
-            z_cut = CVmix_tidal_params%depth_cutoff
-            if (buoy.gt.0.0_cvmix_r8) &
-              CVmix_vars%diff_iface(k,1) = coef*CVmix_vars%vert_dep(k)/(rho*buoy)
-            if (CVmix_vars%diff_iface(k,1).gt.CVmix_tidal_params%max_coefficient) &
-              CVmix_vars%diff_iface(k,1) = CVmix_tidal_params%max_coefficient
-          end do
-        end if
-
+    select case (trim(varname))
+      case ('efficiency')
+        CVmix_tidal_params%efficiency = val
+      case ('vertical_decay_scale')
+        CVmix_tidal_params%vertical_decay_scale = val
+      case ('max_coefficient')
+        CVmix_tidal_params%max_coefficient = val
+      case ('local_mixing_frac')
+        CVmix_tidal_params%local_mixing_frac = val
+      case ('depth_cutoff')
+        CVmix_tidal_params%depth_cutoff = val
       case DEFAULT
-        ! Note: this error should be caught in cvmix_init_tidal
-        print*, "ERROR: invalid choice for type of tidal mixing."
+        print*, "ERROR: ", trim(varname), " not a valid choice!"
         stop 1
-
+      
     end select
 
 !EOC
-  end subroutine cvmix_coeffs_tidal
+
+  end subroutine cvmix_put_tidal_real
+
+!BOP
+
+! !IROUTINE: cvmix_put_tidal_str
+! !INTERFACE:
+
+  subroutine cvmix_put_tidal_str(CVmix_tidal_params, varname, val)
+
+! !DESCRIPTION:
+!  Write a string into a cvmix\_tidal\_params\_type variable.
+!\\
+!\\
+
+! !USES:
+!  Only those used by entire module. 
+
+! !INPUT PARAMETERS:
+    character(len=*), intent(in) :: varname
+    character(len=*), intent(in) :: val
+
+! !OUTPUT PARAMETERS:
+    type(cvmix_tidal_params_type), intent(inout) :: CVmix_tidal_params
+!EOP
+!BOC
+
+    select case (trim(varname))
+      case ('mix_scheme')
+        CVmix_tidal_params%mix_scheme = val
+      case DEFAULT
+        print*, "ERROR: ", trim(varname), " not a valid choice!"
+        stop 1
+      
+    end select
+
+!EOC
+
+  end subroutine cvmix_put_tidal_str
+
+!BOP
+
+! !IROUTINE: cvmix_get_tidal_real
+! !INTERFACE:
+
+  function cvmix_get_tidal_real(CVmix_tidal_params, varname)
+
+! !DESCRIPTION:
+!  Returns the real value of a cvmix\_tidal\_params\_type variable.
+!\\
+!\\
+
+! !USES:
+!  Only those used by entire module. 
+
+! !INPUT PARAMETERS:
+    character(len=*), intent(in) :: varname
+    type(cvmix_tidal_params_type), intent(in) :: CVmix_tidal_params
+
+! !OUTPUT PARAMETERS:
+    real(cvmix_r8) :: cvmix_get_tidal_real
+!EOP
+!BOC
+
+    cvmix_get_tidal_real = 0.0_cvmix_r8
+    select case (trim(varname))
+      case ('efficiency')
+        cvmix_get_tidal_real = CVmix_tidal_params%efficiency
+      case ('vertical_decay_scale')
+        cvmix_get_tidal_real = CVmix_tidal_params%vertical_decay_scale
+      case ('max_coefficient')
+        cvmix_get_tidal_real = CVmix_tidal_params%max_coefficient
+      case ('local_mixing_frac')
+        cvmix_get_tidal_real = CVmix_tidal_params%local_mixing_frac
+      case ('depth_cutoff')
+        cvmix_get_tidal_real = CVmix_tidal_params%depth_cutoff
+      case DEFAULT
+        print*, "ERROR: ", trim(varname), " not a valid choice!"
+        stop 1
+      
+    end select
+
+!EOC
+
+  end function cvmix_get_tidal_real
+
+!BOP
+
+! !IROUTINE: cvmix_get_tidal_str
+! !INTERFACE:
+
+  function cvmix_get_tidal_str(CVmix_tidal_params, varname)
+
+! !DESCRIPTION:
+!  Returns the string value of a cvmix\_tidal\_params\_type variable.
+!\\
+!\\
+
+! !USES:
+!  Only those used by entire module. 
+
+! !INPUT PARAMETERS:
+    character(len=*), intent(in) :: varname
+    type(cvmix_tidal_params_type), intent(inout) :: CVmix_tidal_params
+
+! !OUTPUT PARAMETERS:
+    character(len=cvmix_strlen) :: cvmix_get_tidal_str
+!EOP
+!BOC
+
+    select case (trim(varname))
+      case ('mix_scheme')
+        cvmix_get_tidal_str = CVmix_tidal_params%mix_scheme
+      case DEFAULT
+        print*, "ERROR: ", trim(varname), " not a valid choice!"
+        stop 1
+      
+    end select
+
+!EOC
+
+  end function cvmix_get_tidal_str
 
 end module cvmix_tidal

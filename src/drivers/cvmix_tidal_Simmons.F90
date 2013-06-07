@@ -19,10 +19,12 @@ Subroutine cvmix_tidal_driver()
   use cvmix_kinds_and_types, only : cvmix_r8,                   &
                                     cvmix_strlen,               &
                                     cvmix_data_type,            &
-                                    cvmix_global_params_type,   &
-                                    cvmix_tidal_params_type
+                                    cvmix_global_params_type
   use cvmix_tidal,           only : cvmix_init_tidal,           &
-                                    cvmix_coeffs_tidal
+                                    cvmix_coeffs_tidal,         &
+                                    cvmix_tidal_params_type,    &
+                                    cvmix_get_tidal_str,        &
+                                    cvmix_get_tidal_real
   use cvmix_put_get,         only : cvmix_put
   use cvmix_io,              only : cvmix_io_open,              &
                                     cvmix_input_read,           &
@@ -77,6 +79,11 @@ Subroutine cvmix_tidal_driver()
   read(*, nml=Simmons_nml)
 
   ! Get dimensions from grid file
+  ! Initialize all values to -1 before reading (avoid a warning when
+  ! compiling without netCDF)
+  nlon = -1
+  nlat = -1
+  max_nlev = -1
   call cvmix_io_open(fid, trim(grid_file), 'nc', read_only=.true.)
 #ifdef _NETCDF  
   nlon = cvmix_input_get_netcdf_dim(fid, 'lon')
@@ -147,12 +154,12 @@ Subroutine cvmix_tidal_driver()
   ! Print parameter values to screen
   print*, "Namelist variables"
   print*, "------------------"
-  print*, "mix_scheme = ", trim(CVmix_Simmons_params%mix_scheme)
-  print*, "efficiency = ", CVmix_Simmons_params%efficiency
-  print*, "vertical_decay_scale = ", CVmix_Simmons_params%vertical_decay_scale
-  print*, "max_coefficient = ", CVmix_Simmons_params%max_coefficient
-  print*, "local_mixing_frac = ", CVmix_Simmons_params%local_mixing_frac
-  print*, "depth_cutoff = ", CVmix_Simmons_params%depth_cutoff
+  print*, "mix_scheme = ", trim(cvmix_get_tidal_str(CVmix_Simmons_params,'mix_scheme'))
+  print*, "efficiency = ", cvmix_get_tidal_real(CVmix_Simmons_params,'efficiency')
+  print*, "vertical_decay_scale = ", cvmix_get_tidal_real(CVmix_Simmons_params,'vertical_decay_scale')
+  print*, "max_coefficient = ", cvmix_get_tidal_real(CVmix_Simmons_params,'max_coefficient')
+  print*, "local_mixing_frac = ", cvmix_get_tidal_real(CVmix_Simmons_params,'local_mixing_frac')
+  print*, "depth_cutoff = ", cvmix_get_tidal_real(CVmix_Simmons_params,'depth_cutoff')
 
   ! For starters, using column from 353.9634 E, 58.84838 N)
   ! That's i=35, j=345 (compare result to KVMIX(0, :, 344, 34) in NCL)

@@ -25,14 +25,16 @@ Subroutine cvmix_shear_driver(nlev)
   use cvmix_kinds_and_types, only : one,                      &
                                     cvmix_r8,                 &
                                     cvmix_data_type,          &
-                                    cvmix_global_params_type, &
-                                    cvmix_shear_params_type
+                                    cvmix_global_params_type
   use cvmix_shear,           only : cvmix_init_shear,         &
-                                    cvmix_coeffs_shear
+                                    cvmix_coeffs_shear,       &
+                                    cvmix_shear_params_type
   use cvmix_put_get,         only : cvmix_put
   use cvmix_io,              only : cvmix_io_open,            &
                                     cvmix_output_write,       &
+#ifdef _NETCDF
                                     cvmix_output_write_att,   &
+#endif
                                     cvmix_io_close
 
   Implicit None
