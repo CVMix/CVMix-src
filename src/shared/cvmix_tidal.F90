@@ -353,6 +353,7 @@
 !EOP
 !BOC
 
+    cvmix_get_tidal_real = 0.0_cvmix_r8
     select case (trim(varname))
       case ('efficiency')
         cvmix_get_tidal_real = CVmix_tidal_params%efficiency

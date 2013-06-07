@@ -328,6 +328,7 @@
 !EOP
 !BOC
 
+    cvmix_get_shear_real = 0.0_cvmix_r8
     select case (trim(varname))
       case ('PP_nu_zero')
         cvmix_get_shear_real =CVmix_shear_params%PP_nu_zero

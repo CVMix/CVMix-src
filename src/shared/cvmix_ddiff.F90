@@ -362,6 +362,7 @@
 !EOP
 !BOC
 
+    cvmix_get_ddiff_real = 0.0_cvmix_r8
     select case (trim(varname))
       case ('strat_param_max')
         cvmix_get_ddiff_real = CVmix_ddiff_params%strat_param_max

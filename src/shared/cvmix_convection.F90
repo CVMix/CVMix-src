@@ -202,6 +202,7 @@ contains
 !EOP
 !BOC
 
+    cvmix_get_conv_real = 0.0_cvmix_r8
     select case (trim(varname))
       case ('convect_diff')
         cvmix_get_conv_real = CVmix_conv_params%convect_diff
