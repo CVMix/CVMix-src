@@ -171,7 +171,7 @@ contains
       end if
       CVmix_vars%dens_lwr(:) = val
 
-      case ('Ri')
+      case ('Ri', 'Ri_iface')
       print*, "WARNING: you are setting the Richardson number in all", &
               "levels to a constant value"
       if (.not.associated(CVmix_vars%Ri_iface)) then
@@ -179,7 +179,7 @@ contains
       end if
       CVmix_vars%Ri_iface(:) = val
 
-      case ('dzt')
+      case ('dz', 'dzt')
       print*, "WARNING: you are setting the cell thickness in all levels to", &
               "a constant value"
       if (.not.associated(CVmix_vars%dz)) then
@@ -187,7 +187,7 @@ contains
       end if
       CVmix_vars%dz(:) = val
 
-      case ('dzw_iface')
+      case ('dzw', 'dzw_iface')
       print*, "WARNING: you are setting the cell midpoint to midpoint", &
               "distance in all levels to a constant value"
       if (.not.associated(CVmix_vars%dw_iface)) then
@@ -195,7 +195,7 @@ contains
       end if
       CVmix_vars%dw_iface(:) = val
 
-      case ('buoy_iface')
+      case ('buoy', 'buoy_iface')
       print*, "WARNING: you are setting the buoyancy in all levels to a", &
               "constant value"
       if (.not.associated(CVmix_vars%buoy_iface)) then
@@ -203,7 +203,7 @@ contains
       end if
       CVmix_vars%buoy_iface(:) = val
 
-      case ('vert_dep')
+      case ('vert_dep', 'vert_dep_iface')
       print*, "WARNING: you are setting the vertical deposition function", & 
               "to a constant value in all levels"
       if (.not.associated(CVmix_vars%vert_dep)) then
