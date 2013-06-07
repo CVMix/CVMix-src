@@ -26,7 +26,9 @@ Subroutine cvmix_tidal_driver()
   use cvmix_put_get,         only : cvmix_put
   use cvmix_io,              only : cvmix_io_open,              &
                                     cvmix_input_read,           &
+#ifdef _NETCDF
                                     cvmix_input_get_netcdf_dim, &
+#endif
                                     cvmix_output_write,         &
                                     cvmix_output_write_att,     &
                                     cvmix_io_close
@@ -76,9 +78,11 @@ Subroutine cvmix_tidal_driver()
 
   ! Get dimensions from grid file
   call cvmix_io_open(fid, trim(grid_file), 'nc', read_only=.true.)
+#ifdef _NETCDF  
   nlon = cvmix_input_get_netcdf_dim(fid, 'lon')
   nlat = cvmix_input_get_netcdf_dim(fid, 'lat')
   max_nlev = cvmix_input_get_netcdf_dim(fid, 'nlev')
+#endif
   call cvmix_io_close(fid)
 
   ! Print dimensions to screen
