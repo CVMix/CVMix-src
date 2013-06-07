@@ -79,6 +79,11 @@ Subroutine cvmix_tidal_driver()
   read(*, nml=Simmons_nml)
 
   ! Get dimensions from grid file
+  ! Initialize all values to -1 before reading (avoid a warning when
+  ! compiling without netCDF)
+  nlon = -1
+  nlat = -1
+  max_nlev = -1
   call cvmix_io_open(fid, trim(grid_file), 'nc', read_only=.true.)
 #ifdef _NETCDF  
   nlon = cvmix_input_get_netcdf_dim(fid, 'lon')

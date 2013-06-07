@@ -18,14 +18,14 @@
 
 ! !USES:
 
-   use cvmix_kinds_and_types, only : one,                     &
-                                     cvmix_r8,                &
-                                     cvmix_strlen,            &
+   use cvmix_kinds_and_types, only : one,                          &
+                                     cvmix_r8,                     &
+                                     cvmix_strlen,                 &
                                      cvmix_data_type
-   use cvmix_background, only : cvmix_bkgnd_params_type, &
-                                cvmix_bkgnd_lvary_horizontal, &
-                                cvmix_bkgnd_static_diff, &
-                                cvmix_bkgnd_static_visc
+   use cvmix_background, only :      cvmix_bkgnd_params_type,      &
+                                     cvmix_bkgnd_lvary_horizontal, &
+                                     cvmix_bkgnd_static_diff,      &
+                                     cvmix_bkgnd_static_visc
 !EOP
 
    implicit none

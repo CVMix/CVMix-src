@@ -29,7 +29,9 @@ Subroutine cvmix_BL_pointer_driver(nlev, ocn_depth)
   use cvmix_put_get,         only : cvmix_put
   use cvmix_io,              only : cvmix_io_open,            &
                                     cvmix_output_write,       &
+#ifdef _NETCDF
                                     cvmix_output_write_att,   &
+#endif
                                     cvmix_io_close
 
   Implicit None
