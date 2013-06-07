@@ -83,29 +83,9 @@ contains
     select case (trim(varname))
       case ('nlev')
         CVmix_vars%nlev = val
-        
-      case ('diff')
-      if (.not.associated(CVmix_vars%diff_iface)) then
-        allocate(CVmix_vars%diff_iface(nlev+1,2))
-      end if
-      if (present(opts)) then
-        if (trim(opts).eq.'col2') then
-          CVmix_vars%diff_iface(:,2) = val
-        else
-          CVmix_vars%diff_iface(:,1) = val
-        end if
-      end if
-      
-      case ('visc')
-      if (.not.associated(CVmix_vars%visc_iface)) then
-        allocate(CVmix_vars%visc_iface(nlev+1))
-      end if
-      CVmix_vars%visc_iface(:) = val
-
       case default
-        print*, "ERROR: ", trim(varname), " not a valid choice!"
-        stop 1
-      
+        ! All other scalars are real(cvmix_r8)
+        call cvmix_put_real(CVmix_vars, varname, real(val,cvmix_r8), opts)
     end select
 !EOC
 
@@ -158,11 +138,15 @@ contains
         allocate(CVmix_vars%diff_iface(nlev+1,2))
       end if
       if (present(opts)) then
-        if (trim(opts).eq.'col2') then
-          CVmix_vars%diff_iface(:,2) = val
-        else
-          CVmix_vars%diff_iface(:,1) = val
-        end if
+        select case (trim(opts))
+          case ('col1')
+            CVmix_vars%diff_iface(:,1) = val
+          case ('col2')
+            CVmix_vars%diff_iface(:,2) = val
+          case DEFAULT
+            print*, "WARNING: ignoring opts = ", trim(opts)
+            CVmix_vars%diff_iface      = val
+        end select
       end if
       
       case ('visc')
@@ -223,11 +207,16 @@ contains
         allocate(CVmix_vars%diff_iface(nlev+1,2))
       end if
       if (present(opts)) then
-        if (trim(opts).eq.'col2') then
-          CVmix_vars%diff_iface(:,2) = val
-        else
-          CVmix_vars%diff_iface(:,1) = val
-        end if
+        select case (trim(opts))
+          case ('col1')
+            CVmix_vars%diff_iface(:,1) = val
+          case ('col2')
+            CVmix_vars%diff_iface(:,2) = val
+          case DEFAULT
+            print*, "WARNING: ignoring opts = ", trim(opts)
+            CVmix_vars%diff_iface(:,1) = val
+            CVmix_vars%diff_iface(:,2) = val
+        end select
       end if
 
       case ('visc')
