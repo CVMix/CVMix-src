@@ -16,20 +16,23 @@ Subroutine cvmix_tidal_driver()
 
 ! !USES:
 
-  use cvmix_kinds_and_types, only : cvmix_r8,                 &
-                                    cvmix_strlen,             &
-                                    cvmix_data_type,          &
+  use cvmix_kinds_and_types, only : cvmix_r8,                   &
+                                    cvmix_strlen,               &
+                                    cvmix_data_type,            &
                                     cvmix_global_params_type
-  use cvmix_tidal,           only : cvmix_tidal_params_type,  &
-                                    cvmix_put_tidal,          &
-                                    cvmix_get_tidal_str,      &
+  use cvmix_tidal,           only : cvmix_init_tidal,           &
+                                    cvmix_coeffs_tidal,         &
+                                    cvmix_tidal_params_type,    &
+                                    cvmix_get_tidal_str,        &
                                     cvmix_get_tidal_real
-  use cvmix_tidal,           only : cvmix_init_tidal,         &
-                                    cvmix_coeffs_tidal
   use cvmix_put_get,         only : cvmix_put
-  use cvmix_io,              only : cvmix_io_open,            &
-                                    cvmix_input_read,         &
-                                    cvmix_output_write,       &
+  use cvmix_io,              only : cvmix_io_open,              &
+                                    cvmix_input_read,           &
+#ifdef _NETCDF
+                                    cvmix_input_get_netcdf_dim, &
+#endif
+                                    cvmix_output_write,         &
+                                    cvmix_output_write_att,     &
                                     cvmix_io_close
 
   Implicit None
@@ -54,22 +57,17 @@ Subroutine cvmix_tidal_driver()
 
   ! Local variables
   real(cvmix_r8), dimension(:,:,:), allocatable :: buoy
-  real(cvmix_r8), dimension(:,:),   allocatable :: ocn_depth, energy_flux
+  real(cvmix_r8), dimension(:,:),   allocatable :: ocn_depth, energy_flux, &
+                                                   lat, lon
   integer,        dimension(:,:),   allocatable :: ocn_levels
   real(cvmix_r8), dimension(:),     allocatable :: depth_iface, depth
-  real(cvmix_r8)                                :: FillVal
+  real(cvmix_r8)                                :: FillVal, this_lon, this_lat
+  character(len=cvmix_strlen) :: lonstr, latstr
   integer :: i, j, k, nlon, nlat, nlev, max_nlev
 
   ! Namelists that may be read in, depending on desired mixing scheme
   namelist/Simmons_nml/grid_file, physics_file, energy_flux_file,             &
                        energy_flux_var, lon_out, lat_out
-
-  ! Hardcode in file dimensions (to do: read in from netCDF)
-  nlon = 320
-  nlat = 384
-  max_nlev = 60
-  ! Allocate memory for CVmix columns
-  allocate(CVmix_vars(nlon, nlat))
 
   ! Read namelist variables 
   grid_file = "none"
@@ -79,6 +77,33 @@ Subroutine cvmix_tidal_driver()
   lon_out = 35
   lat_out = 345
   read(*, nml=Simmons_nml)
+
+  ! Get dimensions from grid file
+  call cvmix_io_open(fid, trim(grid_file), 'nc', read_only=.true.)
+#ifdef _NETCDF  
+  nlon = cvmix_input_get_netcdf_dim(fid, 'lon')
+  nlat = cvmix_input_get_netcdf_dim(fid, 'lat')
+  max_nlev = cvmix_input_get_netcdf_dim(fid, 'nlev')
+#endif
+  call cvmix_io_close(fid)
+
+  ! Print dimensions to screen
+  write(*,*) "Grid dimensions"
+  write(*,*) "---------------"
+  write(*,"(1X,A,I0)") "nlon = ", nlon
+  write(*,"(1X,A,I0)") "nlat = ", nlat
+  write(*,"(1X,A,I0)") "max_nlev = ", max_nlev
+  write(*,*) ""
+
+  ! Make sure all dimensions are valid
+  if (any((/nlon, nlat, max_nlev/).eq.-1)) then
+    print*, "Error reading dimensions!"
+    stop 1
+  end if
+
+  ! Allocate memory for CVmix columns
+  allocate(CVmix_vars(nlon, nlat))
+  allocate(lat(nlon, nlat),lon(nlon, nlat))
 
   ! Allocate memory for energy flux, ocean depth, number of ocean levels,
   ! depth of each level / interface, and buoyancy frequency
@@ -98,6 +123,8 @@ Subroutine cvmix_tidal_driver()
 
   ! Read in global data from grid file, physics file, and energy flux file
   call cvmix_io_open(fid, trim(grid_file), 'nc', read_only=.true.)
+  call cvmix_input_read(fid, 'lon', lon)
+  call cvmix_input_read(fid, 'lat', lat)
   call cvmix_input_read(fid, 'zw', depth_iface)
   call cvmix_input_read(fid, 'H', ocn_depth)
   call cvmix_input_read(fid, 'H_index', ocn_levels)
@@ -118,6 +145,8 @@ Subroutine cvmix_tidal_driver()
   call cvmix_init_tidal(CVmix_Simmons_params, 'Simmons', 'mks', &
                         local_mixing_frac=0.33_cvmix_r8,        &
                         max_coefficient=0.01_cvmix_r8)
+
+  ! Print parameter values to screen
   print*, "Namelist variables"
   print*, "------------------"
   print*, "mix_scheme = ", trim(cvmix_get_tidal_str(CVmix_Simmons_params,'mix_scheme'))
@@ -155,8 +184,39 @@ Subroutine cvmix_tidal_driver()
       ! Output
       if ((i.eq.lon_out).and.(j.eq.lat_out)) then
         if (nlev.gt.0) then
+          this_lon = lon(lon_out, lat_out)
+          ! Need this_lon between -180 and 180
+          do while(this_lon.lt.-180.0_cvmix_r8)
+            this_lon = this_lon + 360.0_cvmix_r8
+          end do
+          do while(this_lon.gt.180.0_cvmix_r8)
+            this_lon = this_lon - 360.0_cvmix_r8
+          end do
+          this_lat = lat(lon_out, lat_out)
           call cvmix_io_open(fid, "single_col.nc", "nc")
-          call cvmix_output_write(fid, CVmix_vars(i,j), (/"diff"/))
+          call cvmix_output_write(fid, CVmix_vars(i,j), (/"depth", "diff "/))
+          if (this_lon.ge.0) then
+            write(lonstr,"(F6.2,1X,A)") this_lon, "E"
+          else
+            write(lonstr,"(F6.2,1X,A)") abs(this_lon), "W"
+          end if
+          if (this_lat.ge.0) then
+            write(latstr,"(F6.2,1X,A)") this_lat, "N"
+          else
+            write(latstr,"(F6.2,1X,A)") abs(this_lat), "S"
+          end if
+          ! Global Attributes
+          call cvmix_output_write_att(fid, "column_lon", lonstr)
+          call cvmix_output_write_att(fid, "column_lat", latstr)
+
+          ! Variable Attributes
+          call cvmix_output_write_att(fid, "long_name", "tracer diffusivity", &
+                                      var_name="diff")
+          call cvmix_output_write_att(fid, "units", "m^2/s", var_name="diff")
+          call cvmix_output_write_att(fid, "long_name", "depth to interface", &
+                                      var_name="depth")
+          call cvmix_output_write_att(fid, "positive", "up", var_name="depth")
+          call cvmix_output_write_att(fid, "units", "m", var_name="depth")
           call cvmix_io_close(fid)
         else
           print*, "ERROR: column requested for output is a land cell."
@@ -171,6 +231,9 @@ Subroutine cvmix_tidal_driver()
   call cvmix_io_open(fid, "diff.nc", "nc")
   call cvmix_output_write(fid, "diff", (/"nlon  ", "nlat  ", "niface"/),      &
                           diffusivity(:,:,:,1), FillVal=FillVal)
+  call cvmix_output_write_att(fid, "long_name", "tracer diffusivity",         &
+                              var_name="diff")
+  call cvmix_output_write_att(fid, "units", "m^2/s", var_name="diff")
   call cvmix_io_close(fid)
 
   ! memory cleanup

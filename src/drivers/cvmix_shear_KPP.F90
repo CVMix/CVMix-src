@@ -22,7 +22,8 @@ Subroutine cvmix_shear_driver(nlev)
 
 ! !USES:
 
-  use cvmix_kinds_and_types, only : cvmix_r8,                 &
+  use cvmix_kinds_and_types, only : one,                      &
+                                    cvmix_r8,                 &
                                     cvmix_data_type,          &
                                     cvmix_global_params_type
   use cvmix_shear,           only : cvmix_init_shear,         &
@@ -32,6 +33,7 @@ Subroutine cvmix_shear_driver(nlev)
   use cvmix_put_get,         only : cvmix_put
   use cvmix_io,              only : cvmix_io_open,            &
                                     cvmix_output_write,       &
+                                    cvmix_output_write_att,   &
                                     cvmix_io_close
 
   Implicit None
@@ -67,7 +69,7 @@ Subroutine cvmix_shear_driver(nlev)
   allocate(Ri_g(nlev+1))
   Ri_g(1) = 0.0_cvmix_r8
   do kw = 2,nlev+1
-    Ri_g(kw) = Ri_g(kw-1) + 1.0_cvmix_r8/(1.0_cvmix_r8*nlev)
+    Ri_g(kw) = Ri_g(kw-1) + one/real(nlev,cvmix_r8)
   end do
 
   ! Allocate memory to store viscosity and diffusivity values
@@ -75,7 +77,7 @@ Subroutine cvmix_shear_driver(nlev)
 
   ! Initialization for CVMix data types
   call cvmix_put(CVmix_params,  'max_nlev', nlev)
-  call cvmix_put(CVmix_params,  'prandtl',  1.0_cvmix_r8)
+  call cvmix_put(CVmix_params,  'prandtl',  one)
   call cvmix_put(CVmix_vars,    'nlev',     nlev)
   ! Point CVmix_vars values to memory allocated above
   CVmix_vars%visc_iface => viscosity
@@ -98,7 +100,14 @@ Subroutine cvmix_shear_driver(nlev)
 #endif
 
   call cvmix_output_write(fid, CVmix_vars, (/"Ri  ", "diff"/))
-
+#ifdef _NETCDF
+  call cvmix_output_write_att(fid, "long_name", "Richardson number",          &
+                              var_name="Ri")
+  call cvmix_output_write_att(fid, "units", "unitless", var_name="Ri")
+  call cvmix_output_write_att(fid, "long_name", "tracer diffusivity",         &
+                              var_name="diff")
+  call cvmix_output_write_att(fid, "units", "m^2/s", var_name="diff")
+#endif
   call cvmix_io_close(fid)
 
 !EOC

@@ -27,6 +27,7 @@ Subroutine cvmix_ddiff_driver(nlev)
   use cvmix_put_get,         only : cvmix_put
   use cvmix_io,              only : cvmix_io_open,            &
                                     cvmix_output_write,       &
+                                    cvmix_output_write_att,   &
                                     cvmix_io_close
 
   Implicit None
@@ -60,11 +61,11 @@ Subroutine cvmix_ddiff_driver(nlev)
   allocate(Rrho_num(nlev,ncol), Rrho_denom(nlev,ncol))
   do k=1,nlev
     ! For first column, Rrho varies from 1 to 2
-    Rrho_num(k,1) = (1.0_cvmix_r8*(k-1))/(1.0_cvmix_r8*(nlev-1))+one
+    Rrho_num(k,1) = real(k-1,cvmix_r8)/real(nlev-1,cvmix_r8)+one
     Rrho_denom(k,1) = one
     ! For second column, 1/Rrho varies from 1 to 10
     ! (Note: last column has diff=0, hence only using nlev instead of nlev+1)
-    Rrho_num(k,2) = -one/(9.0_cvmix_r8*(k-1)/(1.0_cvmix_r8*(nlev-1))+one)
+    Rrho_num(k,2) = -one/(real(9.0*(k-1),cvmix_r8)/real(nlev-1,cvmix_r8)+one)
     Rrho_denom(k,2) = -one
   end do
 
@@ -103,7 +104,14 @@ Subroutine cvmix_ddiff_driver(nlev)
 #endif
 
   call cvmix_output_write(fid, CVmix_vars, (/"Rrho", "diff"/))
-
+#ifdef _NETCDF
+  call cvmix_output_write_att(fid, "long_name", "double diffusion " //        &
+                              "stratification parameter", var_name="Rrho")
+  call cvmix_output_write_att(fid, "units", "unitless", var_name="Rrho")
+  call cvmix_output_write_att(fid, "long_name", "tracer diffusivity",         &
+                              var_name="diff")
+  call cvmix_output_write_att(fid, "units", "m^2/s", var_name="diff")
+#endif
   call cvmix_io_close(fid)
 
 !EOC

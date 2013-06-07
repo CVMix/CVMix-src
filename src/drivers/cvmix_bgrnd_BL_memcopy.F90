@@ -29,6 +29,7 @@ Subroutine cvmix_BL_memcopy_driver(nlev, ocn_depth)
   use cvmix_put_get,         only : cvmix_put
   use cvmix_io,              only : cvmix_io_open,            &
                                     cvmix_output_write,       &
+                                    cvmix_output_write_att,   &
                                     cvmix_io_close
 
   Implicit None
@@ -79,7 +80,7 @@ Subroutine cvmix_BL_memcopy_driver(nlev, ocn_depth)
   
   ! Depth is 0 at sea level and negative at ocean bottom in CVMix
   do kw = 2,nlev+1
-    iface_depth(kw) = iface_depth(kw-1) - ocn_depth/(1.0_cvmix_r8*nlev)
+    iface_depth(kw) = iface_depth(kw-1) - ocn_depth/real(nlev,cvmix_r8)
   end do
 
   ! Initialization for CVMix data types
@@ -112,6 +113,13 @@ Subroutine cvmix_BL_memcopy_driver(nlev, ocn_depth)
   ! Note: all entries in string of variables to output must be
   !       the same length... hence the space in "diff "
   call cvmix_output_write(fid, CVmix_vars, (/"depth", "diff "/))
+  call cvmix_output_write_att(fid, "long_name", "tracer diffusivity",         &
+                              var_name="diff")
+  call cvmix_output_write_att(fid, "units", "m^2/s", var_name="diff")
+  call cvmix_output_write_att(fid, "long_name", "depth to interface",         &
+                              var_name="depth")
+  call cvmix_output_write_att(fid, "positive", "up", var_name="depth")
+  call cvmix_output_write_att(fid, "units", "m", var_name="depth")
   call cvmix_io_close(fid)
 #else
   ! data will have diffusivity from both columns (needed for NCL script)

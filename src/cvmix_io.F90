@@ -35,10 +35,14 @@ module cvmix_io
 ! !PUBLIC MEMBER FUNCTIONS:
   public :: cvmix_io_open
   public :: cvmix_input_read
+#ifdef _NETCDF
+  public :: cvmix_input_get_netcdf_dim
+#endif
   public :: cvmix_output_write
   public :: cvmix_io_close
   public :: cvmix_io_close_all
   public :: print_open_files
+  public :: cvmix_output_write_att
 
   interface cvmix_input_read
     module procedure cvmix_input_read_1d_double
@@ -51,6 +55,10 @@ module cvmix_io
     module procedure cvmix_output_write_single_col
     module procedure cvmix_output_write_multi_col
     module procedure cvmix_output_write_3d_double
+  end interface
+
+  interface cvmix_output_write_att
+    module procedure cvmix_output_write_att_string
   end interface
 
 ! !DEFINED PARAMETERS:
@@ -82,12 +90,13 @@ contains
   subroutine cvmix_io_open(file_id, file_name, file_format, read_only)
 
 ! !DESCRIPTION:
-!  Routine to open a file for writing. Goal is to support writing files
-!  in plain text (currently working), netCDF, and plain binary. Besides
-!  opening the file, this routine also adds an entry to file\_database,
-!  a linked list that keeps track of what files are open and what type
-!  of file each identifier refers to. So it will be possible to output
-!  the same data in ascii and netCDF, for example.
+!  Routine to open a file for reading and / or writing. The goal is to support
+!  plain text (currently working for writing only), netCDF (working for both
+!  reading and writing), and plain binary (not supported at this time). Besides
+!  opening the file, this routine also adds an entry to file\_database, a
+!  linked list that keeps track of what files are open and what type of file
+!  each identifier refers to. So it will be possible to output the same data in
+!  ascii and netCDF, for example.
 !\\
 !\\
 
@@ -200,12 +209,10 @@ contains
 ! !LOCAL VARIABLES:
     logical :: lerr_in_read
 #ifdef _NETCDF
-    integer :: varid, nvar, i, ndims, xtype
+    integer :: varid, ndims, xtype
     integer :: dims1, dims2
     integer, dimension(1) :: dims
-    character(len=cvmix_strlen) :: tmp_name
 #endif
-
 !EOP
 !BOC
 
@@ -214,20 +221,7 @@ contains
     select case (get_file_type(file_id))
 #ifdef _NETCDF
       case (NETCDF_FILE_TYPE)
-        varid = -1
-        ! Find number of variables in file
-        call netcdf_check(nf90_inquire(file_id, nVariables=nvar))
-        i = 1
-        do while((i.le.nvar).and.(varid.eq.-1))
-          ! Loop to figure out if var_name is a valid variable in the file
-          call netcdf_check(nf90_inquire_variable(file_id, i, name=tmp_name,&
-                                                  xtype=xtype, ndims=ndims))
-          if (trim(var_name).eq.trim(tmp_name)) then
-            varid = i
-          else
-            i = i+1
-          end if
-        end do
+        varid = get_netcdf_varid(file_id, var_name, xtype, ndims)
         lerr_in_read = (varid.eq.-1)
 
         if (lerr_in_read) then
@@ -305,11 +299,9 @@ contains
 ! !LOCAL VARIABLES:
     logical :: lerr_in_read
 #ifdef _NETCDF
-    integer :: varid, nvar, i, ndims, xtype
+    integer :: varid, ndims, xtype, i
     integer, dimension(2) :: dims1, dims2
-    character(len=cvmix_strlen) :: tmp_name
 #endif
-
 !EOP
 !BOC
 
@@ -318,20 +310,7 @@ contains
     select case (get_file_type(file_id))
 #ifdef _NETCDF
       case (NETCDF_FILE_TYPE)
-        varid = -1
-        ! Find number of variables in file
-        call netcdf_check(nf90_inquire(file_id, nVariables=nvar))
-        i = 1
-        do while((i.le.nvar).and.(varid.eq.-1))
-          ! Loop to figure out if var_name is a valid variable in the file
-          call netcdf_check(nf90_inquire_variable(file_id, i, name=tmp_name,&
-                                                  xtype=xtype, ndims=ndims))
-          if (trim(var_name).eq.trim(tmp_name)) then
-            varid = i
-          else
-            i = i+1
-          end if
-        end do
+        varid = get_netcdf_varid(file_id, var_name, xtype, ndims)
         lerr_in_read = (varid.eq.-1)
 
         if (lerr_in_read) then
@@ -411,11 +390,9 @@ contains
 ! !LOCAL VARIABLES:
     logical :: lerr_in_read
 #ifdef _NETCDF
-    integer :: varid, nvar, i, ndims, xtype
+    integer :: varid, i, ndims, xtype
     integer, dimension(2) :: dims1, dims2
-    character(len=cvmix_strlen) :: tmp_name
 #endif
-
 !EOP
 !BOC
 
@@ -424,20 +401,7 @@ contains
     select case (get_file_type(file_id))
 #ifdef _NETCDF
       case (NETCDF_FILE_TYPE)
-        varid = -1
-        ! Find number of variables in file
-        call netcdf_check(nf90_inquire(file_id, nVariables=nvar))
-        i = 1
-        do while((i.le.nvar).and.(varid.eq.-1))
-          ! Loop to figure out if var_name is a valid variable in the file
-          call netcdf_check(nf90_inquire_variable(file_id, i, name=tmp_name,&
-                                                  xtype=xtype, ndims=ndims))
-          if (trim(var_name).eq.trim(tmp_name)) then
-            varid = i
-          else
-            i = i+1
-          end if
-        end do
+        varid = get_netcdf_varid(file_id, var_name, xtype, ndims)
         lerr_in_read = (varid.eq.-1)
 
         if (lerr_in_read) then
@@ -517,11 +481,9 @@ contains
 ! !LOCAL VARIABLES:
     logical :: lerr_in_read
 #ifdef _NETCDF
-    integer :: varid, nvar, i, ndims, xtype
+    integer :: varid, i, ndims, xtype
     integer, dimension(3) :: dims1, dims2
-    character(len=cvmix_strlen) :: tmp_name
 #endif
-
 !EOP
 !BOC
 
@@ -530,20 +492,7 @@ contains
     select case (get_file_type(file_id))
 #ifdef _NETCDF
       case (NETCDF_FILE_TYPE)
-        varid = -1
-        ! Find number of variables in file
-        call netcdf_check(nf90_inquire(file_id, nVariables=nvar))
-        i = 1
-        do while((i.le.nvar).and.(varid.eq.-1))
-          ! Loop to figure out if var_name is a valid variable in the file
-          call netcdf_check(nf90_inquire_variable(file_id, i, name=tmp_name,&
-                                                  xtype=xtype, ndims=ndims))
-          if (trim(var_name).eq.trim(tmp_name)) then
-            varid = i
-          else
-            i = i+1
-          end if
-        end do
+        varid = get_netcdf_varid(file_id, var_name, xtype, ndims)
         lerr_in_read = (varid.eq.-1)
 
         if (lerr_in_read) then
@@ -901,22 +850,22 @@ contains
 ! !USES:
 !  Only those used by entire module. 
 
-! !INPUT PARAMETERS
+! !INPUT PARAMETERS:
     integer,                             intent(in) :: file_id
     character(len=*),                    intent(in) :: var_name
     character(len=*), dimension(3),      intent(in) :: dim_names
     real(cvmix_r8),   dimension(:,:,:),  intent(in) :: field
     real(cvmix_r8), optional,            intent(in) :: FillVal
 
-!BOC
-
-    ! Local variables
+! !LOCAL VARIABLES:
     integer, dimension(3) :: dims
     logical               :: add_fill
 #ifdef _NETCDF
     integer, dimension(3) :: dimids
     integer               :: varid, i
 #endif
+!EOP
+!BOC
 
     dims = shape(field)
     add_fill = present(FillVal)
@@ -953,34 +902,67 @@ contains
 
 !BOP
 
-! !IROUTINE: cvmix_io_close
+! !IROUTINE: cvmix_write_att_string
 ! !INTERFACE:
 
-  subroutine cvmix_io_close_all
+  subroutine cvmix_output_write_att_string(file_id, att_name, att_val, var_name)
 
 ! !DESCRIPTION:
-!  Routine to close all files open (meant to be called prior to an abort)
+!  Routine to write an attribute with a string value to a netcdf file. If
+!  var\_name is omitted, routine writes a global attribute. Called with
+!  cvmix\_output\_write\_att (see interface in PUBLIC MEMBER FUNCTIONS above).
 !\\
 !\\
 
 ! !USES:
 !  Only those used by entire module. 
 
-! !LOCAL VARIABLES:
-    integer :: fid
+! !INPUT PARAMETERS:
+    integer,          intent(in)           :: file_id
+    character(len=*), intent(in)           :: att_name, att_val
+    character(len=*), intent(in), optional :: var_name
 
+! !LOCAL VARIABLES:
+#ifdef _NETCDF
+    integer :: varid
+    logical :: var_found
+#endif
 !EOP
 !BOC
 
-    write(*,"(A)") "Closing all open files..."
-    do while (allocated(file_database))
-      fid = file_database(1)%file_id
-      write(*, "(A,1X,A)") "...", trim(get_file_name(fid))
-      call cvmix_io_close(fid)
-    end do
-    write(*,"(A)") "All files closed."
+    select case(get_file_type(file_id))
+#ifdef _NETCDF
+      case (NETCDF_FILE_TYPE)
+        var_found = .true.
+        if (present(var_name)) then
+          varid = get_netcdf_varid(file_id, var_name)
+          if (varid.eq.-1) then
+            print*, "WARNING: can not find variable ", trim(var_name), " in ", &
+                    trim(get_file_name(file_id)), "... can not add attribute."
+            var_found = .false.
+          end if
+        else
+          varid=NF90_GLOBAL
+        end if
+        if (var_found) then
+          call netcdf_check(nf90_redef(file_id))
+          call netcdf_check(nf90_put_att(file_id, varid, trim(att_name), &
+                            trim(att_val)))
+          call netcdf_check(nf90_enddef(file_id))
+        end if
+#endif
+      case DEFAULT
+        print*, "ERROR: cvmix_output_write_att_string only writes to netcdf"
+        print*, "(attempted to set attribute ", trim(att_name), " to ", &
+                trim(att_val)
+        if (present(var_name)) &
+          print*, "(for variable ", trim(var_name), ")"
+        call cvmix_io_close_all
+        stop 1
+    end select
 !EOC
-  end subroutine cvmix_io_close_all
+
+  end subroutine cvmix_output_write_att_string
 
 !BOP
 
@@ -1076,6 +1058,37 @@ contains
 
 !BOP
 
+! !IROUTINE: cvmix_io_close_all
+! !INTERFACE:
+
+  subroutine cvmix_io_close_all
+
+! !DESCRIPTION:
+!  Routine to close all files open (meant to be called prior to an abort)
+!\\
+!\\
+
+! !USES:
+!  Only those used by entire module. 
+
+! !LOCAL VARIABLES:
+    integer :: fid
+
+!EOP
+!BOC
+
+    write(*,"(A)") "Closing all open files..."
+    do while (allocated(file_database))
+      fid = file_database(1)%file_id
+      write(*, "(A,1X,A)") "...", trim(get_file_name(fid))
+      call cvmix_io_close(fid)
+    end do
+    write(*,"(A)") "All files closed."
+!EOC
+  end subroutine cvmix_io_close_all
+
+!BOP
+
 ! !IROUTINE: get_file_name
 ! !INTERFACE:
 
@@ -1161,6 +1174,121 @@ contains
 !EOC
 
   end function get_file_type
+
+#ifdef _NETCDF
+!BOP
+
+! !IROUTINE: cvmix_input_get_netcdf_dim
+! !INTERFACE:
+
+  function cvmix_input_get_netcdf_dim(file_id, dim_name)
+
+! !DESCRIPTION:
+!  Returns the value of the dimension dim\_name in the netcdf file file\_id. If
+!  the dimension does not exist, returns -1.
+!\\
+!\\
+
+! !USES:
+!  Only those used by entire module. 
+
+! !INPUT PARAMETERS:
+    integer,          intent(in) :: file_id
+    character(len=*), intent(in) :: dim_name
+
+! !OUTPUT PARAMETERS:
+    integer                        :: cvmix_input_get_netcdf_dim
+
+! !LOCAL VARIABLES:
+    character(len=cvmix_strlen) :: tmp_name
+    integer                     :: i, ndim, dimid
+!EOP
+!BOC
+
+    cvmix_input_get_netcdf_dim = -1
+    if (get_file_type(file_id).ne.NETCDF_FILE_TYPE) then
+      print*, "WARNING: can not find dimid, ", trim(get_file_name(file_id)), &
+              " is not a netcdf file."
+      return
+    end if
+
+    dimid = -1
+    ! Find number of variables in file
+    call netcdf_check(nf90_inquire(file_id, nDimensions=ndim))
+    i = 1
+    do while((i.le.ndim).and.(dimid.eq.-1))
+      ! Loop to figure out if var_name is a valid variable in the file
+      call netcdf_check(nf90_inquire_dimension(file_id, i, name=tmp_name))
+      if (trim(dim_name).eq.trim(tmp_name)) then
+        dimid = i
+      else
+        i = i+1
+      end if
+    end do
+    if (dimid.ne.-1) &
+      call netcdf_check(nf90_inquire_dimension(file_id, dimid, &
+                        len=cvmix_input_get_netcdf_dim))
+
+!EOC
+
+  end function cvmix_input_get_netcdf_dim
+
+!BOP
+
+! !IROUTINE: get_netcdf_varid
+! !INTERFACE:
+
+  function get_netcdf_varid(file_id, var_name, xtype, ndims)
+
+! !DESCRIPTION:
+!  Returns the varid associated with the variable var\_name in the netcdf file
+!  file\_id. If the variable does not exist, returns -1.
+!\\
+!\\
+
+! !USES:
+!  Only those used by entire module. 
+
+! !INPUT PARAMETERS:
+    integer,          intent(in) :: file_id
+    character(len=*), intent(in) :: var_name
+
+! !OUTPUT PARAMETERS:
+    integer, optional, intent(out) :: xtype, ndims
+    integer                        :: get_netcdf_varid
+
+! !LOCAL VARIABLES:
+    character(len=cvmix_strlen) :: tmp_name
+    integer                     :: i, nvar
+!EOP
+!BOC
+
+    get_netcdf_varid = -1
+    if (get_file_type(file_id).ne.NETCDF_FILE_TYPE) then
+      print*, "WARNING: can not find varid, ", trim(get_file_name(file_id)), &
+              " is not a netcdf file."
+      return
+    end if
+
+    ! Find number of variables in file
+    call netcdf_check(nf90_inquire(file_id, nVariables=nvar))
+    i = 1
+    do while((i.le.nvar).and.(get_netcdf_varid.eq.-1))
+      ! Loop to figure out if var_name is a valid variable in the file
+      call netcdf_check(nf90_inquire_variable(file_id, i, name=tmp_name, &
+                                              xtype=xtype, ndims=ndims))
+      if (trim(var_name).eq.trim(tmp_name)) then
+        get_netcdf_varid = i
+      else
+        i = i+1
+      end if
+    end do
+
+!EOC
+
+  end function get_netcdf_varid
+
+#endif
 
 ! Routine to handle errors returned from netcdf
   subroutine netcdf_check(status)
