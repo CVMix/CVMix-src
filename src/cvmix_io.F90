@@ -600,7 +600,7 @@ contains
           select case(trim(var_names(var)))
             case ("depth")
               call netcdf_check(nf90_put_var(file_id, var_id(var), &
-                                             CVmix_vars%z_iface(:)))
+                                             CVmix_vars%zw_iface(:)))
             case ("Ri")
               call netcdf_check(nf90_put_var(file_id, var_id(var), &
                                              CVmix_vars%Ri_iface(:)))
@@ -626,7 +626,7 @@ contains
             select case(trim(var_names(var)))
               case ("depth")
                 write(file_id,"(E24.17E2)",advance='no') &
-                      CVmix_vars%z_iface(kw)
+                      CVmix_vars%zw_iface(kw)
               case ("Ri")
                 write(file_id,"(E24.17E2)",advance='no') &
                       CVmix_vars%Ri_iface(kw)
@@ -703,8 +703,8 @@ contains
         z_err = .true.
       else
         ! Make sure z_iface lines up for Bryan-Lewis case
-        if (associated(CVmix_vars(1)%z_iface)) then
-          if (any(CVmix_vars(icol)%z_iface.ne.CVmix_vars(icol-1)%z_iface)) then
+        if (associated(CVmix_vars(1)%zw_iface)) then
+          if (any(CVmix_vars(icol)%zw_iface.ne.CVmix_vars(icol-1)%zw_iface)) then
             z_err = .true.
           end if
         end if
@@ -762,7 +762,7 @@ contains
           select case(trim(var_names(var)))
             case("depth")
               call netcdf_check(nf90_put_var(file_id, var_id(var), &
-                                CVmix_vars(1)%z_iface(:)))
+                                CVmix_vars(1)%zw_iface(:)))
             case("Ri")
               call netcdf_check(nf90_put_var(file_id, var_id(var), &
                                 CVmix_vars(1)%Ri_iface(:)))
@@ -790,7 +790,7 @@ contains
             select case(trim(var_names(var)))
               case ("depth")
                 write(file_id,"(E24.17E2)",advance='no') &
-                      CVmix_vars(1)%z_iface(kw)
+                      CVmix_vars(1)%zw_iface(kw)
               case ("Ri")
                 write(file_id,"(E24.17E2)",advance='no') &
                       CVmix_vars(1)%Ri_iface(kw)

@@ -267,7 +267,7 @@
     CVmix_vars%vert_dep(1) = 0.0_cvmix_r8
     CVmix_vars%vert_dep(nlev+1) = 0.0_cvmix_r8
     do k=2,nlev
-      num = -CVmix_vars%z_iface(k)/CVmix_tidal_params%vertical_decay_scale
+      num = -CVmix_vars%zw_iface(k)/CVmix_tidal_params%vertical_decay_scale
       ! Simmons vertical deposition
       ! Note that it is getting normalized (divide through by tot_area)
       ! So multiplicative constants that are independent of z are omitted
@@ -275,7 +275,7 @@
 
       ! Compute integral of vert_dep via trapezoid rule
       ! (looks like midpoint rule, but vert_dep = 0 at z=0 and z=-ocn_depth)
-      thick = CVmix_vars%z(k-1) - CVmix_vars%z(k)
+      thick = CVmix_vars%zt(k-1) - CVmix_vars%zt(k)
       tot_area = tot_area + CVmix_vars%vert_dep(k)*thick
     end do
     ! Normalize vert_dep (need integral = 1.0D0)

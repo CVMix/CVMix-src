@@ -57,8 +57,8 @@ module cvmix_kinds_and_types
       real(cvmix_r8), dimension(:,:), pointer :: diff_iface => NULL()
       ! nlev+1
       real(cvmix_r8), dimension(:),   pointer :: visc_iface => NULL()
-      real(cvmix_r8), dimension(:),   pointer :: z_iface    => NULL()
-      real(cvmix_r8), dimension(:),   pointer :: dw_iface   => NULL()
+      real(cvmix_r8), dimension(:),   pointer :: zw_iface   => NULL()
+      real(cvmix_r8), dimension(:),   pointer :: dzw_iface  => NULL()
       real(cvmix_r8), dimension(:),   pointer :: Ri_iface   => NULL()
       ! For tidal mixing, we need to calculate the vertical deposition
       ! function on each column as well as squared buoyancy frequency
@@ -69,8 +69,8 @@ module cvmix_kinds_and_types
       ! nlev
       real(cvmix_r8), dimension(:),   pointer :: dens     => NULL()
       real(cvmix_r8), dimension(:),   pointer :: dens_lwr => NULL()
-      real(cvmix_r8), dimension(:),   pointer :: z        => NULL()
-      real(cvmix_r8), dimension(:),   pointer :: dz       => NULL()
+      real(cvmix_r8), dimension(:),   pointer :: zt       => NULL()
+      real(cvmix_r8), dimension(:),   pointer :: dzt      => NULL()
       ! For double diffusion mixing, we need to calculate the stratification
       ! parameter R_rho. Since the denominator of this ratio may be zero,
       ! we store the numerator and denominator separately and make sure the

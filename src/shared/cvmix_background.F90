@@ -290,21 +290,21 @@ contains
     integer :: nlev  ! max number of levels
 
     ! Local copies to make code easier to read
-    real(cvmix_r8), dimension(:), allocatable :: visc, diff, z
+    real(cvmix_r8), dimension(:), allocatable :: visc, diff, zw
 
     nlev = CVmix_params%max_nlev
-    allocate(z(nlev+1))
+    allocate(zw(nlev+1))
     allocate(visc(nlev+1))
     allocate(diff(nlev+1))
     
     ! Set static_visc and static_diff in background_input_type
-    z    = abs(CVmix_vars%z_iface)
-    diff = bl1 + (bl2/cvmix_PI)*atan(bl3*(z-bl4))
+    zw   = abs(CVmix_vars%zw_iface)
+    diff = bl1 + (bl2/cvmix_PI)*atan(bl3*(zw-bl4))
     visc = CVmix_params%prandtl*diff
 
     call cvmix_put_bkgnd(CVmix_bkgnd_params, "static_diff", diff, nlev=nlev)
     call cvmix_put_bkgnd(CVmix_bkgnd_params, "static_visc", visc, nlev=nlev)
-    deallocate(z, visc, diff)
+    deallocate(zw, visc, diff)
 
 !EOC
 

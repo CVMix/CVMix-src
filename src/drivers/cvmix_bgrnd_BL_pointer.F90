@@ -98,7 +98,7 @@ Subroutine cvmix_BL_pointer_driver(nlev, ocn_depth)
     ! Point CVmix_vars values to memory allocated above
     CVmix_vars(icol)%visc_iface => viscosity(icol,:)
     CVmix_vars(icol)%diff_iface => diffusivity(icol,:,:)
-    CVmix_vars(icol)%z_iface => iface_depth
+    CVmix_vars(icol)%zw_iface   => iface_depth
   end do
 
   ! Read / set B-L parameters for column 1

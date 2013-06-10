@@ -182,18 +182,18 @@ contains
       case ('dz', 'dzt')
       print*, "WARNING: you are setting the cell thickness in all levels to", &
               "a constant value"
-      if (.not.associated(CVmix_vars%dz)) then
-        allocate(CVmix_vars%dz(nlev))
+      if (.not.associated(CVmix_vars%dzt)) then
+        allocate(CVmix_vars%dzt(nlev))
       end if
-      CVmix_vars%dz(:) = val
+      CVmix_vars%dzt(:) = val
 
       case ('dzw', 'dzw_iface')
       print*, "WARNING: you are setting the cell midpoint to midpoint", &
               "distance in all levels to a constant value"
-      if (.not.associated(CVmix_vars%dw_iface)) then
-        allocate(CVmix_vars%dw_iface(nlev+1))
+      if (.not.associated(CVmix_vars%dzw_iface)) then
+        allocate(CVmix_vars%dzw_iface(nlev+1))
       end if
-      CVmix_vars%dw_iface(:) = val
+      CVmix_vars%dzw_iface(:) = val
 
       case ('buoy', 'buoy_iface')
       print*, "WARNING: you are setting the buoyancy in all levels to a", &
@@ -316,28 +316,28 @@ contains
       CVmix_vars%Ri_iface(:) = val
 
       case ('z', 'zt')
-      if (.not.associated(CVmix_vars%z)) then
-        allocate(CVmix_vars%z(nlev))
+      if (.not.associated(CVmix_vars%zt)) then
+        allocate(CVmix_vars%zt(nlev))
       end if
-      CVmix_vars%z(:) = val
+      CVmix_vars%zt(:) = val
 
       case ('dz', 'dzt')
-      if (.not.associated(CVmix_vars%dz)) then
-        allocate(CVmix_vars%dz(nlev))
+      if (.not.associated(CVmix_vars%dzt)) then
+        allocate(CVmix_vars%dzt(nlev))
       end if
-      CVmix_vars%dz(:) = val
+      CVmix_vars%dzt(:) = val
 
       case ('zw', 'zw_iface')
-      if (.not.associated(CVmix_vars%z_iface)) then
-        allocate(CVmix_vars%z_iface(nlev+1))
+      if (.not.associated(CVmix_vars%zw_iface)) then
+        allocate(CVmix_vars%zw_iface(nlev+1))
       end if
-      CVmix_vars%z_iface(:) = val
+      CVmix_vars%zw_iface(:) = val
 
       case ('dzw', 'dzw_iface')
-      if (.not.associated(CVmix_vars%dw_iface)) then
-        allocate(CVmix_vars%dw_iface(nlev+1))
+      if (.not.associated(CVmix_vars%dzw_iface)) then
+        allocate(CVmix_vars%dzw_iface(nlev+1))
       end if
-      CVmix_vars%dw_iface(:) = val
+      CVmix_vars%dzw_iface(:) = val
 
       case ('buoy', 'buoy_iface')
       if (.not.associated(CVmix_vars%buoy_iface)) then
