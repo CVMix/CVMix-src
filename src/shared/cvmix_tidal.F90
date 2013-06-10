@@ -186,14 +186,15 @@
     ! Local variables
     integer        :: nlev, k
     real(cvmix_r8) :: coef, rho, buoy, z_cut
+    real(cvmix_r8), allocatable, dimension(:) :: vert_dep
 
     nlev = CVmix_vars%nlev
     rho  = CVmix_params%fw_rho
 
     select case (trim(CVmix_tidal_params%mix_scheme))
       case ('simmons','Simmons')
-        if(.not.associated(CVmix_vars%vert_dep)) &
-          call cvmix_compute_vert_dep(CVmix_vars, CVmix_tidal_params)
+        allocate(vert_dep(nlev+1))
+        vert_dep = cvmix_compute_vert_dep(CVmix_vars, CVmix_tidal_params)
         coef = CVmix_tidal_params%local_mixing_frac * &
                CVmix_tidal_params%efficiency *        &
                energy_flux
@@ -203,7 +204,7 @@
             buoy = CVmix_vars%buoy_iface(k)
             z_cut = CVmix_tidal_params%depth_cutoff
             if (buoy.gt.0.0_cvmix_r8) &
-              CVmix_vars%diff_iface(k,1) = coef*CVmix_vars%vert_dep(k)/(rho*buoy)
+              CVmix_vars%diff_iface(k,1) = coef*vert_dep(k)/(rho*buoy)
             if (CVmix_vars%diff_iface(k,1).gt.CVmix_tidal_params%max_coefficient) &
               CVmix_vars%diff_iface(k,1) = CVmix_tidal_params%max_coefficient
           end do
@@ -225,7 +226,7 @@
 ! !IROUTINE: cvmix_compute_vert_dep
 ! !INTERFACE:
 
-  subroutine cvmix_compute_vert_dep(CVmix_vars, CVmix_tidal_params)
+  function cvmix_compute_vert_dep(CVmix_vars, CVmix_tidal_params)
 
 ! !DESCRIPTION:
 !  Computes the vertical deposition function needed for Simmons et al tidal
@@ -238,9 +239,10 @@
 
 ! !INPUT PARAMETERS:
     type(cvmix_tidal_params_type), intent(in) :: CVmix_tidal_params
+    type(cvmix_data_type),         intent(in) :: CVmix_vars
 
 ! !OUTPUT PARAMETERS:
-    type(cvmix_data_type), intent(inout) :: CVmix_vars
+    real(cvmix_r8), dimension(CVMix_vars%nlev+1) :: cvmix_compute_vert_dep
 
 !EOP
 !BOC
@@ -251,39 +253,28 @@
 
     nlev = CVmix_vars%nlev
 
-    ! Check to see if memory has already been allocated in CVmix_vars
-    if(.not.associated(CVmix_vars%vert_dep)) then
-      allocate(CVmix_vars%vert_dep(nlev+1))
-    else
-      if (size(CVmix_vars%vert_dep).ne.nlev+1) then
-        write(*,"(A,1X,A,1X,I0)") "ERROR: vertical deposition function must", &
-                                  "be array of length", nlev+1
-        stop 1
-      end if
-    end if
-
     ! Compute vertical deposition
     tot_area = 0.0_cvmix_r8
-    CVmix_vars%vert_dep(1) = 0.0_cvmix_r8
-    CVmix_vars%vert_dep(nlev+1) = 0.0_cvmix_r8
+    cvmix_compute_vert_dep(1) = 0.0_cvmix_r8
+    cvmix_compute_vert_dep(nlev+1) = 0.0_cvmix_r8
     do k=2,nlev
       num = -CVmix_vars%zw_iface(k)/CVmix_tidal_params%vertical_decay_scale
       ! Simmons vertical deposition
       ! Note that it is getting normalized (divide through by tot_area)
       ! So multiplicative constants that are independent of z are omitted
-      CVmix_vars%vert_dep(k) = exp(num)
+      cvmix_compute_vert_dep(k) = exp(num)
 
       ! Compute integral of vert_dep via trapezoid rule
       ! (looks like midpoint rule, but vert_dep = 0 at z=0 and z=-ocn_depth)
       thick = CVmix_vars%zt(k-1) - CVmix_vars%zt(k)
-      tot_area = tot_area + CVmix_vars%vert_dep(k)*thick
+      tot_area = tot_area + cvmix_compute_vert_dep(k)*thick
     end do
     ! Normalize vert_dep (need integral = 1.0D0)
-    CVmix_vars%vert_dep = CVmix_vars%vert_dep/tot_area
+    cvmix_compute_vert_dep = cvmix_compute_vert_dep/tot_area
 
 !EOC
 
-  end subroutine cvmix_compute_vert_dep
+  end function cvmix_compute_vert_dep
 
 !BOP
 

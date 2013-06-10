@@ -203,14 +203,6 @@ contains
       end if
       CVmix_vars%buoy_iface(:) = val
 
-      case ('vert_dep', 'vert_dep_iface')
-      print*, "WARNING: you are setting the vertical deposition function", & 
-              "to a constant value in all levels"
-      if (.not.associated(CVmix_vars%vert_dep)) then
-        allocate(CVmix_vars%vert_dep(nlev+1))
-      end if
-      CVmix_vars%vert_dep(:) = val
-
       case ('strat_param_num')
       print*, "WARNING: you are setting the numerator of the statification", & 
               "parameter in all levels to a constant value"
@@ -344,12 +336,6 @@ contains
         allocate(CVmix_vars%buoy_iface(nlev+1))
       end if
       CVmix_vars%buoy_iface(:) = val
-
-      case ('vert_dep', 'vert_dep_iface')
-      if (.not.associated(CVmix_vars%vert_dep)) then
-        allocate(CVmix_vars%vert_dep(nlev+1))
-      end if
-      CVmix_vars%vert_dep(:) = val
 
       case ('strat_param_num')
       if (.not.associated(CVmix_vars%strat_param_num)) then

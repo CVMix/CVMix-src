@@ -60,9 +60,7 @@ module cvmix_kinds_and_types
       real(cvmix_r8), dimension(:),   pointer :: zw_iface   => NULL()
       real(cvmix_r8), dimension(:),   pointer :: dzw_iface  => NULL()
       real(cvmix_r8), dimension(:),   pointer :: Ri_iface   => NULL()
-      ! For tidal mixing, we need to calculate the vertical deposition
-      ! function on each column as well as squared buoyancy frequency
-      real(cvmix_r8), dimension(:),   pointer :: vert_dep   => NULL()
+      ! For tidal mixing, we need the squared buoyancy frequency
       real(cvmix_r8), dimension(:),   pointer :: buoy_iface => NULL()
 
       ! Values at tracer points
