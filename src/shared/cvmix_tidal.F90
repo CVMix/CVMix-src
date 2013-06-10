@@ -209,6 +209,7 @@
               CVmix_vars%diff_iface(k,1) = CVmix_tidal_params%max_coefficient
           end do
         end if
+        deallocate(vert_dep)
 
       case DEFAULT
         ! Note: this error should be caught in cvmix_init_tidal
