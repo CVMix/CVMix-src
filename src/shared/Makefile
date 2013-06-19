@@ -41,6 +41,8 @@ else
   FC = NONE
   NEED_ENV_FILE = FALSE
 endif
+MAKE_DEP = $(SRC_DIR)/makedep.py
+DEP_FILE = $(OBJ_DIR)/shared_deps.d
 
 ifeq ($(FC),NONE)
   NOFC = TRUE
@@ -73,132 +75,46 @@ ifeq ($(FC),$(filter $(FC),pgf90 ftn))
   OBJS += $(KINDS_OBJ)
 endif
 
+ifeq ($(USE_DEPS),TRUE)
+  include $(DEP_FILE)
+endif
+
 ### TARGETS ###
 
-.PHONY: clean recurse check
+.PHONY: clean recurse check depends
 
-all: recurse
+all: depends recurse
 
 recurse: check
 ifeq ($(NEED_ENV_FILE),FALSE)
-	$(MAKE) -e -f $(SRC_DIR)/Makefile $(LIB_DIR)/libcvmix.a $(INCS)
+	$(MAKE) -e -f $(SRC_DIR)/Makefile $(LIB_DIR)/libcvmix.a $(INCS) USE_DEPS=TRUE
 endif
 
 # Create all object and module files
-# Note that .mod files need to be copied to INC_DIR
+# Note that .mod files need to be copied to INC_DIR if OBJ_DIR != INC_DIR
 
-### cvmix_kinds_and_types.F90
-$(OBJ_DIR)/cvmix_kinds_and_types.o: $(SRC_DIR)/cvmix_kinds_and_types.F90
-	$(FC) $(FCFLAGS) -c $(SRC_DIR)/cvmix_kinds_and_types.F90 -o $@
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.F90
+	$(FC) $(FCFLAGS) -c $< -o $@
 
-$(INC_DIR)/cvmix_kinds_and_types.mod: $(SRC_DIR)/cvmix_kinds_and_types.F90 \
-                                      $(OBJ_DIR)/cvmix_kinds_and_types.o
-	cp $(OBJ_DIR)/cvmix_kinds_and_types.mod $@
-
-# Upper-case for Cray and pathscale compilers
-$(INC_DIR)/CVMIX_KINDS_AND_TYPES.mod: $(SRC_DIR)/cvmix_kinds_and_types.F90 \
-                                      $(OBJ_DIR)/cvmix_kinds_and_types.o
-	cp $(OBJ_DIR)/CVMIX_KINDS_AND_TYPES.mod $@
-
-### cvmix_put_get.F90
-$(OBJ_DIR)/cvmix_put_get.o: $(SRC_DIR)/cvmix_put_get.F90       \
-                            $(OBJ_DIR)/cvmix_kinds_and_types.o
-	$(FC) $(FCFLAGS) -c $(SRC_DIR)/cvmix_put_get.F90 -o $@
-
-$(INC_DIR)/cvmix_put_get.mod: $(SRC_DIR)/cvmix_put_get.F90       \
-                              $(OBJ_DIR)/cvmix_put_get.o
-	cp $(OBJ_DIR)/cvmix_put_get.mod $@
-
-$(INC_DIR)/CVMIX_PUT_GET.mod: $(SRC_DIR)/cvmix_put_get.F90       \
-                              $(OBJ_DIR)/cvmix_put_get.o
-	cp $(OBJ_DIR)/CVMIX_PUT_GET.mod $@
-
-### cvmix_background.F90
-$(OBJ_DIR)/cvmix_background.o: $(SRC_DIR)/cvmix_background.F90    \
-                               $(OBJ_DIR)/cvmix_kinds_and_types.o
-	$(FC) $(FCFLAGS) -c $(SRC_DIR)/cvmix_background.F90 -o $@
-
-$(INC_DIR)/cvmix_background.mod: $(SRC_DIR)/cvmix_background.F90       \
-                                 $(OBJ_DIR)/cvmix_background.o
-	cp $(OBJ_DIR)/cvmix_background.mod $@
-
-$(INC_DIR)/CVMIX_BACKGROUND.mod: $(SRC_DIR)/cvmix_background.F90       \
-                                 $(OBJ_DIR)/cvmix_background.o
-	cp $(OBJ_DIR)/CVMIX_BACKGROUND.mod $@
-
-### cvmix_convection.F90
-$(OBJ_DIR)/cvmix_convection.o: $(SRC_DIR)/cvmix_convection.F90    \
-                               $(OBJ_DIR)/cvmix_kinds_and_types.o
-	$(FC) $(FCFLAGS) -c $(SRC_DIR)/cvmix_convection.F90 -o $@
-
-$(INC_DIR)/cvmix_convection.mod: $(SRC_DIR)/cvmix_convection.F90       \
-                                 $(OBJ_DIR)/cvmix_convection.o
-	cp $(OBJ_DIR)/cvmix_convection.mod $@
-
-$(INC_DIR)/CVMIX_CONVECTION.mod: $(SRC_DIR)/cvmix_convection.F90       \
-                                 $(OBJ_DIR)/cvmix_convection.o
-	cp $(OBJ_DIR)/CVMIX_CONVECTION.mod $@
-
-### cvmix_shear.F90
-$(OBJ_DIR)/cvmix_shear.o: $(SRC_DIR)/cvmix_shear.F90         \
-                          $(OBJ_DIR)/cvmix_background.o      \
-                          $(OBJ_DIR)/cvmix_kinds_and_types.o
-	$(FC) $(FCFLAGS) -c $(SRC_DIR)/cvmix_shear.F90 -o $@
-
-$(INC_DIR)/cvmix_shear.mod: $(SRC_DIR)/cvmix_shear.F90       \
-                            $(OBJ_DIR)/cvmix_shear.o
-	cp $(OBJ_DIR)/cvmix_shear.mod $@
-
-$(INC_DIR)/CVMIX_SHEAR.mod: $(SRC_DIR)/cvmix_shear.F90       \
-                            $(OBJ_DIR)/cvmix_shear.o
-	cp $(OBJ_DIR)/CVMIX_SHEAR.mod $@
-
-### cvmix_tidal.F90
-$(OBJ_DIR)/cvmix_tidal.o: $(SRC_DIR)/cvmix_tidal.F90         \
-                          $(OBJ_DIR)/cvmix_kinds_and_types.o
-	$(FC) $(FCFLAGS) -c $(SRC_DIR)/cvmix_tidal.F90 -o $@
-
-$(INC_DIR)/cvmix_tidal.mod: $(SRC_DIR)/cvmix_tidal.F90       \
-                            $(OBJ_DIR)/cvmix_tidal.o
-	cp $(OBJ_DIR)/cvmix_tidal.mod $@
-
-$(INC_DIR)/CVMIX_TIDAL.mod: $(SRC_DIR)/cvmix_tidal.F90       \
-                            $(OBJ_DIR)/cvmix_tidal.o
-	cp $(OBJ_DIR)/CVMIX_TIDAL.mod $@
-
-### cvmix_ddiff.F90
-$(OBJ_DIR)/cvmix_ddiff.o: $(SRC_DIR)/cvmix_ddiff.F90         \
-                          $(OBJ_DIR)/cvmix_kinds_and_types.o
-	$(FC) $(FCFLAGS) -c $(SRC_DIR)/cvmix_ddiff.F90 -o $@
-
-$(INC_DIR)/cvmix_ddiff.mod: $(SRC_DIR)/cvmix_ddiff.F90       \
-                            $(OBJ_DIR)/cvmix_ddiff.o
-	cp $(OBJ_DIR)/cvmix_ddiff.mod $@
-
-$(INC_DIR)/CVMIX_DDIFF.mod: $(SRC_DIR)/cvmix_ddiff.F90       \
-                            $(OBJ_DIR)/cvmix_ddiff.o
-	cp $(OBJ_DIR)/CVMIX_DDIFF.mod $@
-
-### cvmix_kpp.F90
-$(OBJ_DIR)/cvmix_kpp.o: $(SRC_DIR)/cvmix_kpp.F90           \
-                        $(OBJ_DIR)/cvmix_kinds_and_types.o
-	$(FC) $(FCFLAGS) -c $(SRC_DIR)/cvmix_kpp.F90 -o $@
-
-$(INC_DIR)/cvmix_kpp.mod: $(SRC_DIR)/cvmix_kpp.F90         \
-                          $(OBJ_DIR)/cvmix_kpp.o
-	cp $(OBJ_DIR)/cvmix_kpp.mod $@
-
-$(INC_DIR)/CVMIX_KPP.mod: $(SRC_DIR)/cvmix_kpp.F90         \
-                          $(OBJ_DIR)/cvmix_kpp.o
-	cp $(OBJ_DIR)/CVMIX_KPP.mod $@
+$(INC_DIR)/%.mod: $(OBJ_DIR)/%.mod $(OBJ_DIR)/%.o
+ifneq ($(INC_DIR),$(OBJ_DIR))
+	cp $< $@
+endif
 
 ### Combine into library
 $(LIB_DIR)/libcvmix.a: $(KINDS_OBJ) $(OBJS)
 	ar -ru $(LIB_DIR)/libcvmix.a $(OBJS)
 
 # Utilities:
-# 1) check ensures that FC has been specified
-# 2) clean deletes object and mod files
+# 1) make dependency file
+# 2) check ensures that FC has been specified
+# 3) clean deletes object and mod files
+depends: $(DEP_FILE)
+
+$(DEP_FILE): $(MAKE_DEP)
+	$(MAKE_DEP) $(SRC_DIR) $(OBJ_DIR) $(DEP_FILE) $(UCASE)
+	@echo "Generated dependencies!"
+
 check:
 	@$(if $(NOFC), echo "ERROR: you must specify FC (and it is recommended that \
      you specify FCFLAGS"; echo "as well)."; exit 1)
@@ -207,5 +123,5 @@ ifeq ($(NEED_ENV_FILE),TRUE)
 endif
 
 clean:
-	/bin/rm -f $(LIB_DIR)/libcvmix.a $(OBJS) $(KINDS_OBJ) $(MODS) $(KINDS_MOD)
+	/bin/rm -f $(LIB_DIR)/libcvmix.a $(OBJS) $(KINDS_OBJ) $(MODS) $(KINDS_MOD) $(DEP_FILE)
 
