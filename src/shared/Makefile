@@ -96,7 +96,7 @@ endif
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.F90
 	$(FC) $(FCFLAGS) -c $< -o $@
 
-$(INC_DIR)/%.mod: $(OBJ_DIR)/%.mod $(OBJ_DIR)/%.o
+$(INC_DIR)/%.mod: $(OBJ_DIR)/%.mod
 ifneq ($(INC_DIR),$(OBJ_DIR))
 	cp $< $@
 endif
