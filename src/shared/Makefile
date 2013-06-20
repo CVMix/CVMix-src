@@ -111,7 +111,7 @@ $(LIB_DIR)/libcvmix.a: $(KINDS_OBJ) $(OBJS)
 # 3) clean deletes object and mod files
 depends: $(DEP_FILE)
 
-$(DEP_FILE): $(MAKE_DEP)
+$(DEP_FILE): $(MAKE_DEP) $(MODULES)
 	$(MAKE_DEP) $(SRC_DIR) $(OBJ_DIR) $(DEP_FILE) $(UCASE)
 	@echo "Generated dependencies!"
 
