@@ -16,7 +16,7 @@ endif
 SETUP_FILE = $(CVMIX_ROOT)/bld/cvmix_setup
 ENV_FILE = $(CVMIX_ROOT)/bld/.CVMix_env
 # Directories used in Makefile
-# Check to this is standalone CVMix or not (look for $(SETUP_FILE))
+# Check to see if this is standalone CVMix or not (look for $(SETUP_FILE))
 ifneq ($(wildcard $(SETUP_FILE)),)
   SRC_DIR = $(CVMIX_ROOT)/src/shared
   BLD_DIR = $(CVMIX_ROOT)/bld
@@ -41,6 +41,8 @@ else
   FC = NONE
   NEED_ENV_FILE = FALSE
 endif
+
+# Dependency Generation
 MAKE_DEP = $(SRC_DIR)/makedep.py
 DEP_FILE = $(OBJ_DIR)/shared_deps.d
 
@@ -81,14 +83,7 @@ endif
 
 ### TARGETS ###
 
-.PHONY: clean recurse check depends
-
-all: depends recurse
-
-recurse: check
-ifeq ($(NEED_ENV_FILE),FALSE)
-	$(MAKE) -e -f $(SRC_DIR)/Makefile $(LIB_DIR)/libcvmix.a $(INCS) USE_DEPS=TRUE
-endif
+all: lib
 
 # Create all object and module files
 # Note that .mod files need to be copied to INC_DIR if OBJ_DIR != INC_DIR
@@ -105,23 +100,33 @@ endif
 $(LIB_DIR)/libcvmix.a: $(KINDS_OBJ) $(OBJS)
 	ar -ru $(LIB_DIR)/libcvmix.a $(OBJS)
 
-# Utilities:
-# 1) make dependency file
-# 2) check ensures that FC has been specified
-# 3) clean deletes object and mod files
-depends: $(DEP_FILE)
-
 $(DEP_FILE): $(MAKE_DEP) $(MODULES)
-	$(MAKE_DEP) $(SRC_DIR) $(OBJ_DIR) $(DEP_FILE) $(UCASE)
+	$(MAKE_DEP) $(DEP_FILE) $(OBJ_DIR) $(SRC_DIR)
 	@echo "Generated dependencies!"
 
+.PHONY: depends recurse check clean
+
+# Shorthand for making dependency file
+depends: $(DEP_FILE)
+
+# Shorthand for making the library (and all .mod files)
+lib: check depends
+ifeq ($(NEED_ENV_FILE),FALSE)
+	$(MAKE) -e -f $(SRC_DIR)/Makefile $(LIB_DIR)/libcvmix.a $(INCS) USE_DEPS=TRUE
+endif
+
+# If this is running in the full CVMix directory, look for $(ENV_FILE) and run
+# cvmix_setup if it doesn't exist. If this is not running in the full CVMix
+# directory (e.g. the shared directory was brought in to an ocean model), make
+# sure a Fortran compiler was specified.
 check:
 	@$(if $(NOFC), echo "ERROR: you must specify FC (and it is recommended that \
      you specify FCFLAGS"; echo "as well)."; exit 1)
 ifeq ($(NEED_ENV_FILE),TRUE)
-	$(BLD_DIR)/cvmix_setup $(ENV_FILE); $(MAKE) -e -f $(SRC_DIR)/Makefile
+	$(SETUP_FILE) $(ENV_FILE); $(MAKE) -e -f $(SRC_DIR)/Makefile
 endif
 
+# Remove library, object files, module files, and dependency file
 clean:
-	/bin/rm -f $(LIB_DIR)/libcvmix.a $(OBJS) $(KINDS_OBJ) $(MODS) $(KINDS_MOD) $(DEP_FILE)
+	/bin/rm -f $(LIB_DIR)/libcvmix.a $(OBJS) $(KINDS_OBJ) $(MODS) $(DEP_FILE)
 

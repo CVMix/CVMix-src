@@ -44,6 +44,10 @@ endif
 include $(BLD_DIR)/CompileFlags.mak
 LINKING_FLAGS = -L$(LIB_DIR) -lcvmix
 
+# Dependency generation
+MAKE_DEP = $(SRC_SHARED_DIR)/makedep.py
+DEP_FILE = $(OBJ_DIR)/standalone_deps.d
+
 # If you build without netCDF and then decide you want to build with netCDF (or
 # vice versa), you need to clean the cvmix_io and cvmix_driver object files.
 # The way this is handled is by storing whether the last compilation used netCDF
@@ -103,6 +107,7 @@ ifneq ($(OLD_NETCDF), $(NEW_NETCDF))
 endif
 
 # Dependencies: all drivers use cvmix_io
+# Note that these are separated 
 OBJS = cvmix_driver.o \
        cvmix_io.o
 DRIVER_OBJS = cvmix_bgrnd_BL_pointer.o \
@@ -135,101 +140,80 @@ else
 endif
 SHR_MODS = $(addprefix $(INC_DIR)/,$(SHARED_MODS))
 
-### TARGETS ###
+ifeq ($(USE_DEPS),TRUE)
+  include $(DEP_FILE)
+endif
 
-.PHONY: check lib no_lib exe remove_exe clean libclean distclean
+### TARGETS ###
 
 all: exe
 
+$(EXE): $(addprefix $(OBJ_DIR)/,$(OBJS) $(DRIVER_OBJS))        \
+        $(LIB_DIR)/libcvmix.a
+	$(FC) -o $(EXE) $(addprefix $(OBJ_DIR)/,$(OBJS) $(DRIVER_OBJS)) $(LINKING_FLAGS)
+
+# Create all object and module files
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.F90 $(SHR_MODS)
+	$(FC) $(FCFLAGS) -c $< -o $@
+
+$(OBJ_DIR)/%.o: $(SRC_DRIVE_DIR)/%.F90 $(SHR_MODS)
+	$(FC) $(FCFLAGS) -c $< -o $@
+
+# Dependencies are read in from standalone_deps.d 
+$(DEP_FILE): $(MAKE_DEP) $(SRC_DIR)/*.F90 $(SRC_DRIVE_DIR)/*.F90
+	$(MAKE_DEP) $(DEP_FILE) $(OBJ_DIR) $(SRC_DIR) $(SRC_DRIVE_DIR)
+	@echo "Generated dependencies!"
+
+# The variables FC, NETCDF_INC, NETCDF_LIB, and NETCDF_LINK are read in from
+# CVMix_env. If the file doesn't exist, then the python script "cvmix_setup"
+# is run to generate the file.
+$(ENV_FILE):
+	@$(BLD_DIR)/cvmix_setup $(ENV_FILE)
+	$(MAKE) -f $(SRC_DIR)/Makefile
+
+$(SHR_MODS): lib
+
+.PHONY: exe netcdf depends check lib remove_exe clean libclean distclean
+
 # Possible executables: with and without netCDF
-netcdf:
-	$(MAKE) -f $(SRC_DIR)/Makefile USE_NETCDF=TRUE
-
-$(EXE): $(OBJ_DIR)/cvmix_driver.o $(LIB_DIR)/libcvmix.a
-	$(FC) -o $(EXE) $(addprefix $(OBJ_DIR)/,$(OBJS)) $(addprefix $(OBJ_DIR)/,$(DRIVER_OBJS)) $(LINKING_FLAGS)
-
-exe: check $(ENV_FILE) lib
+exe: check $(ENV_FILE) depends lib
 # If NEED_ENV_FILE is TRUE, the check target recursively calls make
 # With NEED_ENV_FILE equal to FALSE, so the executable will be built
 ifeq ($(NEED_ENV_FILE),FALSE)
-	cd $(SRC_DIR); $(MAKE) $(EXE)
+	cd $(SRC_DIR); $(MAKE) $(EXE) USE_DEPS=TRUE
 	$(shell echo $(NEW_NETCDF) > $(INFO_FILE))
 endif
 
-# Create all object and module files
-$(OBJ_DIR)/cvmix_bgrnd_BL_pointer.o: $(OBJ_DIR)/cvmix_io.o \
-                                     $(SHR_MODS) \
-                                     $(SRC_DRIVE_DIR)/cvmix_bgrnd_BL_pointer.F90
-	$(FC) $(FCFLAGS) -c $(SRC_DRIVE_DIR)/cvmix_bgrnd_BL_pointer.F90 -o $@
+netcdf:
+	$(MAKE) -f $(SRC_DIR)/Makefile USE_NETCDF=TRUE
 
-$(OBJ_DIR)/cvmix_bgrnd_BL_memcopy.o: $(OBJ_DIR)/cvmix_io.o \
-                                     $(SHR_MODS) \
-                                     $(SRC_DRIVE_DIR)/cvmix_bgrnd_BL_memcopy.F90
-	$(FC) $(FCFLAGS) -c $(SRC_DRIVE_DIR)/cvmix_bgrnd_BL_memcopy.F90 -o $@
+# Shorthand for making dependency file
+depends: $(DEP_FILE)
 
-$(OBJ_DIR)/cvmix_tidal_Simmons.o: $(OBJ_DIR)/cvmix_io.o \
-                                  $(SHR_MODS) \
-                                  $(SRC_DRIVE_DIR)/cvmix_tidal_Simmons.F90
-	$(FC) $(FCFLAGS) -c $(SRC_DRIVE_DIR)/cvmix_tidal_Simmons.F90 -o $@
-
-$(OBJ_DIR)/cvmix_shear_KPP.o: $(OBJ_DIR)/cvmix_io.o \
-                              $(SHR_MODS) \
-                              $(SRC_DRIVE_DIR)/cvmix_shear_KPP.F90
-	$(FC) $(FCFLAGS) -c $(SRC_DRIVE_DIR)/cvmix_shear_KPP.F90 -o $@
-
-$(OBJ_DIR)/cvmix_ddiff_drv.o: $(OBJ_DIR)/cvmix_io.o \
-                              $(SHR_MODS) \
-                              $(SRC_DRIVE_DIR)/cvmix_ddiff_drv.F90
-	$(FC) $(FCFLAGS) -c $(SRC_DRIVE_DIR)/cvmix_ddiff_drv.F90 -o $@
-
-$(OBJ_DIR)/cvmix_kpp_drv.o: $(OBJ_DIR)/cvmix_io.o \
-                            $(SHR_MODS) \
-                            $(SRC_DRIVE_DIR)/cvmix_kpp_drv.F90
-	$(FC) $(FCFLAGS) -c $(SRC_DRIVE_DIR)/cvmix_kpp_drv.F90 -o $@
-
-$(OBJ_DIR)/cvmix_driver.o: $(addprefix $(OBJ_DIR)/,$(DRIVER_OBJS)) \
-                           $(SHR_MODS) \
-                           $(SRC_DIR)/cvmix_driver.F90
-	$(FC) $(FCFLAGS) -c $(SRC_DIR)/cvmix_driver.F90 -o $@
-
-$(OBJ_DIR)/cvmix_io.o: $(SRC_DIR)/cvmix_io.F90 \
-                       $(SHR_MODS)
-	$(FC) $(FCFLAGS) -c $(SRC_DIR)/cvmix_io.F90 -o $@
+# Determine if output needs to be rebuilt with or without netcdf
+check:
+	$(if $(REBUILD), rm -f $(addprefix $(OBJ_DIR)/,cvmix_io.o $(DRIVER_OBJS)))
 
 lib:
 ifeq ($(NEED_ENV_FILE),FALSE)
 	cd $(SRC_SHARED_DIR) ; $(MAKE)
 endif
 
-# Utilities:
-# 1) check determines if output needs to be rebuilt with (or without) 
-#    netcdf
-# 2) remove_exe deletes the executable to ensure the proper file is built
-# 3) clean deletes object and module files, as well as the netcdf info file
-# 4) libclean also removes lib/libcvmix.a include/*.mod so you will need to
-#    rebuild the library.
-# 5) distclean also removes $ENV_FILE so you will need to re-run cvmix_setup
-check:
-# The variables FC, NETCDF_INC, NETCDF_LIB, and NETCDF_LINK are read in from
-# CVMix_env. If the file doesn't exist, then the python script "cvmix_setup"
-# is run to generate the file.
-	$(if $(REBUILD), rm -f $(addprefix $(OBJ_DIR)/,cvmix_io.o $(DRIVER_OBJS)))
-
-$(ENV_FILE):
-# After building the ENV_FILE, must invoke make again to read it in. Note that
-# the cvmix target only builds if NEED_ENV_FILE is FALSE, so after this build
-# returns, the cvmix target won't do anything.
-	@$(BLD_DIR)/cvmix_setup $(ENV_FILE)
-	$(MAKE) -f $(SRC_DIR)/Makefile
-
+# Delete the executable
 remove_exe:
 	/bin/rm -rf $(EXE)
 
+# Delete object and module files, as well as the dependency file
+# Also deletes the executable
 clean: remove_exe
-	/bin/rm -rf $(INFO_FILE) $(addprefix $(OBJ_DIR)/,$(MODS) $(OBJS) $(DRIVER_OBJS))
+	/bin/rm -rf $(INFO_FILE) $(DEP_FILE)                                \
+              $(addprefix $(OBJ_DIR)/,$(MODS) $(OBJS) $(DRIVER_OBJS))
 
+# Delete all object and module files from the shared directory, as well as 
+# libcvmix.a; also deletes object and module files and the executable
 libclean: clean
 	cd $(SRC_SHARED_DIR); $(MAKE) clean 
 
+# Deletes $(ENV_FILE) in addition to everything else
 distclean: libclean
 	/bin/rm -rf $(ENV_FILE)
