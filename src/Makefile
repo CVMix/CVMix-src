@@ -123,27 +123,6 @@ else
   MODS = ${OBJS:.o=.mod}
 endif
 
-SHARED_TMP = cvmix_kinds_and_types.mod \
-             cvmix_background.mod      \
-             cvmix_convection.mod      \
-             cvmix_ddiff.mod           \
-             cvmix_kpp.mod             \
-             cvmix_put_get.mod         \
-             cvmix_shear.mod           \
-             cvmix_tidal.mod
-
-ifeq ($(UCASE),TRUE)
-  SHARED_TMP2 = $(shell echo $(SHARED_TMP) | tr '[a-z]' '[A-Z]')
-  SHARED_MODS = ${SHARED_TMP2:.MOD=.mod}
-else
-  SHARED_MODS = $(SHARED_TMP)
-endif
-SHR_MODS = $(addprefix $(INC_DIR)/,$(SHARED_MODS))
-
-ifeq ($(USE_DEPS),TRUE)
-  include $(DEP_FILE)
-endif
-
 ### TARGETS ###
 
 all: exe
@@ -153,15 +132,15 @@ $(EXE): $(addprefix $(OBJ_DIR)/,$(OBJS) $(DRIVER_OBJS))        \
 	$(FC) -o $(EXE) $(addprefix $(OBJ_DIR)/,$(OBJS) $(DRIVER_OBJS)) $(LINKING_FLAGS)
 
 # Create all object and module files
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.F90 $(SHR_MODS)
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.F90
 	$(FC) $(FCFLAGS) -c $< -o $@
 
-$(OBJ_DIR)/%.o: $(SRC_DRIVE_DIR)/%.F90 $(SHR_MODS)
+$(OBJ_DIR)/%.o: $(SRC_DRIVE_DIR)/%.F90
 	$(FC) $(FCFLAGS) -c $< -o $@
 
 # Dependencies are read in from standalone_deps.d 
 $(DEP_FILE): $(MAKE_DEP) $(SRC_DIR)/*.F90 $(SRC_DRIVE_DIR)/*.F90
-	$(MAKE_DEP) $(DEP_FILE) $(OBJ_DIR) $(SRC_DIR) $(SRC_DRIVE_DIR)
+	$(MAKE_DEP) $(DEP_FILE) $(OBJ_DIR) $(SRC_DIR) $(SRC_DRIVE_DIR) $(INC_DIR)
 	@echo "Generated dependencies!"
 
 # The variables FC, NETCDF_INC, NETCDF_LIB, and NETCDF_LINK are read in from
@@ -171,12 +150,10 @@ $(ENV_FILE):
 	@$(BLD_DIR)/cvmix_setup $(ENV_FILE)
 	$(MAKE) -f $(SRC_DIR)/Makefile
 
-$(SHR_MODS): lib
-
 .PHONY: exe netcdf depends check lib remove_exe clean libclean distclean
 
 # Possible executables: with and without netCDF
-exe: check $(ENV_FILE) depends lib
+exe: check $(ENV_FILE) lib depends
 # If NEED_ENV_FILE is TRUE, the check target recursively calls make
 # With NEED_ENV_FILE equal to FALSE, so the executable will be built
 ifeq ($(NEED_ENV_FILE),FALSE)

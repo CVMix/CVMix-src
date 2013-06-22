@@ -28,6 +28,13 @@ try:
 except:
   src_dir2 = src_dir
 
+try:
+  inc_dir = sys.argv[5]
+  files_in_inc_dir = os.listdir(inc_dir)
+  print files_in_inc_dir
+except:
+  inc_dir = 'NONE'
+
 fout = open(dep_file, 'w')
 files_in_src_dir =  os.listdir(src_dir)
 if src_dir != src_dir2:
@@ -49,4 +56,15 @@ for src_file in files_in_src_dir:
         if file_used+'.F90' in files_in_src_dir:
           print file_name+'.o depends on '+file_used+'.o'
           fout.write(obj_dir+'/'+file_name+'.o: '+obj_dir+'/'+file_used+'.o\n')
+        else:
+          if inc_dir != 'NONE':
+            if file_used+'.mod' in files_in_inc_dir:
+              print file_name+'.o depends on '+file_used+'.mod'
+              fout.write(obj_dir+'/'+file_name+'.o: '+inc_dir+'/'+file_used+'.mod\n')
+            else:
+              # Check for upper case
+              file_used.upper()
+              if file_used+'.mod' in files_in_inc_dir:
+                print file_name+'.o depends on '+file_used+'.mod'
+                fout.write(obj_dir+'/'+file_name+'.o: '+inc_dir+'/'+file_used+'.mod\n')
     fin.close
