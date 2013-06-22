@@ -31,7 +31,6 @@ except:
 try:
   inc_dir = sys.argv[5]
   files_in_inc_dir = os.listdir(inc_dir)
-  print files_in_inc_dir
 except:
   inc_dir = 'NONE'
 
@@ -63,7 +62,7 @@ for src_file in files_in_src_dir:
               fout.write(obj_dir+'/'+file_name+'.o: '+inc_dir+'/'+file_used+'.mod\n')
             else:
               # Check for upper case
-              file_used.upper()
+              file_used = file_used.upper()
               if file_used+'.mod' in files_in_inc_dir:
                 print file_name+'.o depends on '+file_used+'.mod'
                 fout.write(obj_dir+'/'+file_name+'.o: '+inc_dir+'/'+file_used+'.mod\n')
