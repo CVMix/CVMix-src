@@ -100,7 +100,7 @@ endif
 $(LIB_DIR)/libcvmix.a: $(KINDS_OBJ) $(OBJS)
 	ar -ru $(LIB_DIR)/libcvmix.a $(OBJS)
 
-$(DEP_FILE): $(MAKE_DEP) $(MODULES)
+$(DEP_FILE): $(MAKE_DEP) $(SRC_DIR)/*.F90
 	$(MAKE_DEP) $(DEP_FILE) $(OBJ_DIR) $(SRC_DIR)
 	@echo "Generated dependencies!"
 
