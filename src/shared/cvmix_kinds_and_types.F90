@@ -48,9 +48,9 @@ module cvmix_kinds_and_types
   type, public :: cvmix_data_type
       integer        :: nlev = -1  ! Number of levels in column
                                    ! Setting default to -1 might be F95...
-      real(cvmix_r8) :: ocn_depth, & ! depth >= 0!
-                        surf_hgt     ! pos => above sea level
-                                     ! neg => below sea level
+      real(cvmix_r8) :: ocn_depth, & ! depth (positive down)
+                        OBL_depth, & ! Ocean Boundary Layer depth (positive up)
+                        surf_hgt     ! sea surface height (positive up)
 
       ! Values on interfaces
       ! nlev+1, 2

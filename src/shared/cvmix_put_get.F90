@@ -133,6 +133,8 @@ contains
         CVmix_vars%surf_hgt = val
       case ('ocn_depth','depth')
         CVmix_vars%ocn_depth = val
+      case ('OBL_depth')
+        CVmix_vars%OBL_depth = val
       case ('diff')
       if (.not.associated(CVmix_vars%diff_iface)) then
         allocate(CVmix_vars%diff_iface(nlev+1,2))
