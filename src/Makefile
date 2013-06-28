@@ -123,6 +123,10 @@ else
   MODS = ${OBJS:.o=.mod}
 endif
 
+ifeq ($(USE_DEPS),TRUE)
+  include $(DEP_FILE)
+endif
+
 ### TARGETS ###
 
 all: exe

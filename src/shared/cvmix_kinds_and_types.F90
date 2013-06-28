@@ -50,7 +50,9 @@ module cvmix_kinds_and_types
                                    ! Setting default to -1 might be F95...
       real(cvmix_r8) :: ocn_depth, & ! depth (positive down)
                         OBL_depth, & ! Ocean Boundary Layer depth (positive up)
-                        surf_hgt     ! sea surface height (positive up)
+                        surf_hgt,  & ! sea surface height (positive up)
+                        lat,       & ! latitude of column (degrees north)
+                        lon          ! longitude of column (degrees east)
 
       ! Values on interfaces
       ! nlev+1, 2

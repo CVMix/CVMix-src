@@ -135,22 +135,25 @@ contains
         CVmix_vars%ocn_depth = val
       case ('OBL_depth')
         CVmix_vars%OBL_depth = val
+      case ('lat')
+        CVmix_vars%lat = val
+      case ('lon')
+        CVmix_vars%lon = val
       case ('diff')
-      if (.not.associated(CVmix_vars%diff_iface)) then
-        allocate(CVmix_vars%diff_iface(nlev+1,2))
-      end if
-      if (present(opts)) then
-        select case (trim(opts))
-          case ('col1')
-            CVmix_vars%diff_iface(:,1) = val
-          case ('col2')
-            CVmix_vars%diff_iface(:,2) = val
-          case DEFAULT
-            print*, "WARNING: ignoring opts = ", trim(opts)
-            CVmix_vars%diff_iface      = val
-        end select
-      end if
-      
+        if (.not.associated(CVmix_vars%diff_iface)) then
+          allocate(CVmix_vars%diff_iface(nlev+1,2))
+        end if
+        if (present(opts)) then
+          select case (trim(opts))
+            case ('col1')
+              CVmix_vars%diff_iface(:,1) = val
+            case ('col2')
+              CVmix_vars%diff_iface(:,2) = val
+            case DEFAULT
+              print*, "WARNING: ignoring opts = ", trim(opts)
+              CVmix_vars%diff_iface      = val
+          end select
+        end if
       case ('visc')
       if (.not.associated(CVmix_vars%visc_iface)) then
         allocate(CVmix_vars%visc_iface(nlev+1))

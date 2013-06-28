@@ -175,6 +175,8 @@ Subroutine cvmix_tidal_driver()
         call cvmix_put(CVmix_vars(i,j),        'zt',         depth(1:nlev))
         call cvmix_put(CVmix_vars(i,j),      'buoy',    buoy(i,j,1:nlev+1))
         call cvmix_put(CVmix_vars(i,j), 'ocn_depth',        ocn_depth(i,j))
+        call cvmix_put(CVmix_vars(i,j),       'lat',              lat(i,j))
+        call cvmix_put(CVmix_vars(i,j),       'lon',              lon(i,j))
 
         call cvmix_put(CVmix_params, 'max_nlev',        max_nlev)
         call cvmix_put(CVmix_params,   'fw_rho', 1000.0_cvmix_r8)
@@ -185,52 +187,49 @@ Subroutine cvmix_tidal_driver()
                                 CVmix_params, energy_flux(i,j))
 
       end if
-
-      ! Output
-      if ((i.eq.lon_out).and.(j.eq.lat_out)) then
-        if (nlev.gt.0) then
-          this_lon = lon(lon_out, lat_out)
-          ! Need this_lon between -180 and 180
-          do while(this_lon.lt.-180.0_cvmix_r8)
-            this_lon = this_lon + 360.0_cvmix_r8
-          end do
-          do while(this_lon.gt.180.0_cvmix_r8)
-            this_lon = this_lon - 360.0_cvmix_r8
-          end do
-          this_lat = lat(lon_out, lat_out)
-          call cvmix_io_open(fid, "single_col.nc", "nc")
-          call cvmix_output_write(fid, CVmix_vars(i,j), (/"depth", "diff "/))
-          if (this_lon.ge.0) then
-            write(lonstr,"(F6.2,1X,A)") this_lon, "E"
-          else
-            write(lonstr,"(F6.2,1X,A)") abs(this_lon), "W"
-          end if
-          if (this_lat.ge.0) then
-            write(latstr,"(F6.2,1X,A)") this_lat, "N"
-          else
-            write(latstr,"(F6.2,1X,A)") abs(this_lat), "S"
-          end if
-          ! Global Attributes
-          call cvmix_output_write_att(fid, "column_lon", lonstr)
-          call cvmix_output_write_att(fid, "column_lat", latstr)
-
-          ! Variable Attributes
-          call cvmix_output_write_att(fid, "long_name", "tracer diffusivity", &
-                                      var_name="diff")
-          call cvmix_output_write_att(fid, "units", "m^2/s", var_name="diff")
-          call cvmix_output_write_att(fid, "long_name", "depth to interface", &
-                                      var_name="depth")
-          call cvmix_output_write_att(fid, "positive", "up", var_name="depth")
-          call cvmix_output_write_att(fid, "units", "m", var_name="depth")
-          call cvmix_io_close(fid)
-        else
-          print*, "ERROR: column requested for output is a land cell."
-          stop 1
-        end if
-      end if
-
     end do
   end do
+
+  if (CVmix_vars(lon_out, lat_out)%nlev.gt.0) then
+    this_lon = CVmix_vars(lon_out, lat_out)%lon
+    ! Need this_lon between -180 and 180
+    do while(this_lon.lt.-180.0_cvmix_r8)
+      this_lon = this_lon + 360.0_cvmix_r8
+    end do
+    do while(this_lon.gt.180.0_cvmix_r8)
+      this_lon = this_lon - 360.0_cvmix_r8
+    end do
+    this_lat = CVMix_vars(lon_out, lat_out)%lat
+    call cvmix_io_open(fid, "single_col.nc", "nc")
+    call cvmix_output_write(fid, CVmix_vars(lon_out, lat_out), &
+                            (/"depth", "diff "/))
+    if (this_lon.ge.0) then
+      write(lonstr,"(F6.2,1X,A)") this_lon, "E"
+    else
+      write(lonstr,"(F6.2,1X,A)") abs(this_lon), "W"
+    end if
+    if (this_lat.ge.0) then
+      write(latstr,"(F6.2,1X,A)") this_lat, "N"
+    else
+      write(latstr,"(F6.2,1X,A)") abs(this_lat), "S"
+    end if
+    ! Global Attributes
+    call cvmix_output_write_att(fid, "column_lon", lonstr)
+    call cvmix_output_write_att(fid, "column_lat", latstr)
+
+    ! Variable Attributes
+    call cvmix_output_write_att(fid, "long_name", "tracer diffusivity", &
+                                var_name="diff")
+    call cvmix_output_write_att(fid, "units", "m^2/s", var_name="diff")
+    call cvmix_output_write_att(fid, "long_name", "depth to interface", &
+                                var_name="depth")
+    call cvmix_output_write_att(fid, "positive", "up", var_name="depth")
+    call cvmix_output_write_att(fid, "units", "m", var_name="depth")
+    call cvmix_io_close(fid)
+  else
+    print*, "ERROR: column requested for output is a land cell."
+    stop 1
+  end if
 
   ! Write diffusivity field to netcdf
   call cvmix_io_open(fid, "diff.nc", "nc")
