@@ -199,7 +199,7 @@ Subroutine cvmix_tidal_driver()
     do while(this_lon.gt.180.0_cvmix_r8)
       this_lon = this_lon - 360.0_cvmix_r8
     end do
-    this_lat = CVMix_vars(lon_out, lat_out)%lat
+    this_lat = CVmix_vars(lon_out, lat_out)%lat
     call cvmix_io_open(fid, "single_col.nc", "nc")
     call cvmix_output_write(fid, CVmix_vars(lon_out, lat_out), &
                             (/"depth", "diff "/))

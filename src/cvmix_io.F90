@@ -58,6 +58,7 @@ module cvmix_io
   end interface
 
   interface cvmix_output_write_att
+    module procedure cvmix_output_write_att_real
     module procedure cvmix_output_write_att_string
   end interface
 
@@ -587,7 +588,9 @@ contains
         call netcdf_check(nf90_def_dim(file_id, "nw", nw, nw_id))
         allocate(var_id(size(var_names)))
         do var=1,size(var_names)
-          if (trim(var_names(var)).eq."Rrho") then
+          if ((trim(var_names(var)).eq."Rrho").or.   &
+              (trim(var_names(var)).eq."Ri_bulk").or.     &
+              (trim(var_names(var)).eq."zt")) then
             call netcdf_check(nf90_def_var(file_id, var_names(var), NF90_DOUBLE, &
                                            (/nt_id/), var_id(var)))
           else
@@ -598,12 +601,18 @@ contains
         call netcdf_check(nf90_enddef(file_id))
         do var=1,size(var_names)
           select case(trim(var_names(var)))
-            case ("depth")
+            case ("zt")
+              call netcdf_check(nf90_put_var(file_id, var_id(var), &
+                                             CVmix_vars%zt(:)))
+            case ("zw", "depth")
               call netcdf_check(nf90_put_var(file_id, var_id(var), &
                                              CVmix_vars%zw_iface(:)))
             case ("Ri")
               call netcdf_check(nf90_put_var(file_id, var_id(var), &
                                              CVmix_vars%Ri_iface(:)))
+            case ("Ri_bulk")
+              call netcdf_check(nf90_put_var(file_id, var_id(var), &
+                                             CVmix_vars%Rib(:)))
             case ("visc")
               call netcdf_check(nf90_put_var(file_id, var_id(var), &
                                              CVmix_vars%visc_iface(:)))
@@ -624,7 +633,14 @@ contains
         do kw=1,CVmix_vars%nlev+1
           do var=1,size(var_names)
             select case(trim(var_names(var)))
-              case ("depth")
+              case ("zt")
+                if (kw.gt.1) then
+                  write(file_id,"(E24.17E2)",advance='no') &
+                        CVmix_vars%zt(kw-1)
+                else
+                  write(file_id,"(A)",advance='no') "--- Cell Center Vals ---"
+                end if
+              case ("zw", "depth")
                 write(file_id,"(E24.17E2)",advance='no') &
                       CVmix_vars%zw_iface(kw)
               case ("Ri")
@@ -725,7 +741,8 @@ contains
         call netcdf_check(nf90_def_dim(file_id, "ncol", ncol, ncol_id))
         allocate(var_id(size(var_names)))
         do var=1,size(var_names)
-          if (trim(var_names(var)).eq."depth") then
+          if ((trim(var_names(var)).eq."depth").or. &
+              (trim(var_names(var)).eq."zw")) then
             call netcdf_check(nf90_def_var(file_id, var_names(var),          &
                                 NF90_DOUBLE, (/nw_id/), var_id(var)))
           else
@@ -760,7 +777,7 @@ contains
         call netcdf_check(nf90_enddef(file_id))
         do var=1,size(var_names)
           select case(trim(var_names(var)))
-            case("depth")
+            case("depth", "zw")
               call netcdf_check(nf90_put_var(file_id, var_id(var), &
                                 CVmix_vars(1)%zw_iface(:)))
             case("Ri")
@@ -788,7 +805,7 @@ contains
         do kw=1,nw
           do var=1,size(var_names)
             select case(trim(var_names(var)))
-              case ("depth")
+              case ("depth", "zw")
                 write(file_id,"(E24.17E2)",advance='no') &
                       CVmix_vars(1)%zw_iface(kw)
               case ("Ri")
@@ -899,6 +916,71 @@ contains
 !EOC
 
   end subroutine cvmix_output_write_3d_double
+
+!BOP
+
+! !IROUTINE: cvmix_write_att_real
+! !INTERFACE:
+
+  subroutine cvmix_output_write_att_real(file_id, att_name, att_val, var_name)
+
+! !DESCRIPTION:
+!  Routine to write an attribute with a string value to a netcdf file. If
+!  var\_name is omitted, routine writes a global attribute. Called with
+!  cvmix\_output\_write\_att (see interface in PUBLIC MEMBER FUNCTIONS above).
+!\\
+!\\
+
+! !USES:
+!  Only those used by entire module. 
+
+! !INPUT PARAMETERS:
+    integer,          intent(in)           :: file_id
+    character(len=*), intent(in)           :: att_name
+    real(cvmix_r8),   intent(in)           :: att_val
+    character(len=*), intent(in), optional :: var_name
+
+! !LOCAL VARIABLES:
+#ifdef _NETCDF
+    integer :: varid
+    logical :: var_found
+#endif
+!EOP
+!BOC
+
+    select case(get_file_type(file_id))
+#ifdef _NETCDF
+      case (NETCDF_FILE_TYPE)
+        var_found = .true.
+        if (present(var_name)) then
+          varid = get_netcdf_varid(file_id, var_name)
+          if (varid.eq.-1) then
+            print*, "WARNING: can not find variable ", trim(var_name), " in ", &
+                    trim(get_file_name(file_id)), "... can not add attribute."
+            var_found = .false.
+          end if
+        else
+          varid=NF90_GLOBAL
+        end if
+        if (var_found) then
+          call netcdf_check(nf90_redef(file_id))
+          call netcdf_check(nf90_put_att(file_id, varid, trim(att_name), &
+                            att_val))
+          call netcdf_check(nf90_enddef(file_id))
+        end if
+#endif
+      case DEFAULT
+        print*, "ERROR: cvmix_output_write_att_string only writes to netcdf"
+        print*, "(attempted to set attribute ", trim(att_name), " to ", &
+                att_val
+        if (present(var_name)) &
+          print*, "(for variable ", trim(var_name), ")"
+        call cvmix_io_close_all
+        stop 1
+    end select
+!EOC
+
+  end subroutine cvmix_output_write_att_real
 
 !BOP
 

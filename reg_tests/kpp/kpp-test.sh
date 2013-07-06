@@ -55,7 +55,7 @@ if [ $? != 0 ]; then
 fi
 
 if [ "${USE_NETCDF}" == "netcdf" ]; then
-  ncdump -v diff data.nc
+  ncdump -v zt,Ri_bulk data.nc
 else
   cat data.out
 fi
