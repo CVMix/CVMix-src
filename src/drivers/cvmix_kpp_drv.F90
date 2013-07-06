@@ -96,7 +96,8 @@ Subroutine cvmix_kpp_driver(nlev)
 
   call cvmix_output_write(fid, CVmix_vars, (/"zt     ", "zw     ", "Ri_bulk"/))
 #ifdef _NETCDF
-  call cvmix_output_write_att(fid, "Mix-layer depth", CVmix_vars%OBL_depth)
+  call cvmix_output_write_att(fid, "Interpolation", interp_type)
+  call cvmix_output_write_att(fid, "OBL_depth", CVmix_vars%OBL_depth)
 #endif
 
   call cvmix_io_close(fid)
