@@ -646,6 +646,13 @@ contains
               case ("Ri")
                 write(file_id,"(E24.17E2)",advance='no') &
                       CVmix_vars%Ri_iface(kw)
+              case ("Ri_bulk")
+                if (kw.gt.1) then
+                  write(file_id,"(E24.17E2)",advance='no') &
+                        CVmix_vars%Rib(kw-1)
+                else
+                  write(file_id,"(A)",advance='no') "--- Cell Center Vals ---"
+                end if
               case ("visc")
                 write(file_id,"(E24.17E2)",advance='no') &
                       CVmix_vars%visc_iface(kw)
@@ -653,7 +660,7 @@ contains
                 write(file_id,"(E24.17E2)",advance='no') &
                       CVmix_vars%diff_iface(kw,1)
               case ("Rrho")
-                if (kw<CVmix_vars%nlev+1) then
+                if (kw.lt.CVmix_vars%nlev+1) then
                   write(file_id,"(E24.17E2)",advance='no') &
                         CVmix_vars%strat_param_num(kw) / &
                         CVmix_vars%strat_param_denom(kw)
