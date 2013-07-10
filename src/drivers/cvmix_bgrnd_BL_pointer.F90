@@ -49,7 +49,6 @@ Subroutine cvmix_BL_pointer_driver(nlev, ocn_depth)
   ! CVMix datatypes
   type(cvmix_data_type)         , dimension(2) :: CVmix_vars
   type(cvmix_global_params_type)               :: CVmix_params
-  type(cvmix_bkgnd_params_type) , dimension(2) :: CVmix_BL_params
 
   ! Will use 2 columns, viscosity will be 2 x nlev+1 and diffusivity will 
   ! be 2 x nlev+1 x 1 (diffusivity is 2D in column)
@@ -101,17 +100,18 @@ Subroutine cvmix_BL_pointer_driver(nlev, ocn_depth)
     CVmix_vars(icol)%zw_iface   => iface_depth
   end do
 
-  ! Read / set B-L parameters for column 1
+  ! Read B-L parameters for columns
   read(*, nml=BryanLewis1_nml)
-  call cvmix_init_bkgnd(CVmix_vars(1), CVmix_params, CVmix_BL_params(1), &
-                        col1_vdc1, col1_vdc2, col1_linv, col1_dpth)
-  call cvmix_coeffs_bkgnd(CVmix_vars(1), CVmix_BL_params(1), 1)
-  
-  ! Read / set B-L parameters for column 2
   read(*, nml=BryanLewis2_nml)
-  call cvmix_init_bkgnd(CVmix_vars(2), CVmix_params, CVmix_BL_params(2), &
-                        col2_vdc1, col2_vdc2, col2_linv, col2_dpth)
-  call cvmix_coeffs_bkgnd(CVmix_vars(2), CVmix_BL_params(2), 1)
+
+  ! Note that parameters are saved to private datatype in the cvmix_background
+  ! module (hence calling coeffs immediately after init
+  call cvmix_init_bkgnd(CVmix_vars(1), col1_vdc1, col1_vdc2, col1_linv, &
+                        col1_dpth, CVmix_params)
+  call cvmix_coeffs_bkgnd(CVmix_vars(1), 1)
+  call cvmix_init_bkgnd(CVmix_vars(2), col2_vdc1, col2_vdc2, col2_linv, &
+                        col2_dpth, CVMix_params)
+  call cvmix_coeffs_bkgnd(CVmix_vars(2), 1)
   
   ! Output
 #ifdef _NETCDF

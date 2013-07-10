@@ -96,17 +96,19 @@ Subroutine cvmix_BL_memcopy_driver(nlev, ocn_depth)
     call cvmix_put(CVmix_vars(icol), 'zw_iface', iface_depth)
   end do
 
-  ! Read / set B-L parameters for column 1
+  ! Read B-L parameters
   read(*, nml=BryanLewis1_nml)
-  call cvmix_init_bkgnd(CVmix_vars(1), CVmix_params, CVmix_BL_params(1), &
-                        col1_vdc1, col1_vdc2, col1_linv, col1_dpth)
-  call cvmix_coeffs_bkgnd(CVmix_vars(1), CVmix_BL_params(1), 1)
-  
-  ! Read / set B-L parameters for column 2
   read(*, nml=BryanLewis2_nml)
-  call cvmix_init_bkgnd(CVmix_vars(2), CVmix_params, CVmix_BL_params(2), &
-                        col2_vdc1, col2_vdc2, col2_linv, col2_dpth)
-  call cvmix_coeffs_bkgnd(CVmix_vars(2), CVmix_BL_params(2), 1)
+
+  ! Set B-L parameters
+  call cvmix_init_bkgnd(CVmix_vars(1), col1_vdc1, col1_vdc2, col1_linv, &
+                        col1_dpth, CVmix_params, CVmix_BL_params(1))
+  call cvmix_init_bkgnd(CVmix_vars(2), col2_vdc1, col2_vdc2, col2_linv, &
+                        col2_dpth, CVMix_params, CVmix_BL_params(2))
+
+  ! Compute B-L coefficients
+  call cvmix_coeffs_bkgnd(CVmix_vars(1), 1, CVmix_BL_params(1))
+  call cvmix_coeffs_bkgnd(CVmix_vars(2), 1, CVmix_BL_params(2))
   
   ! Output
 #ifdef _NETCDF
