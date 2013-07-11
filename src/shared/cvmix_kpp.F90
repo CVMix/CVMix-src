@@ -66,6 +66,8 @@
 
 !EOP
 
+type(cvmix_kpp_params_type), target :: CVmix_kpp_params_saved
+
 contains
 
 !BOP
@@ -73,7 +75,7 @@ contains
 ! !IROUTINE: cvmix_init_kpp
 ! !INTERFACE:
 
-  subroutine cvmix_init_kpp(CVmix_kpp_params, ri_crit, interp_type)
+  subroutine cvmix_init_kpp(ri_crit, interp_type, CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
 !  Initialization routine for KPP mixing.
@@ -86,27 +88,35 @@ contains
     character(len=*), optional :: interp_type
 
 ! !OUTPUT PARAMETERS:
-    type(cvmix_kpp_params_type), intent(inout) :: CVmix_kpp_params
+    type(cvmix_kpp_params_type), intent(inout), target, optional ::           &
+                                              CVmix_kpp_params_user
 
 !EOP
 !BOC
 
+    type(cvmix_kpp_params_type), pointer :: CVmix_kpp_params_out
+
+    CVmix_kpp_params_out => CVmix_kpp_params_saved
+    if (present(CVmix_kpp_params_user)) then
+      CVmix_kpp_params_out => CVmix_kpp_params_user
+    end if
+
     if (present(ri_crit)) then
-      call cvmix_put_kpp(CVmix_kpp_params, 'Ri_crit', ri_crit)
+      call cvmix_put_kpp(CVmix_kpp_params_out, 'Ri_crit', ri_crit)
     else
-      call cvmix_put_kpp(CVmix_kpp_params, 'Ri_crit', 0.3_cvmix_r8)
+      call cvmix_put_kpp(CVmix_kpp_params_out, 'Ri_crit', 0.3_cvmix_r8)
     end if
 
     if (present(interp_type)) then
       select case (trim(interp_type))
         case ('line', 'linear')
-          call cvmix_put_kpp(CVmix_kpp_params, 'interp_type', &
+          call cvmix_put_kpp(CVmix_kpp_params_out, 'interp_type', &
                              CVMIX_KPP_INTERP_LINEAR)
         case ('quad', 'quadratic')
-          call cvmix_put_kpp(CVmix_kpp_params, 'interp_type', &
+          call cvmix_put_kpp(CVmix_kpp_params_out, 'interp_type', &
                              CVMIX_KPP_INTERP_QUAD)
         case ('cube', 'cubic', 'cubic_spline', 'cubic spline')
-          call cvmix_put_kpp(CVmix_kpp_params, 'interp_type', &
+          call cvmix_put_kpp(CVmix_kpp_params_out, 'interp_type', &
                              CVMIX_KPP_INTERP_CUBE_SPLINE)
         case DEFAULT
           print*, "ERROR: ", trim(interp_type), " is not a valid type of ", &
@@ -114,7 +124,7 @@ contains
           stop 1
       end select
     else
-      call cvmix_put_kpp(CVmix_kpp_params, 'interp_type', &
+      call cvmix_put_kpp(CVmix_kpp_params_out, 'interp_type', &
                          CVMIX_KPP_INTERP_QUAD)
     end if
 !EOC
@@ -126,7 +136,7 @@ contains
 ! !IROUTINE: cvmix_coeffs_kpp
 ! !INTERFACE:
 
-  subroutine cvmix_coeffs_kpp(CVmix_vars, CVmix_kpp_params)
+  subroutine cvmix_coeffs_kpp(CVmix_vars, CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
 !  Computes vertical diffusion coefficients for the double diffusion mixing
@@ -138,7 +148,8 @@ contains
 !  only those used by entire module.
 
 ! !INPUT PARAMETERS:
-    type(cvmix_kpp_params_type), intent(in) :: CVmix_kpp_params
+    type(cvmix_kpp_params_type), intent(in), optional, target ::              &
+                                           CVmix_kpp_params_user
 
 ! !INPUT/OUTPUT PARAMETERS:
     type(cvmix_data_type), intent(inout) :: CVmix_vars
@@ -146,9 +157,16 @@ contains
 !EOP
 !BOC
 
-    call cvmix_kpp_compute_OBL_depth(CVmix_kpp_params, CVmix_vars)
-    CVmix_vars%visc_iface = CVmix_kpp_params%Ri_crit
-    CVmix_vars%diff_iface = CVmix_kpp_params%Ri_crit
+    type(cvmix_kpp_params_type), pointer :: CVmix_kpp_params_in
+
+    CVmix_kpp_params_in => CVmix_kpp_params_saved
+    if (present(CVmix_kpp_params_user)) then
+      CVmix_kpp_params_in => CVmix_kpp_params_user
+    end if
+
+    call cvmix_kpp_compute_OBL_depth(CVmix_vars, CVmix_kpp_params_in)
+    CVmix_vars%visc_iface = CVmix_kpp_params_in%Ri_crit
+    CVmix_vars%diff_iface = CVmix_kpp_params_in%Ri_crit
 
 !EOC
   end subroutine cvmix_coeffs_kpp
@@ -229,8 +247,8 @@ contains
 ! !IROUTINE: cvmix_kpp_compute_OBL_depth_low
 ! !INTERFACE:
 
-  subroutine cvmix_kpp_compute_OBL_depth_low(CVmix_kpp_params, Ri_bulk, depth, &
-                                             OBL_depth)
+  subroutine cvmix_kpp_compute_OBL_depth_low(Ri_bulk, depth, OBL_depth, &
+                                             CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
 !  Computes the depth of the ocean boundary layer (OBL) for a given column
@@ -241,7 +259,8 @@ contains
 !  Only those used by entire module. 
 
 ! !INPUT PARAMETERS:
-    type(cvmix_kpp_params_type),  intent(in) :: CVmix_kpp_params
+    type(cvmix_kpp_params_type), optional, target, intent(in) ::              &
+                                           CVmix_kpp_params_user
     real(cvmix_r8), dimension(:), intent(in) :: Ri_bulk, depth
 
 ! !OUTPUT PARAMETERS:
@@ -256,6 +275,13 @@ contains
     real(kind=cvmix_r8), dimension(:,:), allocatable :: Minv
     real(kind=cvmix_r8), dimension(:),   allocatable :: rhs
 
+    type(cvmix_kpp_params_type), pointer :: CVmix_kpp_params_in
+
+    CVmix_kpp_params_in => CVmix_kpp_params_saved
+    if (present(CVmix_kpp_params_user)) then
+      CVmix_kpp_params_in => CVmix_kpp_params_user
+    end if
+
     nlev = size(Ri_bulk)
     if (nlev.ne.size(depth)) then
       print*, "ERROR: Ri_bulk and depth must be same size!"
@@ -265,7 +291,7 @@ contains
     ! Interpolation Step
     ! (1) Find kt such that Ri_bulk at level kt+1 > Ri_crit
     do kt=1,nlev-1
-      if (Ri_bulk(kt+1).ge.CVmix_kpp_params%ri_crit) &
+      if (Ri_bulk(kt+1).ge.CVmix_kpp_params_in%ri_crit) &
         exit
     end do
     if (kt.eq.nlev) then
@@ -281,7 +307,7 @@ contains
     b = 0.0_cvmix_r8
     c = 0.0_cvmix_r8
     d = 0.0_cvmix_r8
-    select case (CVmix_kpp_params%interp_type)
+    select case (CVmix_kpp_params_in%interp_type)
       case (CVMIX_KPP_INTERP_LINEAR)
         ! Match values at levels kt and kt+1
         print*, "Linear interpolation"
@@ -371,7 +397,7 @@ contains
         print*, "Cubic spline interpolation"
     end select
     print*, kt, nlev
-    OBL_depth = cubic_root_find((/a,b,c,d-CVmix_kpp_params%ri_crit/), &
+    OBL_depth = cubic_root_find((/a,b,c,d-CVmix_kpp_params_in%ri_crit/), &
                                 0.5_cvmix_r8*(depth(kt)+depth(kt+1)))
 
 !EOC
@@ -383,7 +409,7 @@ contains
 ! !IROUTINE: cvmix_kpp_compute_OBL_depth_wrap
 ! !INTERFACE:
 
-  subroutine cvmix_kpp_compute_OBL_depth_wrap(CVmix_kpp_params, CVmix_vars)
+  subroutine cvmix_kpp_compute_OBL_depth_wrap(CVmix_vars, CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
 !  Computes the depth of the ocean boundary layer (OBL) for a given column
@@ -394,7 +420,8 @@ contains
 !  Only those used by entire module. 
 
 ! !INPUT PARAMETERS:
-    type(cvmix_kpp_params_type), intent(in) :: CVmix_kpp_params
+    type(cvmix_kpp_params_type), optional, target, intent(in) ::                &
+                                           CVmix_kpp_params_user
 
 ! !OUTPUT PARAMETERS:
     type(cvmix_data_type), intent(inout) :: CVmix_vars
@@ -405,8 +432,8 @@ contains
     ! Local variables
     real(cvmix_r8) :: lcl_obl_depth
 
-    call cvmix_kpp_compute_OBL_depth(CVmix_kpp_params, CVmix_vars%Rib, &
-                                     CVmix_vars%zt, lcl_obl_depth)
+    call cvmix_kpp_compute_OBL_depth(CVmix_vars%Rib, CVmix_vars%zt,           &
+                                     lcl_obl_depth, CVmix_kpp_params_user)
     call cvmix_put(CVmix_vars, 'OBL_depth', lcl_obl_depth)
 
 !EOC

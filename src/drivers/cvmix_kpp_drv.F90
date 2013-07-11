@@ -20,8 +20,7 @@ Subroutine cvmix_kpp_driver(nlev)
                                     cvmix_strlen,             &
                                     cvmix_data_type
   use cvmix_kpp,             only : cvmix_init_kpp,           &
-                                    cvmix_coeffs_kpp,         &
-                                    cvmix_kpp_params_type
+                                    cvmix_coeffs_kpp
   use cvmix_put_get,         only : cvmix_put
   use cvmix_io,              only : cvmix_io_open,            &
                                     cvmix_output_write,       &
@@ -38,7 +37,6 @@ Subroutine cvmix_kpp_driver(nlev)
 
   ! CVMix datatypes
   type(cvmix_data_type)       :: CVmix_vars
-  type(cvmix_kpp_params_type) :: CVmix_kpp_params
 
   real(cvmix_r8), dimension(:,:), allocatable, target :: diffusivity
   real(cvmix_r8), dimension(:),   allocatable, target :: viscosity
@@ -84,8 +82,8 @@ Subroutine cvmix_kpp_driver(nlev)
   CVmix_vars%zw_iface   => zw_iface(:)
   CVmix_vars%Rib        => Ri_bulk(:)
 
-  call cvmix_init_kpp(CVmix_kpp_params, ri_crit=ri_crit, interp_type=interp_type)
-  call cvmix_coeffs_kpp(CVmix_vars, CVmix_kpp_params)
+  call cvmix_init_kpp(ri_crit=ri_crit, interp_type=interp_type)
+  call cvmix_coeffs_kpp(CVmix_vars)
   print*, "OBL depth = ", CVmix_vars%OBL_depth
 
 #ifdef _NETCDF
