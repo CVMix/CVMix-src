@@ -144,14 +144,15 @@ contains
 
     do kw=1,CVmix_vars%nlev-1
       if (CVmix_conv_params_in%convect_visc.ne.0_cvmix_r8) then
-         vvconv = CVmix_conv_params_in%convect_visc
+         vvconv = cvmix_get_conv_real('convect_visc', CVmix_conv_params_in)
       else
         ! convection only affects tracers
         vvconv = CVmix_vars%visc_iface(kw)
       end if
 
       if (CVmix_vars%dens(kw).gt.CVmix_vars%dens_lwr(kw)) then
-        CVmix_vars%diff_iface(kw+1,1) = CVmix_conv_params_in%convect_diff
+        CVmix_vars%diff_iface(kw+1,1) = cvmix_get_conv_real('convect_diff',   &
+                                        CVmix_conv_params_in)
         CVmix_vars%visc_iface(kw+1)   = vvconv
       end if
     end do
@@ -204,7 +205,7 @@ contains
 ! !IROUTINE: cvmix_get_conv_real
 ! !INTERFACE:
 
-  function cvmix_get_conv_real(CVmix_conv_params_get, varname)
+  function cvmix_get_conv_real(varname, CVmix_conv_params_user)
 
 ! !DESCRIPTION:
 !  Read the real value of a cvmix\_conv\_params\_type variable.
@@ -215,13 +216,22 @@ contains
 !  Only those used by entire module. 
 
 ! !INPUT PARAMETERS:
-    type(cvmix_conv_params_type), intent(in) :: CVmix_conv_params_get
     character(len=*),             intent(in) :: varname
+    type(cvmix_conv_params_type), optional, target, intent(in) ::             &
+                                           CVmix_conv_params_user
 
 ! !OUTPUT PARAMETERS:
     real(cvmix_r8) :: cvmix_get_conv_real
 !EOP
 !BOC
+
+    type(cvmix_conv_params_type), pointer :: CVmix_conv_params_get
+
+    if (present(CVmix_conv_params_user)) then
+      CVmix_conv_params_get => CVmix_conv_params_user
+    else
+      CVmix_conv_params_get => CVmix_conv_params_saved
+    end if
 
     cvmix_get_conv_real = 0.0_cvmix_r8
     select case (trim(varname))

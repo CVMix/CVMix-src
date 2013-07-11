@@ -81,7 +81,7 @@ contains
 ! !IROUTINE: cvmix_init_bkgnd_scalar
 ! !INTERFACE:
 
-  subroutine cvmix_init_bkgnd_scalar(bkgnd_visc, bkgnd_diff, CVmix_bkgnd_params_user)
+  subroutine cvmix_init_bkgnd_scalar(bkgnd_diff, bkgnd_visc, CVmix_bkgnd_params_user)
 
 ! !DESCRIPTION:
 !  Initialization routine for static background mixing coefficients. For each
@@ -94,8 +94,8 @@ contains
 !  Only those used by entire module. 
 
 ! !INPUT PARAMETERS:
-    real(cvmix_r8), intent(in) :: bkgnd_visc
     real(cvmix_r8), intent(in) :: bkgnd_diff
+    real(cvmix_r8), intent(in) :: bkgnd_visc
 
 ! !OUTPUT PARAMETERS:
     type(cvmix_bkgnd_params_type), optional, target, intent(out) :: &
@@ -132,7 +132,7 @@ contains
 ! !IROUTINE: cvmix_init_bkgnd_1D
 ! !INTERFACE:
 
-  subroutine cvmix_init_bkgnd_1D(bkgnd_visc, bkgnd_diff, ncol,                &
+  subroutine cvmix_init_bkgnd_1D(bkgnd_diff, bkgnd_visc, ncol,                &
                                  CVmix_params_user, CVmix_bkgnd_params_user)
 
 ! !DESCRIPTION:
@@ -146,8 +146,8 @@ contains
 !  Only those used by entire module. 
 
 ! !INPUT PARAMETERS:
-    real(cvmix_r8), dimension(:),   intent(in) :: bkgnd_visc
     real(cvmix_r8), dimension(:),   intent(in) :: bkgnd_diff
+    real(cvmix_r8), dimension(:),   intent(in) :: bkgnd_visc
     integer, optional,              intent(in) :: ncol
     type(cvmix_global_params_type), optional, target, intent(in)  :: &
                                                    CVmix_params_user
@@ -209,7 +209,7 @@ contains
 ! !IROUTINE: cvmix_init_bkgnd_2D
 ! !INTERFACE:
 
-  subroutine cvmix_init_bkgnd_2D(bkgnd_visc, bkgnd_diff, ncol,                &
+  subroutine cvmix_init_bkgnd_2D(bkgnd_diff, bkgnd_visc, ncol,                &
                                  CVmix_params_user, CVmix_bkgnd_params_user)
 
 ! !DESCRIPTION:
@@ -225,8 +225,8 @@ contains
 ! !INPUT PARAMETERS:
     type(cvmix_global_params_type), target, optional, intent(in)  :: &
                                                    CVmix_params_user
-    real(cvmix_r8), dimension(:,:), intent(in) :: bkgnd_visc
     real(cvmix_r8), dimension(:,:), intent(in) :: bkgnd_diff
+    real(cvmix_r8), dimension(:,:), intent(in) :: bkgnd_visc
     integer,                        intent(in) :: ncol
 
 ! !OUTPUT PARAMETERS:
