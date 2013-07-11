@@ -277,12 +277,14 @@ contains
     ! y = ax^3 + bx^2 + cx + d
     ! linear => a = b = 0
     ! quad   => a = 0
+    a = 0.0_cvmix_r8
+    b = 0.0_cvmix_r8
+    c = 0.0_cvmix_r8
+    d = 0.0_cvmix_r8
     select case (CVmix_kpp_params%interp_type)
       case (CVMIX_KPP_INTERP_LINEAR)
         ! Match values at levels kt and kt+1
         print*, "Linear interpolation"
-        a = 0.0_cvmix_r8
-        b = a
         c = (Ri_bulk(kt+1)-Ri_bulk(kt))/(depth(kt+1)-depth(kt))
         d = Ri_bulk(kt)-c*depth(kt)
       case (CVMIX_KPP_INTERP_QUAD)
@@ -293,7 +295,6 @@ contains
         ! [  2x0  1 0 ][ d ]   [ slope ]
         !      ^^^
         !       M
-        a = 0.0_cvmix_r8
         det = -((depth(kt+1)-depth(kt))**2)
         allocate(Minv(3,3))
         allocate(rhs(3))
@@ -315,9 +316,6 @@ contains
         Minv(3,2) = depth(kt+1)*(real(2, cvmix_r8)*depth(kt)-depth(kt+1))/det
         Minv(3,3) = -depth(kt+1)*depth(kt)/(depth(kt+1)-depth(kt))
 
-        b = 0.0_cvmix_r8
-        c = 0.0_cvmix_r8
-        d = 0.0_cvmix_r8
         do k=1,3
           b = b+Minv(1,k)*rhs(k)
           c = c+Minv(2,k)*rhs(k)
@@ -361,11 +359,6 @@ contains
         Minv(4,3) = depth(kt)*(depth(kt+1)**2)*(depth(kt+1)-depth(kt))/det
         Minv(4,4) = depth(kt+1)*(depth(kt)**2)*(depth(kt+1)-depth(kt))/det
 
-
-        a = 0.0_cvmix_r8
-        b = 0.0_cvmix_r8
-        c = 0.0_cvmix_r8
-        d = 0.0_cvmix_r8
         do k=1,4
           a = a+Minv(1,k)*rhs(k)
           b = b+Minv(2,k)*rhs(k)

@@ -98,17 +98,16 @@ contains
     real(cvmix_r8), intent(in) :: bkgnd_visc
 
 ! !OUTPUT PARAMETERS:
-    type(cvmix_bkgnd_params_type), optional, target, intent(out) :: &
+    type(cvmix_bkgnd_params_type), optional, target, intent(inout) :: &
                                               CVmix_bkgnd_params_user
 !EOP
 !BOC
 
     type(cvmix_bkgnd_params_type), pointer :: CVmix_bkgnd_params_out
 
+    CVmix_bkgnd_params_out => CVmix_bkgnd_params_saved
     if (present(CVmix_bkgnd_params_user)) then
       CVmix_bkgnd_params_out => CVmix_bkgnd_params_user
-    else
-      CVmix_bkgnd_params_out => CVmix_bkgnd_params_saved
     end if
 
     if (.not.allocated(CVmix_bkgnd_params_out%static_visc)) then
@@ -149,12 +148,12 @@ contains
     real(cvmix_r8), dimension(:),   intent(in) :: bkgnd_diff
     real(cvmix_r8), dimension(:),   intent(in) :: bkgnd_visc
     integer, optional,              intent(in) :: ncol
-    type(cvmix_global_params_type), optional, target, intent(in)  :: &
-                                                   CVmix_params_user
+    type(cvmix_global_params_type), optional, target, intent(in) :: &
+                                                  CVmix_params_user
 
 ! !OUTPUT PARAMETERS:
-    type(cvmix_bkgnd_params_type),  optional, target, intent(out) :: &
-                                             CVmix_bkgnd_params_user
+    type(cvmix_bkgnd_params_type),  optional, target, intent(inout) :: &
+                                               CVmix_bkgnd_params_user
 !EOP
 !BOC
 
@@ -163,14 +162,14 @@ contains
     type(cvmix_global_params_type), pointer :: CVmix_params_in
     type(cvmix_bkgnd_params_type),  pointer :: CVmix_bkgnd_params_out
 
+    nullify(CVmix_params_in)
     if (present(CVmix_params_user)) then
       CVmix_params_in => CVmix_params_user
     endif
 
+    CVmix_bkgnd_params_out => CVmix_bkgnd_params_saved
     if (present(CVmix_bkgnd_params_user)) then
       CVmix_bkgnd_params_out => CVmix_bkgnd_params_user
-    else
-      CVmix_bkgnd_params_out => CVmix_bkgnd_params_saved
     end if
 
     ! NOTE: need to verify that bkgnd_visc and bkgnd_diff are ncol x 1 or
@@ -223,15 +222,15 @@ contains
 !  Only those used by entire module. 
 
 ! !INPUT PARAMETERS:
-    type(cvmix_global_params_type), target, optional, intent(in)  :: &
-                                                   CVmix_params_user
+    type(cvmix_global_params_type), target, optional, intent(in) :: &
+                                                  CVmix_params_user
     real(cvmix_r8), dimension(:,:), intent(in) :: bkgnd_diff
     real(cvmix_r8), dimension(:,:), intent(in) :: bkgnd_visc
     integer,                        intent(in) :: ncol
 
 ! !OUTPUT PARAMETERS:
-    type(cvmix_bkgnd_params_type),  target, optional, intent(out) :: &
-                                              CVmix_bkgnd_params_user
+    type(cvmix_bkgnd_params_type),  target, optional, intent(inout) :: &
+                                               CVmix_bkgnd_params_user
 !EOP
 !BOC
 
@@ -240,14 +239,14 @@ contains
     type(cvmix_global_params_type), pointer :: CVmix_params_in
     type(cvmix_bkgnd_params_type),  pointer :: CVmix_bkgnd_params_out
 
+    nullify(CVmix_params_in)
     if (present(CVmix_params_user)) then
       CVmix_params_in => CVmix_params_user
     endif
 
+    CVmix_bkgnd_params_out => CVmix_bkgnd_params_saved
     if (present(CVmix_bkgnd_params_user)) then
       CVmix_bkgnd_params_out => CVmix_bkgnd_params_user
-    else
-      CVmix_bkgnd_params_out => CVmix_bkgnd_params_saved
     end if
 
     ! NOTE: need to verify that bkgnd_visc and bkgnd_diff are ncol x nlev+1
@@ -324,8 +323,8 @@ contains
                                   bl4       ! m     or cm
 
 ! !OUTPUT PARAMETERS:
-    type(cvmix_bkgnd_params_type),  target, optional, intent(out) :: &
-                                              CVmix_bkgnd_params_user
+    type(cvmix_bkgnd_params_type),  target, optional, intent(inout) :: &
+                                               CVmix_bkgnd_params_user
 !EOP
 !BOC
 
@@ -339,14 +338,14 @@ contains
     ! Local copies to make code easier to read
     real(cvmix_r8), dimension(:), allocatable :: visc, diff, zw
 
+    nullify(CVmix_params_in)
     if (present(CVmix_params_user)) then
       CVmix_params_in => CVmix_params_user
     endif
 
+    CVmix_bkgnd_params_out => CVmix_bkgnd_params_saved
     if (present(CVmix_bkgnd_params_user)) then
       CVmix_bkgnd_params_out => CVmix_bkgnd_params_user
-    else
-      CVmix_bkgnd_params_out => CVmix_bkgnd_params_saved
     end if
 
     nlev = CVmix_params_in%max_nlev
@@ -406,10 +405,9 @@ contains
     integer :: nlev    ! Number of vertical levels
     type(cvmix_bkgnd_params_type),  pointer :: CVmix_bkgnd_params_in
        
+    CVmix_bkgnd_params_in => CVmix_bkgnd_params_saved
     if (present(CVmix_bkgnd_params_user)) then
       CVmix_bkgnd_params_in => CVmix_bkgnd_params_user
-    else
-      CVmix_bkgnd_params_in => CVmix_bkgnd_params_saved
     end if
 
     nlev = CVmix_vars%nlev
