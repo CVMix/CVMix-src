@@ -43,6 +43,7 @@
   public :: cvmix_init_kpp
   public :: cvmix_coeffs_kpp
   public :: cvmix_put_kpp
+  public :: cvmix_get_kpp_real
   public :: cvmix_kpp_compute_OBL_depth ! MNL: I think we want this public
 
   interface cvmix_put_kpp
@@ -165,8 +166,8 @@ contains
     end if
 
     call cvmix_kpp_compute_OBL_depth(CVmix_vars, CVmix_kpp_params_in)
-    CVmix_vars%visc_iface = CVmix_kpp_params_in%Ri_crit
-    CVmix_vars%diff_iface = CVmix_kpp_params_in%Ri_crit
+    CVmix_vars%visc_iface = cvmix_get_kpp_real('Ri_crit', CVmix_kpp_params_in)
+    CVmix_vars%diff_iface = cvmix_get_kpp_real('Ri_crit', CVmix_kpp_params_in)
 
 !EOC
   end subroutine cvmix_coeffs_kpp
@@ -241,6 +242,53 @@ contains
 !EOC
 
   end subroutine cvmix_put_kpp_int
+
+!BOP
+
+! !IROUTINE: cvmix_get_kpp_real
+! !INTERFACE:
+
+  function cvmix_get_kpp_real(varname, CVmix_kpp_params_user)
+
+! !DESCRIPTION:
+!  Return the real value of a cvmix\_kpp\_params\_type variable.
+!  NOTE: This function is not efficient and is only for infrequent
+!  queries of ddiff parameters, such as at initialization.
+!\\
+!\\
+
+! !USES:
+!  Only those used by entire module. 
+
+! !INPUT PARAMETERS:
+    character(len=*),              intent(in) :: varname
+    type(cvmix_kpp_params_type), optional, target, intent(in) ::              &
+                                           CVmix_kpp_params_user
+
+! !OUTPUT PARAMETERS:
+    real(cvmix_r8) :: cvmix_get_kpp_real
+!EOP
+!BOC
+
+    type(cvmix_kpp_params_type), pointer :: CVmix_kpp_params_in
+
+    CVmix_kpp_params_in => CVmix_kpp_params_saved
+    if (present(CVmix_kpp_params_user)) then
+      CVmix_kpp_params_in => CVmix_kpp_params_user
+    end if
+
+    cvmix_get_kpp_real = 0.0_cvmix_r8
+    select case (trim(varname))
+      case ('Ri_crit')
+        cvmix_get_kpp_real = CVmix_kpp_params_in%Ri_crit
+      case DEFAULT
+        print*, "ERROR: ", trim(varname), " not a valid choice!"
+        stop 1
+    end select
+
+!EOC
+
+  end function cvmix_get_kpp_real
 
 !BOP
 
