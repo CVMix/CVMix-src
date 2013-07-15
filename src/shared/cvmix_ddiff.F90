@@ -58,6 +58,8 @@ module cvmix_ddiff
 
 !EOP
 
+  type(cvmix_ddiff_params_type), target :: CVmix_ddiff_params_saved
+
  contains
 
 !BOP
@@ -65,9 +67,9 @@ module cvmix_ddiff
 ! !IROUTINE: cvmix_init_ddiff
 ! !INTERFACE:
 
-  subroutine cvmix_init_ddiff(CVmix_ddiff_params, units, strat_param_max, &
-                              kappa_ddiff_t, kappa_ddiff_s, ddiff_exp1,   &
-                              ddiff_exp2, mol_diff, kappa_ddiff_param1,   &
+  subroutine cvmix_init_ddiff(units, CVmix_ddiff_params_user, strat_param_max, &
+                              kappa_ddiff_t, kappa_ddiff_s, ddiff_exp1,        &
+                              ddiff_exp2, mol_diff, kappa_ddiff_param1,        &
                               kappa_ddiff_param2, kappa_ddiff_param3)
 
 ! !DESCRIPTION:
@@ -136,73 +138,98 @@ module cvmix_ddiff
                                               kappa_ddiff_param3
 
 ! !OUTPUT PARAMETERS:
-    type(cvmix_ddiff_params_type), intent(inout) :: CVmix_ddiff_params
+    type(cvmix_ddiff_params_type), optional, target, intent(inout) ::         &
+                                              CVmix_ddiff_params_user
 !EOP
 !BOC
 
+    type(cvmix_ddiff_params_type), pointer :: CVmix_ddiff_params_out
+
+    if (present(CVmix_ddiff_params_user)) then
+      CVmix_ddiff_params_out => CVmix_ddiff_params_user
+    else
+      CVmix_ddiff_params_out => CVmix_ddiff_params_saved
+    end if
+
     ! Unitless parameters
     if (present(strat_param_max)) then
-      call cvmix_put_ddiff(CVmix_ddiff_params, "strat_param_max", strat_param_max)
+      call cvmix_put_ddiff(CVmix_ddiff_params_out, "strat_param_max",         &
+                           strat_param_max)
     else
-      call cvmix_put_ddiff(CVmix_ddiff_params, "strat_param_max", 2.55_cvmix_r8)
+      call cvmix_put_ddiff(CVmix_ddiff_params_out, "strat_param_max",          &
+                           2.55_cvmix_r8)
     end if
     if (present(ddiff_exp1)) then
-      call cvmix_put_ddiff(CVmix_ddiff_params, "ddiff_exp1", ddiff_exp1)
+      call cvmix_put_ddiff(CVmix_ddiff_params_out, "ddiff_exp1", ddiff_exp1)
     else
-      call cvmix_put_ddiff(CVmix_ddiff_params, "ddiff_exp1", 1.0_cvmix_r8)
+      call cvmix_put_ddiff(CVmix_ddiff_params_out, "ddiff_exp1", 1.0_cvmix_r8)
     end if
     if (present(ddiff_exp2)) then
-      call cvmix_put_ddiff(CVmix_ddiff_params, "ddiff_exp2", ddiff_exp2)
+      call cvmix_put_ddiff(CVmix_ddiff_params_out, "ddiff_exp2", ddiff_exp2)
     else
-      call cvmix_put_ddiff(CVmix_ddiff_params, "ddiff_exp2", 3.0_cvmix_r8)
+      call cvmix_put_ddiff(CVmix_ddiff_params_out, "ddiff_exp2", 3.0_cvmix_r8)
     end if
     if (present(kappa_ddiff_param1)) then
-      call cvmix_put_ddiff(CVmix_ddiff_params, "kappa_ddiff_param1", kappa_ddiff_param1)
+      call cvmix_put_ddiff(CVmix_ddiff_params_out, "kappa_ddiff_param1",       &
+                           kappa_ddiff_param1)
     else
-      call cvmix_put_ddiff(CVmix_ddiff_params, "kappa_ddiff_param1", 0.909_cvmix_r8)
+      call cvmix_put_ddiff(CVmix_ddiff_params_out, "kappa_ddiff_param1",       &
+                           0.909_cvmix_r8)
     end if
     if (present(kappa_ddiff_param2)) then
-      call cvmix_put_ddiff(CVmix_ddiff_params, "kappa_ddiff_param2", kappa_ddiff_param2)
+      call cvmix_put_ddiff(CVmix_ddiff_params_out, "kappa_ddiff_param2",       &
+                           kappa_ddiff_param2)
     else
-      call cvmix_put_ddiff(CVmix_ddiff_params, "kappa_ddiff_param2", 4.6_cvmix_r8)
+      call cvmix_put_ddiff(CVmix_ddiff_params_out, "kappa_ddiff_param2",       &
+                           4.6_cvmix_r8)
     end if
     if (present(kappa_ddiff_param3)) then
-      call cvmix_put_ddiff(CVmix_ddiff_params, "kappa_ddiff_param3", kappa_ddiff_param3)
+      call cvmix_put_ddiff(CVmix_ddiff_params_out, "kappa_ddiff_param3",       &
+                           kappa_ddiff_param3)
     else
-      call cvmix_put_ddiff(CVmix_ddiff_params, "kappa_ddiff_param3", -0.54_cvmix_r8)
+      call cvmix_put_ddiff(CVmix_ddiff_params_out, "kappa_ddiff_param3",       &
+                           -0.54_cvmix_r8)
     end if
 
     ! Parameters with units
     if (present(kappa_ddiff_t)) then
-      call cvmix_put_ddiff(CVmix_ddiff_params, "kappa_ddiff_t", kappa_ddiff_t)
+      call cvmix_put_ddiff(CVmix_ddiff_params_out, "kappa_ddiff_t",            &
+                           kappa_ddiff_t)
     end if
     if (present(kappa_ddiff_s)) then
-      call cvmix_put_ddiff(CVmix_ddiff_params, "kappa_ddiff_s", kappa_ddiff_s)
+      call cvmix_put_ddiff(CVmix_ddiff_params_out, "kappa_ddiff_s",            &
+                           kappa_ddiff_s)
     end if
     if (present(mol_diff)) then
-      call cvmix_put_ddiff(CVmix_ddiff_params, "mol_diff", mol_diff)
+      call cvmix_put_ddiff(CVmix_ddiff_params_out, "mol_diff", mol_diff)
     end if
 
     select case (trim(units))
       case ('mks')
         if (.not.present(kappa_ddiff_t)) then
-          call cvmix_put_ddiff(CVmix_ddiff_params, "kappa_ddiff_t", 7e-5_cvmix_r8)
+          call cvmix_put_ddiff(CVmix_ddiff_params_out, "kappa_ddiff_t",        &
+                               7e-5_cvmix_r8)
         end if
         if (.not.present(kappa_ddiff_s)) then
-          call cvmix_put_ddiff(CVmix_ddiff_params, "kappa_ddiff_s", 1e-4_cvmix_r8)
+          call cvmix_put_ddiff(CVmix_ddiff_params_out, "kappa_ddiff_s",        &
+                               1e-4_cvmix_r8)
         end if
         if (.not.present(mol_diff)) then
-          call cvmix_put_ddiff(CVmix_ddiff_params, "mol_diff", 1.5e-6_cvmix_r8)
+          call cvmix_put_ddiff(CVmix_ddiff_params_out, "mol_diff",             &
+                               1.5e-6_cvmix_r8)
         end if
       case ('cgs')
         if (.not.present(kappa_ddiff_t)) then
-          call cvmix_put_ddiff(CVmix_ddiff_params, "kappa_ddiff_t", 7e-1_cvmix_r8)
+          call cvmix_put_ddiff(CVmix_ddiff_params_out, "kappa_ddiff_t",        &
+                               7e-1_cvmix_r8)
         end if
         if (.not.present(kappa_ddiff_s)) then
-          call cvmix_put_ddiff(CVmix_ddiff_params, "kappa_ddiff_s", 1.0_cvmix_r8)
+          call cvmix_put_ddiff(CVmix_ddiff_params_out, "kappa_ddiff_s",        &
+                               1.0_cvmix_r8)
         end if
         if (.not.present(mol_diff)) then
-          call cvmix_put_ddiff(CVmix_ddiff_params, "mol_diff", 1.5e-2_cvmix_r8)
+          call cvmix_put_ddiff(CVmix_ddiff_params_out, "mol_diff",             &
+                               1.5e-2_cvmix_r8)
         end if
 
       case DEFAULT
@@ -221,7 +248,7 @@ module cvmix_ddiff
 ! !IROUTINE: cvmix_coeffs_ddiff
 ! !INTERFACE:
 
-  subroutine cvmix_coeffs_ddiff(CVmix_vars, CVmix_ddiff_params)
+  subroutine cvmix_coeffs_ddiff(CVmix_vars, CVmix_ddiff_params_user)
 
 ! !DESCRIPTION:
 !  Computes vertical diffusion coefficients for the double diffusion mixing
@@ -233,7 +260,8 @@ module cvmix_ddiff
 !  only those used by entire module.
 
 ! !INPUT PARAMETERS:
-    type(cvmix_ddiff_params_type), intent(in) :: CVmix_ddiff_params
+    type(cvmix_ddiff_params_type), optional, target, intent(in) ::            &
+                                           CVmix_ddiff_params_user
 
 ! !INPUT/OUTPUT PARAMETERS:
     type(cvmix_data_type), intent(inout) :: CVmix_vars
@@ -245,6 +273,14 @@ module cvmix_ddiff
 !EOP
 !BOC
 
+    type(cvmix_ddiff_params_type), pointer :: CVmix_ddiff_params_in
+
+    if (present(CVmix_ddiff_params_user)) then
+      CVmix_ddiff_params_in => CVmix_ddiff_params_user
+    else
+      CVmix_ddiff_params_in => CVmix_ddiff_params_saved
+    end if
+
     ! Determine coefficients based on units requested
     CVmix_vars%diff_iface = 0_cvmix_r8
     do k = 1, CVmix_vars%nlev
@@ -252,20 +288,20 @@ module cvmix_ddiff
           (CVmix_vars%strat_param_denom(k).gt.0)) then
         ! Rrho > 1 and dS/dz < 0 => Salt fingering
         Rrho = CVmix_vars%strat_param_num(k) / CVmix_vars%strat_param_denom(k)
-        if (Rrho.lt.CVmix_ddiff_params%strat_param_max) then
-          ddiff = (one-((Rrho-one)/(CVmix_ddiff_params%strat_param_max-one))** &
-                  CVmix_ddiff_params%ddiff_exp1)**CVmix_ddiff_params%ddiff_exp2
-          CVmix_vars%diff_iface(k,1) = CVmix_ddiff_params%kappa_ddiff_t*ddiff
-          CVmix_vars%diff_iface(k,2) = CVmix_ddiff_params%kappa_ddiff_s*ddiff
+        if (Rrho.lt.CVmix_ddiff_params_in%strat_param_max) then
+          ddiff = (one-((Rrho-one)/(CVmix_ddiff_params_in%strat_param_max-one))** &
+                CVmix_ddiff_params_in%ddiff_exp1)**CVmix_ddiff_params_in%ddiff_exp2
+          CVmix_vars%diff_iface(k,1) = CVmix_ddiff_params_in%kappa_ddiff_t*ddiff
+          CVmix_vars%diff_iface(k,2) = CVmix_ddiff_params_in%kappa_ddiff_s*ddiff
         end if
       end if
       if ((CVmix_vars%strat_param_num(k).gt.CVmix_vars%strat_param_denom(k)).and.&
           (CVmix_vars%strat_param_num(k).lt.0)) then
         ! Rrho < 1 and dT/dz > 0 => Diffusive convection
         Rrho = CVmix_vars%strat_param_num(k) / CVmix_vars%strat_param_denom(k)
-        ddiff = CVmix_ddiff_params%mol_diff*CVmix_ddiff_params%kappa_ddiff_param1*&
-                exp(CVmix_ddiff_params%kappa_ddiff_param2*exp(&
-                CVmix_ddiff_params%kappa_ddiff_param3*(one/Rrho-one)))
+        ddiff = CVmix_ddiff_params_in%mol_diff*CVmix_ddiff_params_in%kappa_ddiff_param1*&
+                exp(CVmix_ddiff_params_in%kappa_ddiff_param2*exp(&
+                CVmix_ddiff_params_in%kappa_ddiff_param3*(one/Rrho-one)))
         CVmix_vars%diff_iface(k,1) = ddiff
         if (Rrho.lt.0.5_cvmix_r8) then
           CVmix_vars%diff_iface(k,2) = 0.15_cvmix_r8*Rrho*ddiff
@@ -338,7 +374,7 @@ module cvmix_ddiff
 ! !IROUTINE: cvmix_get_ddiff_real
 ! !INTERFACE:
 
-  function cvmix_get_ddiff_real(CVmix_ddiff_params, varname)
+  function cvmix_get_ddiff_real(varname, CVmix_ddiff_params_user)
 
 ! !DESCRIPTION:
 !  Return the real value of a cvmix\_ddiff\_params\_type variable.
@@ -351,34 +387,43 @@ module cvmix_ddiff
 !  Only those used by entire module. 
 
 ! !INPUT PARAMETERS:
-    type(cvmix_ddiff_params_type), intent(in) :: CVmix_ddiff_params
-    character(len=*),              intent(in) :: varname
+    character(len=*),                                intent(in)    :: varname
+    type(cvmix_ddiff_params_type), optional, target, intent(inout) ::         &
+                                              CVmix_ddiff_params_user
 
 ! !OUTPUT PARAMETERS:
     real(cvmix_r8) :: cvmix_get_ddiff_real
 !EOP
 !BOC
 
+    type(cvmix_ddiff_params_type), pointer :: CVmix_ddiff_params_get
+
+    if (present(CVmix_ddiff_params_user)) then
+      CVmix_ddiff_params_get => CVmix_ddiff_params_user
+    else
+      CVmix_ddiff_params_get => CVmix_ddiff_params_saved
+    end if
+
     cvmix_get_ddiff_real = 0.0_cvmix_r8
     select case (trim(varname))
       case ('strat_param_max')
-        cvmix_get_ddiff_real = CVmix_ddiff_params%strat_param_max
+        cvmix_get_ddiff_real = CVmix_ddiff_params_get%strat_param_max
       case ('ddiff_exp1')
-        cvmix_get_ddiff_real = CVmix_ddiff_params%ddiff_exp1
+        cvmix_get_ddiff_real = CVmix_ddiff_params_get%ddiff_exp1
       case ('ddiff_exp2')
-        cvmix_get_ddiff_real = CVmix_ddiff_params%ddiff_exp2
+        cvmix_get_ddiff_real = CVmix_ddiff_params_get%ddiff_exp2
       case ('kappa_ddiff_param1')
-        cvmix_get_ddiff_real = CVmix_ddiff_params%kappa_ddiff_param1
+        cvmix_get_ddiff_real = CVmix_ddiff_params_get%kappa_ddiff_param1
       case ('kappa_ddiff_param2')
-        cvmix_get_ddiff_real = CVmix_ddiff_params%kappa_ddiff_param2
+        cvmix_get_ddiff_real = CVmix_ddiff_params_get%kappa_ddiff_param2
       case ('kappa_ddiff_param3')
-        cvmix_get_ddiff_real = CVmix_ddiff_params%kappa_ddiff_param3
+        cvmix_get_ddiff_real = CVmix_ddiff_params_get%kappa_ddiff_param3
       case ('kappa_ddiff_t')
-        cvmix_get_ddiff_real = CVmix_ddiff_params%kappa_ddiff_t
+        cvmix_get_ddiff_real = CVmix_ddiff_params_get%kappa_ddiff_t
       case ('kappa_ddiff_s')
-        cvmix_get_ddiff_real = CVmix_ddiff_params%kappa_ddiff_s
+        cvmix_get_ddiff_real = CVmix_ddiff_params_get%kappa_ddiff_s
       case ('mol_diff')
-        cvmix_get_ddiff_real = CVmix_ddiff_params%mol_diff
+        cvmix_get_ddiff_real = CVmix_ddiff_params_get%mol_diff
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
         stop 1

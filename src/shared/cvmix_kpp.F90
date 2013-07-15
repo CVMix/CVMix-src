@@ -261,7 +261,7 @@ contains
 !  Only those used by entire module. 
 
 ! !INPUT PARAMETERS:
-    character(len=*),              intent(in) :: varname
+    character(len=*),                              intent(in) :: varname
     type(cvmix_kpp_params_type), optional, target, intent(in) ::              &
                                            CVmix_kpp_params_user
 
