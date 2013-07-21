@@ -346,8 +346,8 @@ begin
   res@tiMainString = "Boundary Layer Depth"
   res@tiXAxisString = "HMIX (m)"
   res@tiYAxisString = "HBL (m)"
-  res@xyLineThicknesses = (/1, 2, 1, 2/)
-  res@xyDashPatterns    = (/0, 0, 1,15/)
+  res@xyLineThicknesses = (/0.5, 2., 1., 2./)
+  res@xyDashPatterns    = (/  0,  0,  1,  1/)
   res@tmXBMode = "Explicit"
   res@tmYLMode = "Explicit"
 
@@ -428,7 +428,7 @@ begin
     res@tiYAxisString = "depth (m)"
     res@trXMinF = 0.
     res@trXMaxF = plot_Rib_mid(Ncells-1)
-    res@xyLineThicknesses = (/0.5, 0.5, 1., 1., 2./)
+    res@xyLineThicknesses = (/0.5, 0.5, 2., 1., 2./)
     res@xyDashPatterns    = (/  2,   2,  0,  1,  1/)
     res@gsnMaximize = True
   

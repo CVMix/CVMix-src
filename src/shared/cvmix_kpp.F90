@@ -61,8 +61,18 @@
   ! cvmix_kpp_params_type contains the necessary parameters for KPP mixing
   type, public :: cvmix_kpp_params_type
     private
-    real(cvmix_r8) :: Ri_crit
-    integer        :: interp_type
+    real(cvmix_r8) :: Ri_crit      ! Critical Richardson number
+                               ! (OBL_depth = point where bulk Ri = Ri_crit)
+    real(cvmix_r8) :: vonkarman    ! von Karman constant
+    ! For velocity scale function, _m => momentum and _s => scalar (tracer)
+    real(cvmix_r8) :: zeta_m       ! parameter for computing vel scale func
+    real(cvmix_r8) :: zeta_s       ! parameter for computing vel scale func
+    real(cvmix_r8) :: a_m          ! parameter for computing vel scale func
+    real(cvmix_r8) :: a_s          ! parameter for computing vel scale func
+    real(cvmix_r8) :: c_m          ! parameter for computing vel scale func
+    real(cvmix_r8) :: c_s          ! parameter for computing vel scale func
+    real(cvmix_r8) :: eps          ! small non-negative val (rec 1e-10)
+    integer        :: interp_type  ! type of iterpolation to use
   end type cvmix_kpp_params_type
 
 !EOP
@@ -76,7 +86,8 @@ contains
 ! !IROUTINE: cvmix_init_kpp
 ! !INTERFACE:
 
-  subroutine cvmix_init_kpp(ri_crit, interp_type, CVmix_kpp_params_user)
+  subroutine cvmix_init_kpp(ri_crit, vonkarman, zeta_m, zeta_s, a_m, a_s,     &
+                            c_m, c_s, eps, interp_type, CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
 !  Initialization routine for KPP mixing.
@@ -85,7 +96,8 @@ contains
 !  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
-    real(cvmix_r8),   optional :: ri_crit
+    real(cvmix_r8),   optional :: ri_crit, vonkarman, zeta_m, zeta_s, a_m, &
+                                  a_s, c_m, c_s, eps
     character(len=*), optional :: interp_type
 
 ! !OUTPUT PARAMETERS:
@@ -106,6 +118,54 @@ contains
       call cvmix_put_kpp(CVmix_kpp_params_out, 'Ri_crit', ri_crit)
     else
       call cvmix_put_kpp(CVmix_kpp_params_out, 'Ri_crit', 0.3_cvmix_r8)
+    end if
+
+    if (present(vonkarman)) then
+      call cvmix_put_kpp(CVmix_kpp_params_out, 'vonkarman', vonkarman)
+    else
+      call cvmix_put_kpp(CVmix_kpp_params_out, 'vonkarman', 0.41_cvmix_r8)
+    end if
+
+    if (present(zeta_m)) then
+      call cvmix_put_kpp(CVmix_kpp_params_out, 'zeta_m', zeta_m)
+    else
+      call cvmix_put_kpp(CVmix_kpp_params_out, 'zeta_m', -0.2_cvmix_r8)
+    end if
+
+    if (present(zeta_s)) then
+      call cvmix_put_kpp(CVmix_kpp_params_out, 'zeta_s', zeta_s)
+    else
+      call cvmix_put_kpp(CVmix_kpp_params_out, 'zeta_s', -1.0_cvmix_r8)
+    end if
+
+    if (present(a_m)) then
+      call cvmix_put_kpp(CVmix_kpp_params_out, 'a_m', a_m)
+    else
+      call cvmix_put_kpp(CVmix_kpp_params_out, 'a_m', 1.26_cvmix_r8)
+    end if
+
+    if (present(a_s)) then
+      call cvmix_put_kpp(CVmix_kpp_params_out, 'a_s', a_s)
+    else
+      call cvmix_put_kpp(CVmix_kpp_params_out, 'a_s', -28.86_cvmix_r8)
+    end if
+
+    if (present(c_m)) then
+      call cvmix_put_kpp(CVmix_kpp_params_out, 'c_m', c_m)
+    else
+      call cvmix_put_kpp(CVmix_kpp_params_out, 'c_m', 8.38_cvmix_r8)
+    end if
+
+    if (present(c_s)) then
+      call cvmix_put_kpp(CVmix_kpp_params_out, 'c_s', c_s)
+    else
+      call cvmix_put_kpp(CVmix_kpp_params_out, 'c_s', 98.96_cvmix_r8)
+    end if
+
+    if (present(eps)) then
+      call cvmix_put_kpp(CVmix_kpp_params_out, 'eps', eps)
+    else
+      call cvmix_put_kpp(CVmix_kpp_params_out, 'eps', 1e-10_cvmix_r8)
     end if
 
     if (present(interp_type)) then
@@ -199,6 +259,22 @@ contains
     select case (trim(varname))
       case ('Ri_crit')
         CVmix_kpp_params%Ri_crit = val
+      case ('vonkarman')
+        CVmix_kpp_params%vonkarman = val
+      case ('zeta_m')
+        CVmix_kpp_params%zeta_m = val
+      case ('zeta_s')
+        CVmix_kpp_params%zeta_s = val
+      case ('a_m')
+        CVmix_kpp_params%a_m = val
+      case ('a_s')
+        CVmix_kpp_params%a_s = val
+      case ('c_m')
+        CVmix_kpp_params%c_m = val
+      case ('c_s')
+        CVmix_kpp_params%c_s = val
+      case ('eps')
+        CVmix_kpp_params%eps = val
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
         stop 1
@@ -281,6 +357,22 @@ contains
     select case (trim(varname))
       case ('Ri_crit')
         cvmix_get_kpp_real = CVmix_kpp_params_in%Ri_crit
+      case ('vonkarman')
+        cvmix_get_kpp_real = CVmix_kpp_params_in%vonkarman
+      case ('zeta_m')
+        cvmix_get_kpp_real = CVmix_kpp_params_in%zeta_m
+      case ('zeta_s')
+        cvmix_get_kpp_real = CVmix_kpp_params_in%zeta_s
+      case ('a_m')
+        cvmix_get_kpp_real = CVmix_kpp_params_in%a_m
+      case ('a_s')
+        cvmix_get_kpp_real = CVmix_kpp_params_in%a_s
+      case ('c_m')
+        cvmix_get_kpp_real = CVmix_kpp_params_in%c_m
+      case ('c_s')
+        cvmix_get_kpp_real = CVmix_kpp_params_in%c_s
+      case ('eps')
+        cvmix_get_kpp_real = CVmix_kpp_params_in%eps
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
         stop 1
@@ -487,6 +579,88 @@ contains
 !EOC
 
   end subroutine cvmix_kpp_compute_OBL_depth_wrap
+
+!BOP
+
+! !IROUTINE: cvmix_kpp_compute_OBL_depth_low
+! !INTERFACE:
+
+  subroutine cvmix_kpp_compute_turbulent_scales(sigma_coord, OBL_depth,       &
+                                                surf_buoy_force,              &
+                                                surf_fric_vel, w_m, w_s,      &
+                                                CVmix_kpp_params_user)
+
+! !DESCRIPTION:
+!  Computes the depth of the ocean boundary layer (OBL) for a given column
+!\\
+!\\
+
+! !USES:
+!  Only those used by entire module. 
+
+! !INPUT PARAMETERS:
+    real(cvmix_r8), intent(in) :: sigma_coord, OBL_depth, surf_buoy_force,    &
+                                  surf_fric_vel
+    type(cvmix_kpp_params_type), intent(in), optional, target ::              &
+                                           CVmix_kpp_params_user
+
+! !OUTPUT PARAMETERS:
+    real(cvmix_r8), optional, intent(out) :: w_m
+    real(cvmix_r8), optional, intent(out) :: w_s
+
+!EOP
+!BOC
+
+    ! Local variables
+    logical :: compute_wm, compute_ws
+    real(cvmix_r8) :: zeta, zeta_h, vonkar
+    type(cvmix_kpp_params_type), pointer :: CVmix_kpp_params_in
+
+    CVmix_kpp_params_in => CVmix_kpp_params_saved
+    if (present(CVmix_kpp_params_user)) then
+      CVmix_kpp_params_in => CVmix_kpp_params_user
+    end if
+
+    compute_wm = present(w_m)
+    compute_ws = present(w_s)
+    vonkar = cvmix_get_kpp_real('vonkar', CVmix_kpp_params_in)
+
+    zeta_h = sigma_coord*OBL_depth*surf_buoy_force*vonkar
+
+    zeta = zeta_h/(surf_fric_vel**3 +                                         &
+           cvmix_get_kpp_real('eps', CVmix_kpp_params_in))
+
+    if (compute_wm) then
+      if (zeta.ge.0) then
+        ! Stable region
+        w_m = vonkar*surf_fric_vel/(real(1,cvmix_r8) + real(5,cvmix_r8)*zeta)
+      else if (zeta.ge.cvmix_get_kpp_real('zeta_m', CVmix_kpp_params_in)) then
+        w_m = vonkar*surf_fric_vel*                                           &
+              (real(1,cvmix_r8) - real(16,cvmix_r8)*zeta)**0.25_cvmix_r8
+      else
+        w_m = vonkar*(cvmix_get_kpp_real('a_m', CVmix_kpp_params_in)*         &
+          (surf_fric_vel**3)-cvmix_get_kpp_real('c_m', CVmix_kpp_params_in)*  &
+          zeta_h)**(real(1,cvmix_r8)/real(3,cvmix_r8))
+      end if
+    end if
+
+    if (compute_ws) then
+      if (zeta.ge.0) then
+        ! Stable region
+        w_s = vonkar*surf_fric_vel/(real(1,cvmix_r8) + real(5,cvmix_r8)*zeta)
+      else if (zeta.ge.cvmix_get_kpp_real('zeta_s', CVmix_kpp_params_in)) then
+        w_s = vonkar*surf_fric_vel*                                           &
+              (real(1,cvmix_r8) - real(16,cvmix_r8)*zeta)**0.25_cvmix_r8
+      else
+        w_s = vonkar*(cvmix_get_kpp_real('a_s', CVmix_kpp_params_in)*         &
+          (surf_fric_vel**3)-cvmix_get_kpp_real('c_s', CVmix_kpp_params_in)*  &
+          zeta_h)**(real(1,cvmix_r8)/real(3,cvmix_r8))
+      end if
+    end if
+
+!EOC
+
+  end subroutine cvmix_kpp_compute_turbulent_scales
 
   function cubic_root_find(coeffs, x0)
 
