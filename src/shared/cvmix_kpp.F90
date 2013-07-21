@@ -582,7 +582,7 @@ contains
 
 !BOP
 
-! !IROUTINE: cvmix_kpp_compute_OBL_depth_low
+! !IROUTINE: cvmix_kpp_compute_turbulent_scales
 ! !INTERFACE:
 
   subroutine cvmix_kpp_compute_turbulent_scales(sigma_coord, OBL_depth,       &
@@ -591,7 +591,8 @@ contains
                                                 CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
-!  Computes the depth of the ocean boundary layer (OBL) for a given column
+!  Computes the turbulent velocity scales for momentum ($w\_m$) and scalars
+!  ($w\_s$)
 !\\
 !\\
 
