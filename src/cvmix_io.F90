@@ -54,6 +54,7 @@ module cvmix_io
   interface cvmix_output_write
     module procedure cvmix_output_write_single_col
     module procedure cvmix_output_write_multi_col
+    module procedure cvmix_output_write_2d_double
     module procedure cvmix_output_write_3d_double
   end interface
 
@@ -856,6 +857,81 @@ contains
 !EOC
 
   end subroutine cvmix_output_write_multi_col
+
+!BOP
+
+! !IROUTINE: cvmix_write_2d_double
+! !INTERFACE:
+
+  subroutine cvmix_output_write_2d_double(file_id, var_name, dim_names,       &
+                                          field, FillVal)
+
+! !DESCRIPTION:
+!  Routine to write a 2d field to a netcdf file. Called with cvmix\_output\_
+!  write (see interface in PUBLIC MEMBER FUNCTIONS above).
+!\\
+!\\
+
+! !USES:
+!  Only those used by entire module. 
+
+! !INPUT PARAMETERS:
+    integer,                           intent(in) :: file_id
+    character(len=*),                  intent(in) :: var_name
+    character(len=*), dimension(2),    intent(in) :: dim_names
+    real(cvmix_r8),   dimension(:,:),  intent(in) :: field
+    real(cvmix_r8), optional,          intent(in) :: FillVal
+
+! !LOCAL VARIABLES:
+    integer, dimension(2) :: dims
+    integer               :: i,j
+    logical               :: add_fill
+#ifdef _NETCDF
+    integer, dimension(2) :: dimids
+    integer               :: varid
+#endif
+!EOP
+!BOC
+
+    dims = shape(field)
+    add_fill = present(FillVal)
+    select case(get_file_type(file_id))
+#ifdef _NETCDF
+      case (NETCDF_FILE_TYPE)
+        do i=1,2
+          call netcdf_check(nf90_def_dim(file_id, trim(dim_names(i)), dims(i), &
+                                         dimids(i)))
+        end do
+        call netcdf_check(nf90_def_var(file_id, trim(var_name), NF90_DOUBLE,   &
+                                       dimids, varid))
+        if (add_fill) &
+          call netcdf_check(nf90_put_att(file_id, varid, "_FillValue", &
+                                         FillVal))
+        call netcdf_check(nf90_enddef(file_id))
+        call netcdf_check(nf90_put_var(file_id, varid, field))
+#endif
+
+      case (ASCII_FILE_TYPE)
+        do i=1,dims(1)
+          do j=1,dims(2)
+            write(file_id, "(E24.17E2)",advance='no') field(i,j)
+            if (j.ne.dims(2)) write(file_id, "(1X)", advance='no')
+          end do
+          write(file_id, *)          
+        end do
+      case DEFAULT
+        print*, "ERROR: cvmix_output_write_2d_double only writes to netcdf"
+        print*, "(attempt to write ", trim(var_name), " with dimensions ", &
+                trim(dim_names(1)), " and ", trim(dim_names(2))
+        call cvmix_io_close_all
+        stop 1
+        ! Dummy code to supress unused variable warnings
+        if (add_fill) &
+          dims(1) = dims(2)
+    end select
+!EOC
+
+  end subroutine cvmix_output_write_2d_double
 
 !BOP
 

@@ -44,7 +44,9 @@
   public :: cvmix_coeffs_kpp
   public :: cvmix_put_kpp
   public :: cvmix_get_kpp_real
-  public :: cvmix_kpp_compute_OBL_depth ! MNL: I think we want this public
+  ! These are public for testing, may end up private later
+  public :: cvmix_kpp_compute_OBL_depth
+  public :: cvmix_kpp_compute_turbulent_scales
 
   interface cvmix_put_kpp
     module procedure cvmix_put_kpp_int
@@ -600,22 +602,27 @@ contains
 !  Only those used by entire module. 
 
 ! !INPUT PARAMETERS:
-    real(cvmix_r8), intent(in) :: sigma_coord, OBL_depth, surf_buoy_force,    &
-                                  surf_fric_vel
+    real(cvmix_r8), dimension(:), intent(in) :: sigma_coord
+    real(cvmix_r8), intent(in) :: OBL_depth, surf_buoy_force, surf_fric_vel
     type(cvmix_kpp_params_type), intent(in), optional, target ::              &
                                            CVmix_kpp_params_user
 
 ! !OUTPUT PARAMETERS:
-    real(cvmix_r8), optional, intent(out) :: w_m
-    real(cvmix_r8), optional, intent(out) :: w_s
+    real(cvmix_r8), optional, dimension(:), intent(inout) :: w_m
+    real(cvmix_r8), optional, dimension(:), intent(inout) :: w_s
 
 !EOP
 !BOC
 
     ! Local variables
+    integer :: nlev_p1, kw
     logical :: compute_wm, compute_ws
-    real(cvmix_r8) :: zeta, zeta_h, vonkar
+    real(cvmix_r8), allocatable, dimension(:) :: zeta, zeta_h
+    real(cvmix_r8) :: vonkar
     type(cvmix_kpp_params_type), pointer :: CVmix_kpp_params_in
+
+    nlev_p1 = size(sigma_coord)
+    allocate(zeta(nlev_p1), zeta_h(nlev_p1))
 
     CVmix_kpp_params_in => CVmix_kpp_params_saved
     if (present(CVmix_kpp_params_user)) then
@@ -624,7 +631,7 @@ contains
 
     compute_wm = present(w_m)
     compute_ws = present(w_s)
-    vonkar = cvmix_get_kpp_real('vonkar', CVmix_kpp_params_in)
+    vonkar = cvmix_get_kpp_real('vonkarman', CVmix_kpp_params_in)
 
     zeta_h = sigma_coord*OBL_depth*surf_buoy_force*vonkar
 
@@ -632,32 +639,52 @@ contains
            cvmix_get_kpp_real('eps', CVmix_kpp_params_in))
 
     if (compute_wm) then
-      if (zeta.ge.0) then
-        ! Stable region
-        w_m = vonkar*surf_fric_vel/(real(1,cvmix_r8) + real(5,cvmix_r8)*zeta)
-      else if (zeta.ge.cvmix_get_kpp_real('zeta_m', CVmix_kpp_params_in)) then
-        w_m = vonkar*surf_fric_vel*                                           &
-              (real(1,cvmix_r8) - real(16,cvmix_r8)*zeta)**0.25_cvmix_r8
-      else
-        w_m = vonkar*(cvmix_get_kpp_real('a_m', CVmix_kpp_params_in)*         &
-          (surf_fric_vel**3)-cvmix_get_kpp_real('c_m', CVmix_kpp_params_in)*  &
-          zeta_h)**(real(1,cvmix_r8)/real(3,cvmix_r8))
+      if (size(w_m).ne.nlev_p1) then
+        print*, "ERROR: sigma_coord and w_m must be same size!"
+        deallocate(zeta, zeta_h)
+        stop 1
       end if
+      do kw=1,nlev_p1
+        if (zeta(kw).ge.0) then
+          ! Stable region
+          w_m(kw) = vonkar*surf_fric_vel/(real(1,cvmix_r8) + real(5,cvmix_r8)*&
+                    zeta(kw))
+        else if (zeta(kw).ge.                                                 &
+                 cvmix_get_kpp_real('zeta_m', CVmix_kpp_params_in)) then
+          w_m(kw) = vonkar*surf_fric_vel*                                     &
+                (real(1,cvmix_r8) - real(16,cvmix_r8)*zeta(kw))**0.25_cvmix_r8
+        else
+          w_m(kw) = vonkar*(cvmix_get_kpp_real('a_m', CVmix_kpp_params_in)*   &
+            (surf_fric_vel**3)-cvmix_get_kpp_real('c_m', CVmix_kpp_params_in)*&
+            zeta_h(kw))**(real(1,cvmix_r8)/real(3,cvmix_r8))
+        end if
+      end do
     end if
 
     if (compute_ws) then
-      if (zeta.ge.0) then
-        ! Stable region
-        w_s = vonkar*surf_fric_vel/(real(1,cvmix_r8) + real(5,cvmix_r8)*zeta)
-      else if (zeta.ge.cvmix_get_kpp_real('zeta_s', CVmix_kpp_params_in)) then
-        w_s = vonkar*surf_fric_vel*                                           &
-              (real(1,cvmix_r8) - real(16,cvmix_r8)*zeta)**0.25_cvmix_r8
-      else
-        w_s = vonkar*(cvmix_get_kpp_real('a_s', CVmix_kpp_params_in)*         &
-          (surf_fric_vel**3)-cvmix_get_kpp_real('c_s', CVmix_kpp_params_in)*  &
-          zeta_h)**(real(1,cvmix_r8)/real(3,cvmix_r8))
+      if (size(w_s).ne.nlev_p1) then
+        print*, "ERROR: sigma_coord and w_s must be same size!"
+        deallocate(zeta, zeta_h)
+        stop 1
       end if
+      do kw=1,nlev_p1
+        if (zeta(kw).ge.0) then
+          ! Stable region
+          w_s(kw) = vonkar*surf_fric_vel/(real(1,cvmix_r8) + real(5,cvmix_r8)*&
+                    zeta(kw))
+        else if (zeta(kw).ge.                                                 &
+                 cvmix_get_kpp_real('zeta_s', CVmix_kpp_params_in)) then
+          w_s(kw) = vonkar*surf_fric_vel*                                         &
+                sqrt(real(1,cvmix_r8) - real(16,cvmix_r8)*zeta(kw))
+        else
+          w_s(kw) = vonkar*(cvmix_get_kpp_real('a_s', CVmix_kpp_params_in)*       &
+            (surf_fric_vel**3)-cvmix_get_kpp_real('c_s', CVmix_kpp_params_in)*&
+            zeta_h(kw))**(real(1,cvmix_r8)/real(3,cvmix_r8))
+        end if
+      end do
     end if
+
+    deallocate(zeta, zeta_h)
 
 !EOC
 

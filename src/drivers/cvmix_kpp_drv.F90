@@ -20,6 +20,7 @@ Subroutine cvmix_kpp_driver(nlev)
                                     cvmix_strlen,             &
                                     cvmix_data_type
   use cvmix_kpp,             only : cvmix_init_kpp,           &
+                                    cvmix_kpp_compute_turbulent_scales, &
                                     cvmix_coeffs_kpp
   use cvmix_put_get,         only : cvmix_put
   use cvmix_io,              only : cvmix_io_open,            &
@@ -41,11 +42,16 @@ Subroutine cvmix_kpp_driver(nlev)
   real(cvmix_r8), dimension(:,:), allocatable, target :: diffusivity
   real(cvmix_r8), dimension(:),   allocatable, target :: viscosity
   real(cvmix_r8), dimension(:),   allocatable, target :: zt, zw_iface, Ri_bulk
-  integer :: fid, kt, kw
+  real(cvmix_r8), dimension(:),   allocatable, target :: w_m, w_s, sigma
+  real(cvmix_r8), dimension(:,:), allocatable, target :: TwoDArray
+  integer :: fid, kt, kw, nlev2
   real(cvmix_r8) :: hmix, ri_crit
   character(len=cvmix_strlen) :: interp_type
 
   namelist/kpp_nml/hmix, ri_crit, interp_type
+
+  print*, "Test 1: determining OBL depth"
+  print*, "----------"
 
   hmix = -15.0_cvmix_r8
   ri_crit = 0.3_cvmix_r8
@@ -71,7 +77,6 @@ Subroutine cvmix_kpp_driver(nlev)
         Ri_bulk(kt) = 0.5_cvmix_r8*ri_crit*(hmix-zt(kt))
       end if
     end if
-    print*, zt(kt), Ri_bulk(kt)
   end do
 
   call cvmix_put(CVmix_vars, 'nlev', nlev)
@@ -82,7 +87,8 @@ Subroutine cvmix_kpp_driver(nlev)
   CVmix_vars%zw_iface   => zw_iface(:)
   CVmix_vars%Rib        => Ri_bulk(:)
 
-  call cvmix_init_kpp(ri_crit=ri_crit, interp_type=interp_type)
+  call cvmix_init_kpp(ri_crit=ri_crit, vonkarman=1.0_cvmix_r8,                &
+                      interp_type=interp_type)
   call cvmix_coeffs_kpp(CVmix_vars)
   print*, "OBL depth = ", CVmix_vars%OBL_depth
 
@@ -99,6 +105,31 @@ Subroutine cvmix_kpp_driver(nlev)
 #endif
 
   call cvmix_io_close(fid)
+
+  print*, ""
+  print*, "Test 2: determining w_m and w_s"
+  print*, "----------"
+  nlev2 = 220
+  allocate(w_m(nlev2+1), w_s(nlev2+1), sigma(nlev2+1))
+  do kw=1, nlev2+1
+    sigma(kw) = -2.0_cvmix_r8 + 2.2_cvmix_r8*real(kw-1,cvmix_r8)/real(nlev2,cvmix_r8)
+  end do
+  call cvmix_kpp_compute_turbulent_scales(sigma, 1.0_cvmix_r8, 1.0_cvmix_r8,  &
+                                          1.0_cvmix_r8, w_m, w_s)
+
+  allocate(TwoDArray(nlev2+1,3))
+  TwoDArray(:,1) = sigma
+  TwoDArray(:,2) = 1.0_cvmix_r8/w_m
+  TwoDArray(:,3) = 1.0_cvmix_r8/w_s
+#ifdef _NETCDF
+  call cvmix_io_open(fid, "test2.nc", "nc")
+#else
+  call cvmix_io_open(fid, "test2.out", "ascii")
+#endif
+  call cvmix_output_write(fid, "data", (/"nrow", "ncol"/), TwoDArray)
+  call cvmix_io_close(fid)
+  deallocate(TwoDArray)
+  deallocate(sigma, w_m, w_s)
 
 !EOC
 
