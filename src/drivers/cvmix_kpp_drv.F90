@@ -21,6 +21,7 @@ Subroutine cvmix_kpp_driver(nlev)
                                     cvmix_data_type
   use cvmix_kpp,             only : cvmix_init_kpp,           &
                                     cvmix_kpp_compute_turbulent_scales, &
+                                    cvmix_kpp_compute_shape_function_coeffs, &
                                     cvmix_coeffs_kpp
   use cvmix_put_get,         only : cvmix_put
   use cvmix_io,              only : cvmix_io_open,            &
@@ -44,6 +45,7 @@ Subroutine cvmix_kpp_driver(nlev)
   real(cvmix_r8), dimension(:),   allocatable, target :: zt, zw_iface, Ri_bulk
   real(cvmix_r8), dimension(:),   allocatable, target :: w_m, w_s, sigma
   real(cvmix_r8), dimension(:,:), allocatable, target :: TwoDArray
+  real(cvmix_r8), dimension(4) :: shape_coeffs
   integer :: fid, kt, kw, nlev2
   real(cvmix_r8) :: hmix, ri_crit
   character(len=cvmix_strlen) :: interp_type
@@ -131,6 +133,14 @@ Subroutine cvmix_kpp_driver(nlev)
   deallocate(TwoDArray)
   deallocate(sigma, w_m, w_s)
 
+
+  print*, ""
+  print*, "Test 3: Computing G(sigma)"
+  print*, "----------"
+  call cvmix_kpp_compute_shape_function_coeffs(0.0_cvmix_r8, 0.0_cvmix_r8,    &
+                                               shape_coeffs)
+  print*, "Coefficients are: "
+  print*, shape_coeffs(1), shape_coeffs(2), shape_coeffs(3), shape_coeffs(4) 
 !EOC
 
 End Subroutine cvmix_kpp_driver

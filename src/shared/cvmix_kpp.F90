@@ -47,6 +47,7 @@
   ! These are public for testing, may end up private later
   public :: cvmix_kpp_compute_OBL_depth
   public :: cvmix_kpp_compute_turbulent_scales
+  public :: cvmix_kpp_compute_shape_function_coeffs
 
   interface cvmix_put_kpp
     module procedure cvmix_put_kpp_int
@@ -689,6 +690,49 @@ contains
 !EOC
 
   end subroutine cvmix_kpp_compute_turbulent_scales
+
+!BOP
+
+! !IROUTINE: cvmix_kpp_compute_shape_function_coeffs
+! !INTERFACE:
+
+  subroutine cvmix_kpp_compute_shape_function_coeffs(GAT1, DGAT1, coeffs)
+
+! !DESCRIPTION:
+!  Computes the shape function $G(\sigma) = a_0 + a_1\sigma + a_2\sigma^2
+!  + a_3\sigma^3$, where
+!  \begin{eqnarray*}
+!    a_0 & = & 0 \\
+!    a_1 & = & 1 \\
+!    a_2 & = &  3G(1) - G'(1) - 2 \\
+!    a_3 & = & -2G(1) + G'(1) + 1
+!  \end{eqnarray*}
+!  Note that $G(1)$ and $G'(1)$ come from Eq. (18) in Large, et al., and
+!  this routine returns coeffs(1:4) = $(/a_0, a_1, a_2, a_3/)$
+!\\
+!\\
+
+! !USES:
+!  Only those used by entire module. 
+
+! !INPUT PARAMETERS:
+    real(cvmix_r8), intent(in) :: GAT1  ! G(1)
+    real(cvmix_r8), intent(in) :: DGAT1 ! G'(1)
+
+! !OUTPUT PARAMETERS:
+    real(cvmix_r8), dimension(4), intent(out) :: coeffs
+
+!EOP
+!BOC
+
+    coeffs(1) =  0.0_cvmix_r8
+    coeffs(2) =  1.0_cvmix_r8
+    coeffs(3) =  3.0_cvmix_r8*GAT1 - DGAT1 - 2.0_cvmix_r8
+    coeffs(4) = -2.0_cvmix_r8*GAT1 + DGAT1 + 1.0_cvmix_r8
+
+!EOC
+
+  end subroutine cvmix_kpp_compute_shape_function_coeffs
 
   function cubic_root_find(coeffs, x0)
 
