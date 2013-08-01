@@ -47,10 +47,10 @@ Subroutine cvmix_kpp_driver(nlev)
   real(cvmix_r8), dimension(:,:), allocatable, target :: TwoDArray
   real(cvmix_r8), dimension(4) :: shape_coeffs
   integer :: fid, kt, kw, nlev2
-  real(cvmix_r8) :: hmix, ri_crit
+  real(cvmix_r8) :: hmix, ri_crit, layer_thick
   character(len=cvmix_strlen) :: interp_type
 
-  namelist/kpp_nml/hmix, ri_crit, interp_type
+  namelist/kpp_col1_nml/hmix, ri_crit, layer_thick, interp_type
 
   print*, "Test 1: determining OBL depth"
   print*, "----------"
@@ -58,13 +58,13 @@ Subroutine cvmix_kpp_driver(nlev)
   hmix = -15.0_cvmix_r8
   ri_crit = 0.3_cvmix_r8
   interp_type = 'quadratic'
-  read(*, nml=kpp_nml)
+  read(*, nml=kpp_col1_nml)
 
   allocate(diffusivity(nlev+1,2))
   allocate(viscosity(nlev+1))
   allocate(zt(nlev), zw_iface(nlev+1), Ri_bulk(nlev))
   do kw=1,nlev+1
-    zw_iface(kw) = real(-10*(kw-1), cvmix_r8)
+    zw_iface(kw) = -layer_thick*real(kw-1, cvmix_r8)
   end do
   do kt=1,nlev
     zt(kt) = 0.5_cvmix_r8*(zw_iface(kt)+zw_iface(kt+1))
@@ -74,7 +74,7 @@ Subroutine cvmix_kpp_driver(nlev)
       if (Ri_bulk(kt-1).eq.0) then
         ! Exact integration for average value over first cell with non-zero
         ! Ri_bulk
-        Ri_bulk(kt) = 0.025_cvmix_r8*ri_crit*(zw_iface(kt+1)-hmix)**2
+        Ri_bulk(kt) = 0.25_cvmix_r8*ri_crit*(zw_iface(kt+1)-hmix)**2/layer_thick
       else
         Ri_bulk(kt) = 0.5_cvmix_r8*ri_crit*(hmix-zt(kt))
       end if
@@ -82,7 +82,7 @@ Subroutine cvmix_kpp_driver(nlev)
   end do
 
   call cvmix_put(CVmix_vars, 'nlev', nlev)
-  call cvmix_put(CVmix_vars, 'ocn_depth', 10*nlev)
+  call cvmix_put(CVmix_vars, 'ocn_depth', layer_thick*real(nlev,cvmix_r8))
   CVmix_vars%diff_iface => diffusivity(:,:)
   CVmix_vars%visc_iface => viscosity(:)
   CVmix_vars%zt         => zt(:)
