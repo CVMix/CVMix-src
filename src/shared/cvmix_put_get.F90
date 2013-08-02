@@ -129,16 +129,22 @@ contains
     end if
     
     select case (trim(varname))
-      case ('surf_hgt')
-        CVmix_vars%surf_hgt = val
       case ('ocn_depth','depth')
         CVmix_vars%ocn_depth = val
       case ('OBL_depth')
         CVmix_vars%OBL_depth = val
+      case ('surf_hgt')
+        CVmix_vars%surf_hgt = val
+      case ('surf_fric')
+        CVmix_vars%surf_fric = val
+      case ('surf_buoy')
+        CVmix_vars%surf_buoy = val
       case ('lat')
         CVmix_vars%lat = val
       case ('lon')
         CVmix_vars%lon = val
+      case ('Coriolis')
+        CVmix_vars%Coriolis = val
       case ('diff')
         if (.not.associated(CVmix_vars%diff_iface)) then
           allocate(CVmix_vars%diff_iface(nlev+1,2))

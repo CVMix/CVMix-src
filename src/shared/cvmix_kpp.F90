@@ -41,12 +41,14 @@
 ! !PUBLIC MEMBER FUNCTIONS:
 
   public :: cvmix_init_kpp
+  ! Note: cvmix_kpp_compute_OBL_depth would be part of cvmix_coeffs_kpp but
+  !       CVMix can not smooth the boundary layer depth or correct the
+  !       buoyancy flux term
+  public :: cvmix_kpp_compute_OBL_depth
   public :: cvmix_coeffs_kpp
   public :: cvmix_put_kpp
   public :: cvmix_get_kpp_real
   ! These are public for testing, may end up private later
-  public :: cvmix_kpp_compute_bulk_Rich
-  public :: cvmix_kpp_compute_OBL_depth
   public :: cvmix_kpp_compute_turbulent_scales
   public :: cvmix_kpp_compute_shape_function_coeffs
 
@@ -54,11 +56,6 @@
     module procedure cvmix_put_kpp_int
     module procedure cvmix_put_kpp_real
   end interface cvmix_put_kpp
-
-  interface cvmix_kpp_compute_bulk_Rich
-    module procedure cvmix_kpp_compute_bulk_Rich_low
-    module procedure cvmix_kpp_compute_bulk_Rich_wrap
-  end interface cvmix_kpp_compute_bulk_Rich
 
   interface cvmix_kpp_compute_OBL_depth
     module procedure cvmix_kpp_compute_OBL_depth_low
@@ -393,89 +390,11 @@ contains
 
 !BOP
 
-! !IROUTINE: cvmix_kpp_compute_bulk_Rich_low
-! !INTERFACE:
-
-  subroutine cvmix_kpp_compute_bulk_Rich_low(Ri_bulk, CVmix_kpp_params_user)
-
-! !DESCRIPTION:
-!  Computes the bulk Richardson number for a given column
-!\\
-!\\
-
-! !USES:
-!  Only those used by entire module. 
-
-! !INPUT PARAMETERS:
-    type(cvmix_kpp_params_type), optional, target, intent(in) ::                &
-                                           CVmix_kpp_params_user
-
-! !OUTPUT PARAMETERS:
-    real(cvmix_r8), dimension(:), intent(inout) :: Ri_bulk
-
-!EOP
-!BOC
-
-    ! Local variables
-    integer :: nlev
-    type(cvmix_kpp_params_type), pointer :: CVmix_kpp_params_in
-
-    CVmix_kpp_params_in => CVmix_kpp_params_saved
-    if (present(CVmix_kpp_params_user)) then
-      CVmix_kpp_params_in => CVmix_kpp_params_user
-    end if
-
-    nlev = size(Ri_bulk)
-
-    Ri_bulk = 0.0_cvmix_r8
-
-!EOC
-
-  end subroutine cvmix_kpp_compute_bulk_Rich_low
-
-!BOP
-
-! !IROUTINE: cvmix_kpp_compute_bulk_Rich_wrap
-! !INTERFACE:
-
-  subroutine cvmix_kpp_compute_bulk_Rich_wrap(CVmix_vars, CVmix_kpp_params_user)
-
-! !DESCRIPTION:
-!  Computes the bulk Richardson number for a given column
-!\\
-!\\
-
-! !USES:
-!  Only those used by entire module. 
-
-! !INPUT PARAMETERS:
-    type(cvmix_kpp_params_type), optional, target, intent(in) ::                &
-                                           CVmix_kpp_params_user
-
-! !OUTPUT PARAMETERS:
-    type(cvmix_data_type), intent(inout) :: CVmix_vars
-
-!EOP
-!BOC
-
-    ! Local variables
-    real(cvmix_r8), dimension(:), allocatable :: Ri_bulk
-
-    allocate(Ri_bulk(CVmix_vars%nlev))
-
-    call cvmix_kpp_compute_bulk_Rich(Ri_bulk, CVmix_kpp_params_user)
-    call cvmix_put(CVmix_vars, 'Ri_bulk', Ri_bulk)
-
-!EOC
-
-  end subroutine cvmix_kpp_compute_bulk_Rich_wrap
-
-!BOP
-
 ! !IROUTINE: cvmix_kpp_compute_OBL_depth_low
 ! !INTERFACE:
 
-  subroutine cvmix_kpp_compute_OBL_depth_low(Ri_bulk, depth, OBL_depth, &
+  subroutine cvmix_kpp_compute_OBL_depth_low(Ri_bulk, depth, OBL_depth,       &
+                                             surf_fric, surf_buoy, Coriolis,  &
                                              CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
@@ -490,6 +409,7 @@ contains
     type(cvmix_kpp_params_type), optional, target, intent(in) ::              &
                                            CVmix_kpp_params_user
     real(cvmix_r8), dimension(:), intent(in) :: Ri_bulk, depth
+    real(cvmix_r8),               intent(in) :: surf_fric, surf_buoy, Coriolis
 
 ! !OUTPUT PARAMETERS:
     real(cvmix_r8), intent(out) :: OBL_depth
@@ -499,11 +419,15 @@ contains
 
     ! Local variables
     integer :: nlev, kt, k
-    real(kind=cvmix_r8) :: a, b, c, d, det
+    real(kind=cvmix_r8) :: a, b, c, d, det, Ekman, MoninObukhov, OBL_Limit
+    logical :: lstable
     real(kind=cvmix_r8), dimension(:,:), allocatable :: Minv
     real(kind=cvmix_r8), dimension(:),   allocatable :: rhs
 
     type(cvmix_kpp_params_type), pointer :: CVmix_kpp_params_in
+
+    ! Column is stable if surf_buoy > 0
+    lstable = (surf_buoy.gt.0.0_cvmix_r8)
 
     CVmix_kpp_params_in => CVmix_kpp_params_saved
     if (present(CVmix_kpp_params_user)) then
@@ -515,6 +439,27 @@ contains
       print*, "ERROR: Ri_bulk and depth must be same size!"
       stop 1
     end if
+
+    ! OBL_depth must be between the surface and the Ekman depth as well as
+    ! between the surface and the Monin-Obukhov depth
+    !
+    ! Since depth gets more negative as you go deeper, that translates into
+    ! OBL_depth = max(computed depth, Ekman depth, M-O depth)
+    ! (MNL: change this when we make OBL_depth positive-down!)
+    if (Coriolis.eq.0.0_cvmix_r8) then
+      ! Rather than divide by zero, set Ekman depth to ocean bottom
+      Ekman = depth(nlev)
+    else
+      Ekman = 0.7_cvmix_r8*surf_fric/Coriolis
+    end if
+
+    if (lstable) then
+      MoninObukhov = surf_fric**3/(surf_buoy*cvmix_get_kpp_real('vonkarman',  &
+                                                   CVmix_kpp_params_in))
+    else
+      MoninObukhov = depth(nlev)
+    end if
+    OBL_limit = max(Ekman, MoninObukhov)
 
     ! Interpolation Step
     ! (1) Find kt such that Ri_bulk at level kt+1 > Ri_crit
@@ -628,6 +573,10 @@ contains
     OBL_depth = cubic_root_find((/a,b,c,d-CVmix_kpp_params_in%ri_crit/), &
                                 0.5_cvmix_r8*(depth(kt)+depth(kt+1)))
 
+    ! Note: maybe there are times when we don't need to do the interpolation
+    !       because we know OBL_depth will equal OBL_limit?
+    OBL_depth = max(OBL_depth, OBL_limit)
+
 !EOC
 
   end subroutine cvmix_kpp_compute_OBL_depth_low
@@ -661,7 +610,10 @@ contains
     real(cvmix_r8) :: lcl_obl_depth
 
     call cvmix_kpp_compute_OBL_depth(CVmix_vars%Rib, CVmix_vars%zt,           &
-                                     lcl_obl_depth, CVmix_kpp_params_user)
+                                     lcl_obl_depth,  CVmix_vars%surf_fric,    &
+                                     CVmix_vars%surf_buoy,                    & 
+                                     CVmix_vars%Coriolis,                     &
+                                     CVmix_kpp_params_user)
     call cvmix_put(CVmix_vars, 'OBL_depth', lcl_obl_depth)
 
 !EOC
