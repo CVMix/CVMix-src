@@ -55,6 +55,7 @@
   interface cvmix_put_kpp
     module procedure cvmix_put_kpp_int
     module procedure cvmix_put_kpp_real
+    module procedure cvmix_put_kpp_logical
   end interface cvmix_put_kpp
 
   interface cvmix_kpp_compute_OBL_depth
@@ -79,6 +80,8 @@
     real(cvmix_r8) :: c_s          ! parameter for computing vel scale func
     real(cvmix_r8) :: eps          ! small non-negative val (rec 1e-10)
     integer        :: interp_type  ! type of iterpolation to use
+    logical        :: lEkman       ! True => compute Ekman depth limit
+    logical        :: lMonOb       ! True => compute Monin-Obukhov limit
   end type cvmix_kpp_params_type
 
 !EOP
@@ -93,7 +96,8 @@ contains
 ! !INTERFACE:
 
   subroutine cvmix_init_kpp(ri_crit, vonkarman, zeta_m, zeta_s, a_m, a_s,     &
-                            c_m, c_s, eps, interp_type, CVmix_kpp_params_user)
+                            c_m, c_s, eps, interp_type, lEkman, lMonOb,       &
+                            CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
 !  Initialization routine for KPP mixing.
@@ -105,6 +109,7 @@ contains
     real(cvmix_r8),   optional :: ri_crit, vonkarman, zeta_m, zeta_s, a_m, &
                                   a_s, c_m, c_s, eps
     character(len=*), optional :: interp_type
+    logical,          optional :: lEkman, lMonOb
 
 ! !OUTPUT PARAMETERS:
     type(cvmix_kpp_params_type), intent(inout), target, optional ::           &
@@ -194,6 +199,19 @@ contains
       call cvmix_put_kpp(CVmix_kpp_params_out, 'interp_type', &
                          CVMIX_KPP_INTERP_QUAD)
     end if
+
+    if (present(lEkman)) then
+      call cvmix_put_kpp(CVmix_kpp_params_out, 'lEkman', lEkman)
+    else
+      call cvmix_put_kpp(CVmix_kpp_params_out, 'lEkman', .False.)
+    end if
+
+    if (present(lMonOb)) then
+      call cvmix_put_kpp(CVmix_kpp_params_out, 'lMonOb', lMonOb)
+    else
+      call cvmix_put_kpp(CVmix_kpp_params_out, 'lMonOb', .False.)
+    end if
+
 !EOC
 
   end subroutine cvmix_init_kpp
@@ -327,6 +345,44 @@ contains
 
 !BOP
 
+! !IROUTINE: cvmix_put_kpp_logical
+! !INTERFACE:
+
+  subroutine cvmix_put_kpp_logical(CVmix_kpp_params, varname, val)
+
+! !DESCRIPTION:
+!  Write a Boolean value into a cvmix\_kpp\_params\_type variable.
+!\\
+!\\
+
+! !USES:
+!  Only those used by entire module. 
+
+! !INPUT PARAMETERS:
+    character(len=*), intent(in) :: varname
+    logical,          intent(in) :: val
+
+! !OUTPUT PARAMETERS:
+    type(cvmix_kpp_params_type), intent(inout) :: CVmix_kpp_params
+!EOP
+!BOC
+
+    select case (trim(varname))
+      case ('lEkman')
+        CVmix_kpp_params%lEkman = val
+      case ('lMonOb')
+        CVmix_kpp_params%lMonOb = val
+      case DEFAULT
+        print*, "ERROR: ", trim(varname), " is not a boolean variable!"
+        stop 1
+    end select
+
+!EOC
+
+  end subroutine cvmix_put_kpp_logical
+
+!BOP
+
 ! !IROUTINE: cvmix_get_kpp_real
 ! !INTERFACE:
 
@@ -426,9 +482,6 @@ contains
 
     type(cvmix_kpp_params_type), pointer :: CVmix_kpp_params_in
 
-    ! Column is stable if surf_buoy > 0
-    lstable = (surf_buoy.gt.0.0_cvmix_r8)
-
     CVmix_kpp_params_in => CVmix_kpp_params_saved
     if (present(CVmix_kpp_params_user)) then
       CVmix_kpp_params_in => CVmix_kpp_params_user
@@ -440,26 +493,37 @@ contains
       stop 1
     end if
 
-    ! OBL_depth must be between the surface and the Ekman depth as well as
-    ! between the surface and the Monin-Obukhov depth
-    !
+    ! if lEkman = .true., OBL_depth must be between the surface and the Ekman
+    ! depth. Similarly, if lMonOb = .true., OBL_depth must be between the
+    ! surface and the Monin-Obukhov depth
+    OBL_limit = depth(nlev)
+
+
     ! Since depth gets more negative as you go deeper, that translates into
     ! OBL_depth = max(computed depth, Ekman depth, M-O depth)
     ! (MNL: change this when we make OBL_depth positive-down!)
-    if (Coriolis.eq.0.0_cvmix_r8) then
-      ! Rather than divide by zero, set Ekman depth to ocean bottom
-      Ekman = depth(nlev)
-    else
-      Ekman = 0.7_cvmix_r8*surf_fric/Coriolis
+    if (CVmix_kpp_params_in%lEkman) then
+      if (Coriolis.eq.0.0_cvmix_r8) then
+        ! Rather than divide by zero, set Ekman depth to ocean bottom
+        Ekman = depth(nlev)
+      else
+        Ekman = 0.7_cvmix_r8*surf_fric/Coriolis
+      end if
+      OBL_limit = max(OBL_limit, Ekman)
     end if
 
-    if (lstable) then
-      MoninObukhov = surf_fric**3/(surf_buoy*cvmix_get_kpp_real('vonkarman',  &
-                                                   CVmix_kpp_params_in))
-    else
-      MoninObukhov = depth(nlev)
+    if (CVmix_kpp_params_in%lMonOb) then
+      ! Column is stable if surf_buoy > 0
+      lstable = (surf_buoy.gt.0.0_cvmix_r8)
+
+      if (lstable) then
+        MoninObukhov = surf_fric**3/(surf_buoy*cvmix_get_kpp_real('vonkarman',&
+                                                     CVmix_kpp_params_in))
+      else
+        MoninObukhov = depth(nlev)
+      end if
+      OBL_limit = max(OBL_limit, MoninObukhov)
     end if
-    OBL_limit = max(Ekman, MoninObukhov)
 
     ! Interpolation Step
     ! (1) Find kt such that Ri_bulk at level kt+1 > Ri_crit
