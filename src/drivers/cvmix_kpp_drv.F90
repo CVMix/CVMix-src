@@ -68,7 +68,7 @@ Subroutine cvmix_kpp_driver(nlev)
   end do
   do kt=1,nlev
     zt(kt) = 0.5_cvmix_r8*(zw_iface(kt)+zw_iface(kt+1))
-    if (zt(kt).gt.hmix) then
+    if (zw_iface(kt+1).gt.hmix) then
       Ri_bulk(kt) = 0.0_cvmix_r8
     else
       if (Ri_bulk(kt-1).eq.0) then

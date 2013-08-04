@@ -536,10 +536,10 @@ contains
     end if
 
     if (kt.eq.1) then
-      call cvmix_poly_interp(coeffs, CVmix_kpp_params_in%interp_type,    &
+      call cvmix_poly_interp(coeffs, CVmix_kpp_params_in%interp_type,         &
                              depth(kt:kt+1), Ri_bulk(kt:kt+1))
     else
-      call cvmix_poly_interp(coeffs, CVmix_kpp_params_in%interp_type,    &
+      call cvmix_poly_interp(coeffs, CVmix_kpp_params_in%interp_type,         &
                              depth(kt:kt+1), Ri_bulk(kt:kt+1), depth(kt-1),   &
                              Ri_bulk(kt-1))
     end if
