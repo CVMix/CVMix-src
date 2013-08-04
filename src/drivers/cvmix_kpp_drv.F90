@@ -20,6 +20,7 @@ Subroutine cvmix_kpp_driver(nlev)
                                     cvmix_strlen,             &
                                     cvmix_data_type
   use cvmix_kpp,             only : cvmix_init_kpp,           &
+                                    cvmix_kpp_compute_OBL_depth,        &
                                     cvmix_kpp_compute_turbulent_scales, &
                                     cvmix_kpp_compute_shape_function_coeffs, &
                                     cvmix_coeffs_kpp
@@ -94,8 +95,10 @@ Subroutine cvmix_kpp_driver(nlev)
 
   call cvmix_init_kpp(ri_crit=ri_crit, vonkarman=1.0_cvmix_r8,                &
                       interp_type=interp_type)
-  call cvmix_coeffs_kpp(CVmix_vars)
+  call cvmix_kpp_compute_OBL_depth(CVmix_vars)
   print*, "OBL depth = ", CVmix_vars%OBL_depth
+  print*, "kt of cell containing OBL depth = ", CVmix_vars%kOBL_depth
+  call cvmix_coeffs_kpp(CVmix_vars)
 
 #ifdef _NETCDF
   call cvmix_io_open(fid, "data.nc", "nc")

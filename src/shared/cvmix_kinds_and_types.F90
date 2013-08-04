@@ -58,6 +58,7 @@ module cvmix_kinds_and_types
                         lat,       & ! latitude of column (degrees north)
                         lon,       & ! longitude of column (degrees east)
                         Coriolis     ! Coriolis parameter
+      integer        :: kOBL_depth   ! kt index of cell containing OBL
 
       ! Values on interfaces
       ! nlev+1, 2

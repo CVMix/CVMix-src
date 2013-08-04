@@ -83,6 +83,8 @@ contains
     select case (trim(varname))
       case ('nlev')
         CVmix_vars%nlev = val
+      case ('kOBL_depth')
+        CVmix_vars%kOBL_depth = val
       case default
         ! All other scalars are real(cvmix_r8)
         call cvmix_put_real(CVmix_vars, varname, real(val,cvmix_r8), opts)

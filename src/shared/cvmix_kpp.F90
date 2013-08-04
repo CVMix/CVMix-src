@@ -52,6 +52,11 @@
   public :: cvmix_kpp_compute_turbulent_scales
   public :: cvmix_kpp_compute_shape_function_coeffs
 
+  interface cvmix_coeffs_kpp
+    module procedure cvmix_coeffs_kpp_low
+    module procedure cvmix_coeffs_kpp_wrap
+  end interface cvmix_coeffs_kpp
+
   interface cvmix_put_kpp
     module procedure cvmix_put_kpp_int
     module procedure cvmix_put_kpp_real
@@ -216,12 +221,12 @@ contains
 
   end subroutine cvmix_init_kpp
 
-!***********************************************************************
 !BOP
-! !IROUTINE: cvmix_coeffs_kpp
+
+! !IROUTINE: cvmix_coeffs_kpp_wrap
 ! !INTERFACE:
 
-  subroutine cvmix_coeffs_kpp(CVmix_vars, CVmix_kpp_params_user)
+  subroutine cvmix_coeffs_kpp_wrap(CVmix_vars, CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
 !  Computes vertical diffusion coefficients for the double diffusion mixing
@@ -242,19 +247,107 @@ contains
 !EOP
 !BOC
 
-    type(cvmix_kpp_params_type), pointer :: CVmix_kpp_params_in
+    call cvmix_coeffs_kpp(CVmix_vars%diff_iface, CVmix_vars%visc_iface,       &
+                          CVmix_vars%zw_iface, CVmix_vars%OBL_depth,          &
+                          CVmix_VARS%kOBL_depth, CVmix_vars%surf_fric,        &
+                          CVmix_vars%surf_buoy,         &
+                          CVmix_kpp_params_user)
+
+!EOC
+
+  end subroutine cvmix_coeffs_kpp_wrap
+
+!BOP
+
+! !IROUTINE: cvmix_coeffs_kpp_low
+! !INTERFACE:
+
+  subroutine cvmix_coeffs_kpp_low(diff, visc, zw_iface, OBL_depth, kOBL_depth,&
+                                  surf_fric, surf_buoy, CVmix_kpp_params_user)
+
+! !DESCRIPTION:
+!  Computes vertical diffusion coefficients for the double diffusion mixing
+!  parameterizatiion.
+!\\
+!\\
+!
+! !USES:
+!  only those used by entire module.
+
+! !INPUT PARAMETERS:
+    type(cvmix_kpp_params_type), intent(in), optional, target ::              &
+                                           CVmix_kpp_params_user
+    real(cvmix_r8), dimension(:),   intent(in) :: zw_iface
+
+! !INPUT/OUTPUT PARAMETERS:
+    real(cvmix_r8), dimension(:,:), intent(inout) :: diff
+    real(cvmix_r8), dimension(:),   intent(inout) :: visc
+    real(cvmix_r8),                 intent(in)    :: OBL_depth, surf_fric,    &
+                                                     surf_buoy
+    integer,                        intent(in)    :: kOBL_depth
+
+!EOP
+!BOC
+
+    ! Local variables
+    type(cvmix_kpp_params_type), pointer      :: CVmix_kpp_params_in
+    real(cvmix_r8), dimension(:), allocatable :: sigma, w_m, w_s
+    real(cvmix_r8), dimension(4,3)            :: shape_coeffs
+    real(cvmix_r8), dimension(3) :: Gat1, DGat1
+    integer :: nlev_p1, kw, i
 
     CVmix_kpp_params_in => CVmix_kpp_params_saved
     if (present(CVmix_kpp_params_user)) then
       CVmix_kpp_params_in => CVmix_kpp_params_user
     end if
 
-    call cvmix_kpp_compute_OBL_depth(CVmix_vars, CVmix_kpp_params_in)
-    CVmix_vars%visc_iface = cvmix_get_kpp_real('Ri_crit', CVmix_kpp_params_in)
-    CVmix_vars%diff_iface = cvmix_get_kpp_real('Ri_crit', CVmix_kpp_params_in)
+    nlev_p1 = size(visc)
+    allocate(sigma(nlev_p1), w_m(nlev_p1), w_s(nlev_p1))
+    sigma = zw_iface/OBL_depth
+
+    diff = CVmix_kpp_params_in%Ri_crit
+    visc = CVmix_kpp_params_in%Ri_crit
+    ! (1) Compute turbulent velocity scales
+    call cvmix_kpp_compute_turbulent_scales(sigma, OBL_depth, surf_buoy,      &
+                                            surf_fric, w_m, w_s)
+
+    ! (2) Compute G(1) and G'(1) for three cases:
+    !     i) temperature diffusivity
+    !     ii) other tracers diffusivity
+    !     iii) viscosity
+    Gat1  = 0.0_cvmix_r8
+    DGat1 = 0.0_cvmix_r8
+
+    ! (3) Compute shape function
+    do i=1,3
+      call cvmix_kpp_compute_shape_function_coeffs(Gat1(i), DGat1(i),         &
+                                                   shape_coeffs(:,i))
+    end do
+
+    ! (4) Diffusivities and viscosity in Boundary layer
+    do kw=1,kOBL_depth
+      diff(kw,1) = OBL_depth * w_s(kw) *                                      &
+                   cvmix_kpp_evaluate_shape_function(shape_coeffs(:,1),       &
+                                                     sigma(kw))
+      diff(kw,2) = OBL_depth * w_s(kw) *                                      &
+                   cvmix_kpp_evaluate_shape_function(shape_coeffs(:,2),       &
+                                                     sigma(kw))
+      visc(kw)   = OBL_depth * w_m(kw) *                                      &
+                   cvmix_kpp_evaluate_shape_function(shape_coeffs(:,3),       &
+                                                     sigma(kw))
+    end do
+
+    ! (5) Compute non-local transport term
+
+    ! (6) Compute enhanced mixing
+
+    ! (7) Combine interior and boundary coefficients + non-local term
+
+    ! Clean up memory
+    deallocate(sigma, w_m, w_s)
 
 !EOC
-  end subroutine cvmix_coeffs_kpp
+  end subroutine cvmix_coeffs_kpp_low
 
 !BOP
 
@@ -450,8 +543,8 @@ contains
 ! !INTERFACE:
 
   subroutine cvmix_kpp_compute_OBL_depth_low(Ri_bulk, depth, OBL_depth,       &
-                                             surf_fric, surf_buoy, Coriolis,  &
-                                             CVmix_kpp_params_user)
+                                             kOBL_depth, surf_fric, surf_buoy,&
+                                             Coriolis, CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
 !  Computes the depth of the ocean boundary layer (OBL) for a given column
@@ -469,6 +562,7 @@ contains
 
 ! !OUTPUT PARAMETERS:
     real(cvmix_r8), intent(out) :: OBL_depth
+    integer,        intent(out) :: kOBL_depth
 
 !EOP
 !BOC
@@ -534,6 +628,7 @@ contains
       print*, "ERROR: Entire column is above the boundary layer!"
       stop 1
     end if
+    kOBL_depth = kt
 
     if (kt.eq.1) then
       call cvmix_poly_interp(coeffs, CVmix_kpp_params_in%interp_type,         &
@@ -554,127 +649,6 @@ contains
 !EOC
 
   end subroutine cvmix_kpp_compute_OBL_depth_low
-
-!BOP
-
-! !IROUTINE: cvmix_poly_interp
-! !INTERFACE:
-
-  subroutine cvmix_poly_interp(coeffs, interp_type, x, y, x0, y0)
-
-! !INPUT PARAMETERS:
-    integer,                      intent(in)    :: interp_type
-    real(cvmix_r8), dimension(2), intent(in)    :: x, y
-    real(cvmix_r8), optional,     intent(in)    :: x0, y0
-! !OUTPUT PARAMETERS:
-    real(cvmix_r8), dimension(4), intent(inout) :: coeffs
-
-!EOP
-!BOC
-
-    ! Local variables
-    real(cvmix_r8) :: det
-    integer        :: k, k2
-    real(kind=cvmix_r8), dimension(:,:), allocatable :: Minv
-    real(kind=cvmix_r8), dimension(:),   allocatable :: rhs
-
-    ! All interpolation assumes form of
-    ! y = ax^3 + bx^2 + cx + d
-    ! linear => a = b = 0
-    ! quad   => a = 0
-    coeffs(1:4) = 0.0_cvmix_r8
-    select case (interp_type)
-      case (CVMIX_KPP_INTERP_LINEAR)
-        ! Match y(1) and y(2)
-        print*, "Linear interpolation"
-        coeffs(3) = (y(2)-y(1))/(x(2)-x(1))
-        coeffs(4) = y(1)-coeffs(3)*x(1)
-      case (CVMIX_KPP_INTERP_QUAD)
-        ! Match y(1), y(2), and y'(1) [requires x(0)]
-        print*, "Quadratic interpolation"
-        ! [ x2^2 x2 1 ][ b ]   [    y2 ]
-        ! [ x1^2 x1 1 ][ c ] = [    y1 ]
-        ! [  2x1  1 0 ][ d ]   [ slope ]
-        !      ^^^
-        !       M
-        det = -((x(2)-x(1))**2)
-        allocate(Minv(3,3))
-        allocate(rhs(3))
-        rhs(1) = y(2)
-        rhs(2) = y(1)
-        if (present(x0).and.present(y0)) then
-          rhs(3) = (y(1)-y0)/(x(1)-x0)
-        else
-          rhs(3) = 0.0_cvmix_r8
-        end if
-
-        Minv(1,1) = -real(1, cvmix_r8)/det
-        Minv(1,2) = real(1, cvmix_r8)/det
-        Minv(1,3) = -real(1, cvmix_r8)/(x(2)-x(1))
-        Minv(2,1) = real(2, cvmix_r8)*x(1)/det
-        Minv(2,2) = -real(2, cvmix_r8)*x(1)/det
-        Minv(2,3) = (x(2)+x(1))/(x(2)-x(1))
-        Minv(3,1) = -(x(1)**2)/det
-        Minv(3,2) = x(2)*(real(2, cvmix_r8)*x(1)-x(2))/det
-        Minv(3,3) = -x(2)*x(1)/(x(2)-x(1))
-
-        do k=1,3
-          coeffs(2) = coeffs(2)+Minv(1,k)*rhs(k)
-          coeffs(3) = coeffs(3)+Minv(2,k)*rhs(k)
-          coeffs(4) = coeffs(4)+Minv(3,k)*rhs(k)
-        end do
-        deallocate(rhs)
-        deallocate(Minv)
-      case (CVMIX_KPP_INTERP_CUBE_SPLINE)
-        ! Match y(1), y(2), y'(1), and y'(2)
-        print*, "Cubic spline interpolation"
-        ! [ x2^3 x2^2 x2 1 ][ a ]   [     y2 ]
-        ! [ x1^3 x1^2 x1 1 ][ b ] = [     y1 ]
-        ! [  3x1  2x1  1 0 ][ c ]   [ slope1 ]
-        ! [  3x2  2x2  1 0 ][ d ]   [ slope2 ]
-        !      ^^^
-        !       M
-        det = -((x(2)-x(1))**3)
-        allocate(Minv(4,4))
-        allocate(rhs(4))
-        rhs(1) = y(2)
-        rhs(2) = y(1)
-        if (present(x0).and.present(y0)) then
-          rhs(3) = (y(1)-y0)/(x(1)-x0)
-        else
-          rhs(3) = 0.0_cvmix_r8
-        end if
-        rhs(4) = (y(2)-y(1))/(x(2)-x(1))
-
-        Minv(1,1) = real(2, cvmix_r8)/det
-        Minv(1,2) = -real(2, cvmix_r8)/det
-        Minv(1,3) = (x(1)-x(2))/det
-        Minv(1,4) = (x(1)-x(2))/det
-        Minv(2,1) = -real(3, cvmix_r8)*(x(2)+x(1))/det
-        Minv(2,2) = real(3, cvmix_r8)*(x(2)+x(1))/det
-        Minv(2,3) = (x(2)-x(1))*(real(2, cvmix_r8)*x(2)+x(1))/det
-        Minv(2,4) = (x(2)-x(1))*(real(2, cvmix_r8)*x(1)+x(2))/det
-        Minv(3,1) = real(6, cvmix_r8)*x(2)*x(1)/det
-        Minv(3,2) = -real(6, cvmix_r8)*x(2)*x(1)/det
-        Minv(3,3) = -x(2)*(x(2)-x(1))*(real(2, cvmix_r8)*x(1)+x(2))/det
-        Minv(3,4) = -x(1)*(x(2)-x(1))*(real(2, cvmix_r8)*x(2)+x(1))/det
-        Minv(4,1) = -(x(1)**2)*(real(3, cvmix_r8)*x(2)-x(1))/det
-        Minv(4,2) = -(x(2)**2)*(-real(3, cvmix_r8)*x(1)+x(2))/det
-        Minv(4,3) = x(1)*(x(2)**2)*(x(2)-x(1))/det
-        Minv(4,4) = x(2)*(x(1)**2)*(x(2)-x(1))/det
-
-        do k=1,4
-          do k2=1,4
-            coeffs(k2) = coeffs(k2)+Minv(k2,k)*rhs(k)
-          end do
-        end do
-        deallocate(rhs)
-        deallocate(Minv)
-    end select
-
-!EOC
-
-  end subroutine cvmix_poly_interp
 
 !BOP
 
@@ -703,13 +677,16 @@ contains
 
     ! Local variables
     real(cvmix_r8) :: lcl_obl_depth
+    integer        :: lcl_kobl_depth
 
     call cvmix_kpp_compute_OBL_depth(CVmix_vars%Rib, CVmix_vars%zt,           &
-                                     lcl_obl_depth,  CVmix_vars%surf_fric,    &
+                                     lcl_obl_depth,  lcl_kobl_depth,          &
+                                     CVmix_vars%surf_fric,                    &
                                      CVmix_vars%surf_buoy,                    & 
                                      CVmix_vars%Coriolis,                     &
                                      CVmix_kpp_params_user)
     call cvmix_put(CVmix_vars, 'OBL_depth', lcl_obl_depth)
+    call cvmix_put(CVmix_vars, 'kOBL_depth', lcl_kobl_depth)
 
 !EOC
 
@@ -831,8 +808,8 @@ contains
   subroutine cvmix_kpp_compute_shape_function_coeffs(GAT1, DGAT1, coeffs)
 
 ! !DESCRIPTION:
-!  Computes the shape function $G(\sigma) = a_0 + a_1\sigma + a_2\sigma^2
-!  + a_3\sigma^3$, where
+!  Computes the coefficients of the shape function $G(\sigma) = a_0 + a_1\sigma
+!  + a_2\sigma^2 + a_3\sigma^3$, where
 !  \begin{eqnarray*}
 !    a_0 & = & 0 \\
 !    a_1 & = & 1 \\
@@ -865,6 +842,164 @@ contains
 !EOC
 
   end subroutine cvmix_kpp_compute_shape_function_coeffs
+
+!BOP
+
+! !IROUTINE: cvmix_kpp_evaluate_shape_function
+! !INTERFACE:
+
+  function cvmix_kpp_evaluate_shape_function(coeffs, sigma)
+
+! !DESCRIPTION:
+!  Computes the shape function $G(\sigma) = a_0 + a_1\sigma + a_2\sigma^2
+!  + a_3\sigma^3$ for given $\sigma$ and $a_i$
+!\\
+!\\
+
+! !USES:
+!  Only those used by entire module. 
+
+! !INPUT PARAMETERS:
+    real(cvmix_r8), dimension(4), intent(in) :: coeffs
+    real(cvmix_r8),               intent(in) :: sigma
+
+! !OUTPUT PARAMETERS:
+    real(cvmix_r8) :: cvmix_kpp_evaluate_shape_function
+
+!EOP
+!BOC
+
+    ! Local Variables
+    integer :: i
+
+    cvmix_kpp_evaluate_shape_function = 0.0_cvmix_r8
+    do i=1,4
+      cvmix_kpp_evaluate_shape_function = cvmix_kpp_evaluate_shape_function + &
+                                          coeffs(i)*(sigma**(4-1))
+    end do
+
+  end function cvmix_kpp_evaluate_shape_function
+
+!BOP
+
+! !IROUTINE: cvmix_poly_interp
+! !INTERFACE:
+
+  subroutine cvmix_poly_interp(coeffs, interp_type, x, y, x0, y0)
+
+! !INPUT PARAMETERS:
+    integer,                      intent(in)    :: interp_type
+    real(cvmix_r8), dimension(2), intent(in)    :: x, y
+    real(cvmix_r8), optional,     intent(in)    :: x0, y0
+! !OUTPUT PARAMETERS:
+    real(cvmix_r8), dimension(4), intent(inout) :: coeffs
+
+!EOP
+!BOC
+
+    ! Local variables
+    real(cvmix_r8) :: det
+    integer        :: k, k2
+    real(kind=cvmix_r8), dimension(:,:), allocatable :: Minv
+    real(kind=cvmix_r8), dimension(:),   allocatable :: rhs
+
+    ! All interpolation assumes form of
+    ! y = ax^3 + bx^2 + cx + d
+    ! linear => a = b = 0
+    ! quad   => a = 0
+    coeffs(1:4) = 0.0_cvmix_r8
+    select case (interp_type)
+      case (CVMIX_KPP_INTERP_LINEAR)
+        ! Match y(1) and y(2)
+        print*, "Linear interpolation"
+        coeffs(3) = (y(2)-y(1))/(x(2)-x(1))
+        coeffs(4) = y(1)-coeffs(3)*x(1)
+      case (CVMIX_KPP_INTERP_QUAD)
+        ! Match y(1), y(2), and y'(1) [requires x(0)]
+        print*, "Quadratic interpolation"
+        ! [ x2^2 x2 1 ][ b ]   [    y2 ]
+        ! [ x1^2 x1 1 ][ c ] = [    y1 ]
+        ! [  2x1  1 0 ][ d ]   [ slope ]
+        !      ^^^
+        !       M
+        det = -((x(2)-x(1))**2)
+        allocate(Minv(3,3))
+        allocate(rhs(3))
+        rhs(1) = y(2)
+        rhs(2) = y(1)
+        if (present(x0).and.present(y0)) then
+          rhs(3) = (y(1)-y0)/(x(1)-x0)
+        else
+          rhs(3) = 0.0_cvmix_r8
+        end if
+
+        Minv(1,1) = -real(1, cvmix_r8)/det
+        Minv(1,2) = real(1, cvmix_r8)/det
+        Minv(1,3) = -real(1, cvmix_r8)/(x(2)-x(1))
+        Minv(2,1) = real(2, cvmix_r8)*x(1)/det
+        Minv(2,2) = -real(2, cvmix_r8)*x(1)/det
+        Minv(2,3) = (x(2)+x(1))/(x(2)-x(1))
+        Minv(3,1) = -(x(1)**2)/det
+        Minv(3,2) = x(2)*(real(2, cvmix_r8)*x(1)-x(2))/det
+        Minv(3,3) = -x(2)*x(1)/(x(2)-x(1))
+
+        do k=1,3
+          coeffs(2) = coeffs(2)+Minv(1,k)*rhs(k)
+          coeffs(3) = coeffs(3)+Minv(2,k)*rhs(k)
+          coeffs(4) = coeffs(4)+Minv(3,k)*rhs(k)
+        end do
+        deallocate(rhs)
+        deallocate(Minv)
+      case (CVMIX_KPP_INTERP_CUBE_SPLINE)
+        ! Match y(1), y(2), y'(1), and y'(2)
+        print*, "Cubic spline interpolation"
+        ! [ x2^3 x2^2 x2 1 ][ a ]   [     y2 ]
+        ! [ x1^3 x1^2 x1 1 ][ b ] = [     y1 ]
+        ! [  3x1  2x1  1 0 ][ c ]   [ slope1 ]
+        ! [  3x2  2x2  1 0 ][ d ]   [ slope2 ]
+        !      ^^^
+        !       M
+        det = -((x(2)-x(1))**3)
+        allocate(Minv(4,4))
+        allocate(rhs(4))
+        rhs(1) = y(2)
+        rhs(2) = y(1)
+        if (present(x0).and.present(y0)) then
+          rhs(3) = (y(1)-y0)/(x(1)-x0)
+        else
+          rhs(3) = 0.0_cvmix_r8
+        end if
+        rhs(4) = (y(2)-y(1))/(x(2)-x(1))
+
+        Minv(1,1) = real(2, cvmix_r8)/det
+        Minv(1,2) = -real(2, cvmix_r8)/det
+        Minv(1,3) = (x(1)-x(2))/det
+        Minv(1,4) = (x(1)-x(2))/det
+        Minv(2,1) = -real(3, cvmix_r8)*(x(2)+x(1))/det
+        Minv(2,2) = real(3, cvmix_r8)*(x(2)+x(1))/det
+        Minv(2,3) = (x(2)-x(1))*(real(2, cvmix_r8)*x(2)+x(1))/det
+        Minv(2,4) = (x(2)-x(1))*(real(2, cvmix_r8)*x(1)+x(2))/det
+        Minv(3,1) = real(6, cvmix_r8)*x(2)*x(1)/det
+        Minv(3,2) = -real(6, cvmix_r8)*x(2)*x(1)/det
+        Minv(3,3) = -x(2)*(x(2)-x(1))*(real(2, cvmix_r8)*x(1)+x(2))/det
+        Minv(3,4) = -x(1)*(x(2)-x(1))*(real(2, cvmix_r8)*x(2)+x(1))/det
+        Minv(4,1) = -(x(1)**2)*(real(3, cvmix_r8)*x(2)-x(1))/det
+        Minv(4,2) = -(x(2)**2)*(-real(3, cvmix_r8)*x(1)+x(2))/det
+        Minv(4,3) = x(1)*(x(2)**2)*(x(2)-x(1))/det
+        Minv(4,4) = x(2)*(x(1)**2)*(x(2)-x(1))/det
+
+        do k=1,4
+          do k2=1,4
+            coeffs(k2) = coeffs(k2)+Minv(k2,k)*rhs(k)
+          end do
+        end do
+        deallocate(rhs)
+        deallocate(Minv)
+    end select
+
+!EOC
+
+  end subroutine cvmix_poly_interp
 
   function cubic_root_find(coeffs, x0)
 
