@@ -307,6 +307,7 @@ contains
 
     diff = CVmix_kpp_params_in%Ri_crit
     visc = CVmix_kpp_params_in%Ri_crit
+
     ! (1) Compute turbulent velocity scales
     call cvmix_kpp_compute_turbulent_scales(sigma, OBL_depth, surf_buoy,      &
                                             surf_fric, w_m, w_s)
@@ -318,13 +319,13 @@ contains
     Gat1  = 0.0_cvmix_r8
     DGat1 = 0.0_cvmix_r8
 
-    ! (3) Compute shape function
+    ! (3) Compute coefficients of shape function
     do i=1,3
       call cvmix_kpp_compute_shape_function_coeffs(Gat1(i), DGat1(i),         &
                                                    shape_coeffs(:,i))
     end do
 
-    ! (4) Diffusivities and viscosity in Boundary layer
+    ! (4) Compute diffusivities and viscosity in ocean boundary layer
     do kw=1,kOBL_depth
       diff(kw,1) = OBL_depth * w_s(kw) *                                      &
                    cvmix_kpp_evaluate_shape_function(shape_coeffs(:,1),       &
