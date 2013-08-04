@@ -474,11 +474,10 @@ contains
 !BOC
 
     ! Local variables
-    integer :: nlev, kt, k
-    real(kind=cvmix_r8) :: a, b, c, d, det, Ekman, MoninObukhov, OBL_Limit
+    integer :: nlev, kt
+    real(kind=cvmix_r8), dimension(4) :: coeffs
+    real(kind=cvmix_r8) :: Ekman, MoninObukhov, OBL_Limit
     logical :: lstable
-    real(kind=cvmix_r8), dimension(:,:), allocatable :: Minv
-    real(kind=cvmix_r8), dimension(:),   allocatable :: rhs
 
     type(cvmix_kpp_params_type), pointer :: CVmix_kpp_params_in
 
@@ -536,106 +535,17 @@ contains
       stop 1
     end if
 
-    ! All interpolation assumes form of
-    ! y = ax^3 + bx^2 + cx + d
-    ! linear => a = b = 0
-    ! quad   => a = 0
-    a = 0.0_cvmix_r8
-    b = 0.0_cvmix_r8
-    c = 0.0_cvmix_r8
-    d = 0.0_cvmix_r8
-    select case (CVmix_kpp_params_in%interp_type)
-      case (CVMIX_KPP_INTERP_LINEAR)
-        ! Match values at levels kt and kt+1
-        print*, "Linear interpolation"
-        c = (Ri_bulk(kt+1)-Ri_bulk(kt))/(depth(kt+1)-depth(kt))
-        d = Ri_bulk(kt)-c*depth(kt)
-      case (CVMIX_KPP_INTERP_QUAD)
-        ! Match slope and value at level kt, value at level kt+1
-        print*, "Quadratic interpolation"
-        ! [ x1^2 x1 1 ][ b ]   [    y1 ]
-        ! [ x0^2 x0 1 ][ c ] = [    y0 ]
-        ! [  2x0  1 0 ][ d ]   [ slope ]
-        !      ^^^
-        !       M
-        det = -((depth(kt+1)-depth(kt))**2)
-        allocate(Minv(3,3))
-        allocate(rhs(3))
-        rhs(1) = Ri_bulk(kt+1)
-        rhs(2) = Ri_bulk(kt)
-        if (kt.gt.1) then
-          rhs(3) = (Ri_bulk(kt)-Ri_bulk(kt-1))/(depth(kt)-depth(kt-1))
-        else
-          rhs(3) = 0.0_cvmix_r8
-        end if
+    if (kt.eq.1) then
+      call cvmix_poly_interp(coeffs, CVmix_kpp_params_in%interp_type,    &
+                             depth(kt:kt+1), Ri_bulk(kt:kt+1))
+    else
+      call cvmix_poly_interp(coeffs, CVmix_kpp_params_in%interp_type,    &
+                             depth(kt:kt+1), Ri_bulk(kt:kt+1), depth(kt-1),   &
+                             Ri_bulk(kt-1))
+    end if
+    coeffs(4) = coeffs(4)-CVmix_kpp_params_in%ri_crit
 
-        Minv(1,1) = -real(1, cvmix_r8)/det
-        Minv(1,2) = real(1, cvmix_r8)/det
-        Minv(1,3) = -real(1, cvmix_r8)/(depth(kt+1)-depth(kt))
-        Minv(2,1) = real(2, cvmix_r8)*depth(kt)/det
-        Minv(2,2) = -real(2, cvmix_r8)*depth(kt)/det
-        Minv(2,3) = (depth(kt+1)+depth(kt))/(depth(kt+1)-depth(kt))
-        Minv(3,1) = -(depth(kt)**2)/det
-        Minv(3,2) = depth(kt+1)*(real(2, cvmix_r8)*depth(kt)-depth(kt+1))/det
-        Minv(3,3) = -depth(kt+1)*depth(kt)/(depth(kt+1)-depth(kt))
-
-        do k=1,3
-          b = b+Minv(1,k)*rhs(k)
-          c = c+Minv(2,k)*rhs(k)
-          d = d+Minv(3,k)*rhs(k)
-        end do
-        deallocate(rhs)
-        deallocate(Minv)
-      case (CVMIX_KPP_INTERP_CUBE_SPLINE)
-        ! [ x1^3 x1^2 x1 1 ][ a ]   [     y1 ]
-        ! [ x0^3 x0^2 x0 1 ][ b ] = [     y0 ]
-        ! [  3x0  2x0  1 0 ][ c ]   [ slope0 ]
-        ! [  3x1  2x1  1 0 ][ d ]   [ slope1 ]
-        !      ^^^
-        !       M
-        det = -((depth(kt+1)-depth(kt))**3)
-        allocate(Minv(4,4))
-        allocate(rhs(4))
-        rhs(1) = Ri_bulk(kt+1)
-        rhs(2) = Ri_bulk(kt)
-        if (kt.gt.1) then
-          rhs(3) = (Ri_bulk(kt)-Ri_bulk(kt-1))/(depth(kt)-depth(kt-1))
-        else
-          rhs(3) = 0.0_cvmix_r8
-        end if
-        rhs(4) = (Ri_bulk(kt+1)-Ri_bulk(kt))/(depth(kt+1)-depth(kt))
-
-        Minv(1,1) = real(2, cvmix_r8)/det
-        Minv(1,2) = -real(2, cvmix_r8)/det
-        Minv(1,3) = (depth(kt)-depth(kt+1))/det
-        Minv(1,4) = (depth(kt)-depth(kt+1))/det
-        Minv(2,1) = -real(3, cvmix_r8)*(depth(kt+1)+depth(kt))/det
-        Minv(2,2) = real(3, cvmix_r8)*(depth(kt+1)+depth(kt))/det
-        Minv(2,3) = (depth(kt+1)-depth(kt))*(real(2, cvmix_r8)*depth(kt+1)+depth(kt))/det
-        Minv(2,4) = (depth(kt+1)-depth(kt))*(real(2, cvmix_r8)*depth(kt)+depth(kt+1))/det
-        Minv(3,1) = real(6, cvmix_r8)*depth(kt+1)*depth(kt)/det
-        Minv(3,2) = -real(6, cvmix_r8)*depth(kt+1)*depth(kt)/det
-        Minv(3,3) = -depth(kt+1)*(depth(kt+1)-depth(kt))*(real(2, cvmix_r8)*depth(kt)+depth(kt+1))/det
-        Minv(3,4) = -depth(kt)*(depth(kt+1)-depth(kt))*(real(2, cvmix_r8)*depth(kt+1)+depth(kt))/det
-        Minv(4,1) = -(depth(kt)**2)*(real(3, cvmix_r8)*depth(kt+1)-depth(kt))/det
-        Minv(4,2) = -(depth(kt+1)**2)*(-real(3, cvmix_r8)*depth(kt)+depth(kt+1))/det
-        Minv(4,3) = depth(kt)*(depth(kt+1)**2)*(depth(kt+1)-depth(kt))/det
-        Minv(4,4) = depth(kt+1)*(depth(kt)**2)*(depth(kt+1)-depth(kt))/det
-
-        do k=1,4
-          a = a+Minv(1,k)*rhs(k)
-          b = b+Minv(2,k)*rhs(k)
-          c = c+Minv(3,k)*rhs(k)
-          d = d+Minv(4,k)*rhs(k)
-        end do
-        deallocate(rhs)
-        deallocate(Minv)
-        ! Match slopes and values at levels kt and kt+1
-        print*, "Cubic spline interpolation"
-    end select
-    print*, kt, nlev
-    OBL_depth = cubic_root_find((/a,b,c,d-CVmix_kpp_params_in%ri_crit/), &
-                                0.5_cvmix_r8*(depth(kt)+depth(kt+1)))
+    OBL_depth = cubic_root_find(coeffs, 0.5_cvmix_r8*(depth(kt)+depth(kt+1)))
 
     ! Note: maybe there are times when we don't need to do the interpolation
     !       because we know OBL_depth will equal OBL_limit?
@@ -644,6 +554,127 @@ contains
 !EOC
 
   end subroutine cvmix_kpp_compute_OBL_depth_low
+
+!BOP
+
+! !IROUTINE: cvmix_poly_interp
+! !INTERFACE:
+
+  subroutine cvmix_poly_interp(coeffs, interp_type, x, y, x0, y0)
+
+! !INPUT PARAMETERS:
+    integer,                      intent(in)    :: interp_type
+    real(cvmix_r8), dimension(2), intent(in)    :: x, y
+    real(cvmix_r8), optional,     intent(in)    :: x0, y0
+! !OUTPUT PARAMETERS:
+    real(cvmix_r8), dimension(4), intent(inout) :: coeffs
+
+!EOP
+!BOC
+
+    ! Local variables
+    real(cvmix_r8) :: det
+    integer        :: k, k2
+    real(kind=cvmix_r8), dimension(:,:), allocatable :: Minv
+    real(kind=cvmix_r8), dimension(:),   allocatable :: rhs
+
+    ! All interpolation assumes form of
+    ! y = ax^3 + bx^2 + cx + d
+    ! linear => a = b = 0
+    ! quad   => a = 0
+    coeffs(1:4) = 0.0_cvmix_r8
+    select case (interp_type)
+      case (CVMIX_KPP_INTERP_LINEAR)
+        ! Match y(1) and y(2)
+        print*, "Linear interpolation"
+        coeffs(3) = (y(2)-y(1))/(x(2)-x(1))
+        coeffs(4) = y(1)-coeffs(3)*x(1)
+      case (CVMIX_KPP_INTERP_QUAD)
+        ! Match y(1), y(2), and y'(1) [requires x(0)]
+        print*, "Quadratic interpolation"
+        ! [ x2^2 x2 1 ][ b ]   [    y2 ]
+        ! [ x1^2 x1 1 ][ c ] = [    y1 ]
+        ! [  2x1  1 0 ][ d ]   [ slope ]
+        !      ^^^
+        !       M
+        det = -((x(2)-x(1))**2)
+        allocate(Minv(3,3))
+        allocate(rhs(3))
+        rhs(1) = y(2)
+        rhs(2) = y(1)
+        if (present(x0).and.present(y0)) then
+          rhs(3) = (y(1)-y0)/(x(1)-x0)
+        else
+          rhs(3) = 0.0_cvmix_r8
+        end if
+
+        Minv(1,1) = -real(1, cvmix_r8)/det
+        Minv(1,2) = real(1, cvmix_r8)/det
+        Minv(1,3) = -real(1, cvmix_r8)/(x(2)-x(1))
+        Minv(2,1) = real(2, cvmix_r8)*x(1)/det
+        Minv(2,2) = -real(2, cvmix_r8)*x(1)/det
+        Minv(2,3) = (x(2)+x(1))/(x(2)-x(1))
+        Minv(3,1) = -(x(1)**2)/det
+        Minv(3,2) = x(2)*(real(2, cvmix_r8)*x(1)-x(2))/det
+        Minv(3,3) = -x(2)*x(1)/(x(2)-x(1))
+
+        do k=1,3
+          coeffs(2) = coeffs(2)+Minv(1,k)*rhs(k)
+          coeffs(3) = coeffs(3)+Minv(2,k)*rhs(k)
+          coeffs(4) = coeffs(4)+Minv(3,k)*rhs(k)
+        end do
+        deallocate(rhs)
+        deallocate(Minv)
+      case (CVMIX_KPP_INTERP_CUBE_SPLINE)
+        ! Match y(1), y(2), y'(1), and y'(2)
+        print*, "Cubic spline interpolation"
+        ! [ x2^3 x2^2 x2 1 ][ a ]   [     y2 ]
+        ! [ x1^3 x1^2 x1 1 ][ b ] = [     y1 ]
+        ! [  3x1  2x1  1 0 ][ c ]   [ slope1 ]
+        ! [  3x2  2x2  1 0 ][ d ]   [ slope2 ]
+        !      ^^^
+        !       M
+        det = -((x(2)-x(1))**3)
+        allocate(Minv(4,4))
+        allocate(rhs(4))
+        rhs(1) = y(2)
+        rhs(2) = y(1)
+        if (present(x0).and.present(y0)) then
+          rhs(3) = (y(1)-y0)/(x(1)-x0)
+        else
+          rhs(3) = 0.0_cvmix_r8
+        end if
+        rhs(4) = (y(2)-y(1))/(x(2)-x(1))
+
+        Minv(1,1) = real(2, cvmix_r8)/det
+        Minv(1,2) = -real(2, cvmix_r8)/det
+        Minv(1,3) = (x(1)-x(2))/det
+        Minv(1,4) = (x(1)-x(2))/det
+        Minv(2,1) = -real(3, cvmix_r8)*(x(2)+x(1))/det
+        Minv(2,2) = real(3, cvmix_r8)*(x(2)+x(1))/det
+        Minv(2,3) = (x(2)-x(1))*(real(2, cvmix_r8)*x(2)+x(1))/det
+        Minv(2,4) = (x(2)-x(1))*(real(2, cvmix_r8)*x(1)+x(2))/det
+        Minv(3,1) = real(6, cvmix_r8)*x(2)*x(1)/det
+        Minv(3,2) = -real(6, cvmix_r8)*x(2)*x(1)/det
+        Minv(3,3) = -x(2)*(x(2)-x(1))*(real(2, cvmix_r8)*x(1)+x(2))/det
+        Minv(3,4) = -x(1)*(x(2)-x(1))*(real(2, cvmix_r8)*x(2)+x(1))/det
+        Minv(4,1) = -(x(1)**2)*(real(3, cvmix_r8)*x(2)-x(1))/det
+        Minv(4,2) = -(x(2)**2)*(-real(3, cvmix_r8)*x(1)+x(2))/det
+        Minv(4,3) = x(1)*(x(2)**2)*(x(2)-x(1))/det
+        Minv(4,4) = x(2)*(x(1)**2)*(x(2)-x(1))/det
+
+        do k=1,4
+          do k2=1,4
+            coeffs(k2) = coeffs(k2)+Minv(k2,k)*rhs(k)
+          end do
+        end do
+        deallocate(rhs)
+        deallocate(Minv)
+    end select
+
+!EOC
+
+  end subroutine cvmix_poly_interp
 
 !BOP
 
