@@ -36,6 +36,7 @@ module cvmix_convection
 
    interface cvmix_put_conv
      module procedure cvmix_put_conv_real
+     module procedure cvmix_put_conv_logical
    end interface cvmix_put_conv
 
 ! !PUBLIC TYPES:
@@ -46,6 +47,8 @@ module cvmix_convection
     private
     real(cvmix_r8) :: convect_diff
     real(cvmix_r8) :: convect_visc
+    logical        :: lBruntVaisala
+    real(cvmix_r8) :: BVsqr_convect
   end type cvmix_conv_params_type
 
 !EOP
@@ -59,7 +62,8 @@ contains
 ! !IROUTINE: cvmix_init_conv
 ! !INTERFACE:
 
-  subroutine cvmix_init_conv(convect_diff, convect_visc, CVmix_conv_params_user)
+  subroutine cvmix_init_conv(convect_diff, convect_visc, lBruntVaisala,       &
+                             BVsqr_convect, CVmix_conv_params_user)
 
 ! !DESCRIPTION:
 !  Initialization routine for specifying convective mixing coefficients.
@@ -70,12 +74,15 @@ contains
 !  Only those used by entire module. 
 
 ! !OUTPUT PARAMETERS:
-    type (cvmix_conv_params_type), optional, target, intent(out) :: CVmix_conv_params_user
+    type (cvmix_conv_params_type), optional, target, intent(out) ::           &
+                                                        CVmix_conv_params_user
 
 ! !INPUT PARAMETERS:
     real(cvmix_r8), intent(in) :: &
       convect_diff,      &! diffusivity to parameterize convection
       convect_visc        ! viscosity to parameterize convection
+    logical,        intent(in), optional :: lBruntVaisala ! True => B-V mixing
+    real(cvmix_r8), intent(in), optional :: BVsqr_convect ! B-V parameter
 !EOP
 !BOC
 
@@ -90,6 +97,20 @@ contains
     ! Set convect_diff and convect_visc in conv_params_type
     call cvmix_put_conv(CVmix_conv_params_out, "convect_diff", convect_diff)
     call cvmix_put_conv(CVmix_conv_params_out, "convect_visc", convect_visc)
+
+    if (present(lBruntVaisala)) then
+      call cvmix_put_conv(CVmix_conv_params_out, "lBruntVaisala",             &
+                          lBruntVaisala)
+    else
+      call cvmix_put_conv(CVmix_conv_params_out, "lBruntVaisala", .false.)
+    end if
+
+    if (present(BVsqr_convect)) then
+      call cvmix_put_conv(CVmix_conv_params_out, "BVsqr_convect",             &
+                          BVsqr_convect)
+    else
+      call cvmix_put_conv(CVmix_conv_params_out, "BVsqr_convect", 0.0_cvmix_r8)
+    end if
 
 !EOC
 
@@ -125,7 +146,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    real(cvmix_r8) :: vvconv
+    real(cvmix_r8) :: vvconv, wgt
     integer        :: kw  ! vertical level index 
 
     type (cvmix_conv_params_type), pointer :: CVmix_conv_params_in
@@ -141,21 +162,72 @@ contains
 !  enhance the vertical mixing coefficients if gravitationally unstable
 !
 !-----------------------------------------------------------------------
+    if (CVmix_conv_params_in%lBruntVaisala) then
+      ! Brunt-Vaisala mixing based on buoyancy
+      ! Based on parameter BVsqr_convect
+      ! diffusivity = convect_diff * wgt
+      ! viscosity   = convect_visc * wgt
 
-    do kw=1,CVmix_vars%nlev-1
-      if (CVmix_conv_params_in%convect_visc.ne.0_cvmix_r8) then
-         vvconv = cvmix_get_conv_real('convect_visc', CVmix_conv_params_in)
-      else
-        ! convection only affects tracers
-        vvconv = CVmix_vars%visc_iface(kw)
-      end if
+      ! For BVsqr_convect < 0:
+      ! wgt = 0 for N^2 > 0
+      ! wgt = 1 for N^2 < BVsqr_convect
+      ! wgt = [1 - (1-N^2/BVsqr_convect)^2]^3 otherwise
 
-      if (CVmix_vars%dens(kw).gt.CVmix_vars%dens_lwr(kw)) then
-        CVmix_vars%diff_iface(kw+1,1) = cvmix_get_conv_real('convect_diff',   &
-                                        CVmix_conv_params_in)
-        CVmix_vars%visc_iface(kw+1)   = vvconv
+      ! If BVsqr_convect >= 0:
+      ! wgt = 0 for N^2 > 0
+      ! wgt = 1 for N^2 <= 0
+
+      ! Compute wgt
+      if (CVmix_conv_params_in%BVsqr_convect.lt.0) then
+        do kw=1,CVmix_vars%nlev
+          wgt = 0.0_cvmix_r8
+          if (CVmix_vars%buoy_iface(kw).le.0) then
+            if (CVmix_vars%buoy_iface(kw).gt.                                 &
+                CVmix_conv_params_in%BVsqr_convect) then
+              wgt = 1.0_cvmix_r8 - CVmix_vars%buoy_iface(kw) /                &
+                    CVmix_conv_params_in%BVsqr_convect
+              wgt = (1.0_cvmix_r8 - wgt**2)**3
+            else
+              wgt = 1.0_cvmix_r8
+            end if
+          end if
+          CVmix_vars%visc_iface(kw) = wgt*cvmix_get_conv_real('convect_visc', &
+                                          CVmix_conv_params_in)
+          CVmix_vars%diff_iface(kw,:)=wgt*cvmix_get_conv_real('convect_diff', &
+                                          CVmix_conv_params_in)
+        end do
+      else ! BVsqr_convect >= 0 => step function
+        do kw=1,CVmix_vars%nlev-1
+          if (CVmix_vars%buoy_iface(kw).le.0) then
+            CVmix_vars%visc_iface(kw)   = cvmix_get_conv_real('convect_visc', &
+                                          CVmix_conv_params_in)
+            CVmix_vars%diff_iface(kw,:) = cvmix_get_conv_real('convect_diff', &
+                                          CVmix_conv_params_in)
+          else
+            CVmix_vars%visc_iface(kw)   = 0.0_cvmix_r8
+            CVmix_vars%diff_iface(kw,:) = 0.0_cvmix_r8
+          end if
+        end do
       end if
-    end do
+      CVmix_vars%visc_iface(CVmix_vars%nlev+1)   = 0.0_cvmix_r8
+      CVmix_vars%diff_iface(CVmix_vars%nlev+1,:) = 0.0_cvmix_r8
+    else
+      ! Default convection mixing based on density
+      do kw=1,CVmix_vars%nlev-1
+        if (CVmix_conv_params_in%convect_visc.ne.0_cvmix_r8) then
+           vvconv = cvmix_get_conv_real('convect_visc', CVmix_conv_params_in)
+        else
+          ! convection only affects tracers
+          vvconv = CVmix_vars%visc_iface(kw)
+        end if
+
+        if (CVmix_vars%dens(kw).gt.CVmix_vars%dens_lwr(kw)) then
+          CVmix_vars%diff_iface(kw+1,1) = cvmix_get_conv_real('convect_diff', &
+                                          CVmix_conv_params_in)
+          CVmix_vars%visc_iface(kw+1)   = vvconv
+        end if
+      end do
+    end if
 
 !EOC
 
@@ -190,6 +262,8 @@ contains
         CVmix_conv_params_put%convect_diff = val
       case ('convect_visc')
         CVmix_conv_params_put%convect_visc = val
+      case ('BVsqr_convect')
+        CVmix_conv_params_put%BVsqr_convect = val
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
         stop 1
@@ -199,6 +273,42 @@ contains
 !EOC
 
   end subroutine cvmix_put_conv_real
+
+!BOP
+
+! !IROUTINE: cvmix_put_conv_logical
+! !INTERFACE:
+
+  subroutine cvmix_put_conv_logical(CVmix_conv_params_put, varname, val)
+
+! !DESCRIPTION:
+!  Write a Boolean value into a cvmix\_conv\_params\_type variable.
+!\\
+!\\
+
+! !USES:
+!  Only those used by entire module. 
+
+! !INPUT PARAMETERS:
+    character(len=*), intent(in) :: varname
+    logical,          intent(in) :: val
+
+! !OUTPUT PARAMETERS:
+    type(cvmix_conv_params_type), intent(inout) :: CVmix_conv_params_put
+!EOP
+!BOC
+
+    select case (trim(varname))
+      case ('lBruntVaisala')
+        CVmix_conv_params_put%lBruntVaisala = val
+      case DEFAULT
+        print*, "ERROR: ", trim(varname), " not a valid choice!"
+        stop 1
+    end select
+
+!EOC
+
+  end subroutine cvmix_put_conv_logical
 
 !BOP
 
