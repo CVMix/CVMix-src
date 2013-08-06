@@ -625,23 +625,22 @@ contains
       if (Ri_bulk(kt+1).ge.CVmix_kpp_params_in%ri_crit) &
         exit
     end do
-    if (kt.eq.nlev) then
-      print*, "ERROR: Entire column is above the boundary layer!"
-      stop 1
-    end if
     kOBL_depth = kt
-
-    if (kt.eq.1) then
-      call cvmix_poly_interp(coeffs, CVmix_kpp_params_in%interp_type,         &
-                             depth(kt:kt+1), Ri_bulk(kt:kt+1))
+    if (kt.eq.nlev) then
+      OBL_depth = depth(nlev)
     else
-      call cvmix_poly_interp(coeffs, CVmix_kpp_params_in%interp_type,         &
-                             depth(kt:kt+1), Ri_bulk(kt:kt+1), depth(kt-1),   &
-                             Ri_bulk(kt-1))
-    end if
-    coeffs(4) = coeffs(4)-CVmix_kpp_params_in%ri_crit
+      if (kt.eq.1) then
+        call cvmix_poly_interp(coeffs, CVmix_kpp_params_in%interp_type,       &
+                               depth(kt:kt+1), Ri_bulk(kt:kt+1))
+      else
+        call cvmix_poly_interp(coeffs, CVmix_kpp_params_in%interp_type,       &
+                               depth(kt:kt+1), Ri_bulk(kt:kt+1), depth(kt-1), &
+                               Ri_bulk(kt-1))
+      end if
+      coeffs(4) = coeffs(4)-CVmix_kpp_params_in%ri_crit
 
-    OBL_depth = cubic_root_find(coeffs, 0.5_cvmix_r8*(depth(kt)+depth(kt+1)))
+      OBL_depth = cubic_root_find(coeffs, 0.5_cvmix_r8*(depth(kt)+depth(kt+1)))
+    end if
 
     ! Note: maybe there are times when we don't need to do the interpolation
     !       because we know OBL_depth will equal OBL_limit?
@@ -912,12 +911,12 @@ contains
     select case (interp_type)
       case (CVMIX_KPP_INTERP_LINEAR)
         ! Match y(1) and y(2)
-        print*, "Linear interpolation"
+!        print*, "Linear interpolation"
         coeffs(3) = (y(2)-y(1))/(x(2)-x(1))
         coeffs(4) = y(1)-coeffs(3)*x(1)
       case (CVMIX_KPP_INTERP_QUAD)
         ! Match y(1), y(2), and y'(1) [requires x(0)]
-        print*, "Quadratic interpolation"
+!        print*, "Quadratic interpolation"
         ! [ x2^2 x2 1 ][ b ]   [    y2 ]
         ! [ x1^2 x1 1 ][ c ] = [    y1 ]
         ! [  2x1  1 0 ][ d ]   [ slope ]
@@ -953,7 +952,7 @@ contains
         deallocate(Minv)
       case (CVMIX_KPP_INTERP_CUBE_SPLINE)
         ! Match y(1), y(2), y'(1), and y'(2)
-        print*, "Cubic spline interpolation"
+!        print*, "Cubic spline interpolation"
         ! [ x2^3 x2^2 x2 1 ][ a ]   [     y2 ]
         ! [ x1^3 x1^2 x1 1 ][ b ] = [     y1 ]
         ! [  3x1  2x1  1 0 ][ c ]   [ slope1 ]
