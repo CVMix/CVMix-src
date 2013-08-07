@@ -51,6 +51,7 @@
   ! These are public for testing, may end up private later
   public :: cvmix_kpp_compute_turbulent_scales
   public :: cvmix_kpp_compute_shape_function_coeffs
+  public :: cvmix_kpp_evaluate_shape_function
 
   interface cvmix_coeffs_kpp
     module procedure cvmix_coeffs_kpp_low
@@ -904,7 +905,7 @@ contains
     real(cvmix_r8), intent(in) :: DGAT1 ! G'(1)
 
 ! !OUTPUT PARAMETERS:
-    real(cvmix_r8), dimension(4), intent(out) :: coeffs
+    real(cvmix_r8), dimension(4), intent(inout) :: coeffs
 
 !EOP
 !BOC
@@ -950,7 +951,7 @@ contains
     cvmix_kpp_evaluate_shape_function = 0.0_cvmix_r8
     do i=1,4
       cvmix_kpp_evaluate_shape_function = cvmix_kpp_evaluate_shape_function + &
-                                          coeffs(i)*(sigma**(4-1))
+                                          coeffs(i)*(sigma**(i-1))
     end do
 
   end function cvmix_kpp_evaluate_shape_function
