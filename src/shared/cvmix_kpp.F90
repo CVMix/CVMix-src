@@ -68,6 +68,11 @@
     module procedure cvmix_kpp_compute_OBL_depth_wrap
   end interface cvmix_kpp_compute_OBL_depth
 
+  interface cvmix_kpp_compute_turbulent_scales
+    module procedure cvmix_kpp_compute_turbulent_scales_0d
+    module procedure cvmix_kpp_compute_turbulent_scales_1d
+  end interface cvmix_kpp_compute_turbulent_scales
+
 ! !PUBLIC TYPES:
 
   ! cvmix_kpp_params_type contains the necessary parameters for KPP mixing
@@ -694,17 +699,87 @@ contains
 
 !BOP
 
-! !IROUTINE: cvmix_kpp_compute_turbulent_scales
+! !IROUTINE: cvmix_kpp_compute_turbulent_scales_0d
 ! !INTERFACE:
 
-  subroutine cvmix_kpp_compute_turbulent_scales(sigma_coord, OBL_depth,       &
-                                                surf_buoy_force,              &
-                                                surf_fric_vel, w_m, w_s,      &
-                                                CVmix_kpp_params_user)
+  subroutine cvmix_kpp_compute_turbulent_scales_0d(sigma_coord, OBL_depth,    &
+                                                   surf_buoy_force,           &
+                                                   surf_fric_vel, w_m, w_s,   &
+                                                   CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
 !  Computes the turbulent velocity scales for momentum ($w\_m$) and scalars
-!  ($w\_s$)
+!  ($w\_s$) at single $\sigma$ coordinate
+!\\
+!\\
+
+! !USES:
+!  Only those used by entire module. 
+
+! !INPUT PARAMETERS:
+    real(cvmix_r8), intent(in) :: sigma_coord
+    real(cvmix_r8), intent(in) :: OBL_depth, surf_buoy_force, surf_fric_vel
+    type(cvmix_kpp_params_type), intent(in), optional, target ::              &
+                                           CVmix_kpp_params_user
+
+! !OUTPUT PARAMETERS:
+    real(cvmix_r8), optional, intent(inout) :: w_m
+    real(cvmix_r8), optional, intent(inout) :: w_s
+
+!EOP
+!BOC
+
+    ! Local variables
+    real(cvmix_r8), dimension(1) :: sigma, lcl_wm, lcl_ws
+    logical :: compute_wm, compute_ws
+
+    compute_wm = present(w_m)
+    compute_ws = present(w_s)
+    sigma(1) = sigma_coord
+    if (compute_wm) &
+      lcl_wm(1) = w_m
+    if (compute_ws) &
+      lcl_ws(1) = w_s
+    if (compute_wm.and.compute_ws) then
+      call cvmix_kpp_compute_turbulent_scales(sigma, OBL_depth,               &
+                                              surf_buoy_force, surf_fric_vel, &
+                                              w_m = lcl_wm, w_s = lcl_ws,     &
+                                  CVmix_kpp_params_user=CVmix_kpp_params_user)
+    else
+      if (compute_wm) &
+        call cvmix_kpp_compute_turbulent_scales(sigma, OBL_depth,             &
+                                                surf_buoy_force,surf_fric_vel,&
+                                                w_m = lcl_wm,                 &
+                                  CVmix_kpp_params_user=CVmix_kpp_params_user)
+      if (compute_ws) &
+        call cvmix_kpp_compute_turbulent_scales(sigma, OBL_depth,             &
+                                                surf_buoy_force,surf_fric_vel,&
+                                                w_s = lcl_ws,                 &
+                                  CVmix_kpp_params_user=CVmix_kpp_params_user)
+    end if
+
+    if (compute_wm) &
+      w_m = lcl_wm(1)
+    if (compute_ws) &
+      w_s = lcl_ws(1)
+
+!EOC
+
+  end subroutine cvmix_kpp_compute_turbulent_scales_0d
+
+!BOP
+
+! !IROUTINE: cvmix_kpp_compute_turbulent_scales_1d
+! !INTERFACE:
+
+  subroutine cvmix_kpp_compute_turbulent_scales_1d(sigma_coord, OBL_depth,    &
+                                                   surf_buoy_force,           &
+                                                   surf_fric_vel, w_m, w_s,   &
+                                                   CVmix_kpp_params_user)
+
+! !DESCRIPTION:
+!  Computes the turbulent velocity scales for momentum ($w\_m$) and scalars
+!  ($w\_s$) given a 1d array of $\sigma$ coordinates
 !\\
 !\\
 
@@ -798,7 +873,7 @@ contains
 
 !EOC
 
-  end subroutine cvmix_kpp_compute_turbulent_scales
+  end subroutine cvmix_kpp_compute_turbulent_scales_1d
 
 !BOP
 
