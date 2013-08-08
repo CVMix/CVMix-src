@@ -48,8 +48,8 @@
   public :: cvmix_coeffs_kpp
   public :: cvmix_put_kpp
   public :: cvmix_get_kpp_real
-  ! These are public for testing, may end up private later
   public :: cvmix_kpp_compute_turbulent_scales
+  ! These are public for testing, may end up private later
   public :: cvmix_kpp_compute_shape_function_coeffs
   public :: cvmix_kpp_evaluate_shape_function
 

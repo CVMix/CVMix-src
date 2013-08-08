@@ -138,7 +138,8 @@ Subroutine cvmix_kpp_driver(nlev)
   end do
   ! Typically the first argument of compute_turbulent_scales is sigma, and then
   ! the routine calculates zeta based on the next three parameters. Setting
-  ! OBL_depth = surf_buoy_force = surf_fric_vel = 1 => sigma = zeta
+  ! OBL_depth = surf_buoy_force = surf_fric_vel = 1 (with von Karman = 1 as
+  ! well) => sigma = zeta
   call cvmix_kpp_compute_turbulent_scales(zeta, 1.0_cvmix_r8, 1.0_cvmix_r8,  &
                                           1.0_cvmix_r8, w_m, w_s)
 
