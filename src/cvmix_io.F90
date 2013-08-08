@@ -59,6 +59,7 @@ module cvmix_io
   end interface
 
   interface cvmix_output_write_att
+    module procedure cvmix_output_write_att_integer
     module procedure cvmix_output_write_att_real
     module procedure cvmix_output_write_att_string
   end interface
@@ -1002,13 +1003,79 @@ contains
 
 !BOP
 
+! !IROUTINE: cvmix_write_att_integer
+! !INTERFACE:
+
+  subroutine cvmix_output_write_att_integer(file_id, att_name, att_val,       &
+                                            var_name)
+
+! !DESCRIPTION:
+!  Routine to write an attribute with an integer value to a netcdf file. If
+!  var\_name is omitted, routine writes a global attribute. Called with
+!  cvmix\_output\_write\_att (see interface in PUBLIC MEMBER FUNCTIONS above).
+!\\
+!\\
+
+! !USES:
+!  Only those used by entire module. 
+
+! !INPUT PARAMETERS:
+    integer,          intent(in)           :: file_id
+    character(len=*), intent(in)           :: att_name
+    integer,          intent(in)           :: att_val
+    character(len=*), intent(in), optional :: var_name
+
+! !LOCAL VARIABLES:
+#ifdef _NETCDF
+    integer :: varid
+    logical :: var_found
+#endif
+!EOP
+!BOC
+
+    select case(get_file_type(file_id))
+#ifdef _NETCDF
+      case (NETCDF_FILE_TYPE)
+        var_found = .true.
+        if (present(var_name)) then
+          varid = get_netcdf_varid(file_id, var_name)
+          if (varid.eq.-1) then
+            print*, "WARNING: can not find variable ", trim(var_name), " in ", &
+                    trim(get_file_name(file_id)), "... can not add attribute."
+            var_found = .false.
+          end if
+        else
+          varid=NF90_GLOBAL
+        end if
+        if (var_found) then
+          call netcdf_check(nf90_redef(file_id))
+          call netcdf_check(nf90_put_att(file_id, varid, trim(att_name), &
+                            att_val))
+          call netcdf_check(nf90_enddef(file_id))
+        end if
+#endif
+      case DEFAULT
+        print*, "ERROR: cvmix_output_write_att_integer only writes to netcdf"
+        print*, "(attempted to set attribute ", trim(att_name), " to ", &
+                att_val
+        if (present(var_name)) &
+          print*, "(for variable ", trim(var_name), ")"
+        call cvmix_io_close_all
+        stop 1
+    end select
+!EOC
+
+  end subroutine cvmix_output_write_att_integer
+
+!BOP
+
 ! !IROUTINE: cvmix_write_att_real
 ! !INTERFACE:
 
   subroutine cvmix_output_write_att_real(file_id, att_name, att_val, var_name)
 
 ! !DESCRIPTION:
-!  Routine to write an attribute with a string value to a netcdf file. If
+!  Routine to write an attribute with a real value to a netcdf file. If
 !  var\_name is omitted, routine writes a global attribute. Called with
 !  cvmix\_output\_write\_att (see interface in PUBLIC MEMBER FUNCTIONS above).
 !\\
@@ -1053,7 +1120,7 @@ contains
         end if
 #endif
       case DEFAULT
-        print*, "ERROR: cvmix_output_write_att_string only writes to netcdf"
+        print*, "ERROR: cvmix_output_write_att_real only writes to netcdf"
         print*, "(attempted to set attribute ", trim(att_name), " to ", &
                 att_val
         if (present(var_name)) &
