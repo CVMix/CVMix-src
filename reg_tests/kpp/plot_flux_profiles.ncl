@@ -7,26 +7,26 @@ begin
 ; Create Color Table
   my_color_map = (/"White", "Black"/)
 
-  if (isfilepresent("test2.nc")) then
+  if (isfilepresent("test3.nc")) then
     print((/"Reading netCDF data"/))
-    f = addfile("test2.nc", "r")
+    f = addfile("test3.nc", "r")
     sigma = f->data(0,:)
     w_m   = f->data(1,:)
     w_s   = f->data(2,:)
   else
-    if (isfilepresent("test2.out")) then
+    if (isfilepresent("test3.out")) then
       print((/"Reading ascii data"/))
       nlev = 220
       sigma = new((/nlev+1/), "double")
       w_m   = new((/nlev+1/), "double")
       w_s   = new((/nlev+1/), "double")
 
-      data = asciiread("test2.out", (/nlev+1,3/), "double")
+      data = asciiread("test3.out", (/nlev+1,3/), "double")
       sigma = data(:,0)
       w_m   = data(:,1)
       w_s   = data(:,2)
       else
-        print((/"ERROR: can not find output (looking for test2.out or test2.nc)"/))
+        print((/"ERROR: can not find output (looking for test3.out or test3.nc)"/))
         exit
     end if
   end if

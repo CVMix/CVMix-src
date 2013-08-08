@@ -44,7 +44,7 @@ Subroutine cvmix_kpp_driver(nlev)
   real(cvmix_r8), dimension(:,:), allocatable, target :: diffusivity
   real(cvmix_r8), dimension(:),   allocatable, target :: viscosity
   real(cvmix_r8), dimension(:),   allocatable, target :: zt, zw_iface, Ri_bulk
-  real(cvmix_r8), dimension(:),   allocatable, target :: w_m, w_s, sigma
+  real(cvmix_r8), dimension(:),   allocatable, target :: w_m, w_s, zeta
   real(cvmix_r8), dimension(:,:), allocatable, target :: TwoDArray
   real(cvmix_r8), dimension(4) :: shape_coeffs
   integer :: fid, kt, kw, nlev2
@@ -117,38 +117,51 @@ Subroutine cvmix_kpp_driver(nlev)
   call cvmix_io_close(fid)
 
   print*, ""
-  print*, "Test 2: determining w_m and w_s"
-  print*, "----------"
-  nlev2 = 220
-  allocate(w_m(nlev2+1), w_s(nlev2+1), sigma(nlev2+1))
-  do kw=1, nlev2+1
-    sigma(kw) = -2.0_cvmix_r8 + 2.2_cvmix_r8*real(kw-1,cvmix_r8)/real(nlev2,cvmix_r8)
-  end do
-  call cvmix_kpp_compute_turbulent_scales(sigma, 1.0_cvmix_r8, 1.0_cvmix_r8,  &
-                                          1.0_cvmix_r8, w_m, w_s)
-
-  allocate(TwoDArray(nlev2+1,3))
-  TwoDArray(:,1) = sigma
-  TwoDArray(:,2) = 1.0_cvmix_r8/w_m
-  TwoDArray(:,3) = 1.0_cvmix_r8/w_s
-#ifdef _NETCDF
-  call cvmix_io_open(fid, "test2.nc", "nc")
-#else
-  call cvmix_io_open(fid, "test2.out", "ascii")
-#endif
-  call cvmix_output_write(fid, "data", (/"nrow", "ncol"/), TwoDArray)
-  call cvmix_io_close(fid)
-  deallocate(TwoDArray)
-  deallocate(sigma, w_m, w_s)
-
-
-  print*, ""
-  print*, "Test 3: Computing G(sigma)"
+  print*, "Test 2: Computing G(sigma)"
   print*, "----------"
   call cvmix_kpp_compute_shape_function_coeffs(0.0_cvmix_r8, 0.0_cvmix_r8,    &
                                                shape_coeffs)
   print*, "Coefficients are: "
   print*, shape_coeffs(1), shape_coeffs(2), shape_coeffs(3), shape_coeffs(4) 
+
+  print*, ""
+  print*, "Test 3: determining phi_m and phi_s (inversely proportional to ",  &
+          "w_m and w_s, respectively)"
+  print*, "----------"
+  nlev2 = 220
+  allocate(w_m(nlev2+1), w_s(nlev2+1), zeta(nlev2+1))
+  ! Note: zeta = sigma*OBL_depth/MoninObukhov constant
+  !       zeta < 0 => unstable flow
+  !       zeta > 0 => stable flow
+  do kw=1, nlev2+1
+    zeta(kw) = -2.0_cvmix_r8 + 2.2_cvmix_r8*real(kw-1,cvmix_r8)/real(nlev2,cvmix_r8)
+  end do
+  ! Typically the first argument of compute_turbulent_scales is sigma, and then
+  ! the routine calculates zeta based on the next three parameters. Setting
+  ! OBL_depth = surf_buoy_force = surf_fric_vel => sigma = zeta
+  call cvmix_kpp_compute_turbulent_scales(zeta, 1.0_cvmix_r8, 1.0_cvmix_r8,  &
+                                          1.0_cvmix_r8, w_m, w_s)
+
+  allocate(TwoDArray(nlev2+1,3))
+  TwoDArray(:,1) = zeta
+  TwoDArray(:,2) = 1.0_cvmix_r8/w_m ! phi_m
+  TwoDArray(:,3) = 1.0_cvmix_r8/w_s ! phi_s
+#ifdef _NETCDF
+  call cvmix_io_open(fid, "test3.nc", "nc")
+#else
+  call cvmix_io_open(fid, "test3.out", "ascii")
+#endif
+  call cvmix_output_write(fid, "data", (/"nrow", "ncol"/), TwoDArray)
+  call cvmix_io_close(fid)
+#ifdef _NETCDF
+  print*, "Done! Data is stored in test3.nc, run plot_flux_profiles.ncl to see output."
+#else
+  print*, "Done! Data is stored in test3.out, run plot_flux_profiles.ncl to see output."
+#endif
+  print*, ""
+  deallocate(TwoDArray)
+  deallocate(zeta, w_m, w_s)
+
 !EOC
 
 End Subroutine cvmix_kpp_driver

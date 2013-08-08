@@ -27,7 +27,7 @@ while [ $# -gt 0 ]; do
       USE_NETCDF=netcdf
       ;;
     -clean|--clean)
-      echo "rm -f data.out data.nc"
+      echo "rm -f data.out data.nc test3.out test3.nc"
       rm -f data.out data.nc
       exit
       ;;
