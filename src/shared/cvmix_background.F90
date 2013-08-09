@@ -386,7 +386,7 @@ contains
 ! !INPUT PARAMETERS:
 
     ! Need to know column for pulling data from static_visc and _diff
-    integer,                       intent(in) :: colid
+    integer,                               optional, intent(in) :: colid
     type(cvmix_bkgnd_params_type), target, optional, intent(in) ::            &
                                            CVmix_bkgnd_params_user
 
@@ -408,6 +408,12 @@ contains
     CVmix_bkgnd_params_in => CVmix_bkgnd_params_saved
     if (present(CVmix_bkgnd_params_user)) then
       CVmix_bkgnd_params_in => CVmix_bkgnd_params_user
+    end if
+
+    if (CVmix_bkgnd_params_in%lvary_horizontal.and.(.not.present(colid))) then
+      print*, "ERROR: background parameters vary in horizontal so you must ", &
+              "provide colid to cvmix_coeffs_bkgnd!"
+      stop 1
     end if
 
     nlev = CVmix_vars%nlev

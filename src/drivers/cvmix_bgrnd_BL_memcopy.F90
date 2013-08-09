@@ -51,7 +51,8 @@ Subroutine cvmix_BL_memcopy_driver(nlev, ocn_depth)
   ! CVMix datatypes
   type(cvmix_data_type)         , dimension(2) :: CVmix_vars
   type(cvmix_global_params_type)               :: CVmix_params
-  type(cvmix_bkgnd_params_type) , dimension(2) :: CVmix_BL_params
+  ! Column 1 uses the params saved in module, Column 2 uses this one
+  type(cvmix_bkgnd_params_type)                :: CVmix_BL_params
 
   ! iface_depth is the depth of each interface;  same in both columns
   real(cvmix_r8), dimension(:), allocatable :: iface_depth
@@ -102,13 +103,13 @@ Subroutine cvmix_BL_memcopy_driver(nlev, ocn_depth)
 
   ! Set B-L parameters
   call cvmix_init_bkgnd(CVmix_vars(1), col1_vdc1, col1_vdc2, col1_linv, &
-                        col1_dpth, CVmix_params, CVmix_BL_params(1))
+                        col1_dpth, CVmix_params)
   call cvmix_init_bkgnd(CVmix_vars(2), col2_vdc1, col2_vdc2, col2_linv, &
-                        col2_dpth, CVMix_params, CVmix_BL_params(2))
+                        col2_dpth, CVMix_params, CVmix_BL_params)
 
   ! Compute B-L coefficients
-  call cvmix_coeffs_bkgnd(CVmix_vars(1), 1, CVmix_BL_params(1))
-  call cvmix_coeffs_bkgnd(CVmix_vars(2), 1, CVmix_BL_params(2))
+  call cvmix_coeffs_bkgnd(CVmix_vars(1))
+  call cvmix_coeffs_bkgnd(CVmix_vars(2), CVmix_bkgnd_params_user=CVmix_BL_params)
   
   ! Output
 #ifdef _NETCDF
