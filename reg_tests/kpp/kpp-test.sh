@@ -28,7 +28,7 @@ while [ $# -gt 0 ]; do
       ;;
     -clean|--clean)
       echo "rm -f data.out data.nc test3.out test3.nc"
-      rm -f data.out data.nc
+      rm -f data.out data.nc test3.out test3.nc
       exit
       ;;
     * )
