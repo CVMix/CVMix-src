@@ -946,27 +946,52 @@ contains
 !EOC
 
   end subroutine cvmix_kpp_compute_shape_function_coeffs
-#if 0
-  function compute_nu_at_OBL_depth(interp_type2, nu_below, nu_above,          &
-                                   nu_2above, dnu_dz)
+
+  function compute_nu_at_OBL_depth(interp_type2, layer_depth, layer_nu,       &
+                                   OBL_depth, depth_2above, nu_2above, dnu_dz)
 
 ! !INPUT PARAMETERS:
-    integer,        intent(in) :: interp_type2
-    real(cvmix_r8), intent(in) :: nu_below, &! nu at iface below OBL_depth
-                                  nu_above   ! nu at iface above OBL_depth
+    integer,                      intent(in) :: interp_type2
+    ! layer_depth = (/depth_above_OBL, depth_below_OBL/)
+    ! layer_nu    = nu at these points
+    real(cvmix_r8), dimension(2), intent(in) :: layer_depth, layer_nu
+    real(cvmix_r8),               intent(in) :: OBL_depth
     ! nu at iface above the iface above OBL_depth (Not needed for linear
     ! interpolation or if OBL_depth is in top level
-    real(cvmix_r8), optional, intent(in) :: nu_2above
+    real(cvmix_r8), optional,     intent(in) :: depth_2above, nu_2above
 
 ! !OUTPUT PARAMETERS:
     real(cvmix_r8), optional, intent(out) :: dnu_dz
+    real(cvmix_r8)                        :: compute_nu_at_OBL_depth
 
     ! Local variables
     real(cvmix_r8), dimension(4) :: coeffs
+    real(cvmix_r8) :: dnu_dz_above, dnu_dz_below, dnu_dz_local
 
-    if (interp_type2.ne.CVMIX_KPP_INTERP_POP) then
-      call cvmix_math_poly_interp(coeffs
+    if (interp_type2.eq.CVMIX_KPP_INTERP_POP) then
+      ! (1) Interpolate derivatives of nu
+      if (present(depth_2above).and.present(nu_2above)) then
+        dnu_dz_above = (layer_nu(1)-nu_2above)/(layer_depth(1)-depth_2above)
+      else
+        dnu_dz_above = 0.0_cvmix_r8
+      end if
+      dnu_dz_below = (layer_nu(2)-layer_nu(1))/(layer_depth(2)-layer_depth(1))
+      call cvmix_math_poly_interp(coeffs, CVMIX_MATH_INTERP_LINEAR,           &
+                                  layer_depth, (/dnu_dz_above, dnu_dz_below/))
+      ! (2) Evaluate at OBL_depth
+      dnu_dz_local = cvmix_math_evaluate_cubic(coeffs, OBL_depth)
+      ! (3) Linear interpolant: slope = value computed in (2) and the line goes
+      !     through the point (layer_depth(2), layer_nu(2))
+      coeffs = 0.0_cvmix_r8
+      coeffs(1) = layer_nu(2) - dnu_dz_local*layer_depth(2)
+      coeffs(2) = dnu_dz_local
+    else
+      call cvmix_math_poly_interp(coeffs, interp_type2, layer_depth, layer_nu,&
+           depth_2above, nu_2above)
+    end if
+    compute_nu_at_OBL_depth = cvmix_math_evaluate_cubic(coeffs, OBL_depth,    &
+                                                        dnu_dz)
 
   end function compute_nu_at_OBL_depth
-#endif
+
 end module cvmix_kpp
