@@ -54,6 +54,15 @@
 
   subroutine cvmix_math_poly_interp(coeffs, interp_type, x, y, x0, y0)
 
+! !DESCRIPTION:
+!  Given (x(1), y(1)), (x(2), y(2)), and possibly (x0, y0), compute coeffs =
+!  $(/a_0, a_1, a_2, a_3/)$ such that, for $f(x) = \sum a_nx^n$, the following
+!  hold: $f(x(1)) = y(1)$ and $f(x(2)) = y(2)$. For both quadratic and cubic
+!  interpolation, $f'(x(1)) = (y(1)-y0)/(x(1)-x0)$ as well, and for cubic splines
+!  $f'(x(2)) = (y(2) - y(1))/(x(2) - x(1))$.
+!  \\
+!  \\
+
 ! !INPUT PARAMETERS:
     integer,                      intent(in)    :: interp_type
     real(cvmix_r8), dimension(2), intent(in)    :: x, y
@@ -71,22 +80,22 @@
     real(kind=cvmix_r8), dimension(:),   allocatable :: rhs
 
     ! All interpolation assumes form of
-    ! y = ax^3 + bx^2 + cx + d
-    ! linear => a = b = 0
-    ! quad   => a = 0
+    ! y = dx^3 + cx^2 + bx + a
+    ! linear => c = d = 0
+    ! quad   => d = 0
     coeffs(1:4) = 0.0_cvmix_r8
     select case (interp_type)
       case (CVMIX_MATH_INTERP_LINEAR)
         ! Match y(1) and y(2)
 !        print*, "Linear interpolation"
-        coeffs(3) = (y(2)-y(1))/(x(2)-x(1))
-        coeffs(4) = y(1)-coeffs(3)*x(1)
+        coeffs(2) = (y(2)-y(1))/(x(2)-x(1))
+        coeffs(1) = y(1)-coeffs(2)*x(1)
       case (CVMIX_MATH_INTERP_QUAD)
         ! Match y(1), y(2), and y'(1) [requires x(0)]
 !        print*, "Quadratic interpolation"
-        ! [ x2^2 x2 1 ][ b ]   [    y2 ]
-        ! [ x1^2 x1 1 ][ c ] = [    y1 ]
-        ! [  2x1  1 0 ][ d ]   [ slope ]
+        ! [ x2^2 x2 1 ][ c ]   [    y2 ]
+        ! [ x1^2 x1 1 ][ b ] = [    y1 ]
+        ! [  2x1  1 0 ][ a ]   [ slope ]
         !      ^^^
         !       M
         det = -((x(2)-x(1))**2)
@@ -111,19 +120,22 @@
         Minv(3,3) = -x(2)*x(1)/(x(2)-x(1))
 
         do k=1,3
-          coeffs(2) = coeffs(2)+Minv(1,k)*rhs(k)
-          coeffs(3) = coeffs(3)+Minv(2,k)*rhs(k)
-          coeffs(4) = coeffs(4)+Minv(3,k)*rhs(k)
+          do k2=1,3
+            ! Note: weird "4-k2" term is used because I switched from
+            ! y= 0x^3 + bx^2 + cx + d to
+            ! y = a + bx + cx^2 + 0x^3
+            coeffs(k2) = coeffs(k2)+Minv(4-k2,k)*rhs(k)
+          end do
         end do
         deallocate(rhs)
         deallocate(Minv)
       case (CVMIX_MATH_INTERP_CUBE_SPLINE)
         ! Match y(1), y(2), y'(1), and y'(2)
 !        print*, "Cubic spline interpolation"
-        ! [ x2^3 x2^2 x2 1 ][ a ]   [     y2 ]
-        ! [ x1^3 x1^2 x1 1 ][ b ] = [     y1 ]
-        ! [  3x1  2x1  1 0 ][ c ]   [ slope1 ]
-        ! [  3x2  2x2  1 0 ][ d ]   [ slope2 ]
+        ! [ x2^3 x2^2 x2 1 ][ d ]   [     y2 ]
+        ! [ x1^3 x1^2 x1 1 ][ c ] = [     y1 ]
+        ! [  3x1  2x1  1 0 ][ b ]   [ slope1 ]
+        ! [  3x2  2x2  1 0 ][ a ]   [ slope2 ]
         !      ^^^
         !       M
         det = -((x(2)-x(1))**3)
@@ -157,7 +169,10 @@
 
         do k=1,4
           do k2=1,4
-            coeffs(k2) = coeffs(k2)+Minv(k2,k)*rhs(k)
+            ! Note: weird "5-k2" term is used because I switched from
+            ! y = a + bx + cx^2 + dx^3 to
+            ! y= ax^3 + bx^2 + cx + d
+            coeffs(k2) = coeffs(k2)+Minv(5-k2,k)*rhs(k)
           end do
         end do
         deallocate(rhs)
@@ -178,13 +193,13 @@
     integer :: it_cnt
 
     root = x0
-    fun_val = coeffs(1)*(root**3)+coeffs(2)*(root**2)+coeffs(3)*root+coeffs(4)
+    fun_val = coeffs(4)*(root**3)+coeffs(3)*(root**2)+coeffs(2)*root+coeffs(1)
     do it_cnt = 1, CVMIX_MATH_MAX_NEWTON_ITERS
       if (abs(fun_val).lt.CVMIX_MATH_NEWTON_TOL) &
         exit
-      slope = 3.0_cvmix_r8*coeffs(1)*(root**2)+2.0_cvmix_r8*coeffs(2)*root+coeffs(3)
+      slope = 3.0_cvmix_r8*coeffs(4)*(root**2)+2.0_cvmix_r8*coeffs(3)*root+coeffs(2)
       root = root - fun_val/slope
-      fun_val = coeffs(1)*(root**3)+coeffs(2)*(root**2)+coeffs(3)*root+coeffs(4)
+      fun_val = coeffs(4)*(root**3)+coeffs(3)*(root**2)+coeffs(2)*root+coeffs(1)
     end do
     cvmix_math_cubic_root_find = root
 

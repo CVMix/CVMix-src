@@ -37,6 +37,9 @@
 
 !BOP
 
+! !DEFINED_PARAMETERS:
+  integer, parameter :: CVMIX_KPP_INTERP_POP = -1
+
 ! !PUBLIC MEMBER FUNCTIONS:
 
   public :: cvmix_init_kpp
@@ -88,7 +91,10 @@
     real(cvmix_r8) :: c_m          ! parameter for computing vel scale func
     real(cvmix_r8) :: c_s          ! parameter for computing vel scale func
     real(cvmix_r8) :: eps          ! small non-negative val (rec 1e-10)
-    integer        :: interp_type  ! type of iterpolation to use
+    integer        :: interp_type  ! type of interpolation used to interpolate
+                                   ! bulk Richardson number
+    integer        :: interp_type2 ! type of interpolation used to interpolate
+                                   ! diff and visc at OBL_depth
     logical        :: lEkman       ! True => compute Ekman depth limit
     logical        :: lMonOb       ! True => compute Monin-Obukhov limit
   end type cvmix_kpp_params_type
@@ -105,8 +111,8 @@ contains
 ! !INTERFACE:
 
   subroutine cvmix_init_kpp(ri_crit, vonkarman, zeta_m, zeta_s, a_m, a_s,     &
-                            c_m, c_s, eps, interp_type, lEkman, lMonOb,       &
-                            CVmix_kpp_params_user)
+                            c_m, c_s, eps, interp_type, interp_type2, lEkman, &
+                            lMonOb, CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
 !  Initialization routine for KPP mixing.
@@ -117,7 +123,7 @@ contains
 ! !INPUT PARAMETERS:
     real(cvmix_r8),   optional :: ri_crit, vonkarman, zeta_m, zeta_s, a_m, &
                                   a_s, c_m, c_s, eps
-    character(len=*), optional :: interp_type
+    character(len=*), optional :: interp_type, interp_type2
     logical,          optional :: lEkman, lMonOb
 
 ! !OUTPUT PARAMETERS:
@@ -207,6 +213,30 @@ contains
     else
       call cvmix_put_kpp(CVmix_kpp_params_out, 'interp_type', &
                          CVMIX_MATH_INTERP_QUAD)
+    end if
+
+    if (present(interp_type2)) then
+      select case (trim(interp_type2))
+        case ('line', 'linear')
+          call cvmix_put_kpp(CVmix_kpp_params_out, 'interp_type2', &
+                             CVMIX_MATH_INTERP_LINEAR)
+        case ('quad', 'quadratic')
+          call cvmix_put_kpp(CVmix_kpp_params_out, 'interp_type2', &
+                             CVMIX_MATH_INTERP_QUAD)
+        case ('cube', 'cubic', 'cubic_spline', 'cubic spline')
+          call cvmix_put_kpp(CVmix_kpp_params_out, 'interp_type2', &
+                             CVMIX_MATH_INTERP_CUBE_SPLINE)
+        case ('POP')
+          call cvmix_put_kpp(CVmix_kpp_params_out, 'interp_type2', &
+                             CVMIX_KPP_INTERP_POP)
+        case DEFAULT
+          print*, "ERROR: ", trim(interp_type), " is not a valid type of ", &
+                  "interpolation!"
+          stop 1
+      end select
+    else
+      call cvmix_put_kpp(CVmix_kpp_params_out, 'interp_type2', &
+                         CVMIX_MATH_INTERP_CUBE_SPLINE)
     end if
 
     if (present(lEkman)) then
@@ -430,6 +460,8 @@ contains
     select case (trim(varname))
       case ('interp_type')
         CVmix_kpp_params%interp_type = val
+      case ('interp_type2')
+        CVmix_kpp_params%interp_type2 = val
       case DEFAULT
         call cvmix_put_kpp(CVmix_kpp_params, varname, real(val, cvmix_r8))
     end select
@@ -638,7 +670,7 @@ contains
                                depth(kt:kt+1), Ri_bulk(kt:kt+1), depth(kt-1), &
                                Ri_bulk(kt-1))
       end if
-      coeffs(4) = coeffs(4)-CVmix_kpp_params_in%ri_crit
+      coeffs(1) = coeffs(1)-CVmix_kpp_params_in%ri_crit
 
       OBL_depth = cvmix_math_cubic_root_find(coeffs,                          &
                                          0.5_cvmix_r8*(depth(kt)+depth(kt+1)))
@@ -914,5 +946,27 @@ contains
 !EOC
 
   end subroutine cvmix_kpp_compute_shape_function_coeffs
+#if 0
+  function compute_nu_at_OBL_depth(interp_type2, nu_below, nu_above,          &
+                                   nu_2above, dnu_dz)
 
+! !INPUT PARAMETERS:
+    integer,        intent(in) :: interp_type2
+    real(cvmix_r8), intent(in) :: nu_below, &! nu at iface below OBL_depth
+                                  nu_above   ! nu at iface above OBL_depth
+    ! nu at iface above the iface above OBL_depth (Not needed for linear
+    ! interpolation or if OBL_depth is in top level
+    real(cvmix_r8), optional, intent(in) :: nu_2above
+
+! !OUTPUT PARAMETERS:
+    real(cvmix_r8), optional, intent(out) :: dnu_dz
+
+    ! Local variables
+    real(cvmix_r8), dimension(4) :: coeffs
+
+    if (interp_type2.ne.CVMIX_KPP_INTERP_POP) then
+      call cvmix_math_poly_interp(coeffs
+
+  end function compute_nu_at_OBL_depth
+#endif
 end module cvmix_kpp
