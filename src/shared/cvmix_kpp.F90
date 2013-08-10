@@ -26,7 +26,8 @@
                                     CVMIX_MATH_INTERP_QUAD,        &
                                     CVMIX_MATH_INTERP_CUBE_SPLINE, &
                                     cvmix_math_poly_interp,        &
-                                    cvmix_math_cubic_root_find
+                                    cvmix_math_cubic_root_find,    &
+                                    cvmix_math_evaluate_cubic
 
 !EOP
 
@@ -49,7 +50,6 @@
   public :: cvmix_kpp_compute_turbulent_scales
   ! These are public for testing, may end up private later
   public :: cvmix_kpp_compute_shape_function_coeffs
-  public :: cvmix_kpp_evaluate_shape_function
 
   interface cvmix_coeffs_kpp
     module procedure cvmix_coeffs_kpp_low
@@ -332,14 +332,11 @@ contains
     ! (4) Compute diffusivities and viscosity in ocean boundary layer
     do kw=1,kOBL_depth
       diff(kw,1) = OBL_depth * w_s(kw) *                                      &
-                   cvmix_kpp_evaluate_shape_function(shape_coeffs(:,1),       &
-                                                     sigma(kw))
+                   cvmix_math_evaluate_cubic(shape_coeffs(:,1), sigma(kw))
       diff(kw,2) = OBL_depth * w_s(kw) *                                      &
-                   cvmix_kpp_evaluate_shape_function(shape_coeffs(:,2),       &
-                                                     sigma(kw))
+                   cvmix_math_evaluate_cubic(shape_coeffs(:,2), sigma(kw))
       visc(kw)   = OBL_depth * w_m(kw) *                                      &
-                   cvmix_kpp_evaluate_shape_function(shape_coeffs(:,3),       &
-                                                     sigma(kw))
+                   cvmix_math_evaluate_cubic(shape_coeffs(:,3), sigma(kw))
     end do
 
     ! (5) Compute non-local transport term
@@ -917,42 +914,5 @@ contains
 !EOC
 
   end subroutine cvmix_kpp_compute_shape_function_coeffs
-
-!BOP
-
-! !IROUTINE: cvmix_kpp_evaluate_shape_function
-! !INTERFACE:
-
-  function cvmix_kpp_evaluate_shape_function(coeffs, sigma)
-
-! !DESCRIPTION:
-!  Computes the shape function $G(\sigma) = a_0 + a_1\sigma + a_2\sigma^2
-!  + a_3\sigma^3$ for given $\sigma$ and $a_i$
-!\\
-!\\
-
-! !USES:
-!  Only those used by entire module. 
-
-! !INPUT PARAMETERS:
-    real(cvmix_r8), dimension(4), intent(in) :: coeffs
-    real(cvmix_r8),               intent(in) :: sigma
-
-! !OUTPUT PARAMETERS:
-    real(cvmix_r8) :: cvmix_kpp_evaluate_shape_function
-
-!EOP
-!BOC
-
-    ! Local Variables
-    integer :: i
-
-    cvmix_kpp_evaluate_shape_function = 0.0_cvmix_r8
-    do i=1,4
-      cvmix_kpp_evaluate_shape_function = cvmix_kpp_evaluate_shape_function + &
-                                          coeffs(i)*(sigma**(i-1))
-    end do
-
-  end function cvmix_kpp_evaluate_shape_function
 
 end module cvmix_kpp
