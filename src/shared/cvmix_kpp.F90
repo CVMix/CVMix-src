@@ -141,57 +141,57 @@ contains
     end if
 
     if (present(ri_crit)) then
-      call cvmix_put_kpp(CVmix_kpp_params_out, 'Ri_crit', ri_crit)
+      call cvmix_put_kpp('Ri_crit', ri_crit, CVmix_kpp_params_user)
     else
-      call cvmix_put_kpp(CVmix_kpp_params_out, 'Ri_crit', 0.3_cvmix_r8)
+      call cvmix_put_kpp('Ri_crit', 0.3_cvmix_r8, CVmix_kpp_params_user)
     end if
 
     if (present(vonkarman)) then
-      call cvmix_put_kpp(CVmix_kpp_params_out, 'vonkarman', vonkarman)
+      call cvmix_put_kpp('vonkarman', vonkarman, CVmix_kpp_params_user)
     else
-      call cvmix_put_kpp(CVmix_kpp_params_out, 'vonkarman', 0.41_cvmix_r8)
+      call cvmix_put_kpp('vonkarman', 0.41_cvmix_r8, CVmix_kpp_params_user)
     end if
 
     if (present(zeta_m)) then
-      call cvmix_put_kpp(CVmix_kpp_params_out, 'zeta_m', zeta_m)
+      call cvmix_put_kpp('zeta_m', zeta_m, CVmix_kpp_params_user)
     else
-      call cvmix_put_kpp(CVmix_kpp_params_out, 'zeta_m', -0.2_cvmix_r8)
+      call cvmix_put_kpp('zeta_m', -0.2_cvmix_r8, CVmix_kpp_params_user)
     end if
 
     if (present(zeta_s)) then
-      call cvmix_put_kpp(CVmix_kpp_params_out, 'zeta_s', zeta_s)
+      call cvmix_put_kpp('zeta_s', zeta_s, CVmix_kpp_params_user)
     else
-      call cvmix_put_kpp(CVmix_kpp_params_out, 'zeta_s', -1.0_cvmix_r8)
+      call cvmix_put_kpp('zeta_s', -1.0_cvmix_r8, CVmix_kpp_params_user)
     end if
 
     if (present(a_m)) then
-      call cvmix_put_kpp(CVmix_kpp_params_out, 'a_m', a_m)
+      call cvmix_put_kpp('a_m', a_m, CVmix_kpp_params_user)
     else
-      call cvmix_put_kpp(CVmix_kpp_params_out, 'a_m', 1.26_cvmix_r8)
+      call cvmix_put_kpp('a_m', 1.26_cvmix_r8, CVmix_kpp_params_user)
     end if
 
     if (present(a_s)) then
-      call cvmix_put_kpp(CVmix_kpp_params_out, 'a_s', a_s)
+      call cvmix_put_kpp('a_s', a_s, CVmix_kpp_params_user)
     else
-      call cvmix_put_kpp(CVmix_kpp_params_out, 'a_s', -28.86_cvmix_r8)
+      call cvmix_put_kpp('a_s', -28.86_cvmix_r8, CVmix_kpp_params_user)
     end if
 
     if (present(c_m)) then
-      call cvmix_put_kpp(CVmix_kpp_params_out, 'c_m', c_m)
+      call cvmix_put_kpp('c_m', c_m, CVmix_kpp_params_user)
     else
-      call cvmix_put_kpp(CVmix_kpp_params_out, 'c_m', 8.38_cvmix_r8)
+      call cvmix_put_kpp('c_m', 8.38_cvmix_r8, CVmix_kpp_params_user)
     end if
 
     if (present(c_s)) then
-      call cvmix_put_kpp(CVmix_kpp_params_out, 'c_s', c_s)
+      call cvmix_put_kpp('c_s', c_s, CVmix_kpp_params_user)
     else
-      call cvmix_put_kpp(CVmix_kpp_params_out, 'c_s', 98.96_cvmix_r8)
+      call cvmix_put_kpp('c_s', 98.96_cvmix_r8, CVmix_kpp_params_user)
     end if
 
     if (present(eps)) then
-      call cvmix_put_kpp(CVmix_kpp_params_out, 'eps', eps)
+      call cvmix_put_kpp('eps', eps, CVmix_kpp_params_user)
     else
-      call cvmix_put_kpp(CVmix_kpp_params_out, 'eps', 1e-10_cvmix_r8)
+      call cvmix_put_kpp('eps', 1e-10_cvmix_r8, CVmix_kpp_params_user)
     end if
 
     if (present(interp_type)) then
@@ -296,7 +296,7 @@ contains
 ! !IROUTINE: cvmix_coeffs_kpp_low
 ! !INTERFACE:
 
-  subroutine cvmix_coeffs_kpp_low(diff, visc, zw_iface, OBL_depth, kOBL_depth,&
+  subroutine cvmix_coeffs_kpp_low(diff, visc, zw_iface, OBL_depth, kup,       &
                                   surf_fric, surf_buoy, CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
@@ -312,13 +312,14 @@ contains
     type(cvmix_kpp_params_type), intent(in), optional, target ::              &
                                            CVmix_kpp_params_user
     real(cvmix_r8), dimension(:),   intent(in) :: zw_iface
+    real(cvmix_r8),                 intent(in)    :: OBL_depth, surf_fric,    &
+                                                     surf_buoy
+    integer,                        intent(in)    :: kup ! kw index of iface
+                                                         ! above OBL_depth
 
 ! !INPUT/OUTPUT PARAMETERS:
     real(cvmix_r8), dimension(:,:), intent(inout) :: diff
     real(cvmix_r8), dimension(:),   intent(inout) :: visc
-    real(cvmix_r8),                 intent(in)    :: OBL_depth, surf_fric,    &
-                                                     surf_buoy
-    integer,                        intent(in)    :: kOBL_depth
 
 !EOP
 !BOC
@@ -327,31 +328,59 @@ contains
     type(cvmix_kpp_params_type), pointer      :: CVmix_kpp_params_in
     real(cvmix_r8), dimension(:), allocatable :: sigma, w_m, w_s
     real(cvmix_r8), dimension(4,3)            :: shape_coeffs
-    real(cvmix_r8), dimension(3) :: Gat1, DGat1
-    integer :: nlev_p1, kw, i
+    real(cvmix_r8), dimension(3) :: Gat1, DGat1, visc_at_OBL, dvisc_OBL
+    real(cvmix_r8)               :: wm_OBL, ws_OBL
+    integer :: nlev_p1, kw, i, interp_type2
 
     CVmix_kpp_params_in => CVmix_kpp_params_saved
     if (present(CVmix_kpp_params_user)) then
       CVmix_kpp_params_in => CVmix_kpp_params_user
     end if
+    interp_type2 = CVmix_kpp_params_in%interp_type2
 
     nlev_p1 = size(visc)
     allocate(sigma(nlev_p1), w_m(nlev_p1), w_s(nlev_p1))
     sigma = zw_iface/OBL_depth
 
-    diff = CVmix_kpp_params_in%Ri_crit
-    visc = CVmix_kpp_params_in%Ri_crit
 
-    ! (1) Compute turbulent velocity scales
+    ! (1) Compute turbulent velocity scales in column and at OBL_depth
     call cvmix_kpp_compute_turbulent_scales(sigma, OBL_depth, surf_buoy,      &
                                             surf_fric, w_m, w_s)
+    call cvmix_kpp_compute_turbulent_scales(1.0_cvmix_r8, OBL_depth,          &
+                                            surf_buoy, surf_fric, wm_OBL,     &
+                                            ws_OBL)
 
     ! (2) Compute G(1) and G'(1) for three cases:
     !     i) temperature diffusivity
     !     ii) other tracers diffusivity
     !     iii) viscosity
-    Gat1  = 0.0_cvmix_r8
-    DGat1 = 0.0_cvmix_r8
+    if (kup.eq.1) then
+      visc_at_OBL(1) = compute_nu_at_OBL_depth(interp_type2, (/zw_iface(kup), &
+                         zw_iface(kup+1)/), (/diff(kup,1), diff(kup+1,1)/),   &
+                         OBL_depth, dnu_dz=dvisc_OBL(1))
+      visc_at_OBL(2) = compute_nu_at_OBL_depth(interp_type2, (/zw_iface(kup), &
+                         zw_iface(kup+1)/), (/diff(kup,2), diff(kup+1,2)/),   &
+                         OBL_depth, dnu_dz=dvisc_OBL(2))
+      visc_at_OBL(3) = compute_nu_at_OBL_depth(interp_type2, (/zw_iface(kup), &
+                         zw_iface(kup+1)/), (/visc(kup), visc(kup+1)/),       &
+                         OBL_depth, dnu_dz=dvisc_OBL(3))
+    else
+      visc_at_OBL(1) = compute_nu_at_OBL_depth(interp_type2, (/zw_iface(kup), &
+                         zw_iface(kup+1)/), (/diff(kup,1), diff(kup+1,1)/),   &
+                         OBL_depth, zw_iface(kup+2), diff(kup+2,1),           &
+                         dvisc_OBL(1)) 
+      visc_at_OBL(2) = compute_nu_at_OBL_depth(interp_type2, (/zw_iface(kup), &
+                         zw_iface(kup+1)/), (/diff(kup,2), diff(kup+1,2)/),   &
+                         OBL_depth, zw_iface(kup+2), diff(kup+2,2),           &
+                         dvisc_OBL(2)) 
+      visc_at_OBL(3) = compute_nu_at_OBL_depth(interp_type2, (/zw_iface(kup), &
+                         zw_iface(kup+1)/), (/visc(kup), visc(kup+1)/),       &
+                         OBL_depth, zw_iface(kup+2), visc(kup+2), dvisc_OBL(3))
+    end if
+    Gat1(1) = visc_at_OBL(1)/(OBL_depth*ws_OBL)
+    Gat1(2) = visc_at_OBL(2)/(OBL_depth*ws_OBL)
+    Gat1(3) = visc_at_OBL(3)/(OBL_depth*wm_OBL)
+    DGat1   = 0.0_cvmix_r8
 
     ! (3) Compute coefficients of shape function
     do i=1,3
@@ -360,12 +389,12 @@ contains
     end do
 
     ! (4) Compute diffusivities and viscosity in ocean boundary layer
-    do kw=1,kOBL_depth
-      diff(kw,1) = OBL_depth * w_s(kw) *                                      &
+    do kw=1,kup
+      diff(kw,1) = -OBL_depth * w_s(kw) *                                      &
                    cvmix_math_evaluate_cubic(shape_coeffs(:,1), sigma(kw))
-      diff(kw,2) = OBL_depth * w_s(kw) *                                      &
+      diff(kw,2) = -OBL_depth * w_s(kw) *                                      &
                    cvmix_math_evaluate_cubic(shape_coeffs(:,2), sigma(kw))
-      visc(kw)   = OBL_depth * w_m(kw) *                                      &
+      visc(kw)   = -OBL_depth * w_m(kw) *                                      &
                    cvmix_math_evaluate_cubic(shape_coeffs(:,3), sigma(kw))
     end do
 
@@ -386,7 +415,7 @@ contains
 ! !IROUTINE: cvmix_put_kpp_real
 ! !INTERFACE:
 
-  subroutine cvmix_put_kpp_real(CVmix_kpp_params, varname, val)
+  subroutine cvmix_put_kpp_real(varname, val, CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
 !  Write a real value into a cvmix\_kpp\_params\_type variable.
@@ -401,29 +430,38 @@ contains
     real(cvmix_r8),   intent(in) :: val
 
 ! !OUTPUT PARAMETERS:
-    type(cvmix_kpp_params_type), intent(inout) :: CVmix_kpp_params
+    type(cvmix_kpp_params_type), intent(inout), target, optional ::           &
+                                              CVmix_kpp_params_user
+
 !EOP
 !BOC
 
+    type(cvmix_kpp_params_type), pointer :: CVmix_kpp_params_out
+
+    CVmix_kpp_params_out => CVmix_kpp_params_saved
+    if (present(CVmix_kpp_params_user)) then
+      CVmix_kpp_params_out => CVmix_kpp_params_user
+    end if
+
     select case (trim(varname))
       case ('Ri_crit')
-        CVmix_kpp_params%Ri_crit = val
+        CVmix_kpp_params_out%Ri_crit = val
       case ('vonkarman')
-        CVmix_kpp_params%vonkarman = val
+        CVmix_kpp_params_out%vonkarman = val
       case ('zeta_m')
-        CVmix_kpp_params%zeta_m = val
+        CVmix_kpp_params_out%zeta_m = val
       case ('zeta_s')
-        CVmix_kpp_params%zeta_s = val
+        CVmix_kpp_params_out%zeta_s = val
       case ('a_m')
-        CVmix_kpp_params%a_m = val
+        CVmix_kpp_params_out%a_m = val
       case ('a_s')
-        CVmix_kpp_params%a_s = val
+        CVmix_kpp_params_out%a_s = val
       case ('c_m')
-        CVmix_kpp_params%c_m = val
+        CVmix_kpp_params_out%c_m = val
       case ('c_s')
-        CVmix_kpp_params%c_s = val
+        CVmix_kpp_params_out%c_s = val
       case ('eps')
-        CVmix_kpp_params%eps = val
+        CVmix_kpp_params_out%eps = val
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
         stop 1
@@ -463,7 +501,7 @@ contains
       case ('interp_type2')
         CVmix_kpp_params%interp_type2 = val
       case DEFAULT
-        call cvmix_put_kpp(CVmix_kpp_params, varname, real(val, cvmix_r8))
+        call cvmix_put_kpp(varname, real(val, cvmix_r8), CVmix_kpp_params)
     end select
 
 !EOC

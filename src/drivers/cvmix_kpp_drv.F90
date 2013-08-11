@@ -19,10 +19,11 @@ Subroutine cvmix_kpp_driver(nlev)
   use cvmix_kinds_and_types, only : cvmix_r8,                 &
                                     cvmix_strlen,             &
                                     cvmix_data_type
-  use cvmix_kpp,             only : cvmix_init_kpp,           &
-                                    cvmix_kpp_compute_OBL_depth,        &
-                                    cvmix_kpp_compute_turbulent_scales, &
-                                    cvmix_kpp_compute_shape_function_coeffs, &
+  use cvmix_kpp,             only : cvmix_init_kpp,                           &
+                                    cvmix_put_kpp,                            &
+                                    cvmix_kpp_compute_OBL_depth,              &
+                                    cvmix_kpp_compute_turbulent_scales,       &
+                                    cvmix_kpp_compute_shape_function_coeffs,  &
                                     cvmix_coeffs_kpp
   use cvmix_put_get,         only : cvmix_put
   use cvmix_io,              only : cvmix_io_open,            &
@@ -62,6 +63,10 @@ Subroutine cvmix_kpp_driver(nlev)
   read(*, nml=kpp_col1_nml)
 
   allocate(diffusivity(nlev+1,2))
+  diffusivity = 0.0_cvmix_r8
+  diffusivity(2,1) = 10.0_cvmix_r8
+  diffusivity(3,1) = 5.0_cvmix_r8
+  diffusivity(4,1) = 1.0_cvmix_r8
   allocate(viscosity(nlev+1))
   allocate(zt(nlev), zw_iface(nlev+1), Ri_bulk(nlev))
   do kw=1,nlev+1
@@ -84,16 +89,16 @@ Subroutine cvmix_kpp_driver(nlev)
 
   call cvmix_put(CVmix_vars, 'nlev', nlev)
   call cvmix_put(CVmix_vars, 'ocn_depth', layer_thick*real(nlev,cvmix_r8))
-  call cvmix_put(CVmix_vars, 'surf_fric', 0.0_cvmix_r8)
-  call cvmix_put(CVmix_vars, 'surf_buoy', 0.0_cvmix_r8)
-  call cvmix_put(CVmix_vars, 'Coriolis', 0.0_cvmix_r8)
+  call cvmix_put(CVmix_vars, 'surf_fric', 1.0_cvmix_r8)
+  call cvmix_put(CVmix_vars, 'surf_buoy', 100.0_cvmix_r8)
+  call cvmix_put(CVmix_vars, 'Coriolis', 1e-4_cvmix_r8)
   CVmix_vars%diff_iface => diffusivity(:,:)
   CVmix_vars%visc_iface => viscosity(:)
   CVmix_vars%zt         => zt(:)
   CVmix_vars%zw_iface   => zw_iface(:)
   CVmix_vars%Rib        => Ri_bulk(:)
 
-  call cvmix_init_kpp(ri_crit=ri_crit, vonkarman=1.0_cvmix_r8,                &
+  call cvmix_init_kpp(ri_crit=ri_crit, vonkarman=0.4_cvmix_r8,                &
                       interp_type=interp_type)
   call cvmix_kpp_compute_OBL_depth(CVmix_vars)
   print*, "OBL depth = ", CVmix_vars%OBL_depth
@@ -106,7 +111,8 @@ Subroutine cvmix_kpp_driver(nlev)
   call cvmix_io_open(fid, "data.out", "ascii")
 #endif
 
-  call cvmix_output_write(fid, CVmix_vars, (/"zt     ", "zw     ", "Ri_bulk"/))
+  call cvmix_output_write(fid, CVmix_vars, (/"zt     ", "zw     ", "Ri_bulk", &
+                                             "diff   "/))
 #ifdef _NETCDF
   call cvmix_output_write_att(fid, "Interpolation", interp_type)
   call cvmix_output_write_att(fid, "analytic_OBL_depth", hmix-2.0_cvmix_r8)
@@ -128,6 +134,7 @@ Subroutine cvmix_kpp_driver(nlev)
   print*, "Test 3: determining phi_m and phi_s (inversely proportional to ",  &
           "w_m and w_s, respectively)"
   print*, "----------"
+  call cvmix_put_kpp('vonkarman', 1.0_cvmix_r8)
   nlev2 = 220
   allocate(w_m(nlev2+1), w_s(nlev2+1), zeta(nlev2+1))
   ! Note: zeta = sigma*OBL_depth/MoninObukhov constant
