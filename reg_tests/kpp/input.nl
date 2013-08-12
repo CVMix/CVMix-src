@@ -27,4 +27,5 @@ mix_type = 'kpp'
   ltest4         = .true.
   interp_type_t4 = "quadratic"
   OBL_depth      = -14.0d0
+  lnoDGat1       = .true.
 /

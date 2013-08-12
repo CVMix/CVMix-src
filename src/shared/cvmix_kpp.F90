@@ -97,6 +97,8 @@
                                    ! diff and visc at OBL_depth
     logical        :: lEkman       ! True => compute Ekman depth limit
     logical        :: lMonOb       ! True => compute Monin-Obukhov limit
+    logical        :: lnoDGat1     ! True => G'(1) = 0 (shape function)
+                                   ! False => compute G'(1) as in LMD94
   end type cvmix_kpp_params_type
 
 !EOP
@@ -112,7 +114,7 @@ contains
 
   subroutine cvmix_init_kpp(ri_crit, vonkarman, zeta_m, zeta_s, a_m, a_s,     &
                             c_m, c_s, eps, interp_type, interp_type2, lEkman, &
-                            lMonOb, CVmix_kpp_params_user)
+                            lMonOb, lnoDGat1, CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
 !  Initialization routine for KPP mixing.
@@ -124,7 +126,7 @@ contains
     real(cvmix_r8),   optional :: ri_crit, vonkarman, zeta_m, zeta_s, a_m, &
                                   a_s, c_m, c_s, eps
     character(len=*), optional :: interp_type, interp_type2
-    logical,          optional :: lEkman, lMonOb
+    logical,          optional :: lEkman, lMonOb, lnoDGat1
 
 ! !OUTPUT PARAMETERS:
     type(cvmix_kpp_params_type), intent(inout), target, optional ::           &
@@ -242,13 +244,19 @@ contains
     if (present(lEkman)) then
       call cvmix_put_kpp(CVmix_kpp_params_out, 'lEkman', lEkman)
     else
-      call cvmix_put_kpp(CVmix_kpp_params_out, 'lEkman', .False.)
+      call cvmix_put_kpp(CVmix_kpp_params_out, 'lEkman', .false.)
     end if
 
     if (present(lMonOb)) then
       call cvmix_put_kpp(CVmix_kpp_params_out, 'lMonOb', lMonOb)
     else
-      call cvmix_put_kpp(CVmix_kpp_params_out, 'lMonOb', .False.)
+      call cvmix_put_kpp(CVmix_kpp_params_out, 'lMonOb', .false.)
+    end if
+
+    if (present(lnoDGat1)) then
+      call cvmix_put_kpp(CVmix_kpp_params_out, 'lnoDGat1', lnoDGat1)
+    else
+      call cvmix_put_kpp(CVmix_kpp_params_out, 'lnoDGat1', .true.)
     end if
 
 !EOC
@@ -329,8 +337,9 @@ contains
     real(cvmix_r8), dimension(:), allocatable :: sigma, w_m, w_s
     real(cvmix_r8), dimension(4,3)            :: shape_coeffs
     real(cvmix_r8), dimension(3) :: Gat1, DGat1, visc_at_OBL, dvisc_OBL
-    real(cvmix_r8)               :: wm_OBL, ws_OBL
+    real(cvmix_r8)               :: wm_OBL, ws_OBL, second_term
     integer :: nlev_p1, kw, i, interp_type2
+    logical :: lstable
 
     CVmix_kpp_params_in => CVmix_kpp_params_saved
     if (present(CVmix_kpp_params_user)) then
@@ -342,6 +351,8 @@ contains
     allocate(sigma(nlev_p1), w_m(nlev_p1), w_s(nlev_p1))
     sigma = zw_iface/OBL_depth
 
+    ! Stability => positive surface buoyancy flux
+    lstable = (surf_buoy.gt.0.0_cvmix_r8)
 
     ! (1) Compute turbulent velocity scales in column and at OBL_depth
     call cvmix_kpp_compute_turbulent_scales(sigma, OBL_depth, surf_buoy,      &
@@ -380,7 +391,19 @@ contains
     Gat1(1) = visc_at_OBL(1)/(OBL_depth*ws_OBL)
     Gat1(2) = visc_at_OBL(2)/(OBL_depth*ws_OBL)
     Gat1(3) = visc_at_OBL(3)/(OBL_depth*wm_OBL)
-    DGat1   = 0.0_cvmix_r8
+    if (CVmix_kpp_params_in%lnoDGat1) then
+      DGat1   = 0.0_cvmix_r8
+    else
+      DGat1(1) = -dvisc_OBL(1)/ws_OBL
+      DGat1(2) = -dvisc_OBL(2)/ws_OBL
+      DGat1(3) = -dvisc_OBL(3)/wm_OBL
+      if (lstable) then
+        second_term = real(5,cvmix_r8)*surf_buoy/(surf_fric**4)
+        DGat1(1) = DGat1(1) + second_term*visc_at_OBL(1)
+        DGat1(2) = DGat1(2) + second_term*visc_at_OBL(2)
+        DGat1(3) = DGat1(3) + second_term*visc_at_OBL(3)
+      end if
+    end if
 
     ! (3) Compute coefficients of shape function
     do i=1,3
@@ -537,6 +560,8 @@ contains
         CVmix_kpp_params%lEkman = val
       case ('lMonOb')
         CVmix_kpp_params%lMonOb = val
+      case ('lnoDGat1')
+        CVmix_kpp_params%lnoDGat1 = val
       case DEFAULT
         print*, "ERROR: ", trim(varname), " is not a boolean variable!"
         stop 1

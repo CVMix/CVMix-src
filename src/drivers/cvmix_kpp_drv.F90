@@ -49,11 +49,12 @@ Subroutine cvmix_kpp_driver()
   real(cvmix_r8) :: hmix, ri_crit, layer_thick, OBL_depth
   character(len=cvmix_strlen) :: interp_type_t1, interp_type_t4
   logical :: ltest1, ltest2, ltest3, ltest4 ! True => run specfied test
+  logical :: lnoDGat1 ! True => G'(1) = 0 (in test 4)
 
   namelist/kpp_col1_nml/ltest1, nlev1, layer_thick, interp_type_t1, hmix, ri_crit
   namelist/kpp_col2_nml/ltest2
   namelist/kpp_col3_nml/ltest3, nlev3
-  namelist/kpp_col4_nml/ltest4, interp_type_t4, OBL_depth
+  namelist/kpp_col4_nml/ltest4, interp_type_t4, OBL_depth, lnoDGat1
 
   ! Read namelists
 
@@ -76,6 +77,7 @@ Subroutine cvmix_kpp_driver()
   ltest4         = .true.
   OBL_depth      = -14.0_cvmix_r8 
   interp_type_t4 = 'quadratic'
+  lnoDGat1       = .true.
 
   read(*, nml=kpp_col1_nml)
   read(*, nml=kpp_col2_nml)
@@ -262,7 +264,7 @@ Subroutine cvmix_kpp_driver()
     call cvmix_put(CVmix_vars4, 'Coriolis', 1e-4_cvmix_r8)
 
     call cvmix_init_kpp(ri_crit=ri_crit, vonkarman=0.4_cvmix_r8,              &
-                        interp_type2=interp_type_t4)
+                        interp_type2=interp_type_t4, lnoDGat1=lnoDGat1)
     call cvmix_coeffs_kpp(CVmix_vars4)
 
 #ifdef _NETCDF
