@@ -84,6 +84,7 @@
     real(cvmix_r8) :: Ri_crit      ! Critical Richardson number
                                ! (OBL_depth = point where bulk Ri = Ri_crit)
     real(cvmix_r8) :: vonkarman    ! von Karman constant
+    real(cvmix_r8) :: Cstar        ! coefficient for nonlinear transport
     ! For velocity scale function, _m => momentum and _s => scalar (tracer)
     real(cvmix_r8) :: zeta_m       ! parameter for computing vel scale func
     real(cvmix_r8) :: zeta_s       ! parameter for computing vel scale func
@@ -113,9 +114,9 @@ contains
 ! !IROUTINE: cvmix_init_kpp
 ! !INTERFACE:
 
-  subroutine cvmix_init_kpp(ri_crit, vonkarman, zeta_m, zeta_s, a_m, a_s,     &
-                            c_m, c_s, eps, interp_type, interp_type2, lEkman, &
-                            lMonOb, lnoDGat1, CVmix_kpp_params_user)
+  subroutine cvmix_init_kpp(ri_crit, vonkarman, Cstar, zeta_m, zeta_s, a_m,   &
+                            a_s, c_m, c_s, eps, interp_type, interp_type2,    &
+                            lEkman, lMonOb, lnoDGat1, CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
 !  Initialization routine for KPP mixing.
@@ -124,8 +125,8 @@ contains
 !  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
-    real(cvmix_r8),   optional :: ri_crit, vonkarman, zeta_m, zeta_s, a_m, &
-                                  a_s, c_m, c_s, eps
+    real(cvmix_r8),   optional :: ri_crit, vonkarman, Cstar, zeta_m, zeta_s,  &
+                                  a_m, a_s, c_m, c_s, eps
     character(len=*), optional :: interp_type, interp_type2
     logical,          optional :: lEkman, lMonOb, lnoDGat1
 
@@ -153,6 +154,12 @@ contains
       call cvmix_put_kpp('vonkarman', vonkarman, CVmix_kpp_params_user)
     else
       call cvmix_put_kpp('vonkarman', 0.41_cvmix_r8, CVmix_kpp_params_user)
+    end if
+
+    if (present(Cstar)) then
+      call cvmix_put_kpp('Cstar', Cstar, CVmix_kpp_params_user)
+    else
+      call cvmix_put_kpp('Cstar', 10.0_cvmix_r8, CVmix_kpp_params_user)
     end if
 
     if (present(zeta_m)) then
@@ -328,8 +335,8 @@ contains
                                                      surf_buoy, kOBL_depth
 
 ! !INPUT/OUTPUT PARAMETERS:
-    real(cvmix_r8), dimension(:,:), intent(inout) :: diff
-    real(cvmix_r8), dimension(:),   intent(inout) :: visc, nonlocal
+    real(cvmix_r8), dimension(:,:), intent(inout) :: diff, nonlocal
+    real(cvmix_r8), dimension(:),   intent(inout) :: visc
 
 !EOP
 !BOC
@@ -340,7 +347,12 @@ contains
     real(cvmix_r8), dimension(4,3)            :: shape_coeffs
     real(cvmix_r8), dimension(3) :: Gat1, DGat1, visc_at_OBL, dvisc_OBL
     real(cvmix_r8)               :: wm_OBL, ws_OBL, second_term
-    integer :: nlev_p1, kw, i, interp_type2
+
+    ! Constants from params
+    real(cvmix_r8) :: Cstar, vonkar, c_s, eps
+    integer :: interp_type2
+
+    integer :: nlev_p1, kw, i
     logical :: lstable
     integer :: ktup, & ! kt index of cell center above OBL_depth
                kwup    ! kw index of iface above OBL_depth (= kt index of
@@ -351,6 +363,11 @@ contains
       CVmix_kpp_params_in => CVmix_kpp_params_user
     end if
     interp_type2 = CVmix_kpp_params_in%interp_type2
+    vonkar       = cvmix_get_kpp_real('vonkarman', CVmix_kpp_params_in)
+    Cstar        = cvmix_get_kpp_real('Cstar', CVmix_kpp_params_in)
+    eps          = cvmix_get_kpp_real('eps', CVmix_kpp_params_in)
+    c_s          = cvmix_get_kpp_real('c_s', CVmix_kpp_params_in)
+
 
     nlev_p1 = size(visc)
     allocate(sigma(nlev_p1), w_m(nlev_p1), w_s(nlev_p1))
@@ -430,7 +447,11 @@ contains
                    cvmix_math_evaluate_cubic(shape_coeffs(:,2), sigma(kw))
       visc(kw)     = OBL_depth * w_m(kw) *                                    &
                    cvmix_math_evaluate_cubic(shape_coeffs(:,3), sigma(kw))
-      nonlocal(kw) = 1.0_cvmix_r8
+      ! At this point, nonlocal is just the coefficent that is shared between
+      ! gamma_s and gamma_theta in Eq (20) of LMD94 - Cs/(ws*h)
+      if (.not.lstable) &
+        nonlocal(kw,1:2) = (Cstar*vonkar*(vonkar*eps*c_s)**(real(1,cvmix_r8)/ & 
+                            real(3,cvmix_r8)))/(OBL_depth*w_s(kw))
     end do
 
     ! (6) Compute enhanced mixing
@@ -481,6 +502,8 @@ contains
         CVmix_kpp_params_out%Ri_crit = val
       case ('vonkarman')
         CVmix_kpp_params_out%vonkarman = val
+      case ('Cstar')
+        CVmix_kpp_params_out%Cstar = val
       case ('zeta_m')
         CVmix_kpp_params_out%zeta_m = val
       case ('zeta_s')
@@ -621,6 +644,8 @@ contains
         cvmix_get_kpp_real = CVmix_kpp_params_in%Ri_crit
       case ('vonkarman')
         cvmix_get_kpp_real = CVmix_kpp_params_in%vonkarman
+      case ('Cstar')
+        cvmix_get_kpp_real = CVmix_kpp_params_in%Cstar
       case ('zeta_m')
         cvmix_get_kpp_real = CVmix_kpp_params_in%zeta_m
       case ('zeta_s')
