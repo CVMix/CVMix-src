@@ -59,7 +59,7 @@ Subroutine cvmix_kpp_driver()
   ! Read namelists
 
   ! Defaults for test 1 
-  ltest1         = .true.
+  ltest1         = .false.
   nlev1          = 4
   layer_thick    = 10.0_cvmix_r8
   hmix           = -15.0_cvmix_r8
@@ -67,15 +67,15 @@ Subroutine cvmix_kpp_driver()
   interp_type_t1 = 'quadratic'
 
   ! Defaults for test 2 
-  ltest2 = .true.
+  ltest2 = .false.
 
   ! Defaults for test 3 
-  ltest3 = .true.
+  ltest3 = .false.
   nlev3  = 220
 
   ! Defaults for test 4 
-  ltest4         = .true.
-  OBL_depth      = -14.0_cvmix_r8 
+  ltest4         = .false.
+  OBL_depth      = 14.0_cvmix_r8 
   interp_type_t4 = 'quadratic'
   lnoDGat1       = .true.
 
@@ -146,7 +146,7 @@ Subroutine cvmix_kpp_driver()
                                                 "Ri_bulk"/))
 #ifdef _NETCDF
     call cvmix_output_write_att(fid, "Interpolation", interp_type_t1)
-    call cvmix_output_write_att(fid, "analytic_OBL_depth", hmix-2.0_cvmix_r8)
+    call cvmix_output_write_att(fid, "analytic_OBL_depth", -hmix+2.0_cvmix_r8)
     call cvmix_output_write_att(fid, "computed_OBL_depth",                    &
                                 CVmix_vars1%OBL_depth)
     call cvmix_output_write_att(fid, "kOBL_depth", CVmix_vars1%kOBL_depth)
@@ -251,7 +251,8 @@ Subroutine cvmix_kpp_driver()
     call cvmix_put(CVmix_vars4, 'OBL_depth', OBL_depth)
     call cvmix_put(CVmix_vars4, 'kOBL_depth', nlev4+1)
     do kw=1,nlev4
-      if ((OBL_depth.lt.zw_iface(kw)).and.(OBL_depth.gt.zw_iface(kw+1))) then
+      if ((OBL_depth.gt.abs(zw_iface(kw))).and.                               &
+          (OBL_depth.lt.abs(zw_iface(kw+1)))) then
         call cvmix_put(CVmix_vars4, 'kOBL_depth', kw)
         exit
       end if

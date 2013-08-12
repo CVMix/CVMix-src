@@ -50,9 +50,12 @@ module cvmix_kinds_and_types
                                    ! Setting default to -1 might be F95...
 
       ! Scalar quantities
-      real(cvmix_r8) :: ocn_depth, & ! depth (positive down)
-                        OBL_depth, & ! Ocean Boundary Layer depth (positive up)
-                        surf_hgt,  & ! sea surface height (positive up)
+      real(cvmix_r8) :: ocn_depth, & ! distance from sea level to ocean bottom
+                                     ! (positive => below sea level)
+                        OBL_depth, & ! distance from sea level to OBL bottom
+                                     ! (positive => below sea level)
+                        surf_hgt,  & ! sea surface height
+                                     ! (positive => above sea level)
                         surf_fric, & ! turbulent friction velocity at surface
                         surf_buoy, & ! buoyancy forcing at surface
                         lat,       & ! latitude of column (degrees north)

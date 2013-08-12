@@ -349,7 +349,7 @@ contains
 
     nlev_p1 = size(visc)
     allocate(sigma(nlev_p1), w_m(nlev_p1), w_s(nlev_p1))
-    sigma = zw_iface/OBL_depth
+    sigma = -zw_iface/OBL_depth
 
     ! Stability => positive surface buoyancy flux
     lstable = (surf_buoy.gt.0.0_cvmix_r8)
@@ -413,11 +413,11 @@ contains
 
     ! (4) Compute diffusivities and viscosity in ocean boundary layer
     do kw=1,kup
-      diff(kw,1) = -OBL_depth * w_s(kw) *                                      &
+      diff(kw,1) = OBL_depth * w_s(kw) *                                      &
                    cvmix_math_evaluate_cubic(shape_coeffs(:,1), sigma(kw))
-      diff(kw,2) = -OBL_depth * w_s(kw) *                                      &
+      diff(kw,2) = OBL_depth * w_s(kw) *                                      &
                    cvmix_math_evaluate_cubic(shape_coeffs(:,2), sigma(kw))
-      visc(kw)   = -OBL_depth * w_m(kw) *                                      &
+      visc(kw)   = OBL_depth * w_m(kw) *                                      &
                    cvmix_math_evaluate_cubic(shape_coeffs(:,3), sigma(kw))
     end do
 
@@ -724,7 +724,7 @@ contains
     ! if lEkman = .true., OBL_depth must be between the surface and the Ekman
     ! depth. Similarly, if lMonOb = .true., OBL_depth must be between the
     ! surface and the Monin-Obukhov depth
-    OBL_limit  = depth(nlev)
+    OBL_limit  = abs(depth(nlev))
 
     ! Since depth gets more negative as you go deeper, that translates into
     ! OBL_depth = max(computed depth, Ekman depth, M-O depth)
@@ -732,11 +732,11 @@ contains
     if (CVmix_kpp_params_in%lEkman) then
       if (Coriolis.eq.0.0_cvmix_r8) then
         ! Rather than divide by zero, set Ekman depth to ocean bottom
-        Ekman = depth(nlev)
+        Ekman = abs(depth(nlev))
       else
-        Ekman = 0.7_cvmix_r8*surf_fric/Coriolis
+        Ekman = 0.7_cvmix_r8*surf_fric/abs(Coriolis)
       end if
-      OBL_limit = max(OBL_limit, Ekman)
+      OBL_limit = min(OBL_limit, Ekman)
     end if
 
     if (CVmix_kpp_params_in%lMonOb) then
@@ -747,9 +747,9 @@ contains
         MoninObukhov = surf_fric**3/(surf_buoy*cvmix_get_kpp_real('vonkarman',&
                                                      CVmix_kpp_params_in))
       else
-        MoninObukhov = depth(nlev)
+        MoninObukhov = abs(depth(nlev))
       end if
-      OBL_limit = max(OBL_limit, MoninObukhov)
+      OBL_limit = min(OBL_limit, MoninObukhov)
     end if
 
     ! Interpolation Step
@@ -761,7 +761,7 @@ contains
     kOBL_depth = k
 
     if (k.eq.size(Ri_bulk)) then
-      OBL_depth = OBL_limit
+      OBL_depth = abs(OBL_limit)
     else
       if (k.eq.1) then
         call cvmix_math_poly_interp(coeffs, CVmix_kpp_params_in%interp_type,  &
@@ -773,16 +773,16 @@ contains
       end if
       coeffs(1) = coeffs(1)-CVmix_kpp_params_in%ri_crit
 
-      OBL_depth = cvmix_math_cubic_root_find(coeffs,                          &
+      OBL_depth = -cvmix_math_cubic_root_find(coeffs,                         &
                                          0.5_cvmix_r8*(depth(k)+depth(k+1)))
 
       ! Note: maybe there are times when we don't need to do the interpolation
       !       because we know OBL_depth will equal OBL_limit?
-      OBL_depth = max(OBL_depth, OBL_limit)
+      OBL_depth = min(OBL_depth, OBL_limit)
     end if
 
     do kw=1,nlev
-      if (OBL_depth.gt.zw_iface(kw+1)) then
+      if (OBL_depth.lt.abs(zw_iface(kw+1))) then
         kOBL_depth = kw
         exit
       end if
@@ -1087,7 +1087,7 @@ contains
       call cvmix_math_poly_interp(coeffs, CVMIX_MATH_INTERP_LINEAR,           &
                                   layer_depth, (/dnu_dz_above, dnu_dz_below/))
       ! (2) Evaluate at OBL_depth
-      dnu_dz_local = cvmix_math_evaluate_cubic(coeffs, OBL_depth)
+      dnu_dz_local = cvmix_math_evaluate_cubic(coeffs, -OBL_depth)
       ! (3) Linear interpolant: slope = value computed in (2) and the line goes
       !     through the point (layer_depth(2), layer_nu(2))
       coeffs = 0.0_cvmix_r8
@@ -1097,7 +1097,7 @@ contains
       call cvmix_math_poly_interp(coeffs, interp_type2, layer_depth, layer_nu,&
            depth_2above, nu_2above)
     end if
-    compute_nu_at_OBL_depth = cvmix_math_evaluate_cubic(coeffs, OBL_depth,    &
+    compute_nu_at_OBL_depth = cvmix_math_evaluate_cubic(coeffs, -OBL_depth,   &
                                                         dnu_dz)
 
   end function compute_nu_at_OBL_depth
