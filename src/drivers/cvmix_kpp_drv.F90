@@ -12,7 +12,7 @@
 
 ! !INTERFACE:
 
-Subroutine cvmix_kpp_driver(nlev)
+Subroutine cvmix_kpp_driver()
 
 ! !USES:
 
@@ -33,14 +33,11 @@ Subroutine cvmix_kpp_driver(nlev)
 
   Implicit None
 
-! !INPUT PARAMETERS:
-  integer, intent(in) :: nlev
-
 !EOP
 !BOC
 
   ! CVMix datatypes
-  type(cvmix_data_type)       :: CVmix_vars
+  type(cvmix_data_type)       :: CVmix_vars1, CVmix_vars4
 
   real(cvmix_r8), dimension(:,:), allocatable, target :: diffusivity
   real(cvmix_r8), dimension(:),   allocatable, target :: viscosity
@@ -48,128 +45,240 @@ Subroutine cvmix_kpp_driver(nlev)
   real(cvmix_r8), dimension(:),   allocatable, target :: w_m, w_s, zeta
   real(cvmix_r8), dimension(:,:), allocatable, target :: TwoDArray
   real(cvmix_r8), dimension(4) :: shape_coeffs
-  integer :: fid, kt, kw, nlev2
-  real(cvmix_r8) :: hmix, ri_crit, layer_thick
-  character(len=cvmix_strlen) :: interp_type
+  integer :: fid, kt, kw, nlev1, nlev3, nlev4
+  real(cvmix_r8) :: hmix, ri_crit, layer_thick, OBL_depth
+  character(len=cvmix_strlen) :: interp_type_t1, interp_type_t4
+  logical :: ltest1, ltest2, ltest3, ltest4 ! True => run specfied test
 
-  namelist/kpp_col1_nml/hmix, ri_crit, layer_thick, interp_type
+  namelist/kpp_col1_nml/ltest1, nlev1, layer_thick, interp_type_t1, hmix, ri_crit
+  namelist/kpp_col2_nml/ltest2
+  namelist/kpp_col3_nml/ltest3, nlev3
+  namelist/kpp_col4_nml/ltest4, interp_type_t4, OBL_depth
 
-  print*, "Test 1: determining OBL depth"
-  print*, "----------"
+  ! Read namelists
 
-  hmix = -15.0_cvmix_r8
-  ri_crit = 0.3_cvmix_r8
-  interp_type = 'quadratic'
+  ! Defaults for test 1 
+  ltest1         = .true.
+  nlev1          = 4
+  layer_thick    = 10.0_cvmix_r8
+  hmix           = -15.0_cvmix_r8
+  ri_crit        = 0.3_cvmix_r8
+  interp_type_t1 = 'quadratic'
+
+  ! Defaults for test 2 
+  ltest2 = .true.
+
+  ! Defaults for test 3 
+  ltest3 = .true.
+  nlev3  = 220
+
+  ! Defaults for test 4 
+  ltest4         = .true.
+  OBL_depth      = -14.0_cvmix_r8 
+  interp_type_t4 = 'quadratic'
+
   read(*, nml=kpp_col1_nml)
+  read(*, nml=kpp_col2_nml)
+  read(*, nml=kpp_col3_nml)
+  read(*, nml=kpp_col4_nml)
 
-  allocate(diffusivity(nlev+1,2))
-  diffusivity = 0.0_cvmix_r8
-  diffusivity(2,1) = 10.0_cvmix_r8
-  diffusivity(3,1) = 5.0_cvmix_r8
-  diffusivity(4,1) = 1.0_cvmix_r8
-  allocate(viscosity(nlev+1))
-  allocate(zt(nlev), zw_iface(nlev+1), Ri_bulk(nlev))
-  do kw=1,nlev+1
-    zw_iface(kw) = -layer_thick*real(kw-1, cvmix_r8)
-  end do
-  do kt=1,nlev
-    zt(kt) = 0.5_cvmix_r8*(zw_iface(kt)+zw_iface(kt+1))
-    if (zw_iface(kt+1).gt.hmix) then
-      Ri_bulk(kt) = 0.0_cvmix_r8
-    else
-      if (Ri_bulk(kt-1).eq.0) then
-        ! Exact integration for average value over first cell with non-zero
-        ! Ri_bulk
-        Ri_bulk(kt) = 0.25_cvmix_r8*ri_crit*(zw_iface(kt+1)-hmix)**2/layer_thick
+  ! Test 1: user sets up levels via namelist (constant thickness) and specifies
+  !         critical Richardson number as well as depth parameter hmix. The
+  !         bulk Richardson number is assumed to be 0 from surface to hmix and
+  !         then increases linearly at a rate of Ri_crit/2 (so bulk Richardson
+  !         number = Ri_crit at hmix+2). For computation, though, the average
+  !         bulk Richardson number (integral over vertical layer divided by
+  !         layer thickness) is stored at cell centers and then interpolated
+  !         (user can specify linear, quadratic or cubic interpolant) between
+  !         cell centers. OBL_depth is set to depth where interpolated bulk
+  !         Richardson number = Ri_crit; level-center depth (zt) and bulk 
+  !         Richardson numbers are written out to test1.nc or test1.out
+  if (ltest1) then
+    print*, "Test 1: determining OBL depth"
+    print*, "----------"
+
+    ! Initialize parameter datatype and set up column
+    call cvmix_init_kpp(ri_crit=ri_crit, interp_type=interp_type_t1)
+    call cvmix_put(CVmix_vars1, 'nlev', nlev1)
+    call cvmix_put(CVmix_vars1, 'ocn_depth', layer_thick*real(nlev1,cvmix_r8))
+
+    ! Set up vertical levels (centers and interfaces) and compute bulk
+    ! Richardson number
+    allocate(zt(nlev1), zw_iface(nlev1+1), Ri_bulk(nlev1))
+    do kw=1,nlev1+1
+      zw_iface(kw) = -layer_thick*real(kw-1, cvmix_r8)
+    end do
+    do kt=1,nlev1
+      zt(kt) = 0.5_cvmix_r8*(zw_iface(kt)+zw_iface(kt+1))
+      if (zw_iface(kt+1).gt.hmix) then
+        Ri_bulk(kt) = 0.0_cvmix_r8
       else
-        Ri_bulk(kt) = 0.5_cvmix_r8*ri_crit*(hmix-zt(kt))
+        if (Ri_bulk(kt-1).eq.0) then
+          ! Exact integration for average value over first cell with non-zero
+          ! Ri_bulk
+          Ri_bulk(kt) = 0.25_cvmix_r8*ri_crit*(zw_iface(kt+1)-hmix)**2/layer_thick
+        else
+          Ri_bulk(kt) = 0.5_cvmix_r8*ri_crit*(hmix-zt(kt))
+        end if
       end if
-    end if
-  end do
+    end do
 
-  call cvmix_put(CVmix_vars, 'nlev', nlev)
-  call cvmix_put(CVmix_vars, 'ocn_depth', layer_thick*real(nlev,cvmix_r8))
-  call cvmix_put(CVmix_vars, 'surf_fric', 1.0_cvmix_r8)
-  call cvmix_put(CVmix_vars, 'surf_buoy', 100.0_cvmix_r8)
-  call cvmix_put(CVmix_vars, 'Coriolis', 1e-4_cvmix_r8)
-  CVmix_vars%diff_iface => diffusivity(:,:)
-  CVmix_vars%visc_iface => viscosity(:)
-  CVmix_vars%zt         => zt(:)
-  CVmix_vars%zw_iface   => zw_iface(:)
-  CVmix_vars%Rib        => Ri_bulk(:)
+    CVmix_vars1%zt       => zt(:)
+    CVmix_vars1%zw_iface => zw_iface(:)
+    CVmix_vars1%Rib      => Ri_bulk(:)
 
-  call cvmix_init_kpp(ri_crit=ri_crit, vonkarman=0.4_cvmix_r8,                &
-                      interp_type=interp_type)
-  call cvmix_kpp_compute_OBL_depth(CVmix_vars)
-  print*, "OBL depth = ", CVmix_vars%OBL_depth
-  print*, "kt of cell containing OBL depth = ", CVmix_vars%kOBL_depth
-  call cvmix_coeffs_kpp(CVmix_vars)
+    ! Compute OBL depth
+    call cvmix_kpp_compute_OBL_depth(CVmix_vars1)
+
+    ! Output to screen and file
+    print*, "OBL depth = ", CVmix_vars1%OBL_depth
+    print*, "kt of cell containing OBL depth = ", CVmix_vars1%kOBL_depth
 
 #ifdef _NETCDF
-  call cvmix_io_open(fid, "data.nc", "nc")
+    call cvmix_io_open(fid, "test1.nc", "nc")
 #else
-  call cvmix_io_open(fid, "data.out", "ascii")
+    call cvmix_io_open(fid, "test1.out", "ascii")
 #endif
 
-  call cvmix_output_write(fid, CVmix_vars, (/"zt     ", "zw     ", "Ri_bulk", &
-                                             "diff   "/))
+    call cvmix_output_write(fid, CVmix_vars1, (/"zt     ", "zw     ",         &
+                                                "Ri_bulk"/))
 #ifdef _NETCDF
-  call cvmix_output_write_att(fid, "Interpolation", interp_type)
-  call cvmix_output_write_att(fid, "analytic_OBL_depth", hmix-2.0_cvmix_r8)
-  call cvmix_output_write_att(fid, "computed_OBL_depth", CVmix_vars%OBL_depth)
-  call cvmix_output_write_att(fid, "kOBL_depth", CVmix_vars%kOBL_depth)
+    call cvmix_output_write_att(fid, "Interpolation", interp_type_t1)
+    call cvmix_output_write_att(fid, "analytic_OBL_depth", hmix-2.0_cvmix_r8)
+    call cvmix_output_write_att(fid, "computed_OBL_depth",                    &
+                                CVmix_vars1%OBL_depth)
+    call cvmix_output_write_att(fid, "kOBL_depth", CVmix_vars1%kOBL_depth)
 #endif
 
-  call cvmix_io_close(fid)
+    call cvmix_io_close(fid)
 
-  print*, ""
-  print*, "Test 2: Computing G(sigma)"
-  print*, "----------"
-  call cvmix_kpp_compute_shape_function_coeffs(0.0_cvmix_r8, 0.0_cvmix_r8,    &
-                                               shape_coeffs)
-  print*, "Coefficients are: "
-  print*, shape_coeffs(1), shape_coeffs(2), shape_coeffs(3), shape_coeffs(4) 
+    deallocate(zt, zw_iface, Ri_bulk)
+  end if ! ltest for Test 1
 
-  print*, ""
-  print*, "Test 3: determining phi_m and phi_s (inversely proportional to ",  &
-          "w_m and w_s, respectively)"
-  print*, "----------"
-  call cvmix_put_kpp('vonkarman', 1.0_cvmix_r8)
-  nlev2 = 220
-  allocate(w_m(nlev2+1), w_s(nlev2+1), zeta(nlev2+1))
-  ! Note: zeta = sigma*OBL_depth/MoninObukhov constant
-  !       zeta < 0 => unstable flow
-  !       zeta > 0 => stable flow
-  do kw=1, nlev2+1
-    zeta(kw) = -2.0_cvmix_r8 + 2.2_cvmix_r8*real(kw-1,cvmix_r8)/real(nlev2,cvmix_r8)
-  end do
-  ! Typically the first argument of compute_turbulent_scales is sigma, and then
-  ! the routine calculates zeta based on the next three parameters. Setting
-  ! OBL_depth = surf_buoy_force = surf_fric_vel = 1 (with von Karman = 1 as
-  ! well) => sigma = zeta
-  call cvmix_kpp_compute_turbulent_scales(zeta, 1.0_cvmix_r8, 1.0_cvmix_r8,  &
-                                          1.0_cvmix_r8, w_m, w_s)
+  ! Test 2: Compute coefficients of shape function G(sigma) when G(1) = 0 and
+  !         G'(1) = 0. Result should be G(sigma) = sigma - 2sigma^2 + sigma^3
+  if (ltest2) then
+    print*, ""
+    print*, "Test 2: Computing G(sigma)"
+    print*, "----------"
 
-  allocate(TwoDArray(nlev2+1,3))
-  TwoDArray(:,1) = zeta
-  TwoDArray(:,2) = 1.0_cvmix_r8/w_m ! phi_m
-  TwoDArray(:,3) = 1.0_cvmix_r8/w_s ! phi_s
+    call cvmix_kpp_compute_shape_function_coeffs(0.0_cvmix_r8, 0.0_cvmix_r8,  &
+                                                 shape_coeffs)
+    write(*,"(X,A,4F7.3)") "Coefficients are: ", shape_coeffs
+  end if ! ltest for test 2
+
+  ! Test 3: Recreate Figure B1 in LMD94 (phi(zeta)). Note that von Karman,
+  !         surface buoyancy forcing, and surface velocity are set such that
+  !         Monin-Obukhov constant = 1 => zeta = sigma.
+  if (ltest3) then
+    print*, ""
+    print*, "Test 3: determining phi_m and phi_s (inversely proportional to ",&
+            "w_m and w_s, respectively)"
+    print*, "----------"
+    call cvmix_put_kpp('vonkarman', 1.0_cvmix_r8)
+    allocate(w_m(nlev3+1), w_s(nlev3+1), zeta(nlev3+1))
+    ! Note: zeta = sigma*OBL_depth/MoninObukhov constant
+    !       zeta < 0 => unstable flow
+    !       zeta > 0 => stable flow
+    do kw=1, nlev3+1
+      zeta(kw) = -2.0_cvmix_r8 + 2.2_cvmix_r8 * real(kw-1,cvmix_r8) /         &
+                 real(nlev3,cvmix_r8)
+    end do
+    ! Typically the first argument of compute_turbulent_scales is sigma, and then
+    ! the routine calculates zeta based on the next three parameters. Setting
+    ! OBL_depth = surf_buoy_force = surf_fric_vel = 1 (with von Karman = 1 as
+    ! well) => sigma = zeta
+    call cvmix_kpp_compute_turbulent_scales(zeta, 1.0_cvmix_r8, 1.0_cvmix_r8, &
+                                            1.0_cvmix_r8, w_m, w_s)
+
+    allocate(TwoDArray(nlev3+1,3))
+    TwoDArray(:,1) = zeta
+    TwoDArray(:,2) = 1.0_cvmix_r8/w_m ! phi_m
+    TwoDArray(:,3) = 1.0_cvmix_r8/w_s ! phi_s
 #ifdef _NETCDF
-  call cvmix_io_open(fid, "test3.nc", "nc")
+    call cvmix_io_open(fid, "test3.nc", "nc")
 #else
-  call cvmix_io_open(fid, "test3.out", "ascii")
+    call cvmix_io_open(fid, "test3.out", "ascii")
 #endif
-  call cvmix_output_write(fid, "data", (/"nrow", "ncol"/), TwoDArray)
-  call cvmix_io_close(fid)
+    call cvmix_output_write(fid, "data", (/"nrow", "ncol"/), TwoDArray)
+    call cvmix_io_close(fid)
 #ifdef _NETCDF
-  print*, "Done! Data is stored in test3.nc, run plot_flux_profiles.ncl to see output."
+    print*, "Done! Data is stored in test3.nc, run plot_flux_profiles.ncl ",  &
+            "to see output."
 #else
-  print*, "Done! Data is stored in test3.out, run plot_flux_profiles.ncl to see output."
+    print*, "Done! Data is stored in test3.out, run plot_flux_profiles.ncl ", &
+            "to see output."
 #endif
-  print*, ""
-  deallocate(TwoDArray)
-  deallocate(zeta, w_m, w_s)
+    print*, ""
+    deallocate(TwoDArray)
+    deallocate(zeta, w_m, w_s)
+  endif ! ltest3
 
+  if (ltest4) then
+    print*, ""
+    print*, "Test 4: Computing Diffusivity in boundary layer"
+    print*, "----------"
+
+    nlev4 = 5
+    layer_thick = 5
+
+    ! Set up vertical levels (centers and interfaces) and compute bulk
+    ! Richardson number
+    allocate(zt(nlev4), zw_iface(nlev4+1))
+    do kw=1,nlev4+1
+      zw_iface(kw) = -layer_thick*real(kw-1, cvmix_r8)
+    end do
+    do kt=1,nlev4
+      zt(kt) = 0.5_cvmix_r8*(zw_iface(kt)+zw_iface(kt+1))
+    end do
+    CVmix_vars4%zt       => zt(:)
+    CVmix_vars4%zw_iface => zw_iface(:)
+
+    ! Set up diffusivities
+    allocate(diffusivity(nlev4+1,2), viscosity(nlev4+1))
+    diffusivity = 0.0_cvmix_r8
+    diffusivity(2,1) = 10.0_cvmix_r8
+    diffusivity(3,1) = 5.0_cvmix_r8
+    diffusivity(4,1) = 1.0_cvmix_r8
+    CVmix_vars4%diff_iface => diffusivity
+    CVmix_vars4%visc_iface => viscosity
+
+    ! Set physical properties of column for test 4
+    call cvmix_put(CVmix_vars4, 'nlev', nlev4)
+    call cvmix_put(CVmix_vars4, 'ocn_depth', layer_thick*real(nlev4,cvmix_r8))
+    call cvmix_put(CVmix_vars4, 'OBL_depth', OBL_depth)
+    call cvmix_put(CVmix_vars4, 'kOBL_depth', nlev4+1)
+    do kw=1,nlev4
+      if ((OBL_depth.lt.zw_iface(kw)).and.(OBL_depth.gt.zw_iface(kw+1))) then
+        call cvmix_put(CVmix_vars4, 'kOBL_depth', kw)
+        exit
+      end if
+    end do
+    print*, "OBL_depth = ", CVmix_vars4%OBL_depth
+    print*, "kOBL_depth = ", CVmix_vars4%kOBL_depth
+
+    call cvmix_put(CVmix_vars4, 'surf_fric', 1.0_cvmix_r8)
+    call cvmix_put(CVmix_vars4, 'surf_buoy', 100.0_cvmix_r8)
+    call cvmix_put(CVmix_vars4, 'Coriolis', 1e-4_cvmix_r8)
+
+    call cvmix_init_kpp(ri_crit=ri_crit, vonkarman=0.4_cvmix_r8,              &
+                        interp_type2=interp_type_t4)
+    call cvmix_coeffs_kpp(CVmix_vars4)
+
+#ifdef _NETCDF
+    call cvmix_io_open(fid, "test4.nc", "nc")
+#else
+    call cvmix_io_open(fid, "test4.out", "ascii")
+#endif
+
+    call cvmix_output_write(fid, CVmix_vars4, (/"zt  ", "zw  ", "diff"/)) 
+#ifdef _NETCDF
+    call cvmix_output_write_att(fid, "interp_type2", interp_type_t4)
+    call cvmix_output_write_att(fid, "OBL_depth", CVmix_vars4%OBL_depth)
+#endif
+
+    call cvmix_io_close(fid)
+    end if ! ltest4
 !EOC
 
 End Subroutine cvmix_kpp_driver

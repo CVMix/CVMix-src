@@ -17,6 +17,7 @@ usage() {
 # Main Script
 #############
 
+OUTPUT=TRUE
 while [ $# -gt 0 ]; do
   case $1 in
     -h|--help)
@@ -26,9 +27,13 @@ while [ $# -gt 0 ]; do
     -nc|--netcdf)
       USE_NETCDF=netcdf
       ;;
+    -no_out|--no_output)
+      OUTPUT=FALSE
+      ;;
     -clean|--clean)
-      echo "rm -f data.out data.nc test3.out test3.nc"
-      rm -f data.out data.nc test3.out test3.nc
+      cln_cmd="rm -f test*.out test*.nc"
+      echo ${cln_cmd}
+      ${cln_cmd}
       exit
       ;;
     * )
@@ -54,9 +59,20 @@ if [ $? != 0 ]; then
   exit 1
 fi
 
-if [ "${USE_NETCDF}" == "netcdf" ]; then
-  ncdump -v zt,Ri_bulk data.nc
-  ncdump -v zw,diff data.nc
-else
-  cat data.out
+if [ "$OUTPUT" == "TRUE" ]; then
+  if [ "`grep ltest1 input.nl | cut -d. -f 2`" != "false" ]; then
+    if [ "${USE_NETCDF}" == "netcdf" ]; then
+      ncdump -v zt,Ri_bulk test1.nc
+    else
+      cat test1.out
+    fi
+  fi
+
+  if [ "`grep ltest4 input.nl | cut -d. -f 2`" != "false" ]; then
+    if [ "${USE_NETCDF}" == "netcdf" ]; then
+      ncdump -v zw,diff test4.nc
+    else
+      cat test4.out
+    fi
+  fi
 fi
