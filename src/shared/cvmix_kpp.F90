@@ -614,9 +614,10 @@ contains
 ! !IROUTINE: cvmix_kpp_compute_OBL_depth_low
 ! !INTERFACE:
 
-  subroutine cvmix_kpp_compute_OBL_depth_low(Ri_bulk, depth, OBL_depth,       &
-                                             kOBL_depth, surf_fric, surf_buoy,&
-                                             Coriolis, CVmix_kpp_params_user)
+  subroutine cvmix_kpp_compute_OBL_depth_low(Ri_bulk, zw_iface, OBL_depth,    &
+                                             kOBL_depth, zt_cntr, surf_fric,  &
+                                             surf_buoy, Coriolis,             &
+                                             CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
 !  Computes the depth of the ocean boundary layer (OBL) for a given column
@@ -627,10 +628,14 @@ contains
 !  Only those used by entire module. 
 
 ! !INPUT PARAMETERS:
-    type(cvmix_kpp_params_type), optional, target, intent(in) ::              &
-                                           CVmix_kpp_params_user
-    real(cvmix_r8), dimension(:), intent(in) :: Ri_bulk, depth
-    real(cvmix_r8),               intent(in) :: surf_fric, surf_buoy, Coriolis
+    real(cvmix_r8), dimension(:),                   intent(in) :: Ri_bulk
+    real(cvmix_r8), dimension(:),           target, intent(in) :: zw_iface
+    real(cvmix_r8), dimension(:), optional, target, intent(in) :: zt_cntr
+    real(cvmix_r8),               optional,         intent(in) :: surf_fric,  &
+                                                                  surf_buoy,  &
+                                                                  Coriolis
+    type(cvmix_kpp_params_type),  optional, target, intent(in) ::             &
+                                            CVmix_kpp_params_user
 
 ! !OUTPUT PARAMETERS:
     real(cvmix_r8), intent(out) :: OBL_depth
@@ -640,10 +645,11 @@ contains
 !BOC
 
     ! Local variables
-    integer :: nlev, kt
-    real(kind=cvmix_r8), dimension(4) :: coeffs
+    real(kind=cvmix_r8), dimension(:), pointer :: depth
+    real(kind=cvmix_r8), dimension(4)          :: coeffs
     real(kind=cvmix_r8) :: Ekman, MoninObukhov, OBL_Limit
-    logical :: lstable
+    integer             :: nlev, k, kw
+    logical             :: lstable
 
     type(cvmix_kpp_params_type), pointer :: CVmix_kpp_params_in
 
@@ -652,17 +658,48 @@ contains
       CVmix_kpp_params_in => CVmix_kpp_params_user
     end if
 
-    nlev = size(Ri_bulk)
-    if (nlev.ne.size(depth)) then
-      print*, "ERROR: Ri_bulk and depth must be same size!"
+    ! Error checks
+    ! (1) if using Ekman length, need to pass surf_fric and Coriolis
+    if ((.not.(present(surf_fric).and.present(Coriolis))).and.                &
+        CVmix_kpp_params_in%lMonOb) then
+      print*, "ERROR: must pass surf_fric and Coriolis if you want to ",      &
+                "compute Ekman length"
       stop 1
+    end if
+
+    ! (2) if using Monin-Obukhov length, need to pass surf_fric and surf_buoy
+    if ((.not.(present(surf_fric).and.present(surf_buoy))).and.               &
+        CVmix_kpp_params_in%lMonOb) then
+      print*, "ERROR: must pass surf_fric and surf_buoy if you want to ",     &
+                "compute Monin-Obukhov length"
+      stop 1
+    end if
+
+    ! (3) Ri_bulk needs to be either the size of zw_iface or zt_cntr
+    nlev = size(zw_iface)-1
+    if (size(Ri_bulk).eq.nlev) then
+      if (.not.present(zt_cntr)) then
+        print*, "ERROR: Ri_bulk has length nlev so you must pass zt_cntr"
+        stop 1
+      end if
+      if (size(zt_cntr).ne.nlev) then
+        print*, "ERROR: zt_cntr must have length nlev!"
+        stop 1
+      end if
+      depth => zt_cntr
+    else
+      if (size(Ri_bulk).eq.nlev+1) then
+        depth => zw_iface
+      else
+        print*, "ERROR: Ri_bulk must have size nlev or nlev+1!"
+        stop 1
+      end if
     end if
 
     ! if lEkman = .true., OBL_depth must be between the surface and the Ekman
     ! depth. Similarly, if lMonOb = .true., OBL_depth must be between the
     ! surface and the Monin-Obukhov depth
-    OBL_limit = depth(nlev)
-
+    OBL_limit  = depth(nlev)
 
     ! Since depth gets more negative as you go deeper, that translates into
     ! OBL_depth = max(computed depth, Ekman depth, M-O depth)
@@ -691,33 +728,40 @@ contains
     end if
 
     ! Interpolation Step
-    ! (1) Find kt such that Ri_bulk at level kt+1 > Ri_crit
-    do kt=1,nlev-1
-      if (Ri_bulk(kt+1).ge.CVmix_kpp_params_in%ri_crit) &
+    ! (1) Find k such that Ri_bulk at level k+1 > Ri_crit
+    do k=1,size(Ri_bulk)-1
+      if (Ri_bulk(k+1).gt.CVmix_kpp_params_in%ri_crit) &
         exit
     end do
-    kOBL_depth = kt
-    if (kt.eq.nlev) then
-      OBL_depth = depth(nlev)
+    kOBL_depth = k
+
+    if (k.eq.size(Ri_bulk)) then
+      OBL_depth = OBL_limit
     else
-      if (kt.eq.1) then
+      if (k.eq.1) then
         call cvmix_math_poly_interp(coeffs, CVmix_kpp_params_in%interp_type,  &
-                               depth(kt:kt+1), Ri_bulk(kt:kt+1))
+                               depth(k:k+1), Ri_bulk(k:k+1))
       else
         call cvmix_math_poly_interp(coeffs, CVmix_kpp_params_in%interp_type,  &
-                               depth(kt:kt+1), Ri_bulk(kt:kt+1), depth(kt-1), &
-                               Ri_bulk(kt-1))
+                               depth(k:k+1), Ri_bulk(k:k+1), depth(k-1),      &
+                               Ri_bulk(k-1))
       end if
       coeffs(1) = coeffs(1)-CVmix_kpp_params_in%ri_crit
 
       OBL_depth = cvmix_math_cubic_root_find(coeffs,                          &
-                                         0.5_cvmix_r8*(depth(kt)+depth(kt+1)))
+                                         0.5_cvmix_r8*(depth(k)+depth(k+1)))
+
+      ! Note: maybe there are times when we don't need to do the interpolation
+      !       because we know OBL_depth will equal OBL_limit?
+      OBL_depth = max(OBL_depth, OBL_limit)
     end if
 
-    ! Note: maybe there are times when we don't need to do the interpolation
-    !       because we know OBL_depth will equal OBL_limit?
-    OBL_depth = max(OBL_depth, OBL_limit)
-
+    do kw=1,nlev
+      if (OBL_depth.gt.zw_iface(kw+1)) then
+        kOBL_depth = kw
+        exit
+      end if
+    end do
 !EOC
 
   end subroutine cvmix_kpp_compute_OBL_depth_low
@@ -751,8 +795,9 @@ contains
     real(cvmix_r8) :: lcl_obl_depth
     integer        :: lcl_kobl_depth
 
-    call cvmix_kpp_compute_OBL_depth(CVmix_vars%Rib, CVmix_vars%zt,           &
+    call cvmix_kpp_compute_OBL_depth(CVmix_vars%Rib, CVmix_vars%zw_iface,     &
                                      lcl_obl_depth,  lcl_kobl_depth,          &
+                                     CVmix_vars%zt,                           &
                                      CVmix_vars%surf_fric,                    &
                                      CVmix_vars%surf_buoy,                    & 
                                      CVmix_vars%Coriolis,                     &
