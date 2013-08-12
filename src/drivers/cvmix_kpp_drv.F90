@@ -22,6 +22,7 @@ Subroutine cvmix_kpp_driver()
   use cvmix_kpp,             only : cvmix_init_kpp,                           &
                                     cvmix_put_kpp,                            &
                                     cvmix_kpp_compute_OBL_depth,              &
+                                    cvmix_kpp_compute_kOBL_depth,             &
                                     cvmix_kpp_compute_turbulent_scales,       &
                                     cvmix_kpp_compute_shape_function_coeffs,  &
                                     cvmix_coeffs_kpp
@@ -134,7 +135,8 @@ Subroutine cvmix_kpp_driver()
 
     ! Output to screen and file
     print*, "OBL depth = ", CVmix_vars1%OBL_depth
-    print*, "kt of cell containing OBL depth = ", CVmix_vars1%kOBL_depth
+    print*, "kw of interface above OBL depth = ", floor(CVmix_vars1%kOBL_depth)
+    print*, "kt of cell center above OBL depth = ", nint(CVmix_vars1%kOBL_depth)-1
 
 #ifdef _NETCDF
     call cvmix_io_open(fid, "test1.nc", "nc")
@@ -249,15 +251,11 @@ Subroutine cvmix_kpp_driver()
     call cvmix_put(CVmix_vars4, 'nlev', nlev4)
     call cvmix_put(CVmix_vars4, 'ocn_depth', layer_thick*real(nlev4,cvmix_r8))
     call cvmix_put(CVmix_vars4, 'OBL_depth', OBL_depth)
-    call cvmix_put(CVmix_vars4, 'kOBL_depth', nlev4+1)
-    do kw=1,nlev4
-      if ((OBL_depth.gt.abs(zw_iface(kw))).and.                               &
-          (OBL_depth.lt.abs(zw_iface(kw+1)))) then
-        call cvmix_put(CVmix_vars4, 'kOBL_depth', kw)
-        exit
-      end if
-    end do
+    call cvmix_put(CVmix_vars4, 'kOBL_depth',                                 &
+         cvmix_kpp_compute_kOBL_depth(zw_iface, zt, OBL_depth))
+
     print*, "OBL_depth = ", CVmix_vars4%OBL_depth
+    print*, "ocean depth = ", CVmix_vars4%ocn_depth
     print*, "kOBL_depth = ", CVmix_vars4%kOBL_depth
 
     call cvmix_put(CVmix_vars4, 'surf_fric', 1.0_cvmix_r8)

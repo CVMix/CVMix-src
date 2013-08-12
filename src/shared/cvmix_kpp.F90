@@ -53,6 +53,7 @@
   public :: cvmix_kpp_compute_turbulent_scales
   ! These are public for testing, may end up private later
   public :: cvmix_kpp_compute_shape_function_coeffs
+  public :: cvmix_kpp_compute_kOBL_depth
 
   interface cvmix_coeffs_kpp
     module procedure cvmix_coeffs_kpp_low
@@ -681,7 +682,7 @@ contains
     real(kind=cvmix_r8), dimension(:), pointer :: depth
     real(kind=cvmix_r8), dimension(4)          :: coeffs
     real(kind=cvmix_r8) :: Ekman, MoninObukhov, OBL_Limit
-    integer             :: nlev, k, kw
+    integer             :: nlev, k
     logical             :: lstable
 
     type(cvmix_kpp_params_type), pointer :: CVmix_kpp_params_in
@@ -728,7 +729,7 @@ contains
     ! if lEkman = .true., OBL_depth must be between the surface and the Ekman
     ! depth. Similarly, if lMonOb = .true., OBL_depth must be between the
     ! surface and the Monin-Obukhov depth
-    OBL_limit  = abs(depth(nlev))
+    OBL_limit  = abs(zw_iface(nlev+1))
 
     ! Since depth gets more negative as you go deeper, that translates into
     ! OBL_depth = max(computed depth, Ekman depth, M-O depth)
@@ -736,7 +737,7 @@ contains
     if (CVmix_kpp_params_in%lEkman) then
       if (Coriolis.eq.0.0_cvmix_r8) then
         ! Rather than divide by zero, set Ekman depth to ocean bottom
-        Ekman = abs(depth(nlev))
+        Ekman = abs(zw_iface(nlev+1))
       else
         Ekman = 0.7_cvmix_r8*surf_fric/abs(Coriolis)
       end if
@@ -751,7 +752,7 @@ contains
         MoninObukhov = surf_fric**3/(surf_buoy*cvmix_get_kpp_real('vonkarman',&
                                                      CVmix_kpp_params_in))
       else
-        MoninObukhov = abs(depth(nlev))
+        MoninObukhov = abs(zw_iface(nlev+1))
       end if
       OBL_limit = min(OBL_limit, MoninObukhov)
     end if
@@ -784,17 +785,67 @@ contains
       OBL_depth = min(OBL_depth, OBL_limit)
     end if
 
-    do kw=1,nlev
-      if (OBL_depth.lt.abs(zw_iface(kw+1))) then
-        kOBL_depth = real(kw, cvmix_r8)+0.25_cvmix_r8
-        if (OBL_depth.gt.abs(zt_cntr(kw))) &
-          kOBL_depth = kOBL_depth + 0.5_cvmix_r8
-        exit
-      end if
-    end do
+    kOBL_depth = cvmix_kpp_compute_kOBL_depth(zw_iface, zt_cntr, OBL_depth)
+
 !EOC
 
   end subroutine cvmix_kpp_compute_OBL_depth_low
+
+!BOP
+
+! !IROUTINE: cvmix_kpp_compute_kOBL_depth
+! !INTERFACE:
+
+  function cvmix_kpp_compute_kOBL_depth(zw_iface, zt_cntr, OBL_depth)
+
+! !DESCRIPTION:
+!  Computes the index of the level and interface above OBL_depth. The index is
+!  stored as a real number, and the integer index can be solved for in the
+!  following way:\\
+!    \verb|kt| = index of cell center above OBL_depth = \verb|nint(kOBL_depth)-1|
+!    \verb|kw| = index of interface above OBL_depth = \verb|floor(kOBL_depth)|
+!\\
+!\\
+
+! !USES:
+!  Only those used by entire module. 
+
+! !INPUT PARAMETERS:
+    real(cvmix_r8), dimension(:), intent(in) :: zw_iface, zt_cntr
+    real(cvmix_r8), intent(in)  :: OBL_depth
+
+! !OUTPUT PARAMETERS:
+    real(cvmix_r8) :: cvmix_kpp_compute_kOBL_depth
+
+!EOP
+!BOC
+
+    ! Local variables
+    integer :: kw, nlev
+
+    nlev = size(zt_cntr)
+    if (size(zw_iface).ne.nlev+1) then
+      print*, "ERROR: there should be one more interface z coordinate than ", &
+              "cell center coordinate!"
+      stop 1
+    end if
+
+    ! Initial value = (nlev+1) + 0.25 => OBL_depth at bottom of ocean
+    cvmix_kpp_compute_kOBL_depth = real(nlev+1,cvmix_r8)+0.25_cvmix_r8
+    do kw=1,nlev
+      if (OBL_depth.lt.abs(zw_iface(kw+1))) then
+        if (OBL_depth.lt.abs(zt_cntr(kw))) then
+          cvmix_kpp_compute_kOBL_depth = real(kw, cvmix_r8)+0.25_cvmix_r8
+        else
+          cvmix_kpp_compute_kOBL_depth = real(kw, cvmix_r8)+0.75_cvmix_r8
+        end if
+        exit
+      end if
+    end do
+
+!EOC
+
+  end function cvmix_kpp_compute_kOBL_depth
 
 !BOP
 
