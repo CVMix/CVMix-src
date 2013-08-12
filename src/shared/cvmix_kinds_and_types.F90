@@ -60,8 +60,9 @@ module cvmix_kinds_and_types
                         surf_buoy, & ! buoyancy forcing at surface
                         lat,       & ! latitude of column (degrees north)
                         lon,       & ! longitude of column (degrees east)
-                        Coriolis     ! Coriolis parameter
-      integer        :: kOBL_depth   ! kt index of cell containing OBL
+                        Coriolis,  & ! Coriolis parameter
+                        kOBL_depth   ! index of cell containing OBL (fraction
+                                     ! > .5 => below cell center)
 
       ! Values on interfaces
       ! nlev+1, 2
@@ -73,6 +74,8 @@ module cvmix_kinds_and_types
       real(cvmix_r8), dimension(:),   pointer :: Ri_iface   => NULL()
       ! For tidal mixing, we need the squared buoyancy frequency
       real(cvmix_r8), dimension(:),   pointer :: buoy_iface => NULL()
+      ! For KPP, need to store non-local transport term
+      real(cvmix_r8), dimension(:),   pointer :: kpp_transport_iface => NULL()
 
       ! Values at tracer points
       ! nlev

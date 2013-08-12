@@ -83,8 +83,6 @@ contains
     select case (trim(varname))
       case ('nlev')
         CVmix_vars%nlev = val
-      case ('kOBL_depth')
-        CVmix_vars%kOBL_depth = val
       case default
         ! All other scalars are real(cvmix_r8)
         call cvmix_put_real(CVmix_vars, varname, real(val,cvmix_r8), opts)
@@ -135,6 +133,8 @@ contains
         CVmix_vars%ocn_depth = val
       case ('OBL_depth')
         CVmix_vars%OBL_depth = val
+      case ('kOBL_depth')
+        CVmix_vars%kOBL_depth = val
       case ('surf_hgt')
         CVmix_vars%surf_hgt = val
       case ('surf_fric')
@@ -225,6 +225,12 @@ contains
         allocate(CVmix_vars%buoy_iface(nlev+1))
       end if
       CVmix_vars%buoy_iface(:) = val
+
+      case ('kpp_transport', 'kpp_transport_iface', 'non_local_transport')
+      if (.not.associated(CVmix_vars%kpp_transport_iface)) then
+        allocate(CVmix_vars%kpp_transport_iface(nlev+1))
+      end if
+      CVmix_vars%kpp_transport_iface(:) = val
 
       case ('strat_param_num')
       print*, "WARNING: you are setting the numerator of the statification", & 
@@ -368,6 +374,12 @@ contains
         allocate(CVmix_vars%buoy_iface(nlev+1))
       end if
       CVmix_vars%buoy_iface(:) = val
+
+      case ('kpp_transport', 'kpp_transport_iface', 'non_local_transport')
+      if (.not.associated(CVmix_vars%kpp_transport_iface)) then
+        allocate(CVmix_vars%kpp_transport_iface(nlev+1))
+      end if
+      CVmix_vars%kpp_transport_iface(:) = val
 
       case ('strat_param_num')
       if (.not.associated(CVmix_vars%strat_param_num)) then

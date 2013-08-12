@@ -289,10 +289,12 @@ contains
 !EOP
 !BOC
 
+    call cvmix_put(CVmix_vars, 'kpp_transport', 0.0_cvmix_r8)
     call cvmix_coeffs_kpp(CVmix_vars%diff_iface, CVmix_vars%visc_iface,       &
                           CVmix_vars%zw_iface, CVmix_vars%OBL_depth,          &
-                          CVmix_VARS%kOBL_depth, CVmix_vars%surf_fric,        &
-                          CVmix_vars%surf_buoy,         &
+                          CVmix_vars%kOBL_depth,                              &
+                          CVmix_vars%kpp_transport_iface,                     &
+                          CVmix_vars%surf_fric, CVmix_vars%surf_buoy,         &
                           CVmix_kpp_params_user)
 
 !EOC
@@ -304,8 +306,9 @@ contains
 ! !IROUTINE: cvmix_coeffs_kpp_low
 ! !INTERFACE:
 
-  subroutine cvmix_coeffs_kpp_low(diff, visc, zw_iface, OBL_depth, kup,       &
-                                  surf_fric, surf_buoy, CVmix_kpp_params_user)
+  subroutine cvmix_coeffs_kpp_low(diff, visc, zw_iface, OBL_depth, kOBL_depth,&
+                                  nonlocal, surf_fric, surf_buoy,             &
+                                  CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
 !  Computes vertical diffusion coefficients for the double diffusion mixing
@@ -321,13 +324,11 @@ contains
                                            CVmix_kpp_params_user
     real(cvmix_r8), dimension(:),   intent(in) :: zw_iface
     real(cvmix_r8),                 intent(in)    :: OBL_depth, surf_fric,    &
-                                                     surf_buoy
-    integer,                        intent(in)    :: kup ! kw index of iface
-                                                         ! above OBL_depth
+                                                     surf_buoy, kOBL_depth
 
 ! !INPUT/OUTPUT PARAMETERS:
     real(cvmix_r8), dimension(:,:), intent(inout) :: diff
-    real(cvmix_r8), dimension(:),   intent(inout) :: visc
+    real(cvmix_r8), dimension(:),   intent(inout) :: visc, nonlocal
 
 !EOP
 !BOC
@@ -340,6 +341,9 @@ contains
     real(cvmix_r8)               :: wm_OBL, ws_OBL, second_term
     integer :: nlev_p1, kw, i, interp_type2
     logical :: lstable
+    integer :: ktup, & ! kt index of cell center above OBL_depth
+               kwup    ! kw index of iface above OBL_depth (= kt index of
+                       ! cell containing OBL_depth)
 
     CVmix_kpp_params_in => CVmix_kpp_params_saved
     if (present(CVmix_kpp_params_user)) then
@@ -350,6 +354,9 @@ contains
     nlev_p1 = size(visc)
     allocate(sigma(nlev_p1), w_m(nlev_p1), w_s(nlev_p1))
     sigma = -zw_iface/OBL_depth
+
+    kwup = floor(kOBL_depth)
+    ktup = nint(kOBL_depth)-1
 
     ! Stability => positive surface buoyancy flux
     lstable = (surf_buoy.gt.0.0_cvmix_r8)
@@ -365,28 +372,29 @@ contains
     !     i) temperature diffusivity
     !     ii) other tracers diffusivity
     !     iii) viscosity
-    if (kup.eq.1) then
-      visc_at_OBL(1) = compute_nu_at_OBL_depth(interp_type2, (/zw_iface(kup), &
-                         zw_iface(kup+1)/), (/diff(kup,1), diff(kup+1,1)/),   &
+    if (kwup.eq.1) then
+      visc_at_OBL(1) = compute_nu_at_OBL_depth(interp_type2, (/zw_iface(kwup),&
+                         zw_iface(kwup+1)/), (/diff(kwup,1), diff(kwup+1,1)/),&
                          OBL_depth, dnu_dz=dvisc_OBL(1))
-      visc_at_OBL(2) = compute_nu_at_OBL_depth(interp_type2, (/zw_iface(kup), &
-                         zw_iface(kup+1)/), (/diff(kup,2), diff(kup+1,2)/),   &
+      visc_at_OBL(2) = compute_nu_at_OBL_depth(interp_type2, (/zw_iface(kwup),&
+                         zw_iface(kwup+1)/), (/diff(kwup,2), diff(kwup+1,2)/),&
                          OBL_depth, dnu_dz=dvisc_OBL(2))
-      visc_at_OBL(3) = compute_nu_at_OBL_depth(interp_type2, (/zw_iface(kup), &
-                         zw_iface(kup+1)/), (/visc(kup), visc(kup+1)/),       &
+      visc_at_OBL(3) = compute_nu_at_OBL_depth(interp_type2, (/zw_iface(kwup),&
+                         zw_iface(kwup+1)/), (/visc(kwup), visc(kwup+1)/),    &
                          OBL_depth, dnu_dz=dvisc_OBL(3))
     else
-      visc_at_OBL(1) = compute_nu_at_OBL_depth(interp_type2, (/zw_iface(kup), &
-                         zw_iface(kup+1)/), (/diff(kup,1), diff(kup+1,1)/),   &
-                         OBL_depth, zw_iface(kup+2), diff(kup+2,1),           &
+      visc_at_OBL(1) = compute_nu_at_OBL_depth(interp_type2, (/zw_iface(kwup),&
+                         zw_iface(kwup+1)/), (/diff(kwup,1), diff(kwup+1,1)/),&
+                         OBL_depth, zw_iface(kwup+2), diff(kwup+2,1),         &
                          dvisc_OBL(1)) 
-      visc_at_OBL(2) = compute_nu_at_OBL_depth(interp_type2, (/zw_iface(kup), &
-                         zw_iface(kup+1)/), (/diff(kup,2), diff(kup+1,2)/),   &
-                         OBL_depth, zw_iface(kup+2), diff(kup+2,2),           &
+      visc_at_OBL(2) = compute_nu_at_OBL_depth(interp_type2, (/zw_iface(kwup),&
+                         zw_iface(kwup+1)/), (/diff(kwup,2), diff(kwup+1,2)/),&
+                         OBL_depth, zw_iface(kwup+2), diff(kwup+2,2),         &
                          dvisc_OBL(2)) 
-      visc_at_OBL(3) = compute_nu_at_OBL_depth(interp_type2, (/zw_iface(kup), &
-                         zw_iface(kup+1)/), (/visc(kup), visc(kup+1)/),       &
-                         OBL_depth, zw_iface(kup+2), visc(kup+2), dvisc_OBL(3))
+      visc_at_OBL(3) = compute_nu_at_OBL_depth(interp_type2, (/zw_iface(kwup),&
+                         zw_iface(kwup+1)/), (/visc(kwup), visc(kwup+1)/),    &
+                         OBL_depth, zw_iface(kwup+2), visc(kwup+2),           &
+                         dvisc_OBL(3))
     end if
     Gat1(1) = visc_at_OBL(1)/(OBL_depth*ws_OBL)
     Gat1(2) = visc_at_OBL(2)/(OBL_depth*ws_OBL)
@@ -411,17 +419,18 @@ contains
                                                    shape_coeffs(:,i))
     end do
 
-    ! (4) Compute diffusivities and viscosity in ocean boundary layer
-    do kw=1,kup
-      diff(kw,1) = OBL_depth * w_s(kw) *                                      &
+    ! (4) Compute diffusivities and viscosity in ocean boundary layer and
+    !     non-local term
+    nonlocal = 0.0_cvmix_r8
+    do kw=1,kwup
+      diff(kw,1)   = OBL_depth * w_s(kw) *                                    &
                    cvmix_math_evaluate_cubic(shape_coeffs(:,1), sigma(kw))
-      diff(kw,2) = OBL_depth * w_s(kw) *                                      &
+      diff(kw,2)   = OBL_depth * w_s(kw) *                                    &
                    cvmix_math_evaluate_cubic(shape_coeffs(:,2), sigma(kw))
-      visc(kw)   = OBL_depth * w_m(kw) *                                      &
+      visc(kw)     = OBL_depth * w_m(kw) *                                    &
                    cvmix_math_evaluate_cubic(shape_coeffs(:,3), sigma(kw))
+      nonlocal(kw) = 1.0_cvmix_r8
     end do
-
-    ! (5) Compute non-local transport term
 
     ! (6) Compute enhanced mixing
 
@@ -654,8 +663,8 @@ contains
 
 ! !INPUT PARAMETERS:
     real(cvmix_r8), dimension(:),                   intent(in) :: Ri_bulk
-    real(cvmix_r8), dimension(:),           target, intent(in) :: zw_iface
-    real(cvmix_r8), dimension(:), optional, target, intent(in) :: zt_cntr
+    real(cvmix_r8), dimension(:),           target, intent(in) :: zw_iface,   &
+                                                                  zt_cntr
     real(cvmix_r8),               optional,         intent(in) :: surf_fric,  &
                                                                   surf_buoy,  &
                                                                   Coriolis
@@ -663,8 +672,7 @@ contains
                                             CVmix_kpp_params_user
 
 ! !OUTPUT PARAMETERS:
-    real(cvmix_r8), intent(out) :: OBL_depth
-    integer,        intent(out) :: kOBL_depth
+    real(cvmix_r8),               intent(out) :: OBL_depth, kOBL_depth
 
 !EOP
 !BOC
@@ -703,10 +711,6 @@ contains
     ! (3) Ri_bulk needs to be either the size of zw_iface or zt_cntr
     nlev = size(zw_iface)-1
     if (size(Ri_bulk).eq.nlev) then
-      if (.not.present(zt_cntr)) then
-        print*, "ERROR: Ri_bulk has length nlev so you must pass zt_cntr"
-        stop 1
-      end if
       if (size(zt_cntr).ne.nlev) then
         print*, "ERROR: zt_cntr must have length nlev!"
         stop 1
@@ -758,7 +762,6 @@ contains
       if (Ri_bulk(k+1).gt.CVmix_kpp_params_in%ri_crit) &
         exit
     end do
-    kOBL_depth = k
 
     if (k.eq.size(Ri_bulk)) then
       OBL_depth = abs(OBL_limit)
@@ -783,7 +786,9 @@ contains
 
     do kw=1,nlev
       if (OBL_depth.lt.abs(zw_iface(kw+1))) then
-        kOBL_depth = kw
+        kOBL_depth = real(kw, cvmix_r8)+0.25_cvmix_r8
+        if (OBL_depth.gt.abs(zt_cntr(kw))) &
+          kOBL_depth = kOBL_depth + 0.5_cvmix_r8
         exit
       end if
     end do
@@ -817,8 +822,7 @@ contains
 !BOC
 
     ! Local variables
-    real(cvmix_r8) :: lcl_obl_depth
-    integer        :: lcl_kobl_depth
+    real(cvmix_r8) :: lcl_obl_depth, lcl_kobl_depth
 
     call cvmix_kpp_compute_OBL_depth(CVmix_vars%Rib, CVmix_vars%zw_iface,     &
                                      lcl_obl_depth,  lcl_kobl_depth,          &
