@@ -66,7 +66,15 @@ module cvmix_kinds_and_types
 
       ! Values on interfaces
       ! For KPP, need to store non-local transport term
-      ! nlev+1, 3
+      ! (:,1) = temperature tracer
+      ! (:,2) = salinity / all non-temperature tracers
+      ! (:,3) and (:,4) = momentum terms (x- and y-, respectively). Note that
+      !                   currently both momentum terms are 0 everywhere
+      ! Note that kpp_transport_iface is the value of K_x*gamma_x/flux_x: in
+      ! other words, the user must multiply this value by either the freshwater
+      ! flux or the penetrative shortwave heat flux to come the values in Eqs.
+      ! (7.128) and (7.129) of the CVMix manual.
+      ! nlev+1, 4
       real(cvmix_r8), dimension(:,:), pointer :: kpp_transport_iface => NULL()
       ! nlev+1, 2
       real(cvmix_r8), dimension(:,:), pointer :: diff_iface => NULL()

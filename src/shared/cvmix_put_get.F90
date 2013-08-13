@@ -228,7 +228,7 @@ contains
 
       case ('kpp_transport', 'kpp_transport_iface', 'non_local_transport')
       if (.not.associated(CVmix_vars%kpp_transport_iface)) then
-        allocate(CVmix_vars%kpp_transport_iface(nlev+1,3))
+        allocate(CVmix_vars%kpp_transport_iface(nlev+1,4))
       end if
       CVmix_vars%kpp_transport_iface(:,:) = val
 
@@ -377,7 +377,7 @@ contains
 
       case ('kpp_transport', 'kpp_transport_iface', 'non_local_transport')
       if (.not.associated(CVmix_vars%kpp_transport_iface)) then
-        allocate(CVmix_vars%kpp_transport_iface(nlev+1,3))
+        allocate(CVmix_vars%kpp_transport_iface(nlev+1,4))
       end if
       if (present(opts)) then
         select case (trim(opts))
@@ -387,16 +387,20 @@ contains
             CVmix_vars%kpp_transport_iface(:,2) = val
           case ('col3')
             CVmix_vars%kpp_transport_iface(:,3) = val
+          case ('col4')
+            CVmix_vars%kpp_transport_iface(:,4) = val
           case DEFAULT
             print*, "WARNING: ignoring opts = ", trim(opts)
             CVmix_vars%kpp_transport_iface(:,1) = val
             CVmix_vars%kpp_transport_iface(:,2) = val
             CVmix_vars%kpp_transport_iface(:,3) = val
+            CVmix_vars%kpp_transport_iface(:,4) = val
         end select
       else
         CVmix_vars%kpp_transport_iface(:,1) = val
         CVmix_vars%kpp_transport_iface(:,2) = val
         CVmix_vars%kpp_transport_iface(:,3) = val
+        CVmix_vars%kpp_transport_iface(:,4) = val
       end if
       case ('strat_param_num')
       if (.not.associated(CVmix_vars%strat_param_num)) then

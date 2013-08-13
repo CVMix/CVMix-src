@@ -343,9 +343,14 @@ contains
 
     ! Local variables
     type(cvmix_kpp_params_type), pointer      :: CVmix_kpp_params_in
+
+    ! OBL_diff and OBL_visc are the diffusivity and viscosity in the whole OBL
+    real(cvmix_r8), dimension(:,:), allocatable :: OBL_diff
+    real(cvmix_r8), dimension(:),   allocatable :: OBL_visc
+
     real(cvmix_r8), dimension(:), allocatable :: sigma, w_m, w_s
     real(cvmix_r8), dimension(4,3)            :: shape_coeffs
-    real(cvmix_r8), dimension(3) :: Gat1, DGat1, visc_at_OBL, dvisc_OBL
+    real(cvmix_r8), dimension(3) :: Gat1, DGat1, GatS, visc_at_OBL, dvisc_OBL
     real(cvmix_r8)               :: wm_OBL, ws_OBL, second_term
 
     ! Constants from params
@@ -375,6 +380,11 @@ contains
 
     kwup = floor(kOBL_depth)
     ktup = nint(kOBL_depth)-1
+
+    ! Allocate OBL_diff and OBL_visc
+    allocate(OBL_diff(kwup,2), OBL_visc(kwup))
+    OBL_diff = 0.0_cvmix_r8
+    OBL_visc = 0.0_cvmix_r8
 
     ! Stability => positive surface buoyancy flux
     lstable = (surf_buoy.gt.0.0_cvmix_r8)
@@ -441,22 +451,25 @@ contains
     !     non-local term
     nonlocal = 0.0_cvmix_r8
     do kw=1,kwup
-      diff(kw,1)   = OBL_depth * w_s(kw) *                                    &
-                   cvmix_math_evaluate_cubic(shape_coeffs(:,1), sigma(kw))
-      diff(kw,2)   = OBL_depth * w_s(kw) *                                    &
-                   cvmix_math_evaluate_cubic(shape_coeffs(:,2), sigma(kw))
-      visc(kw)     = OBL_depth * w_m(kw) *                                    &
-                   cvmix_math_evaluate_cubic(shape_coeffs(:,3), sigma(kw))
-      ! At this point, nonlocal is just the coefficent that is shared between
-      ! gamma_s and gamma_theta in Eq (20) of LMD94 - Cs/(ws*h)
-      if (.not.lstable) &
-        nonlocal(kw,1:2) = (Cstar*vonkar*(vonkar*eps*c_s)**(real(1,cvmix_r8)/ & 
-                            real(3,cvmix_r8)))/(OBL_depth*w_s(kw))
+      do i=1,3
+        GatS(i) = cvmix_math_evaluate_cubic(shape_coeffs(:,i), sigma(kw))
+      end do
+      OBL_diff(kw,1)   = OBL_depth * w_s(kw) * GatS(1)
+      OBL_diff(kw,2)   = OBL_depth * w_s(kw) * GatS(2)
+      OBL_visc(kw)     = OBL_depth * w_m(kw) * GatS(3)
+      if (.not.lstable) then
+        nonlocal(kw,1) = (Cstar*vonkar*(vonkar*eps*c_s)**(real(1,cvmix_r8)/   & 
+                          real(3,cvmix_r8)))*GatS(1)
+        nonlocal(kw,2) = (Cstar*vonkar*(vonkar*eps*c_s)**(real(1,cvmix_r8)/   & 
+                          real(3,cvmix_r8)))*GatS(2)
+      end if
     end do
 
-    ! (6) Compute enhanced mixing
+    ! (5) Compute enhanced mixing
 
-    ! (7) Combine interior and boundary coefficients + non-local term
+    ! (6) Combine interior and boundary coefficients
+    diff(1:kwup,:) = OBL_diff
+    visc(1:kwup) = OBL_visc
 
     ! Clean up memory
     deallocate(sigma, w_m, w_s)
