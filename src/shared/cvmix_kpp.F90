@@ -299,8 +299,8 @@ contains
 
     call cvmix_put(CVmix_vars, 'kpp_transport', 0.0_cvmix_r8)
     call cvmix_coeffs_kpp(CVmix_vars%diff_iface, CVmix_vars%visc_iface,       &
-                          CVmix_vars%zw_iface, CVmix_vars%OBL_depth,          &
-                          CVmix_vars%kOBL_depth,                              &
+                          CVmix_vars%zw_iface, CVmix_vars%zt,                 &
+                          CVmix_vars%OBL_depth, CVmix_vars%kOBL_depth,        &
                           CVmix_vars%kpp_transport_iface,                     &
                           CVmix_vars%surf_fric, CVmix_vars%surf_buoy,         &
                           CVmix_kpp_params_user)
@@ -314,8 +314,8 @@ contains
 ! !IROUTINE: cvmix_coeffs_kpp_low
 ! !INTERFACE:
 
-  subroutine cvmix_coeffs_kpp_low(diff, visc, zw_iface, OBL_depth, kOBL_depth,&
-                                  nonlocal, surf_fric, surf_buoy,             &
+  subroutine cvmix_coeffs_kpp_low(diff, visc, zw_iface, zt_cntr, OBL_depth,   &
+                                  kOBL_depth, nonlocal, surf_fric, surf_buoy, &
                                   CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
@@ -330,9 +330,9 @@ contains
 ! !INPUT PARAMETERS:
     type(cvmix_kpp_params_type), intent(in), optional, target ::              &
                                            CVmix_kpp_params_user
-    real(cvmix_r8), dimension(:),   intent(in) :: zw_iface
-    real(cvmix_r8),                 intent(in)    :: OBL_depth, surf_fric,    &
-                                                     surf_buoy, kOBL_depth
+    real(cvmix_r8), dimension(:),   intent(in) :: zw_iface, zt_cntr
+    real(cvmix_r8),                 intent(in) :: OBL_depth, surf_fric,       &
+                                                  surf_buoy, kOBL_depth
 
 ! !INPUT/OUTPUT PARAMETERS:
     real(cvmix_r8), dimension(:,:), intent(inout) :: diff, nonlocal
@@ -348,16 +348,29 @@ contains
     real(cvmix_r8), dimension(:,:), allocatable :: OBL_diff
     real(cvmix_r8), dimension(:),   allocatable :: OBL_visc
 
+    ! diff_ktup and visc_ktup are the enhanced diffusivity and viscosity values
+    ! at the deepest cell center above OBL_depth. Rest are intermediary
+    ! variables needed to compute diff_ktup and visc_ktup
+    real(cvmix_r8), dimension(2) :: diff_ktup
+    real(cvmix_r8)               :: visc_ktup
+    real(cvmix_r8)               :: sigma_ktup, wm_ktup, ws_ktup
+
+    ! enh_diff and enh_visc are the enhanced diffusivity and viscosity values
+    ! at the interface nearest OBL_depth
+    real(cvmix_r8), dimension(2) :: enh_diff
+    real(cvmix_r8)               :: enh_visc
+    real(cvmix_r8)               :: delta, omd
+
     real(cvmix_r8), dimension(:), allocatable :: sigma, w_m, w_s
     real(cvmix_r8), dimension(4,3)            :: shape_coeffs
     real(cvmix_r8), dimension(3) :: Gat1, DGat1, GatS, visc_at_OBL, dvisc_OBL
-    real(cvmix_r8)               :: wm_OBL, ws_OBL, second_term
+    real(cvmix_r8) :: wm_OBL, ws_OBL, second_term
 
     ! Constants from params
     real(cvmix_r8) :: Cstar, vonkar, c_s, eps
     integer :: interp_type2
 
-    integer :: nlev_p1, kw, i
+    integer :: nlev_p1, nlev, kw, i
     logical :: lstable
     integer :: ktup, & ! kt index of cell center above OBL_depth
                kwup    ! kw index of iface above OBL_depth (= kt index of
@@ -374,7 +387,8 @@ contains
     c_s          = cvmix_get_kpp_real('c_s', CVmix_kpp_params_in)
 
 
-    nlev_p1 = size(visc)
+    nlev_p1 = size(zw_iface)
+    nlev    = size(zt_cntr)
     allocate(sigma(nlev_p1), w_m(nlev_p1), w_s(nlev_p1))
     sigma = -zw_iface/OBL_depth
 
@@ -447,9 +461,20 @@ contains
                                                    shape_coeffs(:,i))
     end do
 
-    ! (4) Compute diffusivities and viscosity in ocean boundary layer and
-    !     non-local term
+    ! (4) Compute diffusivities and viscosity in ocean boundary layer and at
+    !     the z = zt_cntr(ktup) [z coordinate of last cell center still in the
+    !     OBL]. Also compute the non-local transport terms (see note about
+    !     what is actually stored in "nonlocal")
     nonlocal = 0.0_cvmix_r8
+    sigma_ktup = -zt_cntr(ktup)/OBL_depth
+    call cvmix_kpp_compute_turbulent_scales(sigma_ktup, OBL_depth, surf_buoy, &
+                                            surf_fric, wm_ktup, ws_ktup)
+    do i=1,3
+      GatS(i) = cvmix_math_evaluate_cubic(shape_coeffs(:,i), sigma_ktup)
+    end do
+    diff_ktup(1)   = OBL_depth * ws_ktup * GatS(1)
+    diff_ktup(2)   = OBL_depth * ws_ktup * GatS(2)
+    visc_ktup      = OBL_depth * wm_ktup * GatS(3)
     do kw=1,kwup
       do i=1,3
         GatS(i) = cvmix_math_evaluate_cubic(shape_coeffs(:,i), sigma(kw))
@@ -465,7 +490,56 @@ contains
       end if
     end do
 
-    ! (5) Compute enhanced mixing
+    ! (5) Compute enhanced mixing at interface nearest to OBL_depth
+    ! OBL_depth is between the centers of cells ktup and ktup+1. The enhanced
+    ! mixing described in Appendix D of LMD94 changes the diffusivity values
+    ! at the interface between them (interface ktup+1), but the change depends
+    ! on whether OBL_depth is in layer ktup (=> kwup = ktup) or layer ktup+1
+    ! (=> kwup = ktup+1). I.e. is the interface between them in the OBL or
+    ! below it?
+    if (ktup.eq.0) then
+      ! OBL_depth between surface and first cell center, assume zt_cntr(0)=0
+      delta = OBL_depth/(-zt_cntr(ktup+1))
+    else
+      if (ktup.eq.nlev) then
+        ! OBL_depth between bottom cell center and ocean bottom, assume
+        ! zt_cntr(ktup+1) = ocn_bottom (which is zw_iface(nlev+1)
+        delta = (OBL_depth+zt_cntr(ktup))/(zt_cntr(ktup)-zw_iface(ktup+1))
+      else
+        delta = (OBL_depth+zt_cntr(ktup))/(zt_cntr(ktup)-zt_cntr(ktup+1))
+      end if
+    end if
+    omd   = 1.0_cvmix_r8 - delta ! omd = one minus delta
+    if (ktup.eq.kwup) then
+      ! Interface is NOT in the OBL
+      ! (a) compute enhanced diffs
+      enh_diff(1) = (omd**2)*diff_ktup(1) + (delta**2)*diff(ktup+1,1)
+      enh_diff(2) = (omd**2)*diff_ktup(2) + (delta**2)*diff(ktup+1,2)
+      enh_visc    = (omd**2)*visc_ktup    + (delta**2)*visc(ktup+1)
+      
+      ! (b) modify diffusivity (in diff and visc, since OBL_diff and OBL_visc
+      !     are not defined at this interface)
+      diff(ktup+1,1) = omd*diff(ktup+1,1) + delta*enh_diff(1)
+      diff(ktup+1,2) = omd*diff(ktup+1,2) + delta*enh_diff(2)
+      visc(ktup+1)   = omd*visc(ktup+1)   + delta*enh_visc
+    else
+      if (ktup.eq.kwup-1) then
+        ! Interface is in the OBL
+        ! (a) compute enhanced diffs
+        enh_diff(1) = (omd**2)*diff_ktup(1) + (delta**2)*OBL_diff(ktup+1,1)
+        enh_diff(2) = (omd**2)*diff_ktup(2) + (delta**2)*OBL_diff(ktup+1,2)
+        enh_visc    = (omd**2)*visc_ktup    + (delta**2)*OBL_visc(ktup+1)
+      
+        ! (b) modify diffusivity (in diff and visc, since OBL_diff and OBL_visc
+        !     are not defined at this interface)
+        OBL_diff(ktup+1,1) = omd*diff(ktup+1,1) + delta*enh_diff(1)
+        OBL_diff(ktup+1,2) = omd*diff(ktup+1,2) + delta*enh_diff(2)
+        OBL_visc(ktup+1)   = omd*visc(ktup+1)   + delta*enh_visc
+      else
+        print*, "ERROR: kwup should be either ktup or ktup+1!"
+        stop 1
+      end if
+    end if
 
     ! (6) Combine interior and boundary coefficients
     diff(1:kwup,:) = OBL_diff
