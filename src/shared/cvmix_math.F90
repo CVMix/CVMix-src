@@ -236,13 +236,17 @@
     ! Local Variables
     integer :: i
 
-    cvmix_math_evaluate_cubic = 0.0_cvmix_r8
-      if (present(fprime)) &
-        fprime = 0.0_cvmix_r8
-    do i=1,4
+    ! Initialize both the cubic and its derivative to its constant term and
+    ! then add the powers of x_in via a do-loop. This both reduces the number
+    ! of arithmetic steps in the algorithm and avoids possible compiler issues
+    ! if x_in = 0 (because 0*0 is undefined in some compilers)
+    cvmix_math_evaluate_cubic = coeffs(1) 
+    if (present(fprime)) &
+      fprime = coeffs(2)
+    do i=2,4
       cvmix_math_evaluate_cubic = cvmix_math_evaluate_cubic +                 &
                                   coeffs(i)*(x_in**(i-1))
-      if (present(fprime).and.(i.gt.1)) &
+      if (present(fprime).and.(i.gt.2)) &
         fprime = fprime + real(i-1,cvmix_r8)*(x_in**(i-2))
     end do
 

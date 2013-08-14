@@ -168,7 +168,7 @@ Subroutine cvmix_kpp_driver()
 
     call cvmix_kpp_compute_shape_function_coeffs(0.0_cvmix_r8, 0.0_cvmix_r8,  &
                                                  shape_coeffs)
-    write(*,"(X,A,4F7.3)") "Coefficients are: ", shape_coeffs
+    write(*,"(1X,A,4F7.3)") "Coefficients are: ", shape_coeffs
   end if ! ltest for test 2
 
   ! Test 3: Recreate Figure B1 in LMD94 (phi(zeta)). Note that von Karman,
