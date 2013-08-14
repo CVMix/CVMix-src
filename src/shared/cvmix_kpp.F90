@@ -81,26 +81,28 @@
   ! cvmix_kpp_params_type contains the necessary parameters for KPP mixing
   type, public :: cvmix_kpp_params_type
     private
-    real(cvmix_r8) :: Ri_crit      ! Critical Richardson number
-                               ! (OBL_depth = point where bulk Ri = Ri_crit)
-    real(cvmix_r8) :: vonkarman    ! von Karman constant
-    real(cvmix_r8) :: Cstar        ! coefficient for nonlinear transport
+    real(cvmix_r8) :: Ri_crit        ! Critical Richardson number
+                                     ! (OBL_depth = where bulk Ri = Ri_crit)
+    real(cvmix_r8) :: vonkarman      ! von Karman constant
+    real(cvmix_r8) :: Cstar          ! coefficient for nonlinear transport
     ! For velocity scale function, _m => momentum and _s => scalar (tracer)
-    real(cvmix_r8) :: zeta_m       ! parameter for computing vel scale func
-    real(cvmix_r8) :: zeta_s       ! parameter for computing vel scale func
-    real(cvmix_r8) :: a_m          ! parameter for computing vel scale func
-    real(cvmix_r8) :: a_s          ! parameter for computing vel scale func
-    real(cvmix_r8) :: c_m          ! parameter for computing vel scale func
-    real(cvmix_r8) :: c_s          ! parameter for computing vel scale func
-    real(cvmix_r8) :: eps          ! small non-negative val (rec 1e-10)
-    integer        :: interp_type  ! type of interpolation used to interpolate
-                                   ! bulk Richardson number
-    integer        :: interp_type2 ! type of interpolation used to interpolate
-                                   ! diff and visc at OBL_depth
-    logical        :: lEkman       ! True => compute Ekman depth limit
-    logical        :: lMonOb       ! True => compute Monin-Obukhov limit
-    logical        :: lnoDGat1     ! True => G'(1) = 0 (shape function)
-                                   ! False => compute G'(1) as in LMD94
+    real(cvmix_r8) :: zeta_m         ! parameter for computing vel scale func
+    real(cvmix_r8) :: zeta_s         ! parameter for computing vel scale func
+    real(cvmix_r8) :: a_m            ! parameter for computing vel scale func
+    real(cvmix_r8) :: a_s            ! parameter for computing vel scale func
+    real(cvmix_r8) :: c_m            ! parameter for computing vel scale func
+    real(cvmix_r8) :: c_s            ! parameter for computing vel scale func
+    real(cvmix_r8) :: surf_layer_ext ! nondimensional extent of surface layer
+                                     ! (expressed in sigma-coordinates)
+    real(cvmix_r8) :: eps            ! small non-negative val (rec 1e-10)
+    integer        :: interp_type    ! interpolation type used to interpolate
+                                     ! bulk Richardson number
+    integer        :: interp_type2   ! interpolation type used to interpolate
+                                     ! diff and visc at OBL_depth
+    logical        :: lEkman         ! True => compute Ekman depth limit
+    logical        :: lMonOb         ! True => compute Monin-Obukhov limit
+    logical        :: lnoDGat1       ! True => G'(1) = 0 (shape function)
+                                     ! False => compute G'(1) as in LMD94
   end type cvmix_kpp_params_type
 
 !EOP
@@ -115,8 +117,9 @@ contains
 ! !INTERFACE:
 
   subroutine cvmix_init_kpp(ri_crit, vonkarman, Cstar, zeta_m, zeta_s, a_m,   &
-                            a_s, c_m, c_s, eps, interp_type, interp_type2,    &
-                            lEkman, lMonOb, lnoDGat1, CVmix_kpp_params_user)
+                            a_s, c_m, c_s, surf_layer_ext, eps, interp_type,  &
+                            interp_type2, lEkman, lMonOb, lnoDGat1,           &
+                            CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
 !  Initialization routine for KPP mixing.
@@ -126,7 +129,7 @@ contains
 
 ! !INPUT PARAMETERS:
     real(cvmix_r8),   optional :: ri_crit, vonkarman, Cstar, zeta_m, zeta_s,  &
-                                  a_m, a_s, c_m, c_s, eps
+                                  a_m, a_s, c_m, c_s, surf_layer_ext, eps
     character(len=*), optional :: interp_type, interp_type2
     logical,          optional :: lEkman, lMonOb, lnoDGat1
 
@@ -196,6 +199,13 @@ contains
       call cvmix_put_kpp('c_s', c_s, CVmix_kpp_params_user)
     else
       call cvmix_put_kpp('c_s', 98.96_cvmix_r8, CVmix_kpp_params_user)
+    end if
+
+    if (present(surf_layer_ext)) then
+      call cvmix_put_kpp('surf_layer_ext', surf_layer_ext,                    &
+                         CVmix_kpp_params_user)
+    else
+      call cvmix_put_kpp('surf_layer_ext', 0.1_cvmix_r8, CVmix_kpp_params_user)
     end if
 
     if (present(eps)) then
@@ -367,7 +377,7 @@ contains
     real(cvmix_r8) :: wm_OBL, ws_OBL, second_term
 
     ! Constants from params
-    real(cvmix_r8) :: Cstar, vonkar, c_s, eps
+    real(cvmix_r8) :: Cstar, vonkar, c_s, surf_layer_ext
     integer :: interp_type2
 
     integer :: nlev_p1, nlev, kw, i
@@ -380,11 +390,11 @@ contains
     if (present(CVmix_kpp_params_user)) then
       CVmix_kpp_params_in => CVmix_kpp_params_user
     end if
-    interp_type2 = CVmix_kpp_params_in%interp_type2
-    vonkar       = cvmix_get_kpp_real('vonkarman', CVmix_kpp_params_in)
-    Cstar        = cvmix_get_kpp_real('Cstar', CVmix_kpp_params_in)
-    eps          = cvmix_get_kpp_real('eps', CVmix_kpp_params_in)
-    c_s          = cvmix_get_kpp_real('c_s', CVmix_kpp_params_in)
+    interp_type2   = CVmix_kpp_params_in%interp_type2
+    vonkar         = cvmix_get_kpp_real('vonkarman', CVmix_kpp_params_in)
+    Cstar          = cvmix_get_kpp_real('Cstar', CVmix_kpp_params_in)
+    surf_layer_ext = cvmix_get_kpp_real('surf_layer_ext', CVmix_kpp_params_in)
+    c_s            = cvmix_get_kpp_real('c_s', CVmix_kpp_params_in)
 
 
     nlev_p1 = size(zw_iface)
@@ -403,7 +413,8 @@ contains
     ! Stability => positive surface buoyancy flux
     lstable = (surf_buoy.gt.0.0_cvmix_r8)
 
-    ! (1) Compute turbulent velocity scales in column and at OBL_depth
+    ! (1) Compute turbulent velocity scales in column and at OBL_depth. Per
+    !     
     call cvmix_kpp_compute_turbulent_scales(sigma, OBL_depth, surf_buoy,      &
                                             surf_fric, w_m, w_s)
     call cvmix_kpp_compute_turbulent_scales(1.0_cvmix_r8, OBL_depth,          &
@@ -483,10 +494,10 @@ contains
       OBL_diff(kw,2)   = OBL_depth * w_s(kw) * GatS(2)
       OBL_visc(kw)     = OBL_depth * w_m(kw) * GatS(3)
       if (.not.lstable) then
-        nonlocal(kw,1) = (Cstar*vonkar*(vonkar*eps*c_s)**(real(1,cvmix_r8)/   & 
-                          real(3,cvmix_r8)))*GatS(1)
-        nonlocal(kw,2) = (Cstar*vonkar*(vonkar*eps*c_s)**(real(1,cvmix_r8)/   & 
-                          real(3,cvmix_r8)))*GatS(2)
+        nonlocal(kw,1) = GatS(1)*(Cstar*vonkar*(vonkar*surf_layer_ext*c_s)**  &
+                         (real(1,cvmix_r8)/real(3,cvmix_r8)))
+        nonlocal(kw,2) = GatS(2)*(Cstar*vonkar*(vonkar*surf_layer_ext*c_s)**  &
+                         (real(1,cvmix_r8)/real(3,cvmix_r8)))
       end if
     end do
 
@@ -603,6 +614,8 @@ contains
         CVmix_kpp_params_out%c_m = val
       case ('c_s')
         CVmix_kpp_params_out%c_s = val
+      case ('surf_layer_ext')
+        CVmix_kpp_params_out%surf_layer_ext = val
       case ('eps')
         CVmix_kpp_params_out%eps = val
       case DEFAULT
@@ -745,6 +758,8 @@ contains
         cvmix_get_kpp_real = CVmix_kpp_params_in%c_m
       case ('c_s')
         cvmix_get_kpp_real = CVmix_kpp_params_in%c_s
+      case ('surf_layer_ext')
+        cvmix_get_kpp_real = CVmix_kpp_params_in%surf_layer_ext
       case ('eps')
         cvmix_get_kpp_real = CVmix_kpp_params_in%eps
       case DEFAULT
