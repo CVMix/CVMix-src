@@ -107,10 +107,10 @@ Subroutine cvmix_BL_pointer_driver(nlev, ocn_depth)
   ! Note that parameters are saved to private datatype in the cvmix_background
   ! module (hence calling coeffs immediately after init
   call cvmix_init_bkgnd(CVmix_vars(1), col1_vdc1, col1_vdc2, col1_linv, &
-                        col1_dpth, CVmix_params)
+                        col1_dpth, CVmix_params_user=CVmix_params)
   call cvmix_coeffs_bkgnd(CVmix_vars(1), 1)
   call cvmix_init_bkgnd(CVmix_vars(2), col2_vdc1, col2_vdc2, col2_linv, &
-                        col2_dpth, CVMix_params)
+                        col2_dpth, CVmix_params_user=CVMix_params)
   call cvmix_coeffs_bkgnd(CVmix_vars(2), 1)
   
   ! Output

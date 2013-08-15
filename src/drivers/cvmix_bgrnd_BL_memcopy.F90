@@ -103,9 +103,10 @@ Subroutine cvmix_BL_memcopy_driver(nlev, ocn_depth)
 
   ! Set B-L parameters
   call cvmix_init_bkgnd(CVmix_vars(1), col1_vdc1, col1_vdc2, col1_linv, &
-                        col1_dpth, CVmix_params)
+                        col1_dpth, CVmix_params_user=CVmix_params)
   call cvmix_init_bkgnd(CVmix_vars(2), col2_vdc1, col2_vdc2, col2_linv, &
-                        col2_dpth, CVMix_params, CVmix_BL_params)
+                        col2_dpth, CVmix_params_user=CVMix_params,      &
+                        CVmix_bkgnd_params_user=CVmix_BL_params)
 
   ! Compute B-L coefficients
   call cvmix_coeffs_bkgnd(CVmix_vars(1))

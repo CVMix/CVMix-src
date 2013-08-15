@@ -19,10 +19,14 @@ module cvmix_background
 
 ! !USES:
 
-  use cvmix_kinds_and_types, only : cvmix_PI,                  &
-                                    cvmix_r8,                  &
-                                    cvmix_data_type,           &
-                                    cvmix_global_params_type
+  use cvmix_kinds_and_types, only : cvmix_PI,                   &
+                                    cvmix_r8,                   &
+                                    cvmix_strlen,               &
+                                    cvmix_data_type,            &
+                                    cvmix_global_params_type,   &
+                                    CVMIX_OVERWRITE_OLD_VAL,    &
+                                    CVMIX_SUM_OLD_AND_NEW_VALS, &
+                                    CVMIX_MAX_OLD_AND_NEW_VALS
 !EOP
 
   implicit none
@@ -49,6 +53,7 @@ module cvmix_background
   end interface cvmix_init_bkgnd
 
   interface cvmix_put_bkgnd
+    module procedure cvmix_put_bkgnd_int
     module procedure cvmix_put_bkgnd_real
     module procedure cvmix_put_bkgnd_real_1D
     module procedure cvmix_put_bkgnd_real_2D
@@ -63,6 +68,9 @@ module cvmix_background
       private
       real(cvmix_r8), allocatable :: static_visc(:,:) ! ncol, nlev+1
       real(cvmix_r8), allocatable :: static_diff(:,:) ! ncol, nlev+1
+
+      ! Flag for what to do with old values of CVmix_vars%diff and %visc
+      integer :: handle_old_vals
 
       ! Note: need to include some logic to avoid excessive memory use
       !       when static_visc and static_diff are constant or 1-D
@@ -81,7 +89,8 @@ contains
 ! !IROUTINE: cvmix_init_bkgnd_scalar
 ! !INTERFACE:
 
-  subroutine cvmix_init_bkgnd_scalar(bkgnd_diff, bkgnd_visc, CVmix_bkgnd_params_user)
+  subroutine cvmix_init_bkgnd_scalar(bkgnd_diff, bkgnd_visc, old_vals,        &
+                                     CVmix_bkgnd_params_user)
 
 ! !DESCRIPTION:
 !  Initialization routine for static background mixing coefficients. For each
@@ -94,8 +103,9 @@ contains
 !  Only those used by entire module. 
 
 ! !INPUT PARAMETERS:
-    real(cvmix_r8), intent(in) :: bkgnd_diff
-    real(cvmix_r8), intent(in) :: bkgnd_visc
+    real(cvmix_r8),                        intent(in) :: bkgnd_diff
+    real(cvmix_r8),                        intent(in) :: bkgnd_visc
+    character(len=cvmix_strlen), optional, intent(in) :: old_vals
 
 ! !OUTPUT PARAMETERS:
     type(cvmix_bkgnd_params_type), optional, target, intent(inout) :: &
@@ -115,12 +125,32 @@ contains
       CVmix_bkgnd_params_out%lvary_horizontal = .false.
       allocate(CVmix_bkgnd_params_out%static_visc(1,1))
       allocate(CVmix_bkgnd_params_out%static_diff(1,1))
-
-      ! Set static_visc and static_diff in background_input_type
-      CVmix_bkgnd_params_out%static_visc(1,1) = bkgnd_visc
-      CVmix_bkgnd_params_out%static_diff(1,1) = bkgnd_diff
     end if
-    ! else error out... can't call init twice!
+
+    ! Set static_visc and static_diff in background_input_type
+    CVmix_bkgnd_params_out%static_visc(1,1) = bkgnd_visc
+    CVmix_bkgnd_params_out%static_diff(1,1) = bkgnd_diff
+
+    if (present(old_vals)) then
+      select case (trim(old_vals))
+        case ("overwrite")
+          call cvmix_put_bkgnd(CVmix_bkgnd_params_out, 'handle_old_vals',     &
+                               CVMIX_OVERWRITE_OLD_VAL)
+        case ("sum")
+          call cvmix_put_bkgnd(CVmix_bkgnd_params_out, 'handle_old_vals',     &
+                               CVMIX_SUM_OLD_AND_NEW_VALS)
+        case ("max")
+          call cvmix_put_bkgnd(CVmix_bkgnd_params_out, 'handle_old_vals',     &
+                               CVMIX_MAX_OLD_AND_NEW_VALS)
+        case DEFAULT
+          print*, "ERROR: ", trim(old_vals), " is not a valid option for ",   &
+                  "handling old values of diff and visc."
+          stop 1
+      end select
+    else
+      call cvmix_put_bkgnd(CVmix_bkgnd_params_out, 'handle_old_vals',         &
+                           CVMIX_OVERWRITE_OLD_VAL)
+    end if
 
 !EOC
 
@@ -131,7 +161,7 @@ contains
 ! !IROUTINE: cvmix_init_bkgnd_1D
 ! !INTERFACE:
 
-  subroutine cvmix_init_bkgnd_1D(bkgnd_diff, bkgnd_visc, ncol,                &
+  subroutine cvmix_init_bkgnd_1D(bkgnd_diff, bkgnd_visc, ncol, old_vals,      &
                                  CVmix_params_user, CVmix_bkgnd_params_user)
 
 ! !DESCRIPTION:
@@ -145,9 +175,10 @@ contains
 !  Only those used by entire module. 
 
 ! !INPUT PARAMETERS:
-    real(cvmix_r8), dimension(:),   intent(in) :: bkgnd_diff
-    real(cvmix_r8), dimension(:),   intent(in) :: bkgnd_visc
-    integer, optional,              intent(in) :: ncol
+    real(cvmix_r8), dimension(:),          intent(in) :: bkgnd_diff
+    real(cvmix_r8), dimension(:),          intent(in) :: bkgnd_visc
+    integer,                     optional, intent(in) :: ncol
+    character(len=cvmix_strlen), optional, intent(in) :: old_vals
     type(cvmix_global_params_type), optional, target, intent(in) :: &
                                                   CVmix_params_user
 
@@ -197,7 +228,27 @@ contains
         CVmix_bkgnd_params_out%static_diff(1,:) = bkgnd_diff(:)
       end if
     end if
-    ! else error out... can't call init twice!
+
+    if (present(old_vals)) then
+      select case (trim(old_vals))
+        case ("overwrite")
+          call cvmix_put_bkgnd(CVmix_bkgnd_params_out, 'handle_old_vals',     &
+                               CVMIX_OVERWRITE_OLD_VAL)
+        case ("sum")
+          call cvmix_put_bkgnd(CVmix_bkgnd_params_out, 'handle_old_vals',     &
+                               CVMIX_SUM_OLD_AND_NEW_VALS)
+        case ("max")
+          call cvmix_put_bkgnd(CVmix_bkgnd_params_out, 'handle_old_vals',     &
+                               CVMIX_MAX_OLD_AND_NEW_VALS)
+        case DEFAULT
+          print*, "ERROR: ", trim(old_vals), " is not a valid option for ",   &
+                  "handling old values of diff and visc."
+          stop 1
+      end select
+    else
+      call cvmix_put_bkgnd(CVmix_bkgnd_params_out, 'handle_old_vals',         &
+                           CVMIX_OVERWRITE_OLD_VAL)
+    end if
 
 !EOC
 
@@ -208,7 +259,7 @@ contains
 ! !IROUTINE: cvmix_init_bkgnd_2D
 ! !INTERFACE:
 
-  subroutine cvmix_init_bkgnd_2D(bkgnd_diff, bkgnd_visc, ncol,                &
+  subroutine cvmix_init_bkgnd_2D(bkgnd_diff, bkgnd_visc, ncol, old_vals,      &
                                  CVmix_params_user, CVmix_bkgnd_params_user)
 
 ! !DESCRIPTION:
@@ -222,11 +273,12 @@ contains
 !  Only those used by entire module. 
 
 ! !INPUT PARAMETERS:
+    real(cvmix_r8), dimension(:,:),        intent(in) :: bkgnd_diff
+    real(cvmix_r8), dimension(:,:),        intent(in) :: bkgnd_visc
+    integer,                               intent(in) :: ncol
+    character(len=cvmix_strlen), optional, intent(in) :: old_vals
     type(cvmix_global_params_type), target, optional, intent(in) :: &
                                                   CVmix_params_user
-    real(cvmix_r8), dimension(:,:), intent(in) :: bkgnd_diff
-    real(cvmix_r8), dimension(:,:), intent(in) :: bkgnd_visc
-    integer,                        intent(in) :: ncol
 
 ! !OUTPUT PARAMETERS:
     type(cvmix_bkgnd_params_type),  target, optional, intent(inout) :: &
@@ -263,6 +315,27 @@ contains
       CVmix_bkgnd_params_out%static_diff(:,:) = bkgnd_diff(:,:)
     end if
  
+    if (present(old_vals)) then
+      select case (trim(old_vals))
+        case ("overwrite")
+          call cvmix_put_bkgnd(CVmix_bkgnd_params_out, 'handle_old_vals',     &
+                               CVMIX_OVERWRITE_OLD_VAL)
+        case ("sum")
+          call cvmix_put_bkgnd(CVmix_bkgnd_params_out, 'handle_old_vals',     &
+                               CVMIX_SUM_OLD_AND_NEW_VALS)
+        case ("max")
+          call cvmix_put_bkgnd(CVmix_bkgnd_params_out, 'handle_old_vals',     &
+                               CVMIX_MAX_OLD_AND_NEW_VALS)
+        case DEFAULT
+          print*, "ERROR: ", trim(old_vals), " is not a valid option for ",   &
+                  "handling old values of diff and visc."
+          stop 1
+      end select
+    else
+      call cvmix_put_bkgnd(CVmix_bkgnd_params_out, 'handle_old_vals',         &
+                           CVMIX_OVERWRITE_OLD_VAL)
+    end if
+
 !EOC
 
   end subroutine cvmix_init_bkgnd_2D
@@ -273,7 +346,7 @@ contains
 ! !INTERFACE:
 
   subroutine cvmix_init_bkgnd_BryanLewis(CVmix_vars, bl1, bl2, bl3, bl4,      &
-                                         CVmix_params_user,                   &
+                                         old_vals, CVmix_params_user,         &
                                          CVmix_bkgnd_params_user)
 
 ! !DESCRIPTION:
@@ -311,16 +384,15 @@ contains
 
 ! !INPUT PARAMETERS:
     ! Contains depth and nlev
-    type(cvmix_data_type),          intent(in) :: CVmix_vars
-    ! Contains Prandtl
-    type(cvmix_global_params_type), target, optional, intent(in)  :: &
-                                                   CVmix_params_user
-
+    type(cvmix_data_type), intent(in) :: CVmix_vars
     ! Units are first column if CVmix_data%depth is m, second if cm
     real(cvmix_r8), intent(in) :: bl1,     &! m^2/s or cm^2/s
                                   bl2,     &! m^2/s or cm^2/s
                                   bl3,     &! 1/m   or 1/cm
                                   bl4       ! m     or cm
+    character(len=cvmix_strlen),            optional, intent(in) :: old_vals
+    type(cvmix_global_params_type), target, optional, intent(in) ::           &
+                                                  CVmix_params_user
 
 ! !OUTPUT PARAMETERS:
     type(cvmix_bkgnd_params_type),  target, optional, intent(inout) :: &
@@ -360,6 +432,27 @@ contains
 
     call cvmix_put_bkgnd(CVmix_bkgnd_params_out, "static_diff", diff, nlev=nlev)
     call cvmix_put_bkgnd(CVmix_bkgnd_params_out, "static_visc", visc, nlev=nlev)
+
+    if (present(old_vals)) then
+      select case (trim(old_vals))
+        case ("overwrite")
+          call cvmix_put_bkgnd(CVmix_bkgnd_params_out, 'handle_old_vals',     &
+                               CVMIX_OVERWRITE_OLD_VAL)
+        case ("sum")
+          call cvmix_put_bkgnd(CVmix_bkgnd_params_out, 'handle_old_vals',     &
+                               CVMIX_SUM_OLD_AND_NEW_VALS)
+        case ("max")
+          call cvmix_put_bkgnd(CVmix_bkgnd_params_out, 'handle_old_vals',     &
+                               CVMIX_MAX_OLD_AND_NEW_VALS)
+        case DEFAULT
+          print*, "ERROR: ", trim(old_vals), " is not a valid option for ",   &
+                  "handling old values of diff and visc."
+          stop 1
+      end select
+    else
+      call cvmix_put_bkgnd(CVmix_bkgnd_params_out, 'handle_old_vals',         &
+                           CVMIX_OVERWRITE_OLD_VAL)
+    end if
     deallocate(zw, visc, diff)
 
 !EOC
@@ -402,8 +495,9 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    integer :: nlev    ! Number of vertical levels
+    integer :: kw, nlev, old_vals
     type(cvmix_bkgnd_params_type),  pointer :: CVmix_bkgnd_params_in
+    real(cvmix_r8), dimension(:),   allocatable :: old_diff, old_visc
        
     CVmix_bkgnd_params_in => CVmix_bkgnd_params_saved
     if (present(CVmix_bkgnd_params_user)) then
@@ -417,30 +511,50 @@ contains
     end if
 
     nlev = CVmix_vars%nlev
+    old_vals = CVmix_bkgnd_params_in%handle_old_vals
+    if ((old_vals.eq.CVMIX_SUM_OLD_AND_NEW_VALS).or.                          &
+        (old_vals.eq.CVMIX_MAX_OLD_AND_NEW_VALS)) then
+        allocate(old_diff(nlev+1), old_visc(nlev+1))
+        old_diff = CVmix_vars%diff_iface(:,1)
+        old_visc = CVmix_vars%visc_iface
+    end if
+
     if (CVmix_bkgnd_params_in%lvary_horizontal) then
       if (CVmix_bkgnd_params_in%lvary_vertical) then
-        CVmix_vars%visc_iface(:)   =                            &
+        CVmix_vars%visc_iface(:)   =                                          &
                   CVmix_bkgnd_params_in%static_visc(colid,1:nlev+1)
-        CVmix_vars%diff_iface(:,1) =                            &
+        CVmix_vars%diff_iface(:,1) =                                          &
                   CVmix_bkgnd_params_in%static_diff(colid,1:nlev+1)
       else
-        CVmix_vars%visc_iface(:)   =                            &
-                  CVmix_bkgnd_params_in%static_visc(colid,1)
-        CVmix_vars%diff_iface(:,1) =                            &
-                  CVmix_bkgnd_params_in%static_diff(colid,1)
+        CVmix_vars%visc_iface(:)   = CVmix_bkgnd_params_in%static_visc(colid,1)
+        CVmix_vars%diff_iface(:,1) = CVmix_bkgnd_params_in%static_diff(colid,1)
       end if
     else
       if (CVmix_bkgnd_params_in%lvary_vertical) then
-        CVmix_vars%visc_iface(:)   =                          &
+        CVmix_vars%visc_iface(:)   =                                          &
                   CVmix_bkgnd_params_in%static_visc(1,1:nlev+1)
-        CVmix_vars%diff_iface(:,1) =                          &
+        CVmix_vars%diff_iface(:,1) =                                          &
                   CVmix_bkgnd_params_in%static_diff(1,1:nlev+1)
       else
-        CVmix_vars%visc_iface(:)   =                          &
-                  CVmix_bkgnd_params_in%static_visc(1,1)
-        CVmix_vars%diff_iface(:,1) =                          &
-                  CVmix_bkgnd_params_in%static_diff(1,1)
+        CVmix_vars%visc_iface(:)   = CVmix_bkgnd_params_in%static_visc(1,1)
+        CVmix_vars%diff_iface(:,1) = CVmix_bkgnd_params_in%static_diff(1,1)
       end if
+    end if
+
+    if (old_vals.eq.CVMIX_SUM_OLD_AND_NEW_VALS) then
+      CVmix_vars%diff_iface(:,1) = CVmix_vars%diff_iface(:,1) + old_diff
+      CVmix_vars%visc_iface      = CVmix_vars%visc_iface      + old_visc
+      deallocate(old_diff, old_visc)
+    end if
+
+    if (old_vals.eq.CVMIX_MAX_OLD_AND_NEW_VALS) then
+      do kw=1,nlev+1
+        CVmix_vars%diff_iface(kw,1) = max(CVmix_vars%diff_iface(kw,1),        &
+                                          old_diff(kw))
+        CVmix_vars%visc_iface(kw)   = max(CVmix_vars%visc_iface(kw),          &
+                                          old_visc(kw))
+      end do
+      deallocate(old_diff, old_visc)
     end if
 
 !EOC
@@ -594,6 +708,42 @@ contains
 !EOC
 
   end function cvmix_bkgnd_static_visc
+
+!BOP
+
+! !IROUTINE: cvmix_put_bkgnd_int
+! !INTERFACE:
+
+  subroutine cvmix_put_bkgnd_int(CVmix_bkgnd_params_put, varname, val)
+
+! !DESCRIPTION:
+!  Write a real value into a cvmix\_bkgnd\_params\_type variable.
+!\\
+!\\
+
+! !USES:
+!  Only those used by entire module. 
+
+! !INPUT PARAMETERS:
+    character(len=*), intent(in) :: varname
+    integer,          intent(in) :: val
+
+! !OUTPUT PARAMETERS:
+    type(cvmix_bkgnd_params_type), intent(inout) :: CVmix_bkgnd_params_put
+!EOP
+!BOC
+
+    select case (trim(varname))
+      case ('old_vals', 'handle_old_vals')
+        CVmix_bkgnd_params_put%handle_old_vals = val
+      case DEFAULT
+        call cvmix_put_bkgnd(CVmix_bkgnd_params_put, varname,                 &
+                             real(val,cvmix_r8))
+    end select
+
+!EOC
+
+  end subroutine cvmix_put_bkgnd_int
 
 !BOP
 

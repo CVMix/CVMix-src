@@ -32,6 +32,11 @@ module cvmix_kinds_and_types
   integer, parameter, public :: cvmix_r8     = selected_real_kind(15, 307), &
                                 cvmix_strlen = 256
 
+  ! Parameters to allow CVMix to store integers instead of strings
+  integer, parameter, public :: CVMIX_OVERWRITE_OLD_VAL    = 1
+  integer, parameter, public :: CVMIX_SUM_OLD_AND_NEW_VALS = 2
+  integer, parameter, public :: CVMIX_MAX_OLD_AND_NEW_VALS = 3
+
   ! Global parameters:
   ! The constant 1 is used repeatedly in PP and double-diff mixing.
   ! The value for pi is needed for Bryan-Lewis mixing.

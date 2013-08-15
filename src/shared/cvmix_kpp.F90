@@ -20,6 +20,7 @@
 ! !USES:
 
   use cvmix_kinds_and_types, only : cvmix_r8,                     &
+                                    one,                          &
                                     cvmix_data_type
   use cvmix_put_get, only :         cvmix_put
   use cvmix_math, only :            CVMIX_MATH_INTERP_LINEAR,      &
@@ -1234,7 +1235,6 @@ contains
     logical, optional,           intent(in) :: lphi_m, lphi_s
 
     real(cvmix_r8) :: compute_phi_inv
-    real(cvmix_r8), parameter :: one = real(1, cvmix_r8)
 
     logical :: lm, ls
 
