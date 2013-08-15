@@ -4,7 +4,7 @@ mix_type = 'kpp'
 
 ! Test 1 params
 &kpp_col1_nml
-!  ltest1         = .true.
+  ltest1         = .true.
   nlev1          = 4
   layer_thick    = 10.0d0
   interp_type_t1 = 'quadratic'
@@ -14,12 +14,12 @@ mix_type = 'kpp'
 
 ! Test 2 params
 &kpp_col2_nml
-!  ltest2 = .true.
+  ltest2 = .true.
 /
 
 ! Test 3 params
 &kpp_col3_nml
-!  ltest3 = .true.
+  ltest3 = .true.
 /
 
 ! Test 4 params
