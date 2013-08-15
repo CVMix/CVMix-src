@@ -94,7 +94,6 @@
     real(cvmix_r8) :: c_s            ! parameter for computing vel scale func
     real(cvmix_r8) :: surf_layer_ext ! nondimensional extent of surface layer
                                      ! (expressed in sigma-coordinates)
-    real(cvmix_r8) :: eps            ! small non-negative val (rec 1e-10)
     integer        :: interp_type    ! interpolation type used to interpolate
                                      ! bulk Richardson number
     integer        :: interp_type2   ! interpolation type used to interpolate
@@ -117,7 +116,7 @@ contains
 ! !INTERFACE:
 
   subroutine cvmix_init_kpp(ri_crit, vonkarman, Cstar, zeta_m, zeta_s, a_m,   &
-                            a_s, c_m, c_s, surf_layer_ext, eps, interp_type,  &
+                            a_s, c_m, c_s, surf_layer_ext, interp_type,       &
                             interp_type2, lEkman, lMonOb, lnoDGat1,           &
                             CVmix_kpp_params_user)
 
@@ -129,7 +128,7 @@ contains
 
 ! !INPUT PARAMETERS:
     real(cvmix_r8),   optional :: ri_crit, vonkarman, Cstar, zeta_m, zeta_s,  &
-                                  a_m, a_s, c_m, c_s, surf_layer_ext, eps
+                                  a_m, a_s, c_m, c_s, surf_layer_ext
     character(len=*), optional :: interp_type, interp_type2
     logical,          optional :: lEkman, lMonOb, lnoDGat1
 
@@ -206,12 +205,6 @@ contains
                          CVmix_kpp_params_user)
     else
       call cvmix_put_kpp('surf_layer_ext', 0.1_cvmix_r8, CVmix_kpp_params_user)
-    end if
-
-    if (present(eps)) then
-      call cvmix_put_kpp('eps', eps, CVmix_kpp_params_user)
-    else
-      call cvmix_put_kpp('eps', 1e-10_cvmix_r8, CVmix_kpp_params_user)
     end if
 
     if (present(interp_type)) then
@@ -616,8 +609,6 @@ contains
         CVmix_kpp_params_out%c_s = val
       case ('surf_layer_ext')
         CVmix_kpp_params_out%surf_layer_ext = val
-      case ('eps')
-        CVmix_kpp_params_out%eps = val
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
         stop 1
@@ -760,8 +751,6 @@ contains
         cvmix_get_kpp_real = CVmix_kpp_params_in%c_s
       case ('surf_layer_ext')
         cvmix_get_kpp_real = CVmix_kpp_params_in%surf_layer_ext
-      case ('eps')
-        cvmix_get_kpp_real = CVmix_kpp_params_in%eps
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
         stop 1
@@ -1121,12 +1110,11 @@ contains
     ! Local variables
     integer :: nlev_p1, kw
     logical :: compute_wm, compute_ws
-    real(cvmix_r8), allocatable, dimension(:) :: zeta, zeta_h
-    real(cvmix_r8) :: vonkar
+    real(cvmix_r8), allocatable, dimension(:) :: zeta
+    real(cvmix_r8) :: vonkar, surf_layer_ext
     type(cvmix_kpp_params_type), pointer :: CVmix_kpp_params_in
 
     nlev_p1 = size(sigma_coord)
-    allocate(zeta(nlev_p1), zeta_h(nlev_p1))
 
     CVmix_kpp_params_in => CVmix_kpp_params_saved
     if (present(CVmix_kpp_params_user)) then
@@ -1136,63 +1124,156 @@ contains
     compute_wm = present(w_m)
     compute_ws = present(w_s)
     vonkar = cvmix_get_kpp_real('vonkarman', CVmix_kpp_params_in)
+    surf_layer_ext = cvmix_get_kpp_real('surf_layer_ext', CVmix_kpp_params_in)
 
-    zeta_h = sigma_coord*OBL_depth*surf_buoy_force*vonkar
-
-    zeta = zeta_h/(surf_fric_vel**3 +                                         &
-           cvmix_get_kpp_real('eps', CVmix_kpp_params_in))
-
-    if (compute_wm) then
-      if (size(w_m).ne.nlev_p1) then
-        print*, "ERROR: sigma_coord and w_m must be same size!"
-        deallocate(zeta, zeta_h)
-        stop 1
-      end if
+    if (surf_fric_vel.ne.0.0_cvmix_r8) then
+      allocate(zeta(nlev_p1))
       do kw=1,nlev_p1
-        if (zeta(kw).ge.0) then
-          ! Stable region
-          w_m(kw) = vonkar*surf_fric_vel/(real(1,cvmix_r8) + real(5,cvmix_r8)*&
-                    zeta(kw))
-        else if (zeta(kw).ge.                                                 &
-                 cvmix_get_kpp_real('zeta_m', CVmix_kpp_params_in)) then
-          w_m(kw) = vonkar*surf_fric_vel*                                     &
-                (real(1,cvmix_r8) - real(16,cvmix_r8)*zeta(kw))**0.25_cvmix_r8
-        else
-          w_m(kw) = vonkar*(cvmix_get_kpp_real('a_m', CVmix_kpp_params_in)*   &
-            (surf_fric_vel**3)-cvmix_get_kpp_real('c_m', CVmix_kpp_params_in)*&
-            zeta_h(kw))**(real(1,cvmix_r8)/real(3,cvmix_r8))
-        end if
+        ! compute scales at sigma if sigma < surf_layer_ext, otherwise compute
+        ! at surf_layer_ext
+        zeta(kw) = min(surf_layer_ext, sigma_coord(kw)) * OBL_depth *         &
+                   surf_buoy_force*vonkar/(surf_fric_vel**3)
       end do
-    end if
 
-    if (compute_ws) then
-      if (size(w_s).ne.nlev_p1) then
-        print*, "ERROR: sigma_coord and w_s must be same size!"
-        deallocate(zeta, zeta_h)
-        stop 1
+      if (compute_wm) then
+        if (size(w_m).ne.nlev_p1) then
+          print*, "ERROR: sigma_coord and w_m must be same size!"
+          deallocate(zeta)
+          stop 1
+        end if
+        w_m(1) = compute_phi_inv(zeta(1), CVmix_kpp_params_in, lphi_m=.true.)*&
+                 vonkar*surf_fric_vel
+        do kw=2,nlev_p1
+          if (zeta(kw).eq.zeta(kw-1)) then
+            w_m(kw) = w_m(kw-1)
+          else
+            w_m(kw) = vonkar*surf_fric_vel*compute_phi_inv(zeta(kw),          &
+                                           CVmix_kpp_params_in, lphi_m=.true.)
+          end if
+        end do
       end if
-      do kw=1,nlev_p1
-        if (zeta(kw).ge.0) then
-          ! Stable region
-          w_s(kw) = vonkar*surf_fric_vel/(real(1,cvmix_r8) + real(5,cvmix_r8)*&
-                    zeta(kw))
-        else if (zeta(kw).ge.                                                 &
-                 cvmix_get_kpp_real('zeta_s', CVmix_kpp_params_in)) then
-          w_s(kw) = vonkar*surf_fric_vel*                                         &
-                sqrt(real(1,cvmix_r8) - real(16,cvmix_r8)*zeta(kw))
-        else
-          w_s(kw) = vonkar*(cvmix_get_kpp_real('a_s', CVmix_kpp_params_in)*       &
-            (surf_fric_vel**3)-cvmix_get_kpp_real('c_s', CVmix_kpp_params_in)*&
-            zeta_h(kw))**(real(1,cvmix_r8)/real(3,cvmix_r8))
-        end if
-      end do
-    end if
 
-    deallocate(zeta, zeta_h)
+      if (compute_ws) then
+        if (size(w_s).ne.nlev_p1) then
+          print*, "ERROR: sigma_coord and w_s must be same size!"
+          deallocate(zeta)
+          stop 1
+        end if
+        w_s(1) = compute_phi_inv(zeta(1), CVmix_kpp_params_in, lphi_s=.true.)*&
+                 vonkar*surf_fric_vel
+        do kw=2,nlev_p1
+          if (zeta(kw).eq.zeta(kw-1)) then
+            w_s(kw) = w_s(kw-1)
+          else
+            w_s(kw) = vonkar*surf_fric_vel*compute_phi_inv(zeta(kw),          &
+                                           CVmix_kpp_params_in, lphi_s=.true.)
+          end if
+        end do
+      end if
+
+      deallocate(zeta)
+
+    else ! surf_fric_vel = 0
+      if (compute_wm) then
+        if (size(w_m).ne.nlev_p1) then
+          print*, "ERROR: sigma_coord and w_m must be same size!"
+          stop 1
+        end if
+
+        if (surf_buoy_force.ge.0.0_cvmix_r8) then
+          ! Stable regime with surf_fric_vel = 0 => w_m = 0
+          w_m = 0.0_cvmix_r8
+        else
+          ! Unstable forcing, Eq. (B1c) reduces to following
+          do kw=1,nlev_p1
+            w_m(nlev_p1) = -(cvmix_get_kpp_real('c_m', CVmix_kpp_params_in) * &
+                        min(surf_layer_ext, sigma_coord(kw)) * vonkar *       &
+                        surf_buoy_force)**(real(1,cvmix_r8)/real(3,cvmix_r8)) &
+                        * vonkar
+          end do
+        end if ! surf_buoy_force >= 0
+      end if ! compute_wm
+
+      if (compute_ws) then
+        if (size(w_s).ne.nlev_p1) then
+          print*, "ERROR: sigma_coord and w_s must be same size!"
+          stop 1
+        end if
+
+        if (surf_buoy_force.ge.0.0_cvmix_r8) then
+          ! Stable regime with surf_fric_vel = 0 => w_s = 0
+          w_s = 0.0_cvmix_r8
+        else
+          ! Unstable forcing, Eq. (B1c) reduces to following
+          do kw=1,nlev_p1
+            w_s(nlev_p1) = -(cvmix_get_kpp_real('c_s', CVmix_kpp_params_in) * &
+                        min(surf_layer_ext, sigma_coord(kw)) * vonkar *       &
+                        surf_buoy_force)**(real(1,cvmix_r8)/real(3,cvmix_r8)) &
+                        * vonkar
+          end do
+        end if ! surf_buoy_force >= 0
+      end if ! compute_ws
+    end if ! surf_fric_vel != 0
 
 !EOC
 
   end subroutine cvmix_kpp_compute_turbulent_scales_1d
+
+  function compute_phi_inv(zeta, CVmix_kpp_params_in, lphi_m, lphi_s)
+
+    real(cvmix_r8),              intent(in) :: zeta
+    type(cvmix_kpp_params_type), intent(in) :: CVmix_kpp_params_in
+    logical, optional,           intent(in) :: lphi_m, lphi_s
+
+    real(cvmix_r8) :: compute_phi_inv
+    real(cvmix_r8), parameter :: one = real(1, cvmix_r8)
+
+    logical :: lm, ls
+
+    if (present(lphi_m)) then
+      lm = lphi_m
+    else
+      lm = .false.
+    end if
+
+    if (present(lphi_s)) then
+      ls = lphi_s
+    else
+      ls = .false.
+    end if
+
+    if (lm.eqv.ls) then
+      print*, "ERROR: must compute phi_m or phi_s, can not compute both!"
+      stop 1
+    end if
+
+    if (lm) then
+      if (zeta.ge.0.0_cvmix_r8) then
+        ! Stable region
+        compute_phi_inv = one/(one + real(5,cvmix_r8)*zeta)
+      else if (zeta.ge.cvmix_get_kpp_real('zeta_m', CVmix_kpp_params_in)) then
+        compute_phi_inv = (one - real(16,cvmix_r8)*zeta)**0.25_cvmix_r8
+      else
+        compute_phi_inv = (cvmix_get_kpp_real('a_m', CVmix_kpp_params_in) -      &
+                          cvmix_get_kpp_real('c_m', CVmix_kpp_params_in)*zeta)** &
+                          (one/real(3,cvmix_r8))
+      end if
+    end if
+
+    if (ls) then
+      if (zeta.ge.0.0_cvmix_r8) then
+        ! Stable region
+        compute_phi_inv = one/(one + real(5,cvmix_r8)*zeta)
+      else if (zeta.ge.cvmix_get_kpp_real('zeta_s', CVmix_kpp_params_in)) then
+        compute_phi_inv = (one - real(16,cvmix_r8)*zeta)**0.5_cvmix_r8
+      else
+        compute_phi_inv = (cvmix_get_kpp_real('a_s', CVmix_kpp_params_in) -      &
+                          cvmix_get_kpp_real('c_s', CVmix_kpp_params_in)*zeta)** &
+                          (one/real(3,cvmix_r8))
+      end if
+    end if
+
+  end function compute_phi_inv
 
 !BOP
 

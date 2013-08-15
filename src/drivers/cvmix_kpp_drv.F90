@@ -180,6 +180,7 @@ Subroutine cvmix_kpp_driver()
             "w_m and w_s, respectively)"
     print*, "----------"
     call cvmix_put_kpp('vonkarman', 1.0_cvmix_r8)
+    call cvmix_put_kpp('surf_layer_ext', 1.0_cvmix_r8)
     allocate(w_m(nlev3+1), w_s(nlev3+1), zeta(nlev3+1))
     ! Note: zeta = sigma*OBL_depth/MoninObukhov constant
     !       zeta < 0 => unstable flow
