@@ -432,15 +432,15 @@ contains
     else
       visc_at_OBL(1) = compute_nu_at_OBL_depth(interp_type2, (/zw_iface(kwup),&
                          zw_iface(kwup+1)/), (/diff(kwup,1), diff(kwup+1,1)/),&
-                         OBL_depth, zw_iface(kwup+2), diff(kwup+2,1),         &
+                         OBL_depth, zw_iface(kwup-1), diff(kwup-1,1),         &
                          dvisc_OBL(1)) 
       visc_at_OBL(2) = compute_nu_at_OBL_depth(interp_type2, (/zw_iface(kwup),&
                          zw_iface(kwup+1)/), (/diff(kwup,2), diff(kwup+1,2)/),&
-                         OBL_depth, zw_iface(kwup+2), diff(kwup+2,2),         &
+                         OBL_depth, zw_iface(kwup-1), diff(kwup-1,2),         &
                          dvisc_OBL(2)) 
       visc_at_OBL(3) = compute_nu_at_OBL_depth(interp_type2, (/zw_iface(kwup),&
                          zw_iface(kwup+1)/), (/visc(kwup), visc(kwup+1)/),    &
-                         OBL_depth, zw_iface(kwup+2), visc(kwup+2),           &
+                         OBL_depth, zw_iface(kwup-1), visc(kwup-1),           &
                          dvisc_OBL(3))
     end if
     Gat1(1) = visc_at_OBL(1)/(OBL_depth*ws_OBL)
