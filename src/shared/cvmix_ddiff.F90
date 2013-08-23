@@ -45,15 +45,30 @@ module cvmix_ddiff
   ! diffusion mixing
   type, public :: cvmix_ddiff_params_type
     private
-    real(cvmix_r8) :: strat_param_max
-    real(cvmix_r8) :: kappa_ddiff_t
-    real(cvmix_r8) :: kappa_ddiff_s
-    real(cvmix_r8) :: ddiff_exp1
-    real(cvmix_r8) :: ddiff_exp2
-    real(cvmix_r8) :: kappa_ddiff_param1
-    real(cvmix_r8) :: kappa_ddiff_param2
-    real(cvmix_r8) :: kappa_ddiff_param3
-    real(cvmix_r8) :: mol_diff
+    ! Max value of the stratification parameter (diffusivity = 0 for values
+    ! that exceed this constant). R_p^0 in LMD94.
+    real(cvmix_r8) :: strat_param_max    ! units: unitless
+    ! leading coefficient in formula for salt-fingering regime for salinity
+    ! diffusion (nu_f in LMD94, kappa_0 in Gokhan's paper)
+    real(cvmix_r8) :: kappa_ddiff_s      ! units: m^2/s
+    ! leading coefficient in formula for salt-fingering regime for temperature
+    ! diffusion (0.7*nu_f in LMD94)
+    real(cvmix_r8) :: kappa_ddiff_t      ! units: m^2/s
+    ! interior exponent in salt-fingering regime formula (2 in LMD94, 1 in
+    ! Gokhan's paper)
+    real(cvmix_r8) :: ddiff_exp1         ! units: unitless
+    ! exterior exponent in salt-fingering regime formula (p2 in LMD94, 3 in
+    ! Gokhan's paper)
+    real(cvmix_r8) :: ddiff_exp2         ! units: unitless
+    ! Exterior coefficient in diffusive convection regime (0.909 in LMD94)
+    real(cvmix_r8) :: kappa_ddiff_param1 ! units: unitless
+    ! Middle coefficient in diffusive convection regime (4.6 in LMD94)
+    real(cvmix_r8) :: kappa_ddiff_param2 ! units: unitless
+    ! Interior coefficient in diffusive convection regime (-0.54 in LMD94)
+    real(cvmix_r8) :: kappa_ddiff_param3 ! units: unitless
+    ! Molecular diffusivity (leading coefficient in diffusive convection
+    ! regime)
+    real(cvmix_r8) :: mol_diff           ! units: m^2/s
   end type cvmix_ddiff_params_type
 
 !EOP
@@ -67,7 +82,7 @@ module cvmix_ddiff
 ! !IROUTINE: cvmix_init_ddiff
 ! !INTERFACE:
 
-  subroutine cvmix_init_ddiff(units, CVmix_ddiff_params_user, strat_param_max, &
+  subroutine cvmix_init_ddiff(CVmix_ddiff_params_user, strat_param_max,        &
                               kappa_ddiff_t, kappa_ddiff_s, ddiff_exp1,        &
                               ddiff_exp2, mol_diff, kappa_ddiff_param1,        &
                               kappa_ddiff_param2, kappa_ddiff_param3)
@@ -87,7 +102,6 @@ module cvmix_ddiff
 !  \begin{eqnarray*}
 !  \kappa = \kappa^0 \left[ 1 - \left(\frac{R_\rho - 1}{R_\rho^0 - 1} \right)^{p_1}\right]^{p_2}
 !  \end{eqnarray*}
-!  The user must specify which set of units to use, either \verb|'mks'| or \verb|'cgs'|.
 !  By default, $R_\rho^0 = 2.55$, but that can be changed by setting 
 !  \verb|strat_param_max| in the code. Similarly, by default $p_1 = 1$ 
 ! (\verb|ddiff_exp1|), $p_2 = 3$ (\verb|ddiff_exp2|), and
@@ -120,13 +134,13 @@ module cvmix_ddiff
 !                     \end{array} \right.
 !  \end{eqnarray*}
 !  $\kappa$ is stored in \verb|CVmix_vars%diff_iface(:,1)|, while the modified value
-!  for non-temperature tracers is stored in \verb|CVmix_vars%diff_iface(:,2)|.\\
+!  for non-temperature tracers is stored in \verb|CVmix_vars%diff_iface(:,2)|.
+!  Note that CVMix assumes units are |'mks'|.\\
 !\\
 ! !USES:
 !  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
-    character(len=*),           intent(in) :: units ! "mks" or "cgs"
     real(cvmix_r8),   optional, intent(in) :: strat_param_max, &
                                               kappa_ddiff_t, &
                                               kappa_ddiff_s, &
@@ -195,49 +209,22 @@ module cvmix_ddiff
     if (present(kappa_ddiff_t)) then
       call cvmix_put_ddiff(CVmix_ddiff_params_out, "kappa_ddiff_t",            &
                            kappa_ddiff_t)
+    else
+      call cvmix_put_ddiff(CVmix_ddiff_params_out, "kappa_ddiff_t",            &
+                           7e-5_cvmix_r8)
     end if
     if (present(kappa_ddiff_s)) then
       call cvmix_put_ddiff(CVmix_ddiff_params_out, "kappa_ddiff_s",            &
                            kappa_ddiff_s)
+    else
+      call cvmix_put_ddiff(CVmix_ddiff_params_out, "kappa_ddiff_s",            &
+                           1e-4_cvmix_r8)
     end if
     if (present(mol_diff)) then
       call cvmix_put_ddiff(CVmix_ddiff_params_out, "mol_diff", mol_diff)
+    else
+      call cvmix_put_ddiff(CVmix_ddiff_params_out, "mol_diff", 1.5e-6_cvmix_r8)
     end if
-
-    select case (trim(units))
-      case ('mks')
-        if (.not.present(kappa_ddiff_t)) then
-          call cvmix_put_ddiff(CVmix_ddiff_params_out, "kappa_ddiff_t",        &
-                               7e-5_cvmix_r8)
-        end if
-        if (.not.present(kappa_ddiff_s)) then
-          call cvmix_put_ddiff(CVmix_ddiff_params_out, "kappa_ddiff_s",        &
-                               1e-4_cvmix_r8)
-        end if
-        if (.not.present(mol_diff)) then
-          call cvmix_put_ddiff(CVmix_ddiff_params_out, "mol_diff",             &
-                               1.5e-6_cvmix_r8)
-        end if
-      case ('cgs')
-        if (.not.present(kappa_ddiff_t)) then
-          call cvmix_put_ddiff(CVmix_ddiff_params_out, "kappa_ddiff_t",        &
-                               7e-1_cvmix_r8)
-        end if
-        if (.not.present(kappa_ddiff_s)) then
-          call cvmix_put_ddiff(CVmix_ddiff_params_out, "kappa_ddiff_s",        &
-                               1.0_cvmix_r8)
-        end if
-        if (.not.present(mol_diff)) then
-          call cvmix_put_ddiff(CVmix_ddiff_params_out, "mol_diff",             &
-                               1.5e-2_cvmix_r8)
-        end if
-
-      case DEFAULT
-        print*, "ERROR: ", trim(units), " is not a valid choice for double ", &
-                "diffusion mixing. Only 'mks' and 'cgs' are supported."
-        stop 1
-
-    end select
 
 !EOC
 
@@ -281,7 +268,7 @@ module cvmix_ddiff
       CVmix_ddiff_params_in => CVmix_ddiff_params_saved
     end if
 
-    ! Determine coefficients based on units requested
+    ! Determine coefficients
     CVmix_vars%diff_iface = 0_cvmix_r8
     do k = 1, CVmix_vars%nlev
       if ((CVmix_vars%strat_param_num(k).gt.CVmix_vars%strat_param_denom(k)).and.&

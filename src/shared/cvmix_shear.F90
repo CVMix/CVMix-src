@@ -53,13 +53,23 @@
   ! (currently Pacanowski-Philander or Large et al)
   type, public :: cvmix_shear_params_type
       private
+      ! Type of shear mixing to run (PP => Pacanowski-Philander, KPP => LMD94)
       character(len=cvmix_strlen) :: mix_scheme
-      real(cvmix_r8)              :: PP_nu_zero
-      real(cvmix_r8)              :: PP_alpha
-      real(cvmix_r8)              :: PP_exp
-      real(cvmix_r8)              :: KPP_nu_zero
-      real(cvmix_r8)              :: KPP_Ri_zero
-      real(cvmix_r8)              :: KPP_exp
+      ! numerator in viscosity term in PP81
+      ! See Eqs. (1) and (2)
+      real(cvmix_r8) :: PP_nu_zero  ! units: m^2/s
+      ! coefficient of Richardson number in denominator of diff / visc terms
+      real(cvmix_r8) :: PP_alpha    ! units: unitless
+      ! exponent of denominator in viscosity term
+      real(cvmix_r8) :: PP_exp      ! units: unitless
+      ! leading coefficient of LMD94 shear mixing formula (max diff / visc)
+      ! see Eq. (28b)
+      real(cvmix_r8) :: KPP_nu_zero ! units: m^2/s
+      ! critical Richardson number value (larger values result in 0 diffusivity
+      ! and viscosity)
+      real(cvmix_r8) :: KPP_Ri_zero ! units: unitless
+      ! Exponent of unitless factor of diff / visc
+      real(cvmix_r8) :: KPP_exp     ! units: unitless
   end type cvmix_shear_params_type
 !EOP
 
@@ -134,7 +144,7 @@
         if (.not.(present(KPP_nu_zero) .and. present(KPP_Ri_zero) .and.       &
                   present(KPP_exp))) then
           print*, "ERROR: you must specify KPP_nu_zero, KPP_alpha, and", &
-                  " KPP_exp to use Pacanowski-Philander mixing!"
+                  " KPP_exp to use Large et al's shear mixing!"
           stop 1
         end if
         call cvmix_put_shear(CVmix_shear_params, "mix_scheme", "KPP")

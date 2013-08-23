@@ -45,10 +45,15 @@ module cvmix_convection
   ! mixing.
   type, public :: cvmix_conv_params_type
     private
-    real(cvmix_r8) :: convect_diff
-    real(cvmix_r8) :: convect_visc
+    ! Convective diff
+    ! diffusivity coefficient used in convective regime
+    real(cvmix_r8) :: convect_diff ! units: m^2/s
+    ! viscosity coefficient used in convective regime
+    real(cvmix_r8) :: convect_visc ! units: m^2/s
     logical        :: lBruntVaisala
-    real(cvmix_r8) :: BVsqr_convect
+    ! Threshold for squared buoyancy frequency needed to trigger Brunt-Vaisala
+    ! parameterization
+    real(cvmix_r8) :: BVsqr_convect ! units: s^-2
   end type cvmix_conv_params_type
 
 !EOP

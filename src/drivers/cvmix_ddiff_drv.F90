@@ -78,8 +78,9 @@ Subroutine cvmix_ddiff_driver(nlev)
 
   ! Read / set double diffusion parameters
   read(*, nml=ddiff_nml)
-  call cvmix_init_ddiff('mks', ddiff_exp1=ddiff_exp1,                               &
-                        strat_param_max=strat_param_max, kappa_ddiff_t=kappa_ddiff_t)
+  call cvmix_init_ddiff(ddiff_exp1=ddiff_exp1,                                &
+                        strat_param_max=strat_param_max,                      &
+                        kappa_ddiff_t=kappa_ddiff_t)
                         
 
   call cvmix_coeffs_ddiff(CVmix_vars(1))

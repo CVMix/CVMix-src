@@ -542,6 +542,8 @@ contains
         OBL_visc(ktup+1)   = omd*visc(ktup+1)   + delta*enh_visc
       else
         print*, "ERROR: kwup should be either ktup or ktup+1!"
+        deallocate(sigma, w_m, w_s)
+        deallocate(OBL_diff, OBL_visc)
         stop 1
       end if
     end if
@@ -552,6 +554,7 @@ contains
 
     ! Clean up memory
     deallocate(sigma, w_m, w_s)
+    deallocate(OBL_diff, OBL_visc)
 
 !EOC
   end subroutine cvmix_coeffs_kpp_low
@@ -1237,6 +1240,11 @@ contains
     real(cvmix_r8) :: compute_phi_inv
 
     logical :: lm, ls
+
+    ! If not specifying lphi_m or lphi_s, routine will error out, but
+    ! initializing result to 0 removes warning about possibly returning an
+    ! un-initialized value
+    compute_phi_inv = 0.0_cvmix_r8
 
     if (present(lphi_m)) then
       lm = lphi_m

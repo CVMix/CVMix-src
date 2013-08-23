@@ -66,8 +66,14 @@ module cvmix_background
   ! over latitude and longitude.
   type, public :: cvmix_bkgnd_params_type
       private
+      ! 3D viscosity field (horizontal dimensions are collapsed into first
+      ! dimension, vertical is second dimension)
       real(cvmix_r8), allocatable :: static_visc(:,:) ! ncol, nlev+1
+                                                      ! units: m^2/s
+      ! 3D diffusivity field (horizontal dimensions are collapsed into first
+      ! dimension, vertical is second dimension)
       real(cvmix_r8), allocatable :: static_diff(:,:) ! ncol, nlev+1
+                                                      ! units: m^2/s
 
       ! Flag for what to do with old values of CVmix_vars%diff and %visc
       integer :: handle_old_vals
