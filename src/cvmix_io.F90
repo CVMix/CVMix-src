@@ -606,7 +606,7 @@ contains
             case ("zt")
               call netcdf_check(nf90_put_var(file_id, var_id(var), &
                                              CVmix_vars%zt(:)))
-            case ("zw", "depth")
+            case ("zw", "zw_iface")
               call netcdf_check(nf90_put_var(file_id, var_id(var), &
                                              CVmix_vars%zw_iface(:)))
             case ("Ri")
@@ -642,7 +642,7 @@ contains
                 else
                   write(file_id,"(A)",advance='no') "--- Cell Center Vals ---"
                 end if
-              case ("zw", "depth")
+              case ("zw", "zw_iface")
                 write(file_id,"(E24.17E2)",advance='no') &
                       CVmix_vars%zw_iface(kw)
               case ("Ri")
@@ -750,8 +750,8 @@ contains
         call netcdf_check(nf90_def_dim(file_id, "ncol", ncol, ncol_id))
         allocate(var_id(size(var_names)))
         do var=1,size(var_names)
-          if ((trim(var_names(var)).eq."depth").or. &
-              (trim(var_names(var)).eq."zw")) then
+          if ((trim(var_names(var)).eq."zw").or.                             &
+              (trim(var_names(var)).eq."zw_iface")) then
             call netcdf_check(nf90_def_var(file_id, var_names(var),          &
                                 NF90_DOUBLE, (/nw_id/), var_id(var)))
           else
@@ -786,7 +786,7 @@ contains
         call netcdf_check(nf90_enddef(file_id))
         do var=1,size(var_names)
           select case(trim(var_names(var)))
-            case("depth", "zw")
+            case("zw", "zw_iface")
               call netcdf_check(nf90_put_var(file_id, var_id(var), &
                                 CVmix_vars(1)%zw_iface(:)))
             case("Ri")
@@ -814,7 +814,7 @@ contains
         do kw=1,nw
           do var=1,size(var_names)
             select case(trim(var_names(var)))
-              case ("depth", "zw")
+              case ("zw", "zw_iface")
                 write(file_id,"(E24.17E2)",advance='no') &
                       CVmix_vars(1)%zw_iface(kw)
               case ("Ri")

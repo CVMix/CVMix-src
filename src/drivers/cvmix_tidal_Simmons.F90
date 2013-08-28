@@ -60,7 +60,7 @@ Subroutine cvmix_tidal_driver()
   real(cvmix_r8), dimension(:,:),   allocatable :: ocn_depth, energy_flux, &
                                                    lat, lon
   integer,        dimension(:,:),   allocatable :: ocn_levels
-  real(cvmix_r8), dimension(:),     allocatable :: depth_iface, depth
+  real(cvmix_r8), dimension(:),     allocatable :: zw_iface, zt
   real(cvmix_r8)                                :: FillVal, this_lon, this_lat
   character(len=cvmix_strlen) :: lonstr, latstr
   integer :: i, j, k, nlon, nlat, nlev, max_nlev
@@ -115,7 +115,7 @@ Subroutine cvmix_tidal_driver()
   allocate(energy_flux(nlon, nlat), ocn_depth(nlon, nlat))
   allocate(buoy(nlon, nlat,max_nlev+1))
   allocate(ocn_levels(nlon, nlat))
-  allocate(depth(max_nlev), depth_iface(max_nlev+1))
+  allocate(zt(max_nlev), zw_iface(max_nlev+1))
   ! Set buoyancy frequency = 0 at top interface (POP doesn't store these
   ! zeroes and the input data set is coming from POP output)
   buoy(:,:,1) = 0.0_cvmix_r8
@@ -130,7 +130,7 @@ Subroutine cvmix_tidal_driver()
   call cvmix_io_open(fid, trim(grid_file), 'nc', read_only=.true.)
   call cvmix_input_read(fid, 'lon', lon)
   call cvmix_input_read(fid, 'lat', lat)
-  call cvmix_input_read(fid, 'zw', depth_iface)
+  call cvmix_input_read(fid, 'zw', zw_iface)
   call cvmix_input_read(fid, 'H', ocn_depth)
   call cvmix_input_read(fid, 'H_index', ocn_levels)
   call cvmix_io_close(fid)
@@ -143,11 +143,11 @@ Subroutine cvmix_tidal_driver()
 
   ! Compute center of each layer (maybe this should be stored in grid file?)
   do k=1, max_nlev
-    depth(k) = 0.5_cvmix_r8*(depth_iface(k)+depth_iface(k+1))
+    zt(k) = 0.5_cvmix_r8*(zw_iface(k)+zw_iface(k+1))
   end do
 
   ! Initialize tidal mixing parameters
-  call cvmix_init_tidal(CVmix_Simmons_params, 'Simmons', 'mks', &
+  call cvmix_init_tidal(CVmix_Simmons_params, 'Simmons',        &
                         local_mixing_frac=0.33_cvmix_r8,        &
                         max_coefficient=0.01_cvmix_r8)
 
@@ -170,13 +170,13 @@ Subroutine cvmix_tidal_driver()
       ! Initialization for CVMix data types
       call cvmix_put(CVmix_vars(i,j), 'nlev', nlev)
       if (nlev.gt.0) then
-        call cvmix_put(CVmix_vars(i,j),  'surf_hgt',          0.0_cvmix_r8)
-        call cvmix_put(CVmix_vars(i,j),        'zw', depth_iface(1:nlev+1))
-        call cvmix_put(CVmix_vars(i,j),        'zt',         depth(1:nlev))
-        call cvmix_put(CVmix_vars(i,j),      'buoy',    buoy(i,j,1:nlev+1))
-        call cvmix_put(CVmix_vars(i,j), 'ocn_depth',        ocn_depth(i,j))
-        call cvmix_put(CVmix_vars(i,j),       'lat',              lat(i,j))
-        call cvmix_put(CVmix_vars(i,j),       'lon',              lon(i,j))
+        call cvmix_put(CVmix_vars(i,j),  'surf_hgt',       0.0_cvmix_r8)
+        call cvmix_put(CVmix_vars(i,j),        'zw', zw_iface(1:nlev+1))
+        call cvmix_put(CVmix_vars(i,j),        'zt',         zt(1:nlev))
+        call cvmix_put(CVmix_vars(i,j),      'buoy', buoy(i,j,1:nlev+1))
+        call cvmix_put(CVmix_vars(i,j), 'ocn_depth',     ocn_depth(i,j))
+        call cvmix_put(CVmix_vars(i,j),       'lat',           lat(i,j))
+        call cvmix_put(CVmix_vars(i,j),       'lon',           lon(i,j))
 
         call cvmix_put(CVmix_params, 'max_nlev',        max_nlev)
         call cvmix_put(CVmix_params,   'fw_rho', 1000.0_cvmix_r8)
@@ -202,7 +202,7 @@ Subroutine cvmix_tidal_driver()
     this_lat = CVmix_vars(lon_out, lat_out)%lat
     call cvmix_io_open(fid, "single_col.nc", "nc")
     call cvmix_output_write(fid, CVmix_vars(lon_out, lat_out), &
-                            (/"depth", "diff "/))
+                            (/"zw_iface", "diff    "/))
     if (this_lon.ge.0) then
       write(lonstr,"(F6.2,1X,A)") this_lon, "E"
     else
@@ -221,10 +221,10 @@ Subroutine cvmix_tidal_driver()
     call cvmix_output_write_att(fid, "long_name", "tracer diffusivity", &
                                 var_name="diff")
     call cvmix_output_write_att(fid, "units", "m^2/s", var_name="diff")
-    call cvmix_output_write_att(fid, "long_name", "depth to interface", &
-                                var_name="depth")
-    call cvmix_output_write_att(fid, "positive", "up", var_name="depth")
-    call cvmix_output_write_att(fid, "units", "m", var_name="depth")
+    call cvmix_output_write_att(fid, "long_name", "height at interface", &
+                                var_name="zw_iface")
+    call cvmix_output_write_att(fid, "positive", "up", var_name="zw_iface")
+    call cvmix_output_write_att(fid, "units", "m", var_name="zw_iface")
     call cvmix_io_close(fid)
   else
     print*, "ERROR: column requested for output is a land cell."
@@ -245,7 +245,7 @@ Subroutine cvmix_tidal_driver()
   deallocate(energy_flux, ocn_depth)
   deallocate(buoy)
   deallocate(ocn_levels)
-  deallocate(depth, depth_iface)
+  deallocate(zt, zw_iface)
 
 !EOC
 

@@ -49,12 +49,20 @@
    ! (currently just Simmons)
    type, public :: cvmix_tidal_params_type
       private
+      ! Tidal mixing scheme being used (currently only support Simmons et al)
       character(len=cvmix_strlen) :: mix_scheme
-      real(cvmix_r8)              :: efficiency
-      real(cvmix_r8)              :: vertical_decay_scale
-      real(cvmix_r8)              :: max_coefficient
-      real(cvmix_r8)              :: local_mixing_frac
-      real(cvmix_r8)              :: depth_cutoff
+      ! efficiency is the mixing efficiency (Gamma in Simmons)
+      real(cvmix_r8) :: efficiency           ! units: unitless (fraction)
+      ! local_mixing_frac is the tidal dissipation efficiency (q in Simmons)
+      real(cvmix_r8) :: local_mixing_frac    ! units: unitless (fraction)
+      ! vertical_decay_scale is zeta in the Simmons paper (used to compute the
+      ! vertical deposition function)
+      real(cvmix_r8) :: vertical_decay_scale ! units: m
+      ! depth_cutoff is depth of the shallowest column where tidal mixing is
+      ! computed (like all depths, positive => below the surface)
+      real(cvmix_r8) :: depth_cutoff         ! units: m
+      ! max_coefficient is the largest acceptable value for diffusivity 
+      real(cvmix_r8) :: max_coefficient      ! units: m^2/s
    end type cvmix_tidal_params_type
 !EOP
 
@@ -65,9 +73,9 @@
 ! !IROUTINE: cvmix_init_tidal
 ! !INTERFACE:
 
-  subroutine cvmix_init_tidal(CVmix_tidal_params, mix_scheme, units,          &
-                              efficiency, vertical_decay_scale,               &
-                              max_coefficient, local_mixing_frac, depth_cutoff)
+  subroutine cvmix_init_tidal(CVmix_tidal_params, mix_scheme, efficiency,     &
+                              vertical_decay_scale, max_coefficient,          &
+                              local_mixing_frac, depth_cutoff)
 
 ! !DESCRIPTION:
 !  Initialization routine for tidal mixing. There is currently just one
@@ -79,7 +87,6 @@
 
 ! !INPUT PARAMETERS:
     character(len=*),         intent(in) :: mix_scheme
-    character(len=*),         intent(in) :: units
     real(cvmix_r8), optional, intent(in) :: efficiency
     real(cvmix_r8), optional, intent(in) :: vertical_decay_scale
     real(cvmix_r8), optional, intent(in) :: max_coefficient
@@ -110,39 +117,20 @@
         ! Parameters with units
         if (present(vertical_decay_scale)) then
           CVmix_tidal_params%vertical_decay_scale = vertical_decay_scale
-        end if
-        if (present(max_coefficient)) then
-          CVmix_tidal_params%max_coefficient = max_coefficient
+        else
+          CVmix_tidal_params%vertical_decay_scale = 500.0_cvmix_r8
         end if
         if (present(depth_cutoff)) then
           CVmix_tidal_params%depth_cutoff = depth_cutoff
         else
-          ! Default: no cutoff depth => 0 cm or 0 m
+          ! Default: no cutoff depth => 0 m
           CVmix_tidal_params%depth_cutoff = 0.0_cvmix_r8
         end if
-        select case (trim(units))
-          case ('mks')
-            if (.not.present(vertical_decay_scale)) then
-              CVmix_tidal_params%vertical_decay_scale = 500.0_cvmix_r8
-            end if
-            if (.not.present(max_coefficient)) then
-              CVmix_tidal_params%max_coefficient = 50.0e-4_cvmix_r8
-            end if
-
-          case ('cgs')
-            if (.not.present(vertical_decay_scale)) then
-              CVmix_tidal_params%vertical_decay_scale = 500.0e2_cvmix_r8
-            end if
-            if (.not.present(max_coefficient)) then
-              CVmix_tidal_params%max_coefficient = 50.0_cvmix_r8
-            end if
-
-          case DEFAULT
-            print*, "ERROR: ", trim(units), " is not a valid choice for ",    &
-                    "tidal mixing. Only 'mks' and 'cgs' are supported."
-            stop 1
-
-        end select
+        if (present(max_coefficient)) then
+          CVmix_tidal_params%max_coefficient = max_coefficient
+        else
+          CVmix_tidal_params%max_coefficient = 50.0e-4_cvmix_r8
+        end if
 
       case DEFAULT
         print*, "ERROR: ", trim(mix_scheme), " is not a valid choice for ", &
