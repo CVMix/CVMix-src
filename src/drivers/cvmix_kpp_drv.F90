@@ -327,7 +327,6 @@ Subroutine cvmix_kpp_driver()
     ref_vel(1) = 0.1_cvmix_r8
     ref_vel(2) = 0.0_cvmix_r8
     N            = 0.01_cvmix_r8
-    buoy_freq(:) = N
     Nsqr         = N*N
     Bslope       = -Nsqr
     Vslope       = -0.1_cvmix_r8/real(nlev5*layer_thick-hmix5,cvmix_r8)
@@ -335,6 +334,7 @@ Subroutine cvmix_kpp_driver()
       if ((zt(kt).ge.-hmix5).or.(kt.eq.1)) then
         buoyancy(kt)  = Nsqr
         hor_vel(kt,1) = 0.1_cvmix_r8
+        buoy_freq(kt) = 0.0_cvmix_r8
       else
         if (zw_iface(kt).ge.-hmix5) then
           ! derivatives of buoyancy and horizontal velocity component are
@@ -348,6 +348,8 @@ Subroutine cvmix_kpp_driver()
           buoyancy(kt)  = Nsqr+Bslope*(-zt(kt)-real(hmix5,cvmix_r8))
           hor_vel(kt,1) = 0.1_cvmix_r8+Vslope*(-zt(kt)-real(hmix5,cvmix_r8))
         end if
+        buoy_freq(kt) = sqrt(-(buoyancy(kt)-buoyancy(kt-1)) /                 &
+                              real(layer_thick,cvmix_r8))
       end if
       ! Compute w_s with zeta=0 per LMD page 393
       ! => w_s = von Karman * surf_fric_vel = 0.4*0.01 = 4e-3
