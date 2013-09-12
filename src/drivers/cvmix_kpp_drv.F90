@@ -49,7 +49,8 @@ Subroutine cvmix_kpp_driver()
   real(cvmix_r8), dimension(:,:), allocatable, target :: TwoDArray
   real(cvmix_r8), dimension(:),   allocatable, target :: buoyancy, shear_sqr, &
                                                          delta_vel_sqr,       &
-                                                         buoy_freq
+                                                         buoy_freq,           &
+                                                         buoy_freq_iface
   real(cvmix_r8), dimension(:,:), allocatable, target :: hor_vel
   real(cvmix_r8), dimension(2)                        :: ref_vel
   real(cvmix_r8), dimension(4) :: shape_coeffs
@@ -322,7 +323,8 @@ Subroutine cvmix_kpp_driver()
 
     ! Compute Br-B(d), |Vr-V(d)|^2, and Vt^2
     allocate(buoyancy(nlev5), delta_vel_sqr(nlev5), hor_vel(nlev5,2),         &
-             shear_sqr(nlev5), w_s(nlev5), Ri_bulk(nlev5), buoy_freq(nlev5))
+             shear_sqr(nlev5), w_s(nlev5), Ri_bulk(nlev5), buoy_freq(nlev5),  &
+             buoy_freq_iface(nlev5+1))
 
     ref_vel(1) = 0.1_cvmix_r8
     ref_vel(2) = 0.0_cvmix_r8
@@ -334,7 +336,7 @@ Subroutine cvmix_kpp_driver()
       if ((zt(kt).ge.-hmix5).or.(kt.eq.1)) then
         buoyancy(kt)  = Nsqr
         hor_vel(kt,1) = 0.1_cvmix_r8
-        buoy_freq(kt) = 0.0_cvmix_r8
+        buoy_freq_iface(kt) = 0.0_cvmix_r8
       else
         if (zw_iface(kt).ge.-hmix5) then
           ! derivatives of buoyancy and horizontal velocity component are
@@ -348,8 +350,8 @@ Subroutine cvmix_kpp_driver()
           buoyancy(kt)  = Nsqr+Bslope*(-zt(kt)-real(hmix5,cvmix_r8))
           hor_vel(kt,1) = 0.1_cvmix_r8+Vslope*(-zt(kt)-real(hmix5,cvmix_r8))
         end if
-        buoy_freq(kt) = sqrt(-(buoyancy(kt)-buoyancy(kt-1)) /                 &
-                              real(layer_thick,cvmix_r8))
+        buoy_freq_iface(kt) = sqrt(-(buoyancy(kt)-buoyancy(kt-1)) /           &
+                                    real(layer_thick,cvmix_r8))
       end if
       ! Compute w_s with zeta=0 per LMD page 393
       ! => w_s = von Karman * surf_fric_vel = 0.4*0.01 = 4e-3
@@ -358,6 +360,10 @@ Subroutine cvmix_kpp_driver()
       hor_vel(kt,2) = 0.0_cvmix_r8
       delta_vel_sqr(kt) = (ref_vel(1)-hor_vel(kt,1))**2 +                     &
                           (ref_vel(2)-hor_vel(kt,2))**2
+    end do
+    buoy_freq_iface(nlev5+1) = N
+    do kt=1,nlev5
+      buoy_freq(kt) = 0.5_cvmix_r8*(buoy_freq_iface(kt)+buoy_freq_iface(kt+1))
     end do
 !   MNL: tested both interfaces of compute_bulk_Richardson
 !    shear_sqr = cvmix_kpp_compute_unresolved_shear(zt, buoy_freq, w_s)
