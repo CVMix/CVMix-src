@@ -363,7 +363,7 @@ Subroutine cvmix_kpp_driver()
     end do
     buoy_freq_iface(nlev5+1) = N
     do kt=1,nlev5
-      buoy_freq(kt) = 0.5_cvmix_r8*(buoy_freq_iface(kt)+buoy_freq_iface(kt+1))
+      buoy_freq(kt) = sqrt(0.5_cvmix_r8*(buoy_freq_iface(kt)**2+buoy_freq_iface(kt+1)**2))
     end do
 !   MNL: tested both interfaces of compute_bulk_Richardson
 !    shear_sqr = cvmix_kpp_compute_unresolved_shear(zt, buoy_freq, w_s)
