@@ -63,11 +63,6 @@
     module procedure cvmix_coeffs_kpp_wrap
   end interface cvmix_coeffs_kpp
 
-  interface cvmix_kpp_compute_bulk_Richardson
-    module procedure cvmix_kpp_compute_bulk_Richardson_no_Vt
-    module procedure cvmix_kpp_compute_bulk_Richardson_with_Vt
-  end interface cvmix_kpp_compute_bulk_Richardson
-
   interface cvmix_put_kpp
     module procedure cvmix_put_kpp_int
     module procedure cvmix_put_kpp_real
@@ -110,6 +105,12 @@
     logical        :: lMonOb         ! True => compute Monin-Obukhov limit
     logical        :: lnoDGat1       ! True => G'(1) = 0 (shape function)
                                      ! False => compute G'(1) as in LMD94
+    logical        :: lavg_N_or_Nsqr ! True => N (or Nsqr) at cell center is
+                                     !  average of values at interfaces above
+                                     !  and below.
+                                     ! False => N (or Nsqr) at cell center is
+                                     !  set to value at interface below
+                                     ! (only used in compute_unresolved_shear)
   end type cvmix_kpp_params_type
 
 !EOP
@@ -126,7 +127,7 @@ contains
   subroutine cvmix_init_kpp(ri_crit, vonkarman, Cstar, zeta_m, zeta_s, a_m,   &
                             a_s, c_m, c_s, surf_layer_ext, interp_type,       &
                             interp_type2, lEkman, lMonOb, lnoDGat1,           &
-                            CVmix_kpp_params_user)
+                            lavg_N_or_Nsqr, CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
 !  Initialization routine for KPP mixing.
@@ -146,7 +147,7 @@ contains
                                   c_s, &         ! units: unitless
                                   surf_layer_ext ! units: unitless
     character(len=*), optional :: interp_type, interp_type2
-    logical,          optional :: lEkman, lMonOb, lnoDGat1
+    logical,          optional :: lEkman, lMonOb, lnoDGat1, lavg_N_or_Nsqr
 
 ! !OUTPUT PARAMETERS:
     type(cvmix_kpp_params_type), intent(inout), target, optional ::           &
@@ -284,6 +285,12 @@ contains
       call cvmix_put_kpp(CVmix_kpp_params_out, 'lnoDGat1', lnoDGat1)
     else
       call cvmix_put_kpp(CVmix_kpp_params_out, 'lnoDGat1', .true.)
+    end if
+
+    if (present(lavg_N_or_Nsqr)) then
+      call cvmix_put_kpp(CVmix_kpp_params_out,'lavg_N_or_Nsqr',lavg_N_or_Nsqr)
+    else
+      call cvmix_put_kpp(CVmix_kpp_params_out,'lavg_N_or_Nsqr',.false.)
     end if
 
 !EOC
@@ -705,6 +712,8 @@ contains
         CVmix_kpp_params%lMonOb = val
       case ('lnoDGat1')
         CVmix_kpp_params%lnoDGat1 = val
+      case ('lavg_N_or_Nsqr')
+        CVmix_kpp_params%lavg_N_or_Nsqr = val
       case DEFAULT
         print*, "ERROR: ", trim(varname), " is not a boolean variable!"
         stop 1
@@ -1026,16 +1035,19 @@ contains
 
 !BOP
 
-! !IROUTINE: cvmix_kpp_compute_bulk_Richardson_no_Vt
+! !IROUTINE: cvmix_kpp_compute_bulk_Richardson
 ! !INTERFACE:
 
-  function cvmix_kpp_compute_bulk_Richardson_no_Vt(zt_cntr, delta_buoy,       &
-                                                   delta_vel_sqr, buoy_freq,  &
-                                                   w_s, CVmix_kpp_params_user)
+  function cvmix_kpp_compute_bulk_Richardson(zt_cntr, delta_buoy_cntr,        &
+                                             delta_Vsqr_cntr, Vt_sqr_cntr,    &
+                                             ws_cntr, N_iface, Nsqr_iface,    &
+                                             CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
-!  Computes the unresolved shear term and then computes the bulk Richardson
-!  number using \verb|cvmix_kpp_compute_bulk_Richardson_with_Vt|
+!  Computes the bulk Richardson number at cell centers. If \verb|Vt_sqr_cntr|
+!  is not present, this routine will call \verb|compute_unresolved_shear|,
+!  a routine that requires \verb|ws_cntr| and either \verb|N_iface| or
+!  \verb|Nsqr_iface|.
 !\\
 !\\
 
@@ -1044,19 +1056,27 @@ contains
 
 ! !INPUT PARAMETERS:
     ! * zt_cntr is level-center height (d in LMD94, units: m)
-    ! * delta_buoy is the mean buoyancy estimate over surface layer minus the
-    !   level-center buoyancy ( (Br-B(d)) in LMD94, units: m/s^2)
-    ! * delta_vel_sqr is the square of the magnitude of the mean velocity
+    ! * delta_buoy_cntr is the mean buoyancy estimate over surface layer minus
+    !   the level-center buoyancy ( (Br-B(d)) in LMD94, units: m/s^2)
+    ! * delta_Vsqr_cntr is the square of the magnitude of the mean velocity
     !   estimate over surface layer minus the level-center velocity
     !   ( |Vr-V(d)|^2 in LMD94, units: m^2/s^2)
-    real(cvmix_r8), dimension(:), intent(in) :: zt_cntr, delta_buoy,          &
-                                                delta_vel_sqr, buoy_freq, w_s
+    real(cvmix_r8), dimension(:), intent(in) :: zt_cntr, delta_buoy_cntr,     &
+                                                delta_Vsqr_cntr
+    ! * ws_cntr: w_s (turbulent scale factor) at center of cell (units: m/s)
+    ! * N_iface: buoyancy frequency at interfaces (units: 1/s)
+    ! * Nsqr_iface: squared buoyancy frequency at interfaces (units: 1/s^2)
+    ! * Vt_sqr_cntr: squared unresolved shear term (units m^2/s^2)
+    ! See note in description about what values should be passed in
+    real(cvmix_r8), dimension(:), intent(in), optional :: ws_cntr, N_iface,   &
+                                                          Nsqr_iface,         &
+                                                          Vt_sqr_cntr
     type(cvmix_kpp_params_type), intent(in), optional, target ::              &
                                            CVmix_kpp_params_user
 
 ! !OUTPUT PARAMETERS:
     real(cvmix_r8), dimension(size(zt_cntr)) ::                               &
-                             cvmix_kpp_compute_bulk_Richardson_no_Vt
+                             cvmix_kpp_compute_bulk_Richardson
 
 !EOP
 !BOC
@@ -1065,90 +1085,50 @@ contains
     ! * unresolved_shear_cntr_sqr is the square of the unresolved level-center
     !   velocity shear (Vt^2(d) in LMD94, units: m^2/s^2)
     real(cvmix_r8), allocatable, dimension(:) :: unresolved_shear_cntr_sqr
-
-    ! Make sure all arguments are same size
-    if (any((/size(delta_buoy), size(delta_vel_sqr), size(buoy_freq),         &
-              size(w_s)/).ne.size(zt_cntr))) then
-      print*, "ERROR: all inputs to cvmix_kpp_compute_bulk_Richardson must ", &
-              "be the same size!"
-      stop 1
-    end if
-    allocate(unresolved_shear_cntr_sqr(size(zt_cntr)))
-    unresolved_shear_cntr_sqr = cvmix_kpp_compute_unresolved_shear(zt_cntr,   &
-                                buoy_freq, w_s, CVmix_kpp_params_user)
-    cvmix_kpp_compute_bulk_Richardson_no_Vt =                                 &
-        cvmix_kpp_compute_bulk_Richardson(zt_cntr, delta_buoy, delta_vel_sqr, &
-                                          unresolved_shear_cntr_sqr)
-    deallocate(unresolved_shear_cntr_sqr)
-
-!EOC
-
-  end function cvmix_kpp_compute_bulk_Richardson_no_Vt
-
-!BOP
-
-! !IROUTINE: cvmix_kpp_compute_bulk_Richardson_with_Vt
-! !INTERFACE:
-
-  function cvmix_kpp_compute_bulk_Richardson_with_Vt(zt_cntr, delta_buoy,     &
-                                                     delta_vel_sqr,           &
-                                                     unresolved_shear_cntr_sqr)
-
-! !DESCRIPTION:
-!  Computes the bulk Richardson number as given in Eq. (21) of LMD94
-!\\
-!\\
-
-! !USES:
-!  Only those used by entire module. 
-
-! !INPUT PARAMETERS:
-    ! * zt_cntr is level-center height (d in LMD94, units: m)
-    ! * delta_buoy is the mean buoyancy estimate over surface layer minus the
-    !   level-center buoyancy ( (Br-B(d)) in LMD94, units: m/s^2)
-    ! * delta_vel_sqr is the square of the magnitude of the mean velocity
-    !   estimate over surface layer minus the level-center velocity
-    !   ( |Vr-V(d)|^2 in LMD94, units: m^2/s^2)
-    ! * unresolved_shear_cntr_sqr is the square of the unresolved level-center
-    !   velocity shear (Vt^2(d) in LMD94, units: m^2/s^2)
-    real(cvmix_r8), dimension(:), intent(in) :: zt_cntr, delta_buoy,          &
-                                                delta_vel_sqr,                &
-                                                unresolved_shear_cntr_sqr
-
-! !OUTPUT PARAMETERS:
-    real(cvmix_r8), dimension(size(zt_cntr)) ::                               &
-                             cvmix_kpp_compute_bulk_Richardson_with_Vt
-
-!EOP
-!BOC
-
-    ! Local variables
     integer        :: kt
     real(cvmix_r8) :: num, denom
 
     ! Make sure all arguments are same size
-    if (any((/size(delta_buoy), size(delta_vel_sqr),                          &
-              size(unresolved_shear_cntr_sqr)/).ne.size(zt_cntr))) then
-      print*, "ERROR: all inputs to cvmix_kpp_compute_bulk_Richardson must ", &
-              "be the same size!"
+    if (any((/size(delta_buoy_cntr), size(delta_Vsqr_cntr)/).ne.              &
+        size(zt_cntr))) then
+      print*, "ERROR: delta_buoy, delta_vel_sqr, and zt_cntr must all be the",&
+              "same size!"
       stop 1
+    end if
+    allocate(unresolved_shear_cntr_sqr(size(zt_cntr)))
+    if (present(Vt_sqr_cntr)) then
+      if (size(Vt_sqr_cntr).eq.size(zt_cntr)) then
+        unresolved_shear_cntr_sqr = Vt_sqr_cntr
+      else
+        print*, "ERROR: Vt_sqr_cntr must be the same size as zt_cntr!"
+        stop 1
+      end if
+    else
+      if (.not.present(ws_cntr)) then
+        print*, "ERROR: you must pass in either Vt_sqr_cntr or ws_cntr!"
+        stop 1
+      end if
+      unresolved_shear_cntr_sqr = cvmix_kpp_compute_unresolved_shear(zt_cntr, &
+                                      ws_cntr, N_iface, Nsqr_iface,           &
+                                      CVmix_kpp_params_user)
     end if
 
     do kt=1,size(zt_cntr)
       ! Negative sign because we use positive-up for height
-      num   = -zt_cntr(kt)*delta_buoy(kt)
-      denom = delta_vel_sqr(kt) + unresolved_shear_cntr_sqr(kt)
+      num   = -zt_cntr(kt)*delta_buoy_cntr(kt)
+      denom = delta_Vsqr_cntr(kt) + unresolved_shear_cntr_sqr(kt)
       if (denom.ne.0.0_cvmix_r8) then
-        cvmix_kpp_compute_bulk_Richardson_with_Vt(kt) = num/denom
+        cvmix_kpp_compute_bulk_Richardson(kt) = num/denom
       else
         ! Need a better fudge factor?
-        cvmix_kpp_compute_bulk_Richardson_with_Vt(kt) = num*1e10_cvmix_r8
+        cvmix_kpp_compute_bulk_Richardson(kt) = num*1e10_cvmix_r8
       end if
     end do
+    deallocate(unresolved_shear_cntr_sqr)
 
 !EOC
 
-  end function cvmix_kpp_compute_bulk_Richardson_with_Vt
+  end function cvmix_kpp_compute_bulk_Richardson
 
 !BOP
 
@@ -1377,11 +1357,17 @@ contains
 ! !IROUTINE: cvmix_kpp_compute_unresolved_shear
 ! !INTERFACE:
 
-  function cvmix_kpp_compute_unresolved_shear(zt_cntr, buoy_freq, w_s,        &
-                                             CVmix_kpp_params_user)
+  function cvmix_kpp_compute_unresolved_shear(zt_cntr, ws_cntr, N_iface,      &
+                                            Nsqr_iface, CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
 !  Computes the square of the unresolved shear ($V_t^2$ in Eq. (23) of LMD94)
+!  at cell centers. Note that you must provide either the buoyancy frequency
+!  or its square at cell interfaces, this routine by default will use the
+!  lower cell interface value as the cell center, but you can instead take
+!  an average of the top and bottom interface values by setting
+!  lavg_N_or_Nsqr = .true. in cvmix_kpp_init(). If you pass in Nsqr then
+!  negative values are assumed to be zero (default POP behavior)
 !\\
 !\\
 
@@ -1389,7 +1375,13 @@ contains
 !  Only those used by entire module. 
 
 ! !INPUT PARAMETERS:
-    real(cvmix_r8), dimension(:), intent(in) :: zt_cntr, buoy_freq, w_s
+    ! zt_cntr: height at center of cell (units: m)
+    ! ws_cntr: w_s (turbulent scale factor) at center of cell (units: m/s)
+    real(cvmix_r8), dimension(:), intent(in) :: zt_cntr,  ws_cntr
+    ! N_iface: buoyancy frequency at cell interfaces (units: 1/s)
+    ! Nsqr_iface: squared buoyancy frequency at cell interfaces (units: 1/s^2)
+    ! note that you must provide exactly one of these two inputs!
+    real(cvmix_r8), dimension(:), intent(in), optional :: N_iface, Nsqr_iface
     type(cvmix_kpp_params_type),  intent(in), optional, target ::             &
                                            CVmix_kpp_params_user
 
@@ -1403,17 +1395,64 @@ contains
     ! Local variables
     integer :: kt, nlev
     real(cvmix_r8) :: Cv, Vtc
+    ! N_cntr: buoyancy frequency at cell centers, derived from either N_iface
+    !        or Nsqr_iface (units: 1/s)
+    real(cvmix_r8), dimension(:), allocatable :: N_cntr
     type(cvmix_kpp_params_type), pointer :: CVmix_kpp_params_in
 
     nlev = size(zt_cntr)
-    if (any((/size(buoy_freq), size(w_s)/).ne.nlev)) then
-      print*, "ERROR: zt_cntr, buoy_freq, and w_s must be same size"
+    if (size(ws_cntr).ne.nlev) then
+      print*, "ERROR: zt_cntr and ws_cntr must be same size"
       stop 1
+    end if
+
+    if (present(N_iface).and.present(Nsqr_iface)) then
+      print*, "ERROR: you must provide N_iface OR Nsqr_iface, can not send",  &
+              "both!"
+      stop 1
+    end if
+
+    if (.not.(present(N_iface).or.present(Nsqr_iface))) then
     end if
 
     CVmix_kpp_params_in => CVmix_kpp_params_saved
     if (present(CVmix_kpp_params_user)) then
       CVmix_kpp_params_in => CVmix_kpp_params_user
+    end if
+
+    if (present(N_iface)) then
+      if (size(N_iface).ne.(nlev+1)) then
+        print*, "ERROR: N_iface must have one more element than zt_cntr"
+        stop 1
+      end if
+      allocate(N_cntr(nlev))
+      do kt=1,nlev
+        if (CVmix_kpp_params_in%lavg_N_or_Nsqr) then
+          N_cntr(kt) = 0.5_cvmix_r8*(N_iface(kt)+N_iface(kt+1))
+        else
+          N_cntr(kt) = N_iface(kt+1)
+        end if
+      end do
+    else
+      if (present(Nsqr_iface)) then
+        if (size(Nsqr_iface).ne.(nlev+1)) then
+          print*, "ERROR: Nsqr_iface must have one more element than zt_cntr"
+          stop 1
+        end if
+        allocate(N_cntr(nlev))
+        do kt=1,nlev
+          if (CVmix_kpp_params_in%lavg_N_or_Nsqr) then
+            N_cntr(kt)=sqrt((max(Nsqr_iface(kt),0.0_cvmix_r8) +               &
+                             max(Nsqr_iface(kt+1),0.0_cvmix_r8)) *            &
+                             0.5_cvmix_r8)
+          else
+            N_cntr(kt)=sqrt(max(Nsqr_iface(kt+1),0.0_cvmix_r8))
+          end if
+        end do
+      else
+        print*, "ERROR: you must provide N_iface OR Nsqr_iface"
+        stop 1
+      end if
     end if
 
     ! From LMD 94, Vtc = sqrt(-beta_T/(c_s*eps))/kappa^2
@@ -1422,15 +1461,19 @@ contains
           (cvmix_get_kpp_real('vonkarman', CVmix_kpp_params_in)**2)
     do kt=1,nlev
       ! Cv computation comes from Danabasoglu et al., 2006
-      if (buoy_freq(kt).lt.0.002_cvmix_r8) then
-        Cv = 2.1_cvmix_r8-200.0_cvmix_r8*buoy_freq(kt)
+      if (N_cntr(kt).lt.0.002_cvmix_r8) then
+        Cv = 2.1_cvmix_r8-200.0_cvmix_r8*N_cntr(kt)
       else
         Cv = 1.7_cvmix_r8
       end if
 
       cvmix_kpp_compute_unresolved_shear(kt) = -Cv*Vtc*zt_cntr(kt)*           &
-                            buoy_freq(kt)*w_s(kt)/CVmix_kpp_params_in%Ri_crit
+                            N_cntr(kt)*ws_cntr(kt)/CVmix_kpp_params_in%Ri_crit
     end do
+
+    deallocate(N_cntr)
+
+!EOC
 
   end function cvmix_kpp_compute_unresolved_shear
 

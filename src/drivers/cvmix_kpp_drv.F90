@@ -44,12 +44,12 @@ Subroutine cvmix_kpp_driver()
 
   real(cvmix_r8), dimension(:,:), allocatable, target :: diffusivity
   real(cvmix_r8), dimension(:),   allocatable, target :: viscosity
-  real(cvmix_r8), dimension(:),   allocatable, target :: zt, zw_iface, Ri_bulk
+  real(cvmix_r8), dimension(:),   allocatable, target :: zt, zw_iface,        &
+                                                         Ri_bulk, Ri_bulk2
   real(cvmix_r8), dimension(:),   allocatable, target :: w_m, w_s, zeta
   real(cvmix_r8), dimension(:,:), allocatable, target :: TwoDArray
   real(cvmix_r8), dimension(:),   allocatable, target :: buoyancy, shear_sqr, &
                                                          delta_vel_sqr,       &
-                                                         buoy_freq,           &
                                                          buoy_freq_iface
   real(cvmix_r8), dimension(:,:), allocatable, target :: hor_vel
   real(cvmix_r8), dimension(2)                        :: ref_vel
@@ -309,7 +309,8 @@ Subroutine cvmix_kpp_driver()
     layer_thick = 5
     hmix5 = 17
     ! using linear interpolation to match LMD result
-    call cvmix_init_kpp(vonkarman=0.4_cvmix_r8, interp_type='linear')
+    call cvmix_init_kpp(vonkarman=0.4_cvmix_r8, interp_type='linear',         &
+                        lavg_N_or_Nsqr = .true.)
 
     ! Set up vertical levels (centers and interfaces) and compute bulk
     ! Richardson number
@@ -323,7 +324,7 @@ Subroutine cvmix_kpp_driver()
 
     ! Compute Br-B(d), |Vr-V(d)|^2, and Vt^2
     allocate(buoyancy(nlev5), delta_vel_sqr(nlev5), hor_vel(nlev5,2),         &
-             shear_sqr(nlev5), w_s(nlev5), Ri_bulk(nlev5), buoy_freq(nlev5),  &
+             shear_sqr(nlev5), w_s(nlev5), Ri_bulk(nlev5), Ri_bulk2(nlev5),   &
              buoy_freq_iface(nlev5+1))
 
     ref_vel(1) = 0.1_cvmix_r8
@@ -362,24 +363,32 @@ Subroutine cvmix_kpp_driver()
                           (ref_vel(2)-hor_vel(kt,2))**2
     end do
     buoy_freq_iface(nlev5+1) = N
-    do kt=1,nlev5
-      buoy_freq(kt) = sqrt(0.5_cvmix_r8*(buoy_freq_iface(kt)**2+buoy_freq_iface(kt+1)**2))
-    end do
-!   MNL: tested both interfaces of compute_bulk_Richardson
-!    shear_sqr = cvmix_kpp_compute_unresolved_shear(zt, buoy_freq, w_s)
-!    Ri_bulk   = cvmix_kpp_compute_bulk_Richardson(zt, (buoyancy(1)-buoyancy), &
-!                                                  delta_vel_sqr, shear_sqr)
+!   MNL: test both uses of compute_bulk_Richardson
     Ri_bulk = cvmix_kpp_compute_bulk_Richardson(zt, (buoyancy(1)-buoyancy),   &
-                                                delta_vel_sqr, buoy_freq, w_s)
+                                             delta_vel_sqr,                   &
+                                             Nsqr_iface = buoy_freq_iface**2, &
+                                             ws_cntr = w_s)
+
+    shear_sqr = cvmix_kpp_compute_unresolved_shear(zt, w_s,                   &
+                                             Nsqr_iface = buoy_freq_iface**2) 
+    ! Note that Vt_shear_sqr is the fourth argument in compute_bulk_Richardson
+    ! so it does not need to declared explicitly (even though it is optional)
+    Ri_bulk2  = cvmix_kpp_compute_bulk_Richardson(zt, (buoyancy(1)-buoyancy), &
+                                                  delta_vel_sqr, shear_sqr)
     call cvmix_kpp_compute_OBL_depth(Ri_bulk, zw_iface, OBL_depth, kOBL_depth,&
                                      zt)
     do kt=1,nlev5
-      print*, zt(kt), Ri_bulk(kt)
+      if (abs(Ri_bulk(kt)-Ri_bulk2(kt)).gt.1e-12_cvmix_r8) then
+        print*, "WARNING: two Ri_bulk computations did not match!"
+        print*, zt(kt), Ri_bulk(kt), Ri_bulk2(kt)
+      else
+        print*, zt(kt), Ri_bulk(kt)
+      end if
     end do
     print*, "OBL has depth of ", OBL_depth
     deallocate(zt, zw_iface)
     deallocate(buoyancy, delta_vel_sqr, hor_vel, shear_sqr, w_s, Ri_bulk,     &
-               buoy_freq)
+               Ri_bulk2, buoy_freq_iface)
   end if
 
 !EOC
