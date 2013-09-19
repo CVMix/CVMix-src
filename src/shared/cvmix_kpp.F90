@@ -1211,8 +1211,12 @@ contains
                                                    CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
-!  Computes the turbulent velocity scales for momentum ($w\_m$) and scalars
-!  ($w\_s$) given a 1d array of $\sigma$ coordinates
+!  Computes the turbulent velocity scales for momentum (\verb|w_m|) and scalars
+!  (\verb|w_s|) given a 1d array of $\sigma$ coordinates. Note that the
+!  turbulent scales are a continuous function, so there is no restriction to
+!  only evaluating this routine at interfaces or cell centers. Also, if 
+!  $sigma \gt$ \verb|surf_layer_ext| (which is typically 0.1), \verb|w_m| and
+!  \verb|w_s| will be evaluated at the latter value.
 !\\
 !\\
 
@@ -1233,13 +1237,13 @@ contains
 !BOC
 
     ! Local variables
-    integer :: nlev_p1, kw
+    integer :: n_sigma, kw
     logical :: compute_wm, compute_ws
     real(cvmix_r8), allocatable, dimension(:) :: zeta
     real(cvmix_r8) :: vonkar, surf_layer_ext
     type(cvmix_kpp_params_type), pointer :: CVmix_kpp_params_in
 
-    nlev_p1 = size(sigma_coord)
+    n_sigma = size(sigma_coord)
 
     CVmix_kpp_params_in => CVmix_kpp_params_saved
     if (present(CVmix_kpp_params_user)) then
@@ -1252,8 +1256,8 @@ contains
     surf_layer_ext = cvmix_get_kpp_real('surf_layer_ext', CVmix_kpp_params_in)
 
     if (surf_fric_vel.ne.0.0_cvmix_r8) then
-      allocate(zeta(nlev_p1))
-      do kw=1,nlev_p1
+      allocate(zeta(n_sigma))
+      do kw=1,n_sigma
         ! compute scales at sigma if sigma < surf_layer_ext, otherwise compute
         ! at surf_layer_ext
         zeta(kw) = min(surf_layer_ext, sigma_coord(kw)) * OBL_depth *         &
@@ -1261,14 +1265,14 @@ contains
       end do
 
       if (compute_wm) then
-        if (size(w_m).ne.nlev_p1) then
+        if (size(w_m).ne.n_sigma) then
           print*, "ERROR: sigma_coord and w_m must be same size!"
           deallocate(zeta)
           stop 1
         end if
         w_m(1) = compute_phi_inv(zeta(1), CVmix_kpp_params_in, lphi_m=.true.)*&
                  vonkar*surf_fric_vel
-        do kw=2,nlev_p1
+        do kw=2,n_sigma
           if (zeta(kw).eq.zeta(kw-1)) then
             w_m(kw) = w_m(kw-1)
           else
@@ -1279,14 +1283,14 @@ contains
       end if
 
       if (compute_ws) then
-        if (size(w_s).ne.nlev_p1) then
+        if (size(w_s).ne.n_sigma) then
           print*, "ERROR: sigma_coord and w_s must be same size!"
           deallocate(zeta)
           stop 1
         end if
         w_s(1) = compute_phi_inv(zeta(1), CVmix_kpp_params_in, lphi_s=.true.)*&
                  vonkar*surf_fric_vel
-        do kw=2,nlev_p1
+        do kw=2,n_sigma
           if (zeta(kw).eq.zeta(kw-1)) then
             w_s(kw) = w_s(kw-1)
           else
@@ -1300,7 +1304,7 @@ contains
 
     else ! surf_fric_vel = 0
       if (compute_wm) then
-        if (size(w_m).ne.nlev_p1) then
+        if (size(w_m).ne.n_sigma) then
           print*, "ERROR: sigma_coord and w_m must be same size!"
           stop 1
         end if
@@ -1310,7 +1314,7 @@ contains
           w_m = 0.0_cvmix_r8
         else
           ! Unstable forcing, Eq. (B1c) reduces to following
-          do kw=1,nlev_p1
+          do kw=1,n_sigma
             w_m(kw) = cvmix_get_kpp_real('c_m', CVmix_kpp_params_in) *        &
                       min(surf_layer_ext, sigma_coord(kw)) * vonkar *         &
                       surf_buoy_force
@@ -1324,7 +1328,7 @@ contains
       end if ! compute_wm
 
       if (compute_ws) then
-        if (size(w_s).ne.nlev_p1) then
+        if (size(w_s).ne.n_sigma) then
           print*, "ERROR: sigma_coord and w_s must be same size!"
           stop 1
         end if
@@ -1334,7 +1338,7 @@ contains
           w_s = 0.0_cvmix_r8
         else
           ! Unstable forcing, Eq. (B1c) reduces to following
-          do kw=1,nlev_p1
+          do kw=1,n_sigma
             w_s(kw) = cvmix_get_kpp_real('c_s', CVmix_kpp_params_in) *        &
                       min(surf_layer_ext, sigma_coord(kw)) * vonkar *         &
                       surf_buoy_force
