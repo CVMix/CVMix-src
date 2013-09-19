@@ -174,7 +174,7 @@ contains
     if (present(vonkarman)) then
       call cvmix_put_kpp('vonkarman', vonkarman, CVmix_kpp_params_user)
     else
-      call cvmix_put_kpp('vonkarman', 0.41_cvmix_r8, CVmix_kpp_params_user)
+      call cvmix_put_kpp('vonkarman', 0.4_cvmix_r8, CVmix_kpp_params_user)
     end if
 
     if (present(Cstar)) then
