@@ -38,7 +38,7 @@
 
 !BOP
 
-! !DEFINED_PARAMETERS:
+! !DEFINED PARAMETERS:
   integer, parameter :: CVMIX_KPP_INTERP_POP = -1
 
 ! !PUBLIC MEMBER FUNCTIONS:
@@ -131,6 +131,8 @@ contains
 
 ! !DESCRIPTION:
 !  Initialization routine for KPP mixing.
+!\\
+!\\
 !
 ! !USES:
 !  Only those used by entire module.
@@ -943,11 +945,11 @@ contains
   function cvmix_kpp_compute_kOBL_depth(zw_iface, zt_cntr, OBL_depth)
 
 ! !DESCRIPTION:
-!  Computes the index of the level and interface above OBL_depth. The index is
+!  Computes the index of the level and interface above OBL\_depth. The index is
 !  stored as a real number, and the integer index can be solved for in the
 !  following way:\\
-!    \verb|kt| = index of cell center above OBL_depth = \verb|nint(kOBL_depth)-1|
-!    \verb|kw| = index of interface above OBL_depth = \verb|floor(kOBL_depth)|
+!    \verb|kt| = index of cell center above OBL\_depth = \verb|nint(kOBL_depth)-1|
+!    \verb|kw| = index of interface above OBL\_depth = \verb|floor(kOBL_depth)|
 !\\
 !\\
 
@@ -1141,8 +1143,8 @@ contains
                                                    CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
-!  Computes the turbulent velocity scales for momentum ($w\_m$) and scalars
-!  ($w\_s$) at single $\sigma$ coordinate
+!  Computes the turbulent velocity scales for momentum (\verb|w_m|) and scalars
+!  (\verb|w_s|) at a single $\sigma$ coordinate
 !\\
 !\\
 
@@ -1215,7 +1217,7 @@ contains
 !  (\verb|w_s|) given a 1d array of $\sigma$ coordinates. Note that the
 !  turbulent scales are a continuous function, so there is no restriction to
 !  only evaluating this routine at interfaces or cell centers. Also, if 
-!  $sigma \gt$ \verb|surf_layer_ext| (which is typically 0.1), \verb|w_m| and
+!  $\sigma >$ \verb|surf_layer_ext| (which is typically 0.1), \verb|w_m| and
 !  \verb|w_s| will be evaluated at the latter value.
 !\\
 !\\
@@ -1370,7 +1372,7 @@ contains
 !  or its square at cell interfaces, this routine by default will use the
 !  lower cell interface value as the cell center, but you can instead take
 !  an average of the top and bottom interface values by setting
-!  lavg_N_or_Nsqr = .true. in cvmix_kpp_init(). If you pass in Nsqr then
+!  lavg\_N\_or\_Nsqr = .true. in cvmix\_kpp\_init(). If you pass in Nsqr then
 !  negative values are assumed to be zero (default POP behavior)
 !\\
 !\\
@@ -1584,8 +1586,22 @@ contains
 
   end subroutine cvmix_kpp_compute_shape_function_coeffs
 
+!BOP
+
+! !IROUTINE: cvmix_compute_nu_at_OBL_depth
+! !INTERFACE:
+
   function compute_nu_at_OBL_depth(interp_type2, layer_depth, layer_nu,       &
                                    OBL_depth, depth_2above, nu_2above, dnu_dz)
+
+! !DESCRIPTION:
+!  Interpolate to find $\nu$ at \verb|OBL_depth| from values at interfaces
+!  above and below.
+!\\
+!\\
+
+! !USES:
+!  Only those used by entire module. 
 
 ! !INPUT PARAMETERS:
     integer,                      intent(in) :: interp_type2
@@ -1600,6 +1616,9 @@ contains
 ! !OUTPUT PARAMETERS:
     real(cvmix_r8), optional, intent(out) :: dnu_dz
     real(cvmix_r8)                        :: compute_nu_at_OBL_depth
+
+!EOP
+!BOC
 
     ! Local variables
     real(cvmix_r8), dimension(4) :: coeffs
@@ -1630,5 +1649,7 @@ contains
                                                         dnu_dz)
 
   end function compute_nu_at_OBL_depth
+
+!EOC
 
 end module cvmix_kpp
