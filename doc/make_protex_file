@@ -19,6 +19,7 @@ f90pdf                                       \
        $SHARE/cvmix_ddiff.F90                \
        $SHARE/cvmix_kpp.F90                  \
        $SHARE/cvmix_convection.F90           \
+       $SHARE/cvmix_math.F90                 \
        $SHARE/cvmix_put_get.F90
 
 rm -f output.tex
