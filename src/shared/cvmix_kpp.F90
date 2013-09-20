@@ -1418,9 +1418,6 @@ contains
       stop 1
     end if
 
-    if (.not.(present(N_iface).or.present(Nsqr_iface))) then
-    end if
-
     CVmix_kpp_params_in => CVmix_kpp_params_saved
     if (present(CVmix_kpp_params_user)) then
       CVmix_kpp_params_in => CVmix_kpp_params_user
