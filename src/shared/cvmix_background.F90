@@ -1010,7 +1010,7 @@ contains
 ! !IROUTINE: cvmix_get_bkgnd_real_2D
 ! !INTERFACE:
 
-  function cvmix_get_bkgnd_real_2D(CVmix_bkgnd_params_get, varname)
+  function cvmix_get_bkgnd_real_2D(varname, CVmix_bkgnd_params_user)
 
 ! !DESCRIPTION:
 !  Read the real values of a cvmix\_bkgnd\_params\_type 2D array variable.
@@ -1021,15 +1021,26 @@ contains
 !  Only those used by entire module. 
 
 ! !INPUT PARAMETERS:
-    type(cvmix_bkgnd_params_type), intent(in) :: CVmix_bkgnd_params_get
-    character(len=*),              intent(in) :: varname
+    character(len=*),                                intent(in) :: varname
+    type(cvmix_bkgnd_params_type), optional, target, intent(in) ::            &
+                                             CVmix_bkgnd_params_user
 
 ! !OUTPUT PARAMETERS:
-    real(cvmix_r8), dimension(size(CVmix_bkgnd_params_get%static_visc,1),    &
-                              size(CVmix_bkgnd_params_get%static_visc,2)) :: &
-                    cvmix_get_bkgnd_real_2D
+    real(cvmix_r8), allocatable, dimension(:,:) :: cvmix_get_bkgnd_real_2D
+
 !EOP
 !BOC
+
+    type(cvmix_bkgnd_params_type), pointer :: CVmix_bkgnd_params_get
+    integer :: dim1, dim2
+
+    CVmix_bkgnd_params_get => CVmix_bkgnd_params_saved
+    if (present(CVmix_bkgnd_params_user)) then
+      CVmix_bkgnd_params_get => CVmix_bkgnd_params_user
+    end if
+    dim1 = size(CVmix_bkgnd_params_get%static_visc,1)
+    dim2 = size(CVmix_bkgnd_params_get%static_visc,2)
+    allocate(cvmix_get_bkgnd_real_2D(dim1, dim2))
 
     select case (trim(varname))
       case ('static_visc')

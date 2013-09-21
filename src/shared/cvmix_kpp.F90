@@ -370,7 +370,7 @@ contains
 !BOC
 
     ! Local variables
-    type(cvmix_kpp_params_type), pointer      :: CVmix_kpp_params_in
+    type(cvmix_kpp_params_type), pointer :: CVmix_kpp_params_in
 
     ! OBL_diff and OBL_visc are the diffusivity and viscosity in the whole OBL
     real(cvmix_r8), dimension(:,:), allocatable :: OBL_diff
@@ -752,35 +752,35 @@ contains
 !EOP
 !BOC
 
-    type(cvmix_kpp_params_type), pointer :: CVmix_kpp_params_in
+    type(cvmix_kpp_params_type), pointer :: CVmix_kpp_params_get
 
-    CVmix_kpp_params_in => CVmix_kpp_params_saved
+    CVmix_kpp_params_get => CVmix_kpp_params_saved
     if (present(CVmix_kpp_params_user)) then
-      CVmix_kpp_params_in => CVmix_kpp_params_user
+      CVmix_kpp_params_get => CVmix_kpp_params_user
     end if
 
     cvmix_get_kpp_real = 0.0_cvmix_r8
     select case (trim(varname))
       case ('Ri_crit')
-        cvmix_get_kpp_real = CVmix_kpp_params_in%Ri_crit
+        cvmix_get_kpp_real = CVmix_kpp_params_get%Ri_crit
       case ('vonkarman')
-        cvmix_get_kpp_real = CVmix_kpp_params_in%vonkarman
+        cvmix_get_kpp_real = CVmix_kpp_params_get%vonkarman
       case ('Cstar')
-        cvmix_get_kpp_real = CVmix_kpp_params_in%Cstar
+        cvmix_get_kpp_real = CVmix_kpp_params_get%Cstar
       case ('zeta_m')
-        cvmix_get_kpp_real = CVmix_kpp_params_in%zeta_m
+        cvmix_get_kpp_real = CVmix_kpp_params_get%zeta_m
       case ('zeta_s')
-        cvmix_get_kpp_real = CVmix_kpp_params_in%zeta_s
+        cvmix_get_kpp_real = CVmix_kpp_params_get%zeta_s
       case ('a_m')
-        cvmix_get_kpp_real = CVmix_kpp_params_in%a_m
+        cvmix_get_kpp_real = CVmix_kpp_params_get%a_m
       case ('a_s')
-        cvmix_get_kpp_real = CVmix_kpp_params_in%a_s
+        cvmix_get_kpp_real = CVmix_kpp_params_get%a_s
       case ('c_m')
-        cvmix_get_kpp_real = CVmix_kpp_params_in%c_m
+        cvmix_get_kpp_real = CVmix_kpp_params_get%c_m
       case ('c_s')
-        cvmix_get_kpp_real = CVmix_kpp_params_in%c_s
+        cvmix_get_kpp_real = CVmix_kpp_params_get%c_s
       case ('surf_layer_ext')
-        cvmix_get_kpp_real = CVmix_kpp_params_in%surf_layer_ext
+        cvmix_get_kpp_real = CVmix_kpp_params_get%surf_layer_ext
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
         stop 1

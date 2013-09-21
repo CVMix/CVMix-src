@@ -25,6 +25,7 @@ Subroutine cvmix_BL_memcopy_driver(nlev, ocn_depth)
                                     cvmix_global_params_type
   use cvmix_background,      only : cvmix_init_bkgnd,         &
                                     cvmix_coeffs_bkgnd,       &
+                                    cvmix_get_bkgnd_real_2D,  &
                                     cvmix_bkgnd_params_type
   use cvmix_put_get,         only : cvmix_put
   use cvmix_io,              only : cvmix_io_open,            &
@@ -102,15 +103,21 @@ Subroutine cvmix_BL_memcopy_driver(nlev, ocn_depth)
   read(*, nml=BryanLewis2_nml)
 
   ! Set B-L parameters
-  call cvmix_init_bkgnd(CVmix_vars(1), col1_vdc1, col1_vdc2, col1_linv, &
+  call cvmix_init_bkgnd(CVmix_vars(1), col1_vdc1, col1_vdc2, col1_linv,       &
                         col1_dpth, CVmix_params_user=CVmix_params)
-  call cvmix_init_bkgnd(CVmix_vars(2), col2_vdc1, col2_vdc2, col2_linv, &
-                        col2_dpth, CVmix_params_user=CVMix_params,      &
+  call cvmix_init_bkgnd(CVmix_vars(2), col2_vdc1, col2_vdc2, col2_linv,       &
+                        col2_dpth, CVmix_params_user=CVMix_params,            &
                         CVmix_bkgnd_params_user=CVmix_BL_params)
 
   ! Compute B-L coefficients
-  call cvmix_coeffs_bkgnd(CVmix_vars(1))
-  call cvmix_coeffs_bkgnd(CVmix_vars(2), CVmix_bkgnd_params_user=CVmix_BL_params)
+  ! test icvmix_get_bkgnd_real_2D
+  CVmix_vars(1)%visc_iface      = reshape(                                    &
+                            cvmix_get_bkgnd_real_2D('static_visc'),(/nlev+1/))
+  CVmix_vars(1)%diff_iface(:,1) = reshape(                                    &
+                            cvmix_get_bkgnd_real_2D('static_diff'),(/nlev+1/))
+!  print*, shape(cvmix_get_bkgnd_real_2D('static_diff'))
+  call cvmix_coeffs_bkgnd(CVmix_vars(2),                                      &
+                          CVmix_bkgnd_params_user=CVmix_BL_params)
   
   ! Output
 #ifdef _NETCDF
@@ -118,14 +125,14 @@ Subroutine cvmix_BL_memcopy_driver(nlev, ocn_depth)
   call cvmix_io_open(fid, "data.nc", "nc")
   ! Note: all entries in string of variables to output must be
   !       the same length... hence the space in "diff "
-  call cvmix_output_write(fid, CVmix_vars, (/"depth", "diff "/))
+  call cvmix_output_write(fid, CVmix_vars, (/"zw_iface", "diff    "/))
   call cvmix_output_write_att(fid, "long_name", "tracer diffusivity",         &
                               var_name="diff")
   call cvmix_output_write_att(fid, "units", "m^2/s", var_name="diff")
   call cvmix_output_write_att(fid, "long_name", "depth to interface",         &
                               var_name="depth")
-  call cvmix_output_write_att(fid, "positive", "up", var_name="depth")
-  call cvmix_output_write_att(fid, "units", "m", var_name="depth")
+  call cvmix_output_write_att(fid, "positive", "up", var_name="zw_iface")
+  call cvmix_output_write_att(fid, "units", "m", var_name="zw_iface")
   call cvmix_io_close(fid)
 #else
   ! data will have diffusivity from both columns (needed for NCL script)
@@ -137,9 +144,9 @@ Subroutine cvmix_BL_memcopy_driver(nlev, ocn_depth)
 
   ! Note: all entries in string of variables to output must be
   !       the same length... hence the space in "diff "
-  call cvmix_output_write(fid1, CVmix_vars,    (/"depth", "diff "/))
-  call cvmix_output_write(fid2, CVmix_vars(1), (/"depth", "diff "/))
-  call cvmix_output_write(fid3, CVmix_vars(2), (/"depth", "diff "/))
+  call cvmix_output_write(fid1, CVmix_vars,    (/"zw_iface", "diff    "/))
+  call cvmix_output_write(fid2, CVmix_vars(1), (/"zw_iface", "diff    "/))
+  call cvmix_output_write(fid3, CVmix_vars(2), (/"zw_iface", "diff    "/))
 
   call cvmix_io_close(fid1)
   call cvmix_io_close(fid2)
