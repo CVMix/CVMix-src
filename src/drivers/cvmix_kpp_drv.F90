@@ -40,7 +40,7 @@ Subroutine cvmix_kpp_driver()
 !BOC
 
   ! CVMix datatypes
-  type(cvmix_data_type)       :: CVmix_vars1, CVmix_vars4
+  type(cvmix_data_type)       :: CVmix_vars1, CVmix_vars4, CVmix_vars5
 
   real(cvmix_r8), dimension(:,:), allocatable, target :: diffusivity
   real(cvmix_r8), dimension(:),   allocatable, target :: viscosity
@@ -393,6 +393,36 @@ Subroutine cvmix_kpp_driver()
       end if
     end do
     print*, "OBL has depth of ", OBL_depth
+
+    CVmix_vars5%nlev      =  nlev5
+    CVmix_vars5%OBL_depth =  OBL_depth
+    CVmix_vars5%zt        => zt
+    CVmix_vars5%Rib       => Ri_bulk
+    CVmix_vars5%buoyancy  => buoyancy
+    CVmix_vars5%Vx        => hor_vel(:,1)
+#ifdef _NETCDF
+    call cvmix_io_open(fid, "test5.nc", "nc")
+#else
+    call cvmix_io_open(fid, "test5.out", "ascii")
+#endif
+    call cvmix_output_write(fid, CVmix_vars5, (/"zt      ",                   &
+                                                "Ri_bulk ",                   &
+                                                "Vx      ",                   &
+                                                "buoyancy"/))
+#ifdef _NETCDF
+    call cvmix_output_write_att(fid, "OBL_depth", CVmix_vars5%OBL_depth)
+    call cvmix_output_write_att(fid, "longname", "ocean height (cell center)",&
+                                "zt")
+    call cvmix_output_write_att(fid, "units", "m", "zt")
+    call cvmix_output_write_att(fid, "longname", "horizontal velocity", "Vx")
+    call cvmix_output_write_att(fid, "units", "m/s", "Vx")
+    call cvmix_output_write_att(fid, "units", "m/s^2", "buoyancy")
+    call cvmix_output_write_att(fid, "longname", "Bulk Richardson number",    &
+                                "Ri_bulk")
+    call cvmix_output_write_att(fid, "units", "unitless", "Ri_bulk")
+#endif
+    call cvmix_io_close(fid)
+
     deallocate(zt, zw_iface)
     deallocate(buoyancy, delta_vel_sqr, hor_vel, shear_sqr, w_s, Ri_bulk,     &
                Ri_bulk2, buoy_freq_iface)

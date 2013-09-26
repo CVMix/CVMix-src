@@ -590,8 +590,11 @@ contains
         call netcdf_check(nf90_def_dim(file_id, "nw", nw, nw_id))
         allocate(var_id(size(var_names)))
         do var=1,size(var_names)
-          if ((trim(var_names(var)).eq."Rrho").or.   &
-              (trim(var_names(var)).eq."Ri_bulk").or.     &
+          if ((trim(var_names(var)).eq."Rrho").or.                            &
+              (trim(var_names(var)).eq."Ri_bulk").or.                         &
+              (trim(var_names(var)).eq."buoyancy").or.                        &
+              (trim(var_names(var)).eq."Vx").or.                              &
+              (trim(var_names(var)).eq."Vy").or.                              &
               (trim(var_names(var)).eq."zt")) then
             call netcdf_check(nf90_def_var(file_id, var_names(var), NF90_DOUBLE, &
                                            (/nt_id/), var_id(var)))
@@ -604,27 +607,36 @@ contains
         do var=1,size(var_names)
           select case(trim(var_names(var)))
             case ("zt")
-              call netcdf_check(nf90_put_var(file_id, var_id(var), &
+              call netcdf_check(nf90_put_var(file_id, var_id(var),            &
                                              CVmix_vars%zt(:)))
             case ("zw", "zw_iface")
-              call netcdf_check(nf90_put_var(file_id, var_id(var), &
+              call netcdf_check(nf90_put_var(file_id, var_id(var),            &
                                              CVmix_vars%zw_iface(:)))
             case ("Ri")
-              call netcdf_check(nf90_put_var(file_id, var_id(var), &
+              call netcdf_check(nf90_put_var(file_id, var_id(var),            &
                                              CVmix_vars%Ri_iface(:)))
             case ("Ri_bulk")
-              call netcdf_check(nf90_put_var(file_id, var_id(var), &
+              call netcdf_check(nf90_put_var(file_id, var_id(var),            &
                                              CVmix_vars%Rib(:)))
             case ("visc")
-              call netcdf_check(nf90_put_var(file_id, var_id(var), &
+              call netcdf_check(nf90_put_var(file_id, var_id(var),            &
                                              CVmix_vars%visc_iface(:)))
             case ("diff")
-              call netcdf_check(nf90_put_var(file_id, var_id(var), &
+              call netcdf_check(nf90_put_var(file_id, var_id(var),            &
                                              CVmix_vars%diff_iface(:,1)))
             case ("Rrho")
-              call netcdf_check(nf90_put_var(file_id, var_id(var), &
-                                             CVmix_vars%strat_param_num(:)/ &
+              call netcdf_check(nf90_put_var(file_id, var_id(var),            &
+                                             CVmix_vars%strat_param_num(:)/   &
                                              CVmix_vars%strat_param_denom(:)))
+            case ("buoyancy")
+              call netcdf_check(nf90_put_var(file_id, var_id(var),            &
+                                             CVmix_vars%buoyancy(:)))
+            case ("Vx", "U")
+              call netcdf_check(nf90_put_var(file_id, var_id(var),            &
+                                             CVmix_vars%Vx(:)))
+            case ("Vy", "V")
+              call netcdf_check(nf90_put_var(file_id, var_id(var),            &
+                                             CVmix_vars%Vy(:)))
             case DEFAULT
               print*, "ERROR: unable to write variable ", var_names(var)
               stop 1
@@ -668,6 +680,27 @@ contains
                         CVmix_vars%strat_param_denom(kw)
                 else
                   write(file_id,"(E24.17E2)",advance='no') 0.0
+                end if
+              case ("buoyancy")
+                if (kw.gt.1) then
+                  write(file_id,"(E24.17E2)",advance='no') &
+                        CVmix_vars%buoyancy(kw-1)
+                else
+                  write(file_id,"(A)",advance='no') "--- Cell Center Vals ---"
+                end if
+              case ("Vx", "U")
+                if (kw.gt.1) then
+                  write(file_id,"(E24.17E2)",advance='no') &
+                        CVmix_vars%Vx(kw-1)
+                else
+                  write(file_id,"(A)",advance='no') "--- Cell Center Vals ---"
+                end if
+              case ("Vy", "V")
+                if (kw.gt.1) then
+                  write(file_id,"(E24.17E2)",advance='no') &
+                        CVmix_vars%Vy(kw-1)
+                else
+                  write(file_id,"(A)",advance='no') "--- Cell Center Vals ---"
                 end if
               case DEFAULT
                 print*, "ERROR: unable to write variable ", var_names(var)

@@ -75,4 +75,12 @@ if [ "$OUTPUT" == "TRUE" ]; then
       cat test4.out
     fi
   fi
+
+  if [ "`grep ltest5 input.nl | cut -d. -f 2`" != "false" ]; then
+    if [ "${USE_NETCDF}" == "netcdf" ]; then
+      ncdump -v zt,Ri_bulk test5.nc
+    else
+      cat test5.out
+    fi
+  fi
 fi
