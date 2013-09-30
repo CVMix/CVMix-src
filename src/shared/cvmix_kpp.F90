@@ -216,8 +216,8 @@ contains
     ! a_m, a_s, c_m, and c_s are computed from zeta_m and zeta_s
     ! a_m, c_m, and c_s are all non-negative. a_s may be negative depending
     ! on the value of zeta_s
-    a_m = ((one - 16.0_cvmix_r8*zm)**0.25_cvmix_r8)*(one - 4.0_cvmix_r8*zm)
-    c_m = 12.0_cvmix_r8*((one - 16.0_cvmix_r8*zm)**0.25_cvmix_r8)
+    a_m = ((one - 16.0_cvmix_r8*zm)**(-0.25_cvmix_r8))*(one - 4.0_cvmix_r8*zm)
+    c_m = 12.0_cvmix_r8*((one - 16.0_cvmix_r8*zm)**(-0.25_cvmix_r8))
     call cvmix_put_kpp('a_m', a_m, CVmix_kpp_params_user)
     call cvmix_put_kpp('c_m', c_m, CVmix_kpp_params_user)
 
