@@ -20,6 +20,7 @@
 ! !USES:
 
   use cvmix_kinds_and_types, only : cvmix_r8,                     &
+                                    zero,                         &
                                     one,                          &
                                     cvmix_data_type
   use cvmix_put_get, only :         cvmix_put
@@ -92,8 +93,8 @@
     real(cvmix_r8) :: zeta_m         ! parameter for computing vel scale func
     real(cvmix_r8) :: zeta_s         ! parameter for computing vel scale func
     real(cvmix_r8) :: a_m            ! parameter for computing vel scale func
-    real(cvmix_r8) :: a_s            ! parameter for computing vel scale func
     real(cvmix_r8) :: c_m            ! parameter for computing vel scale func
+    real(cvmix_r8) :: a_s            ! parameter for computing vel scale func
     real(cvmix_r8) :: c_s            ! parameter for computing vel scale func
     real(cvmix_r8) :: surf_layer_ext ! nondimensional extent of surface layer
                                      ! (expressed in sigma-coordinates)
@@ -124,10 +125,10 @@ contains
 ! !IROUTINE: cvmix_init_kpp
 ! !INTERFACE:
 
-  subroutine cvmix_init_kpp(ri_crit, vonkarman, Cstar, zeta_m, zeta_s, a_m,   &
-                            a_s, c_m, c_s, surf_layer_ext, interp_type,       &
-                            interp_type2, lEkman, lMonOb, lnoDGat1,           &
-                            lavg_N_or_Nsqr, CVmix_kpp_params_user)
+  subroutine cvmix_init_kpp(ri_crit, vonkarman, Cstar, zeta_m, zeta_s,        &
+                            surf_layer_ext, interp_type, interp_type2,        &
+                            lEkman, lMonOb, lnoDGat1, lavg_N_or_Nsqr,         &
+                            CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
 !  Initialization routine for KPP mixing.
@@ -143,10 +144,6 @@ contains
                                   Cstar, &       ! units: unitless
                                   zeta_m, &      ! units: unitless
                                   zeta_s, &      ! units: unitless
-                                  a_m, &         ! units: unitless
-                                  a_s, &         ! units: unitless
-                                  c_m, &         ! units: unitless
-                                  c_s, &         ! units: unitless
                                   surf_layer_ext ! units: unitless
     character(len=*), optional :: interp_type, interp_type2
     logical,          optional :: lEkman, lMonOb, lnoDGat1, lavg_N_or_Nsqr
@@ -159,6 +156,7 @@ contains
 !BOC
 
     type(cvmix_kpp_params_type), pointer :: CVmix_kpp_params_out
+    real(cvmix_r8) :: zm, zs, a_m, a_s, c_m, c_s
 
     CVmix_kpp_params_out => CVmix_kpp_params_saved
     if (present(CVmix_kpp_params_user)) then
@@ -166,12 +164,20 @@ contains
     end if
 
     if (present(ri_crit)) then
+      if (ri_crit.lt.zero) then
+        print*, "ERROR: ri_crit can not be negative."
+        stop 1
+      end if
       call cvmix_put_kpp('Ri_crit', ri_crit, CVmix_kpp_params_user)
     else
       call cvmix_put_kpp('Ri_crit', 0.3_cvmix_r8, CVmix_kpp_params_user)
     end if
 
     if (present(vonkarman)) then
+      if (vonkarman.lt.zero) then
+        print*, "ERROR: vonkarman can not be negative."
+        stop 1
+      end if
       call cvmix_put_kpp('vonkarman', vonkarman, CVmix_kpp_params_user)
     else
       call cvmix_put_kpp('vonkarman', 0.4_cvmix_r8, CVmix_kpp_params_user)
@@ -184,42 +190,47 @@ contains
     end if
 
     if (present(zeta_m)) then
-      call cvmix_put_kpp('zeta_m', zeta_m, CVmix_kpp_params_user)
+      if (zeta_m.ge.zero) then
+        print*, "ERROR: zeta_m must be negative."
+        stop 1
+      end if
+      zm = zeta_m
     else
-      call cvmix_put_kpp('zeta_m', -0.2_cvmix_r8, CVmix_kpp_params_user)
+      ! default value for zeta_m is -1/5
+      zm = -0.2_cvmix_r8
     end if
+    call cvmix_put_kpp('zeta_m', zm, CVmix_kpp_params_user)
 
     if (present(zeta_s)) then
-      call cvmix_put_kpp('zeta_s', zeta_s, CVmix_kpp_params_user)
+      if (zeta_s.ge.zero) then
+        print*, "ERROR: zeta_s must be negative."
+        stop 1
+      end if
+      zs = zeta_s
     else
-      call cvmix_put_kpp('zeta_s', -1.0_cvmix_r8, CVmix_kpp_params_user)
+      ! Default value for zeta_s is -1
+      zs = -1.0_cvmix_r8
     end if
+    call cvmix_put_kpp('zeta_s', zs, CVmix_kpp_params_user)
 
-    if (present(a_m)) then
-      call cvmix_put_kpp('a_m', a_m, CVmix_kpp_params_user)
-    else
-      call cvmix_put_kpp('a_m', 1.26_cvmix_r8, CVmix_kpp_params_user)
-    end if
+    ! a_m, a_s, c_m, and c_s are computed from zeta_m and zeta_s
+    ! a_m, c_m, and c_s are all non-negative. a_s may be negative depending
+    ! on the value of zeta_s
+    a_m = ((one - 16.0_cvmix_r8*zm)**0.25_cvmix_r8)*(one - 4.0_cvmix_r8*zm)
+    c_m = 12.0_cvmix_r8*((one - 16.0_cvmix_r8*zm)**0.25_cvmix_r8)
+    call cvmix_put_kpp('a_m', a_m, CVmix_kpp_params_user)
+    call cvmix_put_kpp('c_m', c_m, CVmix_kpp_params_user)
 
-    if (present(a_s)) then
-      call cvmix_put_kpp('a_s', a_s, CVmix_kpp_params_user)
-    else
-      call cvmix_put_kpp('a_s', -28.86_cvmix_r8, CVmix_kpp_params_user)
-    end if
-
-    if (present(c_m)) then
-      call cvmix_put_kpp('c_m', c_m, CVmix_kpp_params_user)
-    else
-      call cvmix_put_kpp('c_m', 8.38_cvmix_r8, CVmix_kpp_params_user)
-    end if
-
-    if (present(c_s)) then
-      call cvmix_put_kpp('c_s', c_s, CVmix_kpp_params_user)
-    else
-      call cvmix_put_kpp('c_s', 98.96_cvmix_r8, CVmix_kpp_params_user)
-    end if
+    a_s = sqrt(one - 16.0_cvmix_r8*zs)*(one + 8.0_cvmix_r8*zs)
+    c_s = 24.0_cvmix_r8*sqrt(one - 16.0_cvmix_r8*zs)
+    call cvmix_put_kpp('a_s', a_s, CVmix_kpp_params_user)
+    call cvmix_put_kpp('c_s', c_s, CVmix_kpp_params_user)
 
     if (present(surf_layer_ext)) then
+      if ((surf_layer_ext.lt.zero).or.(surf_layer_ext.gt.one)) then
+        print*, "surf_layer_ext must be between 0 and 1, inclusive."
+        stop 1
+      end if
       call cvmix_put_kpp('surf_layer_ext', surf_layer_ext,                    &
                          CVmix_kpp_params_user)
     else

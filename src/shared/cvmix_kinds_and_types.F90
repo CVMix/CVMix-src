@@ -29,7 +29,7 @@ module cvmix_kinds_and_types
 
   ! Kind Types:
   ! The cvmix package uses double precision for floating point computations.
-  integer, parameter, public :: cvmix_r8     = selected_real_kind(15, 307), &
+  integer, parameter, public :: cvmix_r8     = selected_real_kind(15, 307),   &
                                 cvmix_strlen = 256
 
   ! Parameters to allow CVMix to store integers instead of strings
@@ -40,7 +40,8 @@ module cvmix_kinds_and_types
   ! Global parameters:
   ! The constant 1 is used repeatedly in PP and double-diff mixing.
   ! The value for pi is needed for Bryan-Lewis mixing.
-  real(cvmix_r8), parameter, public :: one = 1.0_cvmix_r8
+  real(cvmix_r8), parameter, public :: zero = 0.0_cvmix_r8,                   &
+                                       one  = 1.0_cvmix_r8
   real(cvmix_r8), parameter, public :: cvmix_PI = &
                                        3.14159265358979323846_cvmix_r8
 
