@@ -21,6 +21,7 @@ Subroutine cvmix_kpp_driver()
                                     cvmix_data_type
   use cvmix_kpp,             only : cvmix_init_kpp,                           &
                                     cvmix_put_kpp,                            &
+                                    cvmix_get_kpp_real,                       &
                                     cvmix_kpp_compute_OBL_depth,              &
                                     cvmix_kpp_compute_kOBL_depth,             &
                                     cvmix_kpp_compute_bulk_Richardson,        &
@@ -205,6 +206,11 @@ Subroutine cvmix_kpp_driver()
     print*, "----------"
     call cvmix_put_kpp('vonkarman', 1.0_cvmix_r8)
     call cvmix_put_kpp('surf_layer_ext', 1.0_cvmix_r8)
+    print*, "Coefficients for computing phi_m and phi_s:"
+    print*, "a_m = ", cvmix_get_kpp_real('a_m')
+    print*, "c_m = ", cvmix_get_kpp_real('c_m')
+    print*, "a_s = ", cvmix_get_kpp_real('a_s')
+    print*, "c_s = ", cvmix_get_kpp_real('c_s')
     allocate(w_m(nlev3+1), w_s(nlev3+1), zeta(nlev3+1))
     ! Note: zeta = sigma*OBL_depth/MoninObukhov constant
     !       zeta < 0 => unstable flow
