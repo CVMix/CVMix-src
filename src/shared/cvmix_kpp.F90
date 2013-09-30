@@ -1331,11 +1331,7 @@ contains
             w_m(kw) = cvmix_get_kpp_real('c_m', CVmix_kpp_params_in) *        &
                       min(surf_layer_ext, sigma_coord(kw)) * vonkar *         &
                       surf_buoy_force
-            if (w_m(kw).lt.0.0_cvmix_r8) then
-              w_m(kw) = (-w_m(kw))**(real(1,cvmix_r8)/real(3,cvmix_r8))*vonkar
-            else
-              w_m(kw) = -(w_m(kw))**(real(1,cvmix_r8)/real(3,cvmix_r8))*vonkar
-            end if
+            w_m(kw) = (-w_m(kw))**(real(1,cvmix_r8)/real(3,cvmix_r8))*vonkar
           end do
         end if ! surf_buoy_force >= 0
       end if ! compute_wm
@@ -1355,11 +1351,7 @@ contains
             w_s(kw) = cvmix_get_kpp_real('c_s', CVmix_kpp_params_in) *        &
                       min(surf_layer_ext, sigma_coord(kw)) * vonkar *         &
                       surf_buoy_force
-            if (w_s(kw).lt.0) then
-              w_s(kw) = (-w_s(kw))**(real(1,cvmix_r8)/real(3,cvmix_r8))*vonkar
-            else
-              w_s(kw) = -(w_s(kw))**(real(1,cvmix_r8)/real(3,cvmix_r8))*vonkar
-            end if
+            w_s(kw) = (-w_s(kw))**(real(1,cvmix_r8)/real(3,cvmix_r8))*vonkar
           end do
         end if ! surf_buoy_force >= 0
       end if ! compute_ws
