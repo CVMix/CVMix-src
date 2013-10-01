@@ -469,6 +469,14 @@ contains
     !     i) temperature diffusivity
     !     ii) other tracers diffusivity
     !     iii) viscosity
+    ! Notes: 
+    !   * We are computing G(1) and G'(1) so we can represent G(sigma) as a
+    !     cubic polynomial and then compute Kx = OBL_depth*wx*G. If either
+    !     OBL_depth or wx are 0, it doesn't matter what G is because Kx will
+    !     be zero everywhere... in these cases, we set G(1) = G'(1) = 0.
+    !   * If OBL_depth = 0, the above note applies to all three situations
+    !     listed as (i), (ii), and (iii). If ws = 0, it applies only to (i)
+    !     and (ii). If wm = 0, it applies only to (iii).
     if (kwup.eq.1) then
       visc_at_OBL(1) = compute_nu_at_OBL_depth(interp_type2, (/zw_iface(kwup),&
                          zw_iface(kwup+1)/), (/diff(kwup,1), diff(kwup+1,1)/),&
@@ -493,15 +501,36 @@ contains
                          OBL_depth, zw_iface(kwup-1), visc(kwup-1),           &
                          dvisc_OBL(3))
     end if
-    Gat1(1) = visc_at_OBL(1)/(OBL_depth*ws_OBL)
-    Gat1(2) = visc_at_OBL(2)/(OBL_depth*ws_OBL)
-    Gat1(3) = visc_at_OBL(3)/(OBL_depth*wm_OBL)
-    if (CVmix_kpp_params_in%lnoDGat1) then
-      DGat1   = 0.0_cvmix_r8
+    if (OBL_depth.eq.zero) then
+      Gat1  = zero ! value doesn't really matter, K = 0
     else
-      DGat1(1) = -dvisc_OBL(1)/ws_OBL
-      DGat1(2) = -dvisc_OBL(2)/ws_OBL
-      DGat1(3) = -dvisc_OBL(3)/wm_OBL
+      if (ws_OBL.ne.zero) then
+        Gat1(1) = visc_at_OBL(1)/(OBL_depth*ws_OBL)
+        Gat1(2) = visc_at_OBL(2)/(OBL_depth*ws_OBL)
+      else
+        Gat1(1:2) = zero ! value doesn't really matter, Ks = 0
+      end if
+      if (wm_OBL.ne.zero) then
+        Gat1(3) = visc_at_OBL(3)/(OBL_depth*wm_OBL)
+      else
+        Gat1(3) = zero ! value doesn't really matter, Km = 0
+      end if
+    end if
+    if (CVmix_kpp_params_in%lnoDGat1.or.(OBL_depth.eq.zero)) then
+      DGat1 = zero ! value doesn't really matter, K = 0
+    else
+      ! Avoid dividing by zero
+      if (ws_OBL.ne.zero) then
+        DGat1(1) = -dvisc_OBL(1)/ws_OBL
+        DGat1(2) = -dvisc_OBL(2)/ws_OBL
+      else
+        DGat1(1:2) = zero ! value doesn't really matter, Ks = 0
+      end if
+      if (wm_OBL.ne.zero) then
+        DGat1(3) = -dvisc_OBL(3)/wm_OBL
+      else
+        DGat1(3) = zero ! value doesn't really matter, Km = 0
+      end if
       if (lstable) then
         second_term = real(5,cvmix_r8)*surf_buoy/(surf_fric**4)
         DGat1(1) = DGat1(1) + second_term*visc_at_OBL(1)
