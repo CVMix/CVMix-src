@@ -102,6 +102,11 @@
                                      ! bulk Richardson number
     integer        :: interp_type2   ! interpolation type used to interpolate
                                      ! diff and visc at OBL_depth
+    ! Cv is a parameter used to compute the unresolved shear. By default, the
+    ! formula from Eq. (A3) of Danabasoglu et al. is used, but a single scalar
+    ! value can be set instead.
+    real(cvmix_r8) :: Cv
+    logical        :: lscalar_Cv     ! True => use the scalar Cv value
     logical        :: lEkman         ! True => compute Ekman depth limit
     logical        :: lMonOb         ! True => compute Monin-Obukhov limit
     logical        :: lnoDGat1       ! True => G'(1) = 0 (shape function)
@@ -126,7 +131,7 @@ contains
 ! !INTERFACE:
 
   subroutine cvmix_init_kpp(ri_crit, vonkarman, Cstar, zeta_m, zeta_s,        &
-                            surf_layer_ext, interp_type, interp_type2,        &
+                            surf_layer_ext, Cv, interp_type, interp_type2,    &
                             lEkman, lMonOb, lnoDGat1, lavg_N_or_Nsqr,         &
                             CVmix_kpp_params_user)
 
@@ -139,12 +144,13 @@ contains
 !  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
-    real(cvmix_r8),   optional :: ri_crit, &     ! units: unitless
-                                  vonkarman, &   ! units: unitless
-                                  Cstar, &       ! units: unitless
-                                  zeta_m, &      ! units: unitless
-                                  zeta_s, &      ! units: unitless
-                                  surf_layer_ext ! units: unitless
+    real(cvmix_r8),   optional :: ri_crit, &        ! units: unitless
+                                  vonkarman, &      ! units: unitless
+                                  Cstar, &          ! units: unitless
+                                  zeta_m, &         ! units: unitless
+                                  zeta_s, &         ! units: unitless
+                                  surf_layer_ext, & ! units: unitless
+                                  Cv                ! units: unitless
     character(len=*), optional :: interp_type, interp_type2
     logical,          optional :: lEkman, lMonOb, lnoDGat1, lavg_N_or_Nsqr
 
@@ -235,6 +241,15 @@ contains
                          CVmix_kpp_params_user)
     else
       call cvmix_put_kpp('surf_layer_ext', 0.1_cvmix_r8, CVmix_kpp_params_user)
+    end if
+
+    if (present(Cv)) then
+      ! Use scalar Cv parameter
+      call cvmix_put_kpp('Cv', CV, CVmix_kpp_params_user)
+      call cvmix_put_kpp(CVmix_kpp_params_out, 'lscalar_Cv', .true.)
+    else
+      ! Use Eq. (A3) from Danabasoglu et al.
+      call cvmix_put_kpp(CVmix_kpp_params_out, 'lscalar_Cv', .false.)
     end if
 
     if (present(interp_type)) then
@@ -648,6 +663,8 @@ contains
         CVmix_kpp_params_out%c_s = val
       case ('surf_layer_ext')
         CVmix_kpp_params_out%surf_layer_ext = val
+      case ('Cv')
+        CVmix_kpp_params_out%Cv = val
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
         stop 1
@@ -719,6 +736,8 @@ contains
 !BOC
 
     select case (trim(varname))
+      case ('lscalar_Cv')
+        CVmix_kpp_params%lscalar_Cv = val
       case ('lEkman')
         CVmix_kpp_params%lEkman = val
       case ('lMonOb')
@@ -792,6 +811,8 @@ contains
         cvmix_get_kpp_real = CVmix_kpp_params_get%c_s
       case ('surf_layer_ext')
         cvmix_get_kpp_real = CVmix_kpp_params_get%surf_layer_ext
+      case ('Cv')
+        cvmix_get_kpp_real = CVmix_kpp_params_get%Cv
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
         stop 1
@@ -1466,11 +1487,15 @@ contains
                 cvmix_get_kpp_real('surf_layer_ext', CVmix_kpp_params_in))) / &
           (cvmix_get_kpp_real('vonkarman', CVmix_kpp_params_in)**2)
     do kt=1,nlev
-      ! Cv computation comes from Danabasoglu et al., 2006
-      if (N_cntr(kt).lt.0.002_cvmix_r8) then
-        Cv = 2.1_cvmix_r8-200.0_cvmix_r8*N_cntr(kt)
+      if (CVmix_kpp_params_in%lscalar_Cv) then
+        Cv = cvmix_get_kpp_real('Cv', CVmix_kpp_params_in)
       else
-        Cv = 1.7_cvmix_r8
+        ! Cv computation comes from Danabasoglu et al., 2006
+        if (N_cntr(kt).lt.0.002_cvmix_r8) then
+          Cv = 2.1_cvmix_r8-200.0_cvmix_r8*N_cntr(kt)
+        else
+          Cv = 1.7_cvmix_r8
+        end if
       end if
 
       cvmix_kpp_compute_unresolved_shear(kt) = -Cv*Vtc*zt_cntr(kt)*           &

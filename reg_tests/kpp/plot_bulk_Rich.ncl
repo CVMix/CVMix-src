@@ -41,7 +41,7 @@ begin
   true_Ri = new((/51/), "double")
   true_Vt = new((/51/), "double")
   ; Params for true_Vt
-  Cv  = 1.7d
+  Cv  = 1.5d
   Bt  = -0.2d
   cs  = 24.d*sqrt(17.d)
   eps = 0.1d
@@ -108,8 +108,7 @@ begin
   res@tmYLLabelFont           = "duplex_roman"
   res@tmYLValues              = (/-50, -45, -40, -35, -30, -25, -20, -15,     \
                                   -10,  -5,   0/)
-  res@vpWidthF                = 0.25
-  res@vpHeightF               = 0.85
+  res@vpHeightF               = 0.7
 
   plot  = new(3,graphic)
   plot2 = new(3,graphic)
@@ -117,6 +116,7 @@ begin
   ; Buoyancy plot: common settings
   bres = res
   bres@tiMainString  = "Buoyancy (m/s:S:2:E: )"
+  bres@vpWidthF      = 0.2
   bres@trXMinF       = -0.003d
   bres@trXMaxF       = 0.001d
   bres@tmXBValues    = (/-0.003d, -0.002d, -0.001d, 0.d, 0.001d/)
@@ -139,6 +139,7 @@ begin
   ; Velocity plot: common settings
   ures = res
   ures@tiMainString  = "U (m/s)"
+  ures@vpWidthF      = 0.2
   ures@trXMinF       = 0.d
   ures@trXMaxF       = 0.12d
   ures@tmXBValues    = (/0.d, 0.02d, 0.04d, 0.06d, 0.08d, 0.1d/) 
@@ -161,6 +162,7 @@ begin
   ; bulk Richardson plot: common settings
   rres = res
   rres@tiMainString  = "bulk Richardson"
+  rres@vpWidthF      = 0.3
   rres@trXMinF       = 0.d
   rres@trXMaxF       = 3.d ; Note: 2.7d looks like paper plot...
   rres@tmXBValues    = (/0.d, 1.d, 2.d/) 
@@ -196,6 +198,10 @@ begin
   end if
 
   ; Combine all plots into single page
-  gsn_panel(wks,plot,(/1,3/),False)
+  pan_res = True
+;  pan_res@gsnPanelDebug = True
+  gsn_panel(wks,plot,(/1,4/),pan_res)
+  ; For some reason setting up a panel with just 3 plots causes the automatic 
+  ; resizing to push the third panel off the page, but 4 plots are okay.
 
 end

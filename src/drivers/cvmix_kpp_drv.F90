@@ -321,8 +321,9 @@ Subroutine cvmix_kpp_driver()
     print*, "Test 5: Computing Bulk Richardson number"
     print*, "----------"
 
-    ! using linear interpolation and averaging Nsqr to match LMD result
-    call cvmix_init_kpp(interp_type=interp_type_t5,                           & 
+    ! using linear interpolation, averaging Nsqr, and setting Cv = 1.5  to
+    ! match LMD result
+    call cvmix_init_kpp(Cv = 1.5_cvmix_r8, interp_type=interp_type_t5,        &
                         lavg_N_or_Nsqr = lavg_N_or_Nsqr)
 
     ! Set up vertical levels (centers and interfaces) and compute bulk
