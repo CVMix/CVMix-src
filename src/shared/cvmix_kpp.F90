@@ -333,8 +333,8 @@ contains
   subroutine cvmix_coeffs_kpp_wrap(CVmix_vars, CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
-!  Computes vertical diffusion coefficients for the double diffusion mixing
-!  parameterizatiion.
+!  Computes vertical diffusion coefficients for the KPP boundary layer mixing
+!  parameterization.
 !\\
 !\\
 !
@@ -373,8 +373,8 @@ contains
                                   CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
-!  Computes vertical diffusion coefficients for the double diffusion mixing
-!  parameterizatiion.
+!  Computes vertical diffusion coefficients for the KPP boundary layer mixing
+!  parameterization.
 !\\
 !\\
 !

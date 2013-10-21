@@ -173,7 +173,7 @@
 
 ! !DESCRIPTION:
 !  Computes vertical tracer and velocity mixing coefficients for
-!  shear-type mixing parameterizatiions. Note that Richardson number
+!  shear-type mixing parameterizations. Note that Richardson number
 !  is needed at both T-points and U-points.
 !\\
 !\\

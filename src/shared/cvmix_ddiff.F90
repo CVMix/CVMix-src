@@ -239,7 +239,7 @@ module cvmix_ddiff
 
 ! !DESCRIPTION:
 !  Computes vertical diffusion coefficients for the double diffusion mixing
-!  parameterizatiion.
+!  parameterization.
 !\\
 !\\
 !

@@ -153,7 +153,7 @@
 
 ! !DESCRIPTION:
 !  Computes vertical diffusion coefficients for tidal mixing
-!  parameterizatiions.
+!  parameterizations.
 !\\
 !\\
 !
