@@ -1376,12 +1376,16 @@ contains
           ! Stable regime with surf_fric_vel = 0 => w_m = 0
           w_m = 0.0_cvmix_r8
         else
-          ! Unstable forcing, Eq. (B1c) reduces to following
+          ! Unstable forcing, Eqs. (13) and (B1c) reduce to following
           do kw=1,n_sigma
-            w_m(kw) = cvmix_get_kpp_real('c_m', CVmix_kpp_params_in) *        &
-                      min(surf_layer_ext, sigma_coord(kw)) * vonkar *         &
-                      surf_buoy_force
-            w_m(kw) = (-w_m(kw))**(real(1,cvmix_r8)/real(3,cvmix_r8))*vonkar
+            ! Compute (u*/phi_m)^3 [this is where the zeros in numerator and
+            !                       denominator cancel when u* = 0]
+            w_m(kw) = -cvmix_get_kpp_real('c_m', CVmix_kpp_params_in) *       &
+                      min(surf_layer_ext, sigma_coord(kw)) * OBL_depth *      &
+                      vonkar * surf_buoy_force
+            ! w_m = vonkar * u* / phi_m
+            !     = vonkar * ((u*/phi_m)^3)^1/3
+            w_m(kw) = vonkar*(w_m(kw)**(real(1,cvmix_r8)/real(3,cvmix_r8)))
           end do
         end if ! surf_buoy_force >= 0
       end if ! compute_wm
@@ -1396,12 +1400,16 @@ contains
           ! Stable regime with surf_fric_vel = 0 => w_s = 0
           w_s = 0.0_cvmix_r8
         else
-          ! Unstable forcing, Eq. (B1c) reduces to following
+          ! Unstable forcing, Eqs. (13) and (B1e) reduce to following
           do kw=1,n_sigma
-            w_s(kw) = cvmix_get_kpp_real('c_s', CVmix_kpp_params_in) *        &
-                      min(surf_layer_ext, sigma_coord(kw)) * vonkar *         &
-                      surf_buoy_force
-            w_s(kw) = (-w_s(kw))**(real(1,cvmix_r8)/real(3,cvmix_r8))*vonkar
+            ! Compute (u*/phi_s)^3 [this is where the zeros in numerator and
+            !                       denominator cancel when u* = 0]
+            w_s(kw) = -cvmix_get_kpp_real('c_s', CVmix_kpp_params_in) *       &
+                      min(surf_layer_ext, sigma_coord(kw)) * OBL_depth *      &
+                      vonkar * surf_buoy_force
+            ! w_s = vonkar * u* / phi_s
+            !     = vonkar * ((u*/phi_s)^3)^1/3
+            w_s(kw) = vonkar*(w_s(kw)**(real(1,cvmix_r8)/real(3,cvmix_r8)))
           end do
         end if ! surf_buoy_force >= 0
       end if ! compute_ws
