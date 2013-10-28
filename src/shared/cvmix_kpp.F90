@@ -41,6 +41,9 @@
 
 ! !DEFINED PARAMETERS:
   integer, parameter :: CVMIX_KPP_INTERP_POP = -1
+  integer, parameter :: CVMIX_KPP_MATCH_BOTH = 1
+  integer, parameter :: CVMIX_KPP_MATCH_GRADIENT = 2
+  integer, parameter :: CVMIX_KPP_SIMPLE_SHAPES = 3
 
 ! !PUBLIC MEMBER FUNCTIONS:
 
@@ -106,6 +109,21 @@
     ! formula from Eq. (A3) of Danabasoglu et al. is used, but a single scalar
     ! value can be set instead.
     real(cvmix_r8) :: Cv
+    ! MatchTechnique is set by a string of the same name as an argument in
+    ! cvmix_init_kpp. It determines how matching between the boundary layer
+    ! and ocean interior is handled at the interface. Note that this also
+    ! controls whether the shape function used to compute the coefficient in
+    ! front of the nonlocal term is the same as that used to compute the
+    ! gradient term.
+    ! Options (for cvmix_init_kpp) are
+    ! (i) SimpleShapes => Shape functions for both the gradient and nonlocal
+    !                     terms vanish at interface
+    ! (ii) MatchGradient => Shape function for nonlocal term vanishes at
+    !                       interface, but gradient term matches interior
+    !                       values.
+    ! (iii) MatchBoth => Shape functions for both the gradient and nonlocal
+    !                    term match interior values at interface
+    integer :: MatchTechnique
     logical        :: lscalar_Cv     ! True => use the scalar Cv value
     logical        :: lEkman         ! True => compute Ekman depth limit
     logical        :: lMonOb         ! True => compute Monin-Obukhov limit
@@ -132,8 +150,8 @@ contains
 
   subroutine cvmix_init_kpp(ri_crit, vonkarman, Cstar, zeta_m, zeta_s,        &
                             surf_layer_ext, Cv, interp_type, interp_type2,    &
-                            lEkman, lMonOb, lnoDGat1, lavg_N_or_Nsqr,         &
-                            CVmix_kpp_params_user)
+                            MatchTechnique, lEkman, lMonOb, lnoDGat1,         &
+                            lavg_N_or_Nsqr, CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
 !  Initialization routine for KPP mixing.
@@ -151,7 +169,7 @@ contains
                                   zeta_s, &         ! units: unitless
                                   surf_layer_ext, & ! units: unitless
                                   Cv                ! units: unitless
-    character(len=*), optional :: interp_type, interp_type2
+    character(len=*), optional :: interp_type, interp_type2, MatchTechnique
     logical,          optional :: lEkman, lMonOb, lnoDGat1, lavg_N_or_Nsqr
 
 ! !OUTPUT PARAMETERS:
@@ -295,6 +313,27 @@ contains
     else
       call cvmix_put_kpp(CVmix_kpp_params_out, 'interp_type2', &
                          CVMIX_MATH_INTERP_CUBE_SPLINE)
+    end if
+
+    if (present(MatchTechnique)) then
+      select case (trim(MatchTechnique))
+        case ('MatchBoth')
+          call cvmix_put_kpp(CVmix_kpp_params_out, 'MatchTechnique',          &
+                             CVMIX_KPP_MATCH_BOTH)
+        case ('MatchGradient')
+          call cvmix_put_kpp(CVmix_kpp_params_out, 'MatchTechnique',          &
+                             CVMIX_KPP_MATCH_GRADIENT)
+        case ('SimpleShapes')
+          call cvmix_put_kpp(CVmix_kpp_params_out, 'MatchTechnique',          &
+                             CVMIX_KPP_SIMPLE_SHAPES)
+        case DEFAULT
+          print*, "ERROR: ", trim(MatchTechnique), " is not a valid choice ", &
+                  "for MatchTechnique!"
+          stop 1
+        end select
+    else
+      call cvmix_put_kpp(CVmix_kpp_params_out, 'MatchTechnique',              &
+                         CVMIX_KPP_SIMPLE_SHAPES)
     end if
 
     if (present(lEkman)) then
@@ -732,6 +771,8 @@ contains
         CVmix_kpp_params%interp_type = val
       case ('interp_type2')
         CVmix_kpp_params%interp_type2 = val
+      case ('MatchTechnique')
+        CVmix_kpp_params%MatchTechnique = val
       case DEFAULT
         call cvmix_put_kpp(varname, real(val, cvmix_r8), CVmix_kpp_params)
     end select
