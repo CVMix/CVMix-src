@@ -455,8 +455,9 @@ contains
     real(cvmix_r8)               :: delta, omd
 
     real(cvmix_r8), dimension(:), allocatable :: sigma, w_m, w_s
-    real(cvmix_r8), dimension(4,3)            :: shape_coeffs
-    real(cvmix_r8), dimension(3) :: Gat1, DGat1, GatS, visc_at_OBL, dvisc_OBL
+    real(cvmix_r8), dimension(4,3)            :: shape_coeffs, shape_coeffs2
+    real(cvmix_r8), dimension(3) :: Gat1, DGat1, GatS, G2atS, visc_at_OBL,    &
+                                    dvisc_OBL
     real(cvmix_r8) :: wm_OBL, ws_OBL, second_term
 
     ! Constants from params
@@ -504,87 +505,108 @@ contains
                                             surf_buoy, surf_fric, wm_OBL,     &
                                             ws_OBL)
 
-    ! (2) Compute G(1) and G'(1) for three cases:
-    !     i) temperature diffusivity
-    !     ii) other tracers diffusivity
-    !     iii) viscosity
-    ! Notes: 
-    !   * We are computing G(1) and G'(1) so we can represent G(sigma) as a
-    !     cubic polynomial and then compute Kx = OBL_depth*wx*G. If either
-    !     OBL_depth or wx are 0, it doesn't matter what G is because Kx will
-    !     be zero everywhere... in these cases, we set G(1) = G'(1) = 0.
-    !   * If OBL_depth = 0, the above note applies to all three situations
-    !     listed as (i), (ii), and (iii). If ws = 0, it applies only to (i)
-    !     and (ii). If wm = 0, it applies only to (iii).
-    if (kwup.eq.1) then
-      visc_at_OBL(1) = compute_nu_at_OBL_depth(interp_type2, (/zw_iface(kwup),&
-                         zw_iface(kwup+1)/), (/diff(kwup,1), diff(kwup+1,1)/),&
-                         OBL_depth, dnu_dz=dvisc_OBL(1))
-      visc_at_OBL(2) = compute_nu_at_OBL_depth(interp_type2, (/zw_iface(kwup),&
-                         zw_iface(kwup+1)/), (/diff(kwup,2), diff(kwup+1,2)/),&
-                         OBL_depth, dnu_dz=dvisc_OBL(2))
-      visc_at_OBL(3) = compute_nu_at_OBL_depth(interp_type2, (/zw_iface(kwup),&
-                         zw_iface(kwup+1)/), (/visc(kwup), visc(kwup+1)/),    &
-                         OBL_depth, dnu_dz=dvisc_OBL(3))
-    else
-      visc_at_OBL(1) = compute_nu_at_OBL_depth(interp_type2, (/zw_iface(kwup),&
-                         zw_iface(kwup+1)/), (/diff(kwup,1), diff(kwup+1,1)/),&
-                         OBL_depth, zw_iface(kwup-1), diff(kwup-1,1),         &
-                         dvisc_OBL(1)) 
-      visc_at_OBL(2) = compute_nu_at_OBL_depth(interp_type2, (/zw_iface(kwup),&
-                         zw_iface(kwup+1)/), (/diff(kwup,2), diff(kwup+1,2)/),&
-                         OBL_depth, zw_iface(kwup-1), diff(kwup-1,2),         &
-                         dvisc_OBL(2)) 
-      visc_at_OBL(3) = compute_nu_at_OBL_depth(interp_type2, (/zw_iface(kwup),&
-                         zw_iface(kwup+1)/), (/visc(kwup), visc(kwup+1)/),    &
-                         OBL_depth, zw_iface(kwup-1), visc(kwup-1),           &
-                         dvisc_OBL(3))
-    end if
-    if (OBL_depth.eq.zero) then
-      Gat1  = zero ! value doesn't really matter, K = 0
-    else
-      if (ws_OBL.ne.zero) then
-        Gat1(1) = visc_at_OBL(1)/(OBL_depth*ws_OBL)
-        Gat1(2) = visc_at_OBL(2)/(OBL_depth*ws_OBL)
+    ! (2) Set coefficients for shape function(s)
+    !     Default is sigma*(1-sigma)^2
+    shape_coeffs(1,:) =  0.0_cvmix_r8
+    shape_coeffs(2,:) =  1.0_cvmix_r8
+    shape_coeffs(3,:) = -2.0_cvmix_r8
+    shape_coeffs(4,:) =  1.0_cvmix_r8
+    shape_coeffs2 = shape_coeffs
+
+    !     If MatchTechnique = 'SimpleShape' then we just use default
+    !     otherwise:
+    if (CVmix_kpp_params_in%MatchTechnique.ne.CVMIX_KPP_SIMPLE_SHAPES) then
+      ! (2a) Compute G(1) and G'(1) for three cases:
+      !      i) temperature diffusivity
+      !      ii) other tracers diffusivity
+      !      iii) viscosity
+      ! Notes: 
+      !   * We are computing G(1) and G'(1) so we can represent G(sigma) as a
+      !     cubic polynomial and then compute Kx = OBL_depth*wx*G. If either
+      !     OBL_depth or wx are 0, it doesn't matter what G is because Kx will
+      !     be zero everywhere... in these cases, we set G(1) = G'(1) = 0.
+      !   * If OBL_depth = 0, the above note applies to all three situations
+      !     listed as (i), (ii), and (iii). If ws = 0, it applies only to (i)
+      !     and (ii). If wm = 0, it applies only to (iii).
+      if (kwup.eq.1) then
+        visc_at_OBL(1) = compute_nu_at_OBL_depth(interp_type2,                &
+                                       (/zw_iface(kwup), zw_iface(kwup+1)/),  &
+                                       (/diff(kwup,1), diff(kwup+1,1)/),      &
+                                       OBL_depth, dnu_dz=dvisc_OBL(1))
+        visc_at_OBL(2) = compute_nu_at_OBL_depth(interp_type2,                &
+                                       (/zw_iface(kwup), zw_iface(kwup+1)/),  &
+                                       (/diff(kwup,2), diff(kwup+1,2)/),      &
+                                       OBL_depth, dnu_dz=dvisc_OBL(2))
+        visc_at_OBL(3) = compute_nu_at_OBL_depth(interp_type2,                &
+                                       (/zw_iface(kwup), zw_iface(kwup+1)/),  &
+                                       (/visc(kwup), visc(kwup+1)/),          &
+                                       OBL_depth, dnu_dz=dvisc_OBL(3))
       else
-        Gat1(1:2) = zero ! value doesn't really matter, Ks = 0
+        visc_at_OBL(1) = compute_nu_at_OBL_depth(interp_type2,                &
+                                       (/zw_iface(kwup), zw_iface(kwup+1)/),  &
+                                       (/diff(kwup,1), diff(kwup+1,1)/),      &
+                                       OBL_depth, zw_iface(kwup-1),           &
+                                       diff(kwup-1,1), dvisc_OBL(1)) 
+        visc_at_OBL(2) = compute_nu_at_OBL_depth(interp_type2,                &
+                                       (/zw_iface(kwup), zw_iface(kwup+1)/),  &
+                                       (/diff(kwup,2), diff(kwup+1,2)/),      &
+                                       OBL_depth, zw_iface(kwup-1),           &
+                                       diff(kwup-1,2), dvisc_OBL(2)) 
+        visc_at_OBL(3) = compute_nu_at_OBL_depth(interp_type2,                &
+                                       (/zw_iface(kwup), zw_iface(kwup+1)/),  &
+                                       (/visc(kwup), visc(kwup+1)/),          &
+                                       OBL_depth, zw_iface(kwup-1),           &
+                                       visc(kwup-1), dvisc_OBL(3))
       end if
-      if (wm_OBL.ne.zero) then
-        Gat1(3) = visc_at_OBL(3)/(OBL_depth*wm_OBL)
+      if (OBL_depth.eq.zero) then
+        Gat1  = zero ! value doesn't really matter, K = 0
       else
-        Gat1(3) = zero ! value doesn't really matter, Km = 0
+        if (ws_OBL.ne.zero) then
+          Gat1(1) = visc_at_OBL(1)/(OBL_depth*ws_OBL)
+          Gat1(2) = visc_at_OBL(2)/(OBL_depth*ws_OBL)
+        else
+          Gat1(1:2) = zero ! value doesn't really matter, Ks = 0
+        end if
+        if (wm_OBL.ne.zero) then
+          Gat1(3) = visc_at_OBL(3)/(OBL_depth*wm_OBL)
+        else
+          Gat1(3) = zero ! value doesn't really matter, Km = 0
+        end if
       end if
-    end if
-    if (CVmix_kpp_params_in%lnoDGat1.or.(OBL_depth.eq.zero)) then
-      DGat1 = zero ! value doesn't really matter, K = 0
-    else
-      ! Avoid dividing by zero
-      if (ws_OBL.ne.zero) then
-        DGat1(1) = -dvisc_OBL(1)/ws_OBL
-        DGat1(2) = -dvisc_OBL(2)/ws_OBL
+      if (CVmix_kpp_params_in%lnoDGat1.or.(OBL_depth.eq.zero)) then
+        DGat1 = zero ! value doesn't really matter, K = 0
       else
-        DGat1(1:2) = zero ! value doesn't really matter, Ks = 0
+        ! Avoid dividing by zero
+        if (ws_OBL.ne.zero) then
+          DGat1(1) = -dvisc_OBL(1)/ws_OBL
+          DGat1(2) = -dvisc_OBL(2)/ws_OBL
+        else
+          DGat1(1:2) = zero ! value doesn't really matter, Ks = 0
+        end if
+        if (wm_OBL.ne.zero) then
+          DGat1(3) = -dvisc_OBL(3)/wm_OBL
+        else
+          DGat1(3) = zero ! value doesn't really matter, Km = 0
+        end if
+        if (lstable) then
+          second_term = real(5,cvmix_r8)*surf_buoy/(surf_fric**4)
+          DGat1(1) = DGat1(1) + second_term*visc_at_OBL(1)
+          DGat1(2) = DGat1(2) + second_term*visc_at_OBL(2)
+          DGat1(3) = DGat1(3) + second_term*visc_at_OBL(3)
+        end if
       end if
-      if (wm_OBL.ne.zero) then
-        DGat1(3) = -dvisc_OBL(3)/wm_OBL
-      else
-        DGat1(3) = zero ! value doesn't really matter, Km = 0
-      end if
-      if (lstable) then
-        second_term = real(5,cvmix_r8)*surf_buoy/(surf_fric**4)
-        DGat1(1) = DGat1(1) + second_term*visc_at_OBL(1)
-        DGat1(2) = DGat1(2) + second_term*visc_at_OBL(2)
-        DGat1(3) = DGat1(3) + second_term*visc_at_OBL(3)
+
+      ! (2b) Compute coefficients of shape function
+      do i=1,3
+        call cvmix_kpp_compute_shape_function_coeffs(Gat1(i), DGat1(i),       &
+                                                    shape_coeffs(:,i))
+      end do
+      if (CVmix_kpp_params_in%MatchTechnique.eq.CVMIX_KPP_MATCH_BOTH) then
+        shape_coeffs2 = shape_coeffs
       end if
     end if
 
-    ! (3) Compute coefficients of shape function
-    do i=1,3
-      call cvmix_kpp_compute_shape_function_coeffs(Gat1(i), DGat1(i),         &
-                                                   shape_coeffs(:,i))
-    end do
-
-    ! (4) Compute diffusivities and viscosity in ocean boundary layer and at
+    ! (3) Compute diffusivities and viscosity in ocean boundary layer and at
     !     the z = zt_cntr(ktup) [z coordinate of last cell center still in the
     !     OBL]. Also compute the non-local transport terms (see note about
     !     what is actually stored in "nonlocal")
@@ -600,20 +622,21 @@ contains
     visc_ktup      = OBL_depth * wm_ktup * GatS(3)
     do kw=1,kwup
       do i=1,3
-        GatS(i) = cvmix_math_evaluate_cubic(shape_coeffs(:,i), sigma(kw))
+        GatS(i)  = cvmix_math_evaluate_cubic( shape_coeffs(:,i), sigma(kw))
+        G2atS(i) = cvmix_math_evaluate_cubic(shape_coeffs2(:,i), sigma(kw))
       end do
       OBL_diff(kw,1)   = OBL_depth * w_s(kw) * GatS(1)
       OBL_diff(kw,2)   = OBL_depth * w_s(kw) * GatS(2)
       OBL_visc(kw)     = OBL_depth * w_m(kw) * GatS(3)
       if (.not.lstable) then
-        nonlocal(kw,1) = GatS(1)*(Cstar*vonkar*(vonkar*surf_layer_ext*c_s)**  &
+        nonlocal(kw,1) = G2atS(1)*(Cstar*vonkar*(vonkar*surf_layer_ext*c_s)** &
                          (real(1,cvmix_r8)/real(3,cvmix_r8)))
-        nonlocal(kw,2) = GatS(2)*(Cstar*vonkar*(vonkar*surf_layer_ext*c_s)**  &
+        nonlocal(kw,2) = G2atS(2)*(Cstar*vonkar*(vonkar*surf_layer_ext*c_s)** &
                          (real(1,cvmix_r8)/real(3,cvmix_r8)))
       end if
     end do
 
-    ! (5) Compute enhanced mixing at interface nearest to OBL_depth
+    ! (4) Compute enhanced mixing at interface nearest to OBL_depth
     ! OBL_depth is between the centers of cells ktup and ktup+1. The enhanced
     ! mixing described in Appendix D of LMD94 changes the diffusivity values
     ! at the interface between them (interface ktup+1), but the change depends
@@ -666,7 +689,7 @@ contains
       end if
     end if
 
-    ! (6) Combine interior and boundary coefficients
+    ! (5) Combine interior and boundary coefficients
     diff(1:kwup,:) = OBL_diff
     visc(1:kwup) = OBL_visc
 

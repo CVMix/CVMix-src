@@ -191,6 +191,7 @@ Subroutine cvmix_kpp_driver()
     print*, "Test 2: Computing G(sigma)"
     print*, "----------"
 
+    call cvmix_init_kpp(MatchTechnique='MatchGradient')
     call cvmix_kpp_compute_shape_function_coeffs(0.0_cvmix_r8, 0.0_cvmix_r8,  &
                                                  shape_coeffs)
     write(*,"(1X,A,4F7.3)") "Coefficients are: ", shape_coeffs
@@ -204,8 +205,7 @@ Subroutine cvmix_kpp_driver()
     print*, "Test 3: determining phi_m and phi_s (inversely proportional to ",&
             "w_m and w_s, respectively)"
     print*, "----------"
-    call cvmix_put_kpp('vonkarman', 1.0_cvmix_r8)
-    call cvmix_put_kpp('surf_layer_ext', 1.0_cvmix_r8)
+    call cvmix_init_kpp(vonkarman=1.0_cvmix_r8, surf_layer_ext=1.0_cvmix_r8)
     print*, "Coefficients for computing phi_m and phi_s:"
     print*, "a_m = ", cvmix_get_kpp_real('a_m')
     print*, "c_m = ", cvmix_get_kpp_real('c_m')
@@ -244,7 +244,6 @@ Subroutine cvmix_kpp_driver()
     print*, "Done! Data is stored in test3.out, run plot_flux_profiles.ncl ", &
             "to see output."
 #endif
-    print*, ""
     deallocate(TwoDArray)
     deallocate(zeta, w_m, w_s)
   endif ! ltest3
@@ -254,6 +253,7 @@ Subroutine cvmix_kpp_driver()
     print*, "Test 4: Computing Diffusivity in boundary layer"
     print*, "----------"
 
+    call cvmix_init_kpp(MatchTechnique='MatchGradient')
     nlev4 = 5
     layer_thick4 = 5.0_cvmix_r8
 
@@ -400,6 +400,13 @@ Subroutine cvmix_kpp_driver()
       end if
     end do
     print*, "OBL has depth of ", OBL_depth
+#ifdef _NETCDF
+    print*, "Done! Data is stored in test5.nc, run plot_bulk_Rich.ncl ",      &
+            "to see output."
+#else
+    print*, "Done! Data is stored in test5.out, run plot_bulk_Rich.ncl ",     &
+            "to see output."
+#endif
 
     CVmix_vars5%nlev      =  nlev5
     CVmix_vars5%OBL_depth =  OBL_depth
