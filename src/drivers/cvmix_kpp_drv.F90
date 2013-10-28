@@ -59,8 +59,11 @@ Subroutine cvmix_kpp_driver()
   real(cvmix_r8) :: hmix1, hmix5, ri_crit, layer_thick1, layer_thick4,        &
                     layer_thick5, OBL_depth, N, Nsqr
   real(cvmix_r8) :: kOBL_depth, Bslope, Vslope
+  real(cvmix_r8) :: sigma6, OBL_depth6, surf_buoy_force6, surf_fric_vel6,     &
+                    w_m6, w_s6
   character(len=cvmix_strlen) :: interp_type_t1, interp_type_t4, interp_type_t5
-  logical :: ltest1, ltest2, ltest3, ltest4, ltest5 ! True => run specfied test
+  ! True => run specified test
+  logical :: ltest1, ltest2, ltest3, ltest4, ltest5, ltest6
   logical :: lnoDGat1 ! True => G'(1) = 0 (in test 4)
   logical :: lavg_N_or_Nsqr ! True => N_cntr = avg(N_iface[above,below])
 
@@ -96,12 +99,15 @@ Subroutine cvmix_kpp_driver()
   lnoDGat1       = .true.
 
   ! Defaults for test 5
-  ltest5 = .true.
+  ltest5 = .false.
   nlev5 = 10
   layer_thick5 = 5.0_cvmix_r8
   hmix5 = 17.0_cvmix_r8
   interp_type_t5 = "linear"
   lavg_N_or_Nsqr = .true.
+
+  ! Defaults for test 6
+  ltest6 = .true.
 
   read(*, nml=kpp_col1_nml)
   read(*, nml=kpp_col2_nml)
@@ -440,7 +446,43 @@ Subroutine cvmix_kpp_driver()
     deallocate(zt, zw_iface)
     deallocate(buoyancy, delta_vel_sqr, hor_vel, shear_sqr, w_s, Ri_bulk,     &
                Ri_bulk2, buoy_freq_iface)
-  end if
+  end if ! ltest5
+
+  ! Test 6: Recreate figure C1 from LMD94
+  if (ltest6) then
+    print*, ""
+    print*, "Test 6: 3 simple tests for velocity scale"
+    print*, "----------"
+    
+    print*, "6a: Bf = 0 m^2/s^3 and u* = sqrt(1/5175) m/s"
+    print*, "    => w_m = w_s ~= 0.0056 m/s"
+    call cvmix_init_kpp()
+    sigma6           = 0.1_cvmix_r8
+    OBL_depth6       = 6000.0_cvmix_r8
+    surf_buoy_force6 = 0.0_cvmix_r8
+    surf_fric_vel6   = 1.0_cvmix_r8/sqrt(5175.0_cvmix_r8)
+    call cvmix_kpp_compute_turbulent_scales(sigma6, OBL_depth6,               &
+                                            surf_buoy_force6, surf_fric_vel6, &
+                                            w_m = w_m6)
+    print*, "w_m = ", w_m6
+    print*, ""
+
+    print*, "6b: u* = 0 m/s and Bf ~= -5.9e-8 m^2/s^3"
+    print*, "    => w_m = 0.4 * (-Bf * OBL_depth)^1/3 * (c_m*0.04)^1/3 m/s"
+    print*, "       w_s = 0.4 * (-Bf * OBL_depth)^1/3 * (c_s*0.04)^1/3 m/s"
+    print*, "    (so w_m ~= 0.020 m/s and w_s ~= 0.045 m/s)"
+    surf_buoy_force6 = -9.8_cvmix_r8*2.5e-4_cvmix_r8*100.0_cvmix_r8 /         &
+                       (1035.0_cvmix_r8 *  3992.0_cvmix_r8)
+    surf_fric_vel6   = 0.0_cvmix_r8
+    call cvmix_kpp_compute_turbulent_scales(sigma6, OBL_depth6,               &
+                                            surf_buoy_force6, surf_fric_vel6, &
+                                            w_m = w_m6, w_s = w_s6)
+    print*, "w_m = ", w_m6
+    print*, "w_s = ", w_s6
+    print*, ""
+    
+
+  end if ! ltest6
 
 !EOC
 
