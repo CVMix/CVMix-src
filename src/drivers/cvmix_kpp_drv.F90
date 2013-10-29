@@ -40,6 +40,8 @@ Subroutine cvmix_kpp_driver()
 !EOP
 !BOC
 
+  real(cvmix_r8), parameter :: third = 1.0_cvmix_r8 / 3.0_cvmix_r8
+
   ! CVMix datatypes
   type(cvmix_data_type)       :: CVmix_vars1, CVmix_vars4, CVmix_vars5
 
@@ -57,10 +59,11 @@ Subroutine cvmix_kpp_driver()
   real(cvmix_r8), dimension(4) :: shape_coeffs
   integer :: fid, kt, kw, nlev1, nlev3, nlev4, nlev5
   real(cvmix_r8) :: hmix1, hmix5, ri_crit, layer_thick1, layer_thick4,        &
-                    layer_thick5, OBL_depth, N, Nsqr
+                    layer_thick5, OBL_depth4, OBL_depth5, N, Nsqr
   real(cvmix_r8) :: kOBL_depth, Bslope, Vslope
   real(cvmix_r8) :: sigma6, OBL_depth6, surf_buoy_force6, surf_fric_vel6,     &
-                    w_m6, w_s6
+                    vonkarman6, tao, rho0, grav, alpha, Qnonpen, Cp0,         &
+                    w_m6, w_s6, wm6_true, ws6_true
   character(len=cvmix_strlen) :: interp_type_t1, interp_type_t4, interp_type_t5
   ! True => run specified test
   logical :: ltest1, ltest2, ltest3, ltest4, ltest5, ltest6
@@ -71,9 +74,11 @@ Subroutine cvmix_kpp_driver()
                         ri_crit
   namelist/kpp_col2_nml/ltest2
   namelist/kpp_col3_nml/ltest3, nlev3
-  namelist/kpp_col4_nml/ltest4, interp_type_t4, OBL_depth, lnoDGat1
+  namelist/kpp_col4_nml/ltest4, interp_type_t4, OBL_depth4, lnoDGat1
   namelist/kpp_col5_nml/ltest5, nlev5, layer_thick5, hmix5, interp_type_t5,   &
                         lavg_N_or_Nsqr
+  namelist/kpp_col6_nml/ltest6, vonkarman6, tao, rho0, grav, alpha, Qnonpen,  &
+                        Cp0, OBL_depth6
 
   ! Read namelists
 
@@ -94,7 +99,7 @@ Subroutine cvmix_kpp_driver()
 
   ! Defaults for test 4 
   ltest4         = .false.
-  OBL_depth      = 14.0_cvmix_r8 
+  OBL_depth4     = 14.0_cvmix_r8 
   interp_type_t4 = 'quadratic'
   lnoDGat1       = .true.
 
@@ -107,13 +112,22 @@ Subroutine cvmix_kpp_driver()
   lavg_N_or_Nsqr = .true.
 
   ! Defaults for test 6
-  ltest6 = .true.
+  ltest6     = .true.
+  vonkarman6 = 0.4_cvmix_r8
+  tao        = 0.2_cvmix_r8
+  rho0       = 1035.0_cvmix_r8
+  grav       = 9.8_cvmix_r8
+  alpha      = 2.5e-4_cvmix_r8
+  Qnonpen    = -100.0_cvmix_r8
+  Cp0        = 3992.0_cvmix_r8
+  OBL_depth6 = 6000.0_cvmix_r8
 
   read(*, nml=kpp_col1_nml)
   read(*, nml=kpp_col2_nml)
   read(*, nml=kpp_col3_nml)
   read(*, nml=kpp_col4_nml)
   read(*, nml=kpp_col5_nml)
+  read(*, nml=kpp_col6_nml)
 
   ! Test 1: user sets up levels via namelist (constant thickness) and specifies
   !         critical Richardson number as well as depth parameter hmix1. The
@@ -287,9 +301,9 @@ Subroutine cvmix_kpp_driver()
     ! Set physical properties of column for test 4
     call cvmix_put(CVmix_vars4, 'nlev', nlev4)
     call cvmix_put(CVmix_vars4, 'ocn_depth', layer_thick4*real(nlev4,cvmix_r8))
-    call cvmix_put(CVmix_vars4, 'OBL_depth', OBL_depth)
+    call cvmix_put(CVmix_vars4, 'OBL_depth', OBL_depth4)
     call cvmix_put(CVmix_vars4, 'kOBL_depth',                                 &
-         cvmix_kpp_compute_kOBL_depth(zw_iface, zt, OBL_depth))
+         cvmix_kpp_compute_kOBL_depth(zw_iface, zt, OBL_depth4))
 
     print*, "OBL_depth = ", CVmix_vars4%OBL_depth
     print*, "ocean depth = ", CVmix_vars4%ocn_depth
@@ -395,8 +409,8 @@ Subroutine cvmix_kpp_driver()
     ! so it does not need to declared explicitly (even though it is optional)
     Ri_bulk2  = cvmix_kpp_compute_bulk_Richardson(zt, (buoyancy(1)-buoyancy), &
                                                   delta_vel_sqr, shear_sqr)
-    call cvmix_kpp_compute_OBL_depth(Ri_bulk, zw_iface, OBL_depth, kOBL_depth,&
-                                     zt)
+    call cvmix_kpp_compute_OBL_depth(Ri_bulk, zw_iface, OBL_depth5,           &
+                                     kOBL_depth, zt)
     do kt=1,nlev5
       if (abs(Ri_bulk(kt)-Ri_bulk2(kt)).gt.1e-12_cvmix_r8) then
         print*, "WARNING: two Ri_bulk computations did not match!"
@@ -405,7 +419,7 @@ Subroutine cvmix_kpp_driver()
         print*, zt(kt), Ri_bulk(kt)
       end if
     end do
-    print*, "OBL has depth of ", OBL_depth
+    print*, "OBL has depth of ", OBL_depth5
 #ifdef _NETCDF
     print*, "Done! Data is stored in test5.nc, run plot_bulk_Rich.ncl ",      &
             "to see output."
@@ -415,7 +429,7 @@ Subroutine cvmix_kpp_driver()
 #endif
 
     CVmix_vars5%nlev      =  nlev5
-    CVmix_vars5%OBL_depth =  OBL_depth
+    CVmix_vars5%OBL_depth =  OBL_depth5
     CVmix_vars5%zt        => zt
     CVmix_vars5%Rib       => Ri_bulk
     CVmix_vars5%buoyancy  => buoyancy
@@ -451,32 +465,47 @@ Subroutine cvmix_kpp_driver()
   ! Test 6: Recreate figure C1 from LMD94
   if (ltest6) then
     print*, ""
-    print*, "Test 6: 3 simple tests for velocity scale"
+    print*, "Test 6: 2 simple tests for velocity scale"
     print*, "----------"
     
-    print*, "6a: Bf = 0 m^2/s^3 and u* = sqrt(1/5175) m/s"
-    print*, "    => w_m = w_s ~= 0.0056 m/s"
-    call cvmix_init_kpp()
+    call cvmix_init_kpp(vonkarman=vonkarman6)
     sigma6           = 0.1_cvmix_r8
-    OBL_depth6       = 6000.0_cvmix_r8
-    surf_buoy_force6 = 0.0_cvmix_r8
-    surf_fric_vel6   = 1.0_cvmix_r8/sqrt(5175.0_cvmix_r8)
-    call cvmix_kpp_compute_turbulent_scales(sigma6, OBL_depth6,               &
-                                            surf_buoy_force6, surf_fric_vel6, &
-                                            w_m = w_m6)
-    print*, "w_m = ", w_m6
-    print*, ""
 
-    print*, "6b: u* = 0 m/s and Bf ~= -5.9e-8 m^2/s^3"
-    print*, "    => w_m = 0.4 * (-Bf * OBL_depth)^1/3 * (c_m*0.04)^1/3 m/s"
-    print*, "       w_s = 0.4 * (-Bf * OBL_depth)^1/3 * (c_s*0.04)^1/3 m/s"
-    print*, "    (so w_m ~= 0.020 m/s and w_s ~= 0.045 m/s)"
-    surf_buoy_force6 = -9.8_cvmix_r8*2.5e-4_cvmix_r8*100.0_cvmix_r8 /         &
-                       (1035.0_cvmix_r8 *  3992.0_cvmix_r8)
-    surf_fric_vel6   = 0.0_cvmix_r8
+    surf_buoy_force6 = 0.0_cvmix_r8
+    surf_fric_vel6   = sqrt(tao/rho0)
+    print*, "6a: Bf = 0 m^2/s^3 and u* = sqrt(tao/rho0)"
+    print*, "                          =", surf_fric_vel6
+    wm6_true = cvmix_get_kpp_real("vonkarman")*surf_fric_vel6
     call cvmix_kpp_compute_turbulent_scales(sigma6, OBL_depth6,               &
                                             surf_buoy_force6, surf_fric_vel6, &
                                             w_m = w_m6, w_s = w_s6)
+
+    print*, "    => w_m = w_s ~= vonkarman*u*"
+    print*, "                  =", wm6_true
+    print*, "w_m = ", w_m6
+    print*, "w_s = ", w_s6
+    print*, ""
+
+    surf_buoy_force6 = grav*alpha*Qnonpen / (rho0*Cp0)
+    surf_fric_vel6   = 0.0_cvmix_r8
+    print*, "6b: u* = 0 m/s and Bf = (grav*alpha/(rho0*Cp0))*Qnonpen"
+    print*, "                      =", surf_buoy_force6
+    wm6_true = cvmix_get_kpp_real("vonkarman")*                               &
+               ((-surf_buoy_force6*OBL_depth6)**third)*                       &
+   ((cvmix_get_kpp_real("c_m")*sigma6*cvmix_get_kpp_real("vonkarman"))**third)
+    ws6_true = cvmix_get_kpp_real("vonkarman")*                               &
+               ((-surf_buoy_force6*OBL_depth6)**third)*                       &
+   ((cvmix_get_kpp_real("c_s")*sigma6*cvmix_get_kpp_real("vonkarman"))**third)
+    call cvmix_kpp_compute_turbulent_scales(sigma6, OBL_depth6,               &
+                                            surf_buoy_force6, surf_fric_vel6, &
+                                            w_m = w_m6, w_s = w_s6)
+
+    print*, "    => w_m = vonkarman * (-Bf * OBL_depth)^1/3 *",               &
+                          " (c_m*0.1*vonkarman)^1/3 m/s"
+    print*, "           = ", wm6_true
+    print*, "    => w_s = vonkarman * (-Bf * OBL_depth)^1/3 *",               &
+                          " (c_s*0.1*vonkarman)^1/3 m/s"
+    print*, "           = ", ws6_true
     print*, "w_m = ", w_m6
     print*, "w_s = ", w_s6
     print*, ""

@@ -26,7 +26,7 @@ mix_type = 'kpp'
 &kpp_col4_nml
   ltest4         = .true.
   interp_type_t4 = "quadratic"
-  OBL_depth      = 14.0d0
+  OBL_depth4     = 14.0d0
   lnoDGat1       = .true.
 /
 
@@ -39,4 +39,17 @@ mix_type = 'kpp'
   ! Parameter settings to match LMD94 (linear interp, average Nsqr)
   interp_type_t5 = "linear"
   lavg_N_or_Nsqr = .true.
+/
+
+! Test 6 params
+&kpp_col6_nml
+  ltest6     = .true.
+  vonkarman6 = 0.4d0
+  tao        = 0.2d0
+  rho0       = 1035.0d0
+  grav       = 9.8d0
+  alpha      = 2.5d-4
+  Qnonpen    = -100.0d0
+  Cp0        = 3992.0d0
+  OBL_depth6 = 6000.0d0
 /
