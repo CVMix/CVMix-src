@@ -1,0 +1,62 @@
+This document outlines the process needed to add a new module to the CVMix
+software package.
+
+Last edited: Oct 30, 2013
+Last edited by: Mike Levy (mlevy@ucar.edu)
+
+This document is broken into 2 Sections:
+
+I. Necessary files to include a new mixing method in CVMix
+II. Format of the files needed to include a new mixing method in CVMix
+III. Development requirements
+
+===============================================================================
+== Necessary files to include a new mixing method in CVMix                   ==
+===============================================================================
+
+To add a new mixing method to CVMix, you must add three files to the package:
+
+1) A Fortran module that contains all the necessary routines to compute the
+   diffusivity coefficients (this will go in src/shared/)
+
+2) A Fortran subroutine that can be used to test your mixing method in the
+   CVMix stand-alone driver (this will go in src/drivers/)
+
+3) A LaTeX chapter providing details of the method as well as citing the
+   primary source for the method (this will go in manual/)
+
+You will also need to update the following files to include (1) & (2) in the
+CVMix build and to include (3) in the CVMix documentation
+
+* src/shared/Makefile -- include (1) in the MODULES variable
+* src/Makefile -- include (2) in the DRIVER_OBJS variable
+* manual/cvmix.tex -- include (3) as a "\input{}" before the "References"
+  section
+* doc/make_protex_file -- include (1) and (2) in list of arguments sent to the
+  f90pdf command. Note that (2) should be included with the rest of the driver
+  files and (1) should be included with the rest of the shared modules.
+
+===============================================================================
+== Format of the files needed to include a new mixing method in CVMix        ==
+===============================================================================
+
+1) See cvmix_MODULE.F90 in this directory for a template for what goes in the
+   src/shared/ directory
+
+2) See cvmix_MODULE_drv.F90 in this directory for a template for what goes in
+   the src/drivers/ directory
+
+3) cvmix_MODULE.tex in this directory for a template for what goes in the
+   manual/ directory
+
+===============================================================================
+== Development Requirements                                                  ==
+===============================================================================
+
+1) Use CVMix kind numbers (cvmix_r8 is double precision)
+
+2) Two-space [soft] tabs
+
+3) No more than 79 characters per line
+
+4) Include developer contact information in all Fortran files
