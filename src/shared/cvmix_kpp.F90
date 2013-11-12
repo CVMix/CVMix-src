@@ -980,21 +980,23 @@ contains
       stop 1
     end if
 
-    ! (3) Ri_bulk needs to be either the size of zw_iface or zt_cntr
-    nlev = size(zw_iface)-1
+    ! (3) zt_cntr must be length nlev and zw_iface must be nlev+1
+    nlev = size(zt_cntr)
+    if (size(zw_iface).ne.nlev+1) then
+      print*, "ERROR: zt_cntr must have exactly one less element than zw_iface!"
+      print*, "size(zt_cntr) = ", nlev, ", size(zw_iface) = ", size(zw_iface)
+      stop 1
+    end if
+
+    ! (4) Ri_bulk needs to be either the size of zw_iface or zt_cntr
     if (size(Ri_bulk).eq.nlev) then
-      if (size(zt_cntr).ne.nlev) then
-        print*, "ERROR: zt_cntr must have length nlev!"
-        stop 1
-      end if
       depth => zt_cntr
+    else if (size(Ri_bulk).eq.nlev+1) then
+      depth => zw_iface
     else
-      if (size(Ri_bulk).eq.nlev+1) then
-        depth => zw_iface
-      else
-        print*, "ERROR: Ri_bulk must have size nlev or nlev+1!"
-        stop 1
-      end if
+      print*, "ERROR: Ri_bulk must have size nlev or nlev+1!"
+      print*, "nlev = ", nlev, ", size(Ri_bulk) = ", size(Ri_bulk)
+      stop 1
     end if
 
     ! if lEkman = .true., OBL_depth must be between the surface and the Ekman
