@@ -500,10 +500,11 @@ contains
     ! (1) Compute turbulent velocity scales in column and at OBL_depth. Per
     !     
     call cvmix_kpp_compute_turbulent_scales(sigma, OBL_depth, surf_buoy,      &
-                                            surf_fric, w_m, w_s)
+                                            surf_fric, w_m, w_s,              &
+                                            CVmix_kpp_params_user)
     call cvmix_kpp_compute_turbulent_scales(1.0_cvmix_r8, OBL_depth,          &
                                             surf_buoy, surf_fric, wm_OBL,     &
-                                            ws_OBL)
+                                            ws_OBL, CVmix_kpp_params_user)
 
     ! (2) Set coefficients for shape function(s)
     !     Default is sigma*(1-sigma)^2
@@ -613,7 +614,8 @@ contains
     nonlocal = 0.0_cvmix_r8
     sigma_ktup = -zt_cntr(ktup)/OBL_depth
     call cvmix_kpp_compute_turbulent_scales(sigma_ktup, OBL_depth, surf_buoy, &
-                                            surf_fric, wm_ktup, ws_ktup)
+                                            surf_fric, wm_ktup, ws_ktup,      &
+                                            CVmix_kpp_params_user)
     do i=1,3
       GatS(i) = cvmix_math_evaluate_cubic(shape_coeffs(:,i), sigma_ktup)
     end do
