@@ -645,51 +645,53 @@ contains
     ! on whether OBL_depth is in layer ktup (=> kwup = ktup) or layer ktup+1
     ! (=> kwup = ktup+1). I.e. is the interface between them in the OBL or
     ! below it?
-    if (ktup.eq.0) then
-      ! OBL_depth between surface and first cell center, assume zt_cntr(0)=0
-      delta = OBL_depth/(-zt_cntr(ktup+1))
+    if (ktup.eq.nlev) then
+      ! OBL_depth between bottom cell center and ocean bottom, assume
+      ! zt_cntr(ktup+1) = ocn_bottom (which is zw_iface(nlev+1)
+      delta = (OBL_depth+zt_cntr(ktup))/(zt_cntr(ktup)-zw_iface(ktup+1))
     else
-      if (ktup.eq.nlev) then
-        ! OBL_depth between bottom cell center and ocean bottom, assume
-        ! zt_cntr(ktup+1) = ocn_bottom (which is zw_iface(nlev+1)
-        delta = (OBL_depth+zt_cntr(ktup))/(zt_cntr(ktup)-zw_iface(ktup+1))
-      else
-        delta = (OBL_depth+zt_cntr(ktup))/(zt_cntr(ktup)-zt_cntr(ktup+1))
-      end if
+      delta = (OBL_depth+zt_cntr(ktup))/(zt_cntr(ktup)-zt_cntr(ktup+1))
     end if
     omd   = 1.0_cvmix_r8 - delta ! omd = one minus delta
-    if (ktup.eq.kwup) then
-      ! Interface is NOT in the OBL
-      ! (a) compute enhanced diffs
-      enh_diff(1) = (omd**2)*diff_ktup(1) + (delta**2)*diff(ktup+1,1)
-      enh_diff(2) = (omd**2)*diff_ktup(2) + (delta**2)*diff(ktup+1,2)
-      enh_visc    = (omd**2)*visc_ktup    + (delta**2)*visc(ktup+1)
-      
-      ! (b) modify diffusivity (in diff and visc, since OBL_diff and OBL_visc
-      !     are not defined at this interface)
-      diff(ktup+1,1) = omd*diff(ktup+1,1) + delta*enh_diff(1)
-      diff(ktup+1,2) = omd*diff(ktup+1,2) + delta*enh_diff(2)
-      visc(ktup+1)   = omd*visc(ktup+1)   + delta*enh_visc
-    else
-      if (ktup.eq.kwup-1) then
-        ! Interface is in the OBL
-        ! (a) compute enhanced diffs
+
+    select case (ktup - kwup)
+      case (-1)
+        ! => ktup = kwup - 1
+        ! Interface kw = ktup+1 is in the OBL
+
+        ! (a) compute enhanced diffs: get diffusivity values at kw = ktup+1
+        !     from OBL_diff and OBL_visc rather than diff and visc
         enh_diff(1) = (omd**2)*diff_ktup(1) + (delta**2)*OBL_diff(ktup+1,1)
         enh_diff(2) = (omd**2)*diff_ktup(2) + (delta**2)*OBL_diff(ktup+1,2)
         enh_visc    = (omd**2)*visc_ktup    + (delta**2)*OBL_visc(ktup+1)
       
-        ! (b) modify diffusivity (in diff and visc, since OBL_diff and OBL_visc
-        !     are not defined at this interface)
+        ! (b) modify diffusivity values at kw = ktup+1 (again in OBL_diff and
+        !     OBL_visc)
         OBL_diff(ktup+1,1) = omd*diff(ktup+1,1) + delta*enh_diff(1)
         OBL_diff(ktup+1,2) = omd*diff(ktup+1,2) + delta*enh_diff(2)
         OBL_visc(ktup+1)   = omd*visc(ktup+1)   + delta*enh_visc
-      else
-        print*, "ERROR: kwup should be either ktup or ktup+1!"
+
+      case (0)
+        ! => ktup = kwup
+        ! Interface kw = ktup+1 is outside the OBL
+
+        ! (a) compute enhanced diffs: get diffusivity values at kw = ktup+1
+        !     from diff and visc rather than OBL_diff and OBL_visc
+        enh_diff(1) = (omd**2)*diff_ktup(1) + (delta**2)*diff(ktup+1,1)
+        enh_diff(2) = (omd**2)*diff_ktup(2) + (delta**2)*diff(ktup+1,2)
+        enh_visc    = (omd**2)*visc_ktup    + (delta**2)*visc(ktup+1)
+      
+        ! (b) modify diffusivity values at kw = ktup+1 (again in diff and visc)
+        diff(ktup+1,1) = omd*diff(ktup+1,1) + delta*enh_diff(1)
+        diff(ktup+1,2) = omd*diff(ktup+1,2) + delta*enh_diff(2)
+        visc(ktup+1)   = omd*visc(ktup+1)   + delta*enh_visc
+      case DEFAULT
+        print*, "ERROR: ktup should be either kwup or kwup-1!"
+        print*, "ktup = ", ktup, " and kwup = ", kwup
         deallocate(sigma, w_m, w_s)
         deallocate(OBL_diff, OBL_visc)
         stop 1
-      end if
-    end if
+    end select
 
     ! (5) Combine interior and boundary coefficients
     diff(1:kwup,:) = OBL_diff
