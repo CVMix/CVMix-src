@@ -1009,8 +1009,7 @@ contains
     OBL_limit  = abs(zt_cntr(nlev))
 
     ! Since depth gets more negative as you go deeper, that translates into
-    ! OBL_depth = max(computed depth, Ekman depth, M-O depth)
-    ! (MNL: change this when we make OBL_depth positive-down!)
+    ! OBL_depth = max(abs(computed depth), abs(Ekman depth), abs(M-O depth))
     if (CVmix_kpp_params_in%lEkman) then
       if (Coriolis.eq.0.0_cvmix_r8) then
         ! Rather than divide by zero, set Ekman depth to ocean bottom
@@ -1036,13 +1035,15 @@ contains
 
     ! Interpolation Step
     ! (1) Find k such that Ri_bulk at level k+1 > Ri_crit
-    do k=1,size(Ri_bulk)-1
+    do k=0,size(Ri_bulk)-1
       if (Ri_bulk(k+1).gt.CVmix_kpp_params_in%ri_crit) &
         exit
     end do
 
     if (k.eq.size(Ri_bulk)) then
       OBL_depth = abs(OBL_limit)
+    elseif (k.eq.0) then
+      OBL_depth = abs(zt_cntr(1))
     else
       if (k.eq.1) then
         call cvmix_math_poly_interp(coeffs, CVmix_kpp_params_in%interp_type,  &
@@ -1057,6 +1058,16 @@ contains
       OBL_depth = -cvmix_math_cubic_root_find(coeffs,                         &
                                          0.5_cvmix_r8*(depth(k)+depth(k+1)))
 
+      ! OBL_depth needs to be at or below the center of the top level
+      ! Note: OBL_depth can only be computed to be above this point if k=1,
+      !       depth => zw_iface instead of zt_cntr, and the interpolation
+      !       results in Ri_bulk = Ri_crit at a depth above the center of the
+      !       top level.
+      if (k.eq.1) then
+        OBL_depth = max(OBL_depth, -zt_cntr(1))
+      end if
+
+      ! OBL_depth needs to be at or above OBL_limit
       ! Note: maybe there are times when we don't need to do the interpolation
       !       because we know OBL_depth will equal OBL_limit?
       OBL_depth = min(OBL_depth, OBL_limit)

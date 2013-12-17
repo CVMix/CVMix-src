@@ -12,6 +12,9 @@ else
     ThisDir=$(shell x=$(ThisMakefile) && echo $${x%/*})/
   endif
   CVMIX_ROOT = $(realpath $(ThisDir)..)
+  # Note: gmake does not handle pathnames with spaces in them. If the absolute
+  #       path contains a space in it, create a link without spaces and pass
+  #       CVMIX_ROOT in when you run make
 endif
 
 # Directories needed by Makefile
