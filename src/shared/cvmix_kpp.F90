@@ -61,6 +61,7 @@
   ! These are public for testing, may end up private later
   public :: cvmix_kpp_compute_shape_function_coeffs
   public :: cvmix_kpp_compute_kOBL_depth
+  public :: cvmix_kpp_compute_enhanced_diff
 
   interface cvmix_coeffs_kpp
     module procedure cvmix_coeffs_kpp_low
@@ -448,11 +449,7 @@ contains
     real(cvmix_r8)               :: visc_ktup
     real(cvmix_r8)               :: sigma_ktup, wm_ktup, ws_ktup
 
-    ! enh_diff and enh_visc are the enhanced diffusivity and viscosity values
-    ! at the interface nearest OBL_depth
-    real(cvmix_r8), dimension(2) :: enh_diff
-    real(cvmix_r8)               :: enh_visc
-    real(cvmix_r8)               :: delta, omd
+    real(cvmix_r8)               :: delta
 
     real(cvmix_r8), dimension(:), allocatable :: sigma, w_m, w_s
     real(cvmix_r8), dimension(4,3)            :: shape_coeffs, shape_coeffs2
@@ -652,39 +649,24 @@ contains
     else
       delta = (OBL_depth+zt_cntr(ktup))/(zt_cntr(ktup)-zt_cntr(ktup+1))
     end if
-    omd   = 1.0_cvmix_r8 - delta ! omd = one minus delta
 
     select case (ktup - kwup)
       case (-1)
         ! => ktup = kwup - 1
-        ! Interface kw = ktup+1 is in the OBL
-
-        ! (a) compute enhanced diffs: get diffusivity values at kw = ktup+1
-        !     from OBL_diff and OBL_visc rather than diff and visc
-        enh_diff(1) = (omd**2)*diff_ktup(1) + (delta**2)*OBL_diff(ktup+1,1)
-        enh_diff(2) = (omd**2)*diff_ktup(2) + (delta**2)*OBL_diff(ktup+1,2)
-        enh_visc    = (omd**2)*visc_ktup    + (delta**2)*OBL_visc(ktup+1)
-      
-        ! (b) modify diffusivity values at kw = ktup+1 (again in OBL_diff and
-        !     OBL_visc)
-        OBL_diff(ktup+1,1) = omd*diff(ktup+1,1) + delta*enh_diff(1)
-        OBL_diff(ktup+1,2) = omd*diff(ktup+1,2) + delta*enh_diff(2)
-        OBL_visc(ktup+1)   = omd*visc(ktup+1)   + delta*enh_visc
+        call cvmix_kpp_compute_enhanced_diff(diff_ktup, visc_ktup,            &
+                                             diff(ktup+1,:), visc(ktup+1),    &
+                                             OBL_diff(ktup+1,:),              &
+                                             OBL_visc(ktup),                  &
+                                             delta, lkteqkw=.false.)
 
       case (0)
         ! => ktup = kwup
-        ! Interface kw = ktup+1 is outside the OBL
+        call cvmix_kpp_compute_enhanced_diff(diff_ktup, visc_ktup,            &
+                                             diff(ktup+1,:), visc(ktup+1),    &
+                                             OBL_diff(ktup+1,:),              &
+                                             OBL_visc(ktup),                  &
+                                             delta, lkteqkw=.true.)
 
-        ! (a) compute enhanced diffs: get diffusivity values at kw = ktup+1
-        !     from diff and visc rather than OBL_diff and OBL_visc
-        enh_diff(1) = (omd**2)*diff_ktup(1) + (delta**2)*diff(ktup+1,1)
-        enh_diff(2) = (omd**2)*diff_ktup(2) + (delta**2)*diff(ktup+1,2)
-        enh_visc    = (omd**2)*visc_ktup    + (delta**2)*visc(ktup+1)
-      
-        ! (b) modify diffusivity values at kw = ktup+1 (again in diff and visc)
-        diff(ktup+1,1) = omd*diff(ktup+1,1) + delta*enh_diff(1)
-        diff(ktup+1,2) = omd*diff(ktup+1,2) + delta*enh_diff(2)
-        visc(ktup+1)   = omd*visc(ktup+1)   + delta*enh_visc
       case DEFAULT
         print*, "ERROR: ktup should be either kwup or kwup-1!"
         print*, "ktup = ", ktup, " and kwup = ", kwup
@@ -930,7 +912,7 @@ contains
                                              CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
-!  Computes the depth of the ocean boundary layer (OBL) for a given column
+!  Computes the depth of the ocean boundary layer (OBL) for a given column.
 !\\
 !\\
 
@@ -1137,13 +1119,103 @@ contains
 
 !BOP
 
+! !IROUTINE: cvmix_kpp_compute_enhanced_diff
+! !INTERFACE:
+
+  subroutine cvmix_kpp_compute_enhanced_diff(diff_ktup, visc_ktup, diff, visc,&
+                                             OBL_diff, OBL_visc, delta,       &
+                                             lkteqkw)
+
+! !DESCRIPTION:
+!  The enhanced mixing described in Appendix D of LMD94 changes the diffusivity
+!  values at the interface between the cell center above OBL\_depth and the one
+!  below it, based on a weighted average of how close to each center OBL\_depth
+!  is. Note that we need to know whether OBL\_depth is above this interface or
+!  below it - we do this by comparing the indexes of the cell center above
+!  OBL\_depth (ktup) and the cell interface above OBL\_depth(kwup).
+!\\
+!\\
+
+! !INPUT PARAMETERS:
+
+    ! Diffusivity and viscosity at cell center above OBL_depth
+    real(cvmix_r8), dimension(2), intent(in) :: diff_ktup
+    real(cvmix_r8),               intent(in) :: visc_ktup
+
+    ! Weight to use in averaging (distance between OBL_depth and cell center
+    ! above OBL_depth divided by distance between cell centers bracketing
+    ! OBL_depth).
+    real(cvmix_r8), intent(in) :: delta
+    
+    logical, intent(in) :: lkteqkw ! .true.  => interface ktup+1 is outside OBL
+                                   !            (update diff and visc)
+                                   ! .false. => interface ktup+1 is inside OBL
+                                   !            (update OBL_diff and OBL_visc)
+
+! !OUTPUT PARAMETERS:
+    ! Will change either diff & visc or OBL_diff & OBL_visc, depending on value
+    ! of lkteqkw
+    real(cvmix_r8), dimension(2), intent(inout) :: diff, OBL_diff
+    real(cvmix_r8),               intent(inout) :: visc, OBL_visc
+
+!EOP
+!BOC
+
+    ! Local variables
+
+    ! enh_diff and enh_visc are the enhanced diffusivity and viscosity values
+    ! at the interface nearest OBL_depth
+    real(cvmix_r8), dimension(2) :: enh_diff
+    real(cvmix_r8)               :: enh_visc
+
+    real(cvmix_r8) :: omd ! one minus delta
+
+    omd = 1.0_cvmix_r8 - delta
+
+    if (lkteqkw) then
+      ! => ktup = kwup
+      ! Interface kw = ktup+1 is outside the OBL
+
+      ! (a) compute enhanced diffs: get diffusivity values at kw = ktup+1
+      !     from diff and visc rather than OBL_diff and OBL_visc
+      enh_diff(1) = (omd**2)*diff_ktup(1) + (delta**2)*diff(1)
+      enh_diff(2) = (omd**2)*diff_ktup(2) + (delta**2)*diff(2)
+      enh_visc    = (omd**2)*visc_ktup    + (delta**2)*visc
+      
+      ! (b) modify diffusivity values at kw = ktup+1 (again in diff and visc)
+      diff(1) = omd*diff(1) + delta*enh_diff(1)
+      diff(2) = omd*diff(2) + delta*enh_diff(2)
+      visc    = omd*visc    + delta*enh_visc
+    else
+      ! => ktup = kwup - 1
+      ! Interface kw = ktup+1 is in the OBL
+
+      ! (a) compute enhanced diffs: get diffusivity values at kw = ktup+1
+      !     from OBL_diff and OBL_visc rather than diff and visc
+      enh_diff(1) = (omd**2)*diff_ktup(1) + (delta**2)*OBL_diff(1)
+      enh_diff(2) = (omd**2)*diff_ktup(2) + (delta**2)*OBL_diff(2)
+      enh_visc    = (omd**2)*visc_ktup    + (delta**2)*OBL_visc
+      
+      ! (b) modify diffusivity values at kw = ktup+1 (again in OBL_diff and
+      !     OBL_visc)
+      OBL_diff(1) = omd*diff(1) + delta*enh_diff(1)
+      OBL_diff(2) = omd*diff(2) + delta*enh_diff(2)
+      OBL_visc    = omd*visc    + delta*enh_visc
+    end if
+
+! EOC
+
+  end subroutine cvmix_kpp_compute_enhanced_diff
+  
+!BOP
+
 ! !IROUTINE: cvmix_kpp_compute_OBL_depth_wrap
 ! !INTERFACE:
 
   subroutine cvmix_kpp_compute_OBL_depth_wrap(CVmix_vars, CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
-!  Computes the depth of the ocean boundary layer (OBL) for a given column
+!  Computes the depth of the ocean boundary layer (OBL) for a given column.
 !\\
 !\\
 
@@ -1286,7 +1358,7 @@ contains
 
 ! !DESCRIPTION:
 !  Computes the turbulent velocity scales for momentum (\verb|w_m|) and scalars
-!  (\verb|w_s|) at a single $\sigma$ coordinate
+!  (\verb|w_s|) at a single $\sigma$ coordinate.
 !\\
 !\\
 
@@ -1515,7 +1587,7 @@ contains
 !  lower cell interface value as the cell center, but you can instead take
 !  an average of the top and bottom interface values by setting
 !  lavg\_N\_or\_Nsqr = .true. in cvmix\_kpp\_init(). If you pass in Nsqr then
-!  negative values are assumed to be zero (default POP behavior)
+!  negative values are assumed to be zero (default POP behavior).
 !\\
 !\\
 

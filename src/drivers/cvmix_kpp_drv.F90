@@ -235,9 +235,9 @@ Subroutine cvmix_kpp_driver()
     ! Note: zeta = sigma*OBL_depth/MoninObukhov constant
     !       zeta < 0 => unstable flow
     !       zeta > 0 => stable flow
-    do kw=1, nlev3+1
-      zeta(kw) = -2.0_cvmix_r8 + 2.2_cvmix_r8 * real(kw-1,cvmix_r8) /         &
-                 real(nlev3,cvmix_r8)
+    zeta(1) = -2.0_cvmix_r8
+    do kw=2, nlev3+1
+      zeta(kw) = zeta(kw-1) + 2.2_cvmix_r8/real(nlev3,cvmix_r8)
     end do
     ! Typically the first argument of compute_turbulent_scales is sigma, and then
     ! the routine calculates zeta based on the next three parameters. Setting

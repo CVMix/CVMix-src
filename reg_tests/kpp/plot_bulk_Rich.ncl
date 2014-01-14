@@ -4,6 +4,10 @@ load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/contributed.ncl"
 
 begin
 
+  ; out_type = "ps"
+  ; out_type = "X11"
+  out_type = "pdf"
+
 ; Create Color Table
   my_color_map = (/"White", "Black"/)
 
@@ -63,10 +67,6 @@ begin
     end if
   end do
 
-  ; out_type = "ps"
-  ; out_type = "X11"
-  out_type = "pdf"
-
   ; Want to make three plots, all with depth on y-axis (min: -50, max: 0)
   ; 1: B on x-axis (min: -0.003, max: 0.001)
   ; 2: U on x-axis (min: 0, max: 0.12)
@@ -124,7 +124,7 @@ begin
   bres@tmXBLabels    = (/     "", "", "",  "", ""/)
   bres@tmXTLabels    = (/"-.003", "", "", "0", ""/)
   bres@tiYAxisString = "depth (m)"
-  bres@tmYLLabels    = (/"50", "", "40", "", "30", "", "20", "", "10", "", "0"/)
+  bres@tmYLLabels    = (/"-50", "", "-40", "", "-30", "", "-20", "", "-10", "", "0"/)
 
   ; Plot 1: Markers for discrete values
   bres@xyMarkLineMode = "Markers"

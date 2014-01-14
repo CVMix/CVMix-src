@@ -432,7 +432,7 @@ contains
     allocate(diff(nlev+1))
     
     ! Set static_visc and static_diff in background_input_type
-    zw   = abs(CVmix_vars%zw_iface)
+    zw   = -CVmix_vars%zw_iface
     diff = bl1 + (bl2/cvmix_PI)*atan(bl3*(zw-bl4))
     visc = CVmix_params_in%prandtl*diff
 
