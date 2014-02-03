@@ -40,11 +40,11 @@
 !BOP
 
 ! !DEFINED PARAMETERS:
-  integer, parameter :: CVMIX_KPP_INTERP_POP = -1
-  integer, parameter :: CVMIX_KPP_MATCH_BOTH = 1
-  integer, parameter :: CVMIX_KPP_MATCH_GRADIENT = 2
-  integer, parameter :: CVMIX_KPP_SIMPLE_SHAPES = 3
-  integer, parameter :: CVMIX_KPP_SIMPLE_PARABOLAS = 4
+  integer, parameter :: CVMIX_KPP_INTERP_POP         = -1
+  integer, parameter :: CVMIX_KPP_MATCH_BOTH         = 1
+  integer, parameter :: CVMIX_KPP_MATCH_GRADIENT     = 2
+  integer, parameter :: CVMIX_KPP_SIMPLE_SHAPES      = 3
+  integer, parameter :: CVMIX_KPP_PARABOLIC_NONLOCAL = 4
 
 ! !PUBLIC MEMBER FUNCTIONS:
 
@@ -125,8 +125,8 @@
     !                       values.
     ! (iii) MatchBoth => Shape functions for both the gradient and nonlocal
     !                    term match interior values at interface
-    ! (iv) SimpleParabolas => Shape functions for both the gradient and
-    !                         nonlocal term are (1-sigma)^2
+    ! (iv) ParabolicNonLocal => Shape function for the nonlocal term is
+    !                           (1-sigma)^2, gradient term is sigma*(1-sigma)^2
     integer :: MatchTechnique
     logical        :: lscalar_Cv     ! True => use the scalar Cv value
     logical        :: lEkman         ! True => compute Ekman depth limit
@@ -330,9 +330,9 @@ contains
         case ('SimpleShapes')
           call cvmix_put_kpp(CVmix_kpp_params_out, 'MatchTechnique',          &
                              CVMIX_KPP_SIMPLE_SHAPES)
-        case ('SimpleParabolas')
+        case ('ParabolicNonLocal')
           call cvmix_put_kpp(CVmix_kpp_params_out, 'MatchTechnique',          &
-                             CVMIX_KPP_SIMPLE_PARABOLAS)
+                             CVMIX_KPP_PARABOLIC_NONLOCAL)
         case DEFAULT
           print*, "ERROR: ", trim(MatchTechnique), " is not a valid choice ", &
                   "for MatchTechnique!"
@@ -515,20 +515,22 @@ contains
     shape_coeffs(2,:) =  1.0_cvmix_r8
     shape_coeffs(3,:) = -2.0_cvmix_r8
     shape_coeffs(4,:) =  1.0_cvmix_r8
-
-    !     'SimpleParabolas' => (1-sigma)^2
-    if (CVmix_kpp_params_in%MatchTechnique.eq.CVMIX_KPP_SIMPLE_PARABOLAS) then
-      shape_coeffs(1,:) =  1.0_cvmix_r8
-      shape_coeffs(2,:) = -2.0_cvmix_r8
-      shape_coeffs(3,:) =  1.0_cvmix_r8
-      shape_coeffs(4,:) =  0.0_cvmix_r8
-    end if
     shape_coeffs2 = shape_coeffs
 
-    ! If MatchTechnique = 'SimpleShape' or 'SimpleParabolas' then we just use
+    !     'ParabolicNonLocal' => non-local term shape function is (1-sigma)^2
+    if (CVmix_kpp_params_in%MatchTechnique.eq.CVMIX_KPP_PARABOLIC_NONLOCAL)   &
+       then
+      shape_coeffs2(1,:) =  1.0_cvmix_r8
+      shape_coeffs2(2,:) = -2.0_cvmix_r8
+      shape_coeffs2(3,:) =  1.0_cvmix_r8
+      shape_coeffs2(4,:) =  0.0_cvmix_r8
+    end if
+
+    ! If MatchTechnique = 'SimpleShape' or 'ParabolicNonLocal' then we just use
     ! shape_coeffs that have already been set. Otherwise:
     if ((CVmix_kpp_params_in%MatchTechnique.ne.CVMIX_KPP_SIMPLE_SHAPES).and.  &
-      (CVmix_kpp_params_in%MatchTechnique.ne.CVMIX_KPP_SIMPLE_PARABOLAS)) then
+       (CVmix_kpp_params_in%MatchTechnique.ne.CVMIX_KPP_PARABOLIC_NONLOCAL))  &
+       then
       ! (2a) Compute G(1) and G'(1) for three cases:
       !      i) temperature diffusivity
       !      ii) other tracers diffusivity
