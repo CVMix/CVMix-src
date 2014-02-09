@@ -1,0 +1,2 @@
+# Inputdata will all be netCDF files from the CVMix inputdata repository
+*.nc

@@ -1,0 +1,3 @@
+# Two files ignored in bld/
+.CVMix_env
+.netcdf_info
