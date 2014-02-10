@@ -10,10 +10,6 @@
 !\\
 !\\
 
-! !REVISION HISTORY:
-!  SVN:$Id$
-!  SVN:$URL$
-
 ! !INTERFACE:
 
 Subroutine cvmix_BL_pointer_driver(nlev, ocn_depth)

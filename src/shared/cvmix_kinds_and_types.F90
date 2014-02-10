@@ -11,10 +11,6 @@ module cvmix_kinds_and_types
 !  \\
 !  \\
 
-! !REVISION HISTORY:
-!  SVN:$Id$
-!  SVN:$URL$
-
 ! !USES:
 !  uses no other modules
 !EOP

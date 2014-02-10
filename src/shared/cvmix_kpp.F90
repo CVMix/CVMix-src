@@ -12,10 +12,6 @@
 !  accordingly.
 !\\
 !\\
-!
-! !REVISION HISTORY:
-!  SVN:$Id$
-!  SVN:$URL$
 
 ! !USES:
 

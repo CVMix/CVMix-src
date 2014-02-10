@@ -10,10 +10,6 @@ module cvmix_ddiff
 !  accordingly.
 !\\
 !\\
-!
-! !REVISION HISTORY:
-!  SVN:$Id$
-!  SVN:$URL$
 
 ! !USES:
 

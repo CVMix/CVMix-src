@@ -6,10 +6,6 @@
 !\\
 !\\
 
-! !REVISION HISTORY:
-!  SVN:$Id$
-!  SVN:$URL$
-
 ! !INTERFACE:
 
 Subroutine cvmix_kpp_driver()

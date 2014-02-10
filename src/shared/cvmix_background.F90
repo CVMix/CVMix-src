@@ -13,10 +13,6 @@ module cvmix_background
 !\\
 !\\
 
-! !REVISION HISTORY:
-!  SVN:$Id$
-!  SVN:$URL$
-
 ! !USES:
 
   use cvmix_kinds_and_types, only : cvmix_PI,                   &

@@ -12,10 +12,6 @@
 !\\
 !\\
 
-! !REVISION HISTORY:
-!  SVN:$Id$
-!  SVN:$URL$
-
 ! !INTERFACE:
 
 Subroutine cvmix_shear_driver(nlev)

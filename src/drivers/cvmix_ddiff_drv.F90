@@ -6,10 +6,6 @@
 !\\
 !\\
 
-! !REVISION HISTORY:
-!  SVN:$Id$
-!  SVN:$URL$
-
 ! !INTERFACE:
 
 Subroutine cvmix_ddiff_driver(nlev)

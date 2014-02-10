@@ -12,10 +12,6 @@ module cvmix_convection
 !\\
 !\\
 
-! !REVISION HISTORY:
-!  SVN:$Id$
-!  SVN:$URL$
-
 ! !USES:
    use cvmix_kinds_and_types, only : cvmix_r8,               &
                                      cvmix_data_type

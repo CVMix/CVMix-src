@@ -11,10 +11,6 @@
 !  from Pacanowski \& Philander (1981) and Large, McWilliams, \& Doney (1994).
 !\\
 !\\
-!
-! !REVISION HISTORY:
-!  SVN:$Id$
-!  SVN:$URL$
 
 ! !USES:
 

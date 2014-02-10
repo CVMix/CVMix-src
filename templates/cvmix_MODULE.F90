@@ -10,10 +10,6 @@ module cvmix_MODULE
 !  accordingly.
 !\\
 !\\
-!
-! !REVISION HISTORY:
-!  SVN:$Id: cvmix_ddiff.F90 258 2013-10-21 15:17:26Z mike.levy.work@gmail.com $
-!  SVN:$URL: https://cvmix.googlecode.com/svn/trunk/src/shared/cvmix_ddiff.F90 $
 
 ! !USES:
 

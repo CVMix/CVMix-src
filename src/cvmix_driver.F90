@@ -17,10 +17,6 @@
 !\\
 !\\
 
-! !REVISION HISTORY:
-!  SVN $Id$
-!  SVN $URL$
-
 ! !INTERFACE:
 
 Program cvmix_driver
