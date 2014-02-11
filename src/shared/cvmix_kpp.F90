@@ -59,6 +59,7 @@
   public :: cvmix_kpp_compute_shape_function_coeffs
   public :: cvmix_kpp_compute_kOBL_depth
   public :: cvmix_kpp_compute_enhanced_diff
+  public :: cvmix_kpp_compute_nonlocal
 
   interface cvmix_coeffs_kpp
     module procedure cvmix_coeffs_kpp_low
@@ -455,12 +456,10 @@ contains
 
     real(cvmix_r8), dimension(:), allocatable :: sigma, w_m, w_s
     real(cvmix_r8), dimension(4,3)            :: shape_coeffs, shape_coeffs2
-    real(cvmix_r8), dimension(3) :: Gat1, DGat1, GatS, G2atS, visc_at_OBL,    &
-                                    dvisc_OBL
+    real(cvmix_r8), dimension(3) :: Gat1, DGat1, GatS, visc_at_OBL, dvisc_OBL
     real(cvmix_r8) :: wm_OBL, ws_OBL, second_term
 
-    ! Constants from params
-    real(cvmix_r8) :: Cstar, vonkar, c_s, surf_layer_ext
+    ! Constant from params
     integer :: interp_type2
 
     integer :: nlev_p1, nlev, kw, i
@@ -474,10 +473,6 @@ contains
       CVmix_kpp_params_in => CVmix_kpp_params_user
     end if
     interp_type2   = CVmix_kpp_params_in%interp_type2
-    vonkar         = cvmix_get_kpp_real('vonkarman', CVmix_kpp_params_in)
-    Cstar          = cvmix_get_kpp_real('Cstar', CVmix_kpp_params_in)
-    surf_layer_ext = cvmix_get_kpp_real('surf_layer_ext', CVmix_kpp_params_in)
-    c_s            = cvmix_get_kpp_real('c_s', CVmix_kpp_params_in)
 
 
     nlev_p1 = size(zw_iface)
@@ -635,16 +630,13 @@ contains
     do kw=1,kwup
       do i=1,3
         GatS(i)  = cvmix_math_evaluate_cubic( shape_coeffs(:,i), sigma(kw))
-        G2atS(i) = cvmix_math_evaluate_cubic(shape_coeffs2(:,i), sigma(kw))
       end do
       OBL_diff(kw,1)   = OBL_depth * w_s(kw) * GatS(1)
       OBL_diff(kw,2)   = OBL_depth * w_s(kw) * GatS(2)
       OBL_visc(kw)     = OBL_depth * w_m(kw) * GatS(3)
       if (.not.lstable) then
-        nonlocal(kw,1) = G2atS(1)*(Cstar*vonkar*(vonkar*surf_layer_ext*c_s)** &
-                         (real(1,cvmix_r8)/real(3,cvmix_r8)))
-        nonlocal(kw,2) = G2atS(2)*(Cstar*vonkar*(vonkar*surf_layer_ext*c_s)** &
-                         (real(1,cvmix_r8)/real(3,cvmix_r8)))
+        call cvmix_kpp_compute_nonlocal(shape_coeffs2, sigma(kw),             &
+                                        nonlocal(kw,:), CVmix_kpp_params_user)
       end if
     end do
 
@@ -1219,6 +1211,59 @@ contains
 ! EOC
 
   end subroutine cvmix_kpp_compute_enhanced_diff
+  
+!BOP
+
+! !IROUTINE: cvmix_kpp_compute_nonlocal
+! !INTERFACE:
+
+  subroutine cvmix_kpp_compute_nonlocal(shape_fun, sigma, nonlocal,           &
+                                        CVmix_kpp_params_user)
+
+! !DESCRIPTION:
+!\\
+!\\
+
+! !INPUT PARAMETERS:
+    type(cvmix_kpp_params_type), intent(in), optional, target ::              &
+                                           CVmix_kpp_params_user
+    real(cvmix_r8), dimension(4,3), intent(in) :: shape_fun
+    real(cvmix_r8),                 intent(in) :: sigma
+
+! !OUTPUT PARAMETERS:
+    real(cvmix_r8), dimension(2), intent(out) :: nonlocal
+
+    ! Local variables
+    type(cvmix_kpp_params_type), pointer :: CVmix_kpp_params_in
+
+    ! Constants from params
+    real(cvmix_r8) :: Cstar, vonkar, c_s, surf_layer_ext
+
+    integer :: i
+    real(cvmix_r8), dimension(3) :: GatS
+!EOP
+!BOC
+
+    CVmix_kpp_params_in => CVmix_kpp_params_saved
+    if (present(CVmix_kpp_params_user)) then
+      CVmix_kpp_params_in => CVmix_kpp_params_user
+    end if
+    vonkar         = cvmix_get_kpp_real('vonkarman', CVmix_kpp_params_in)
+    Cstar          = cvmix_get_kpp_real('Cstar', CVmix_kpp_params_in)
+    surf_layer_ext = cvmix_get_kpp_real('surf_layer_ext', CVmix_kpp_params_in)
+    c_s            = cvmix_get_kpp_real('c_s', CVmix_kpp_params_in)
+
+    do i=1,3
+      GatS(i) = cvmix_math_evaluate_cubic(shape_fun(:,i), sigma)
+    end do
+
+    nonlocal(1) = GatS(1)*(Cstar*vonkar*(vonkar*surf_layer_ext*c_s)**         &
+                  (real(1,cvmix_r8)/real(3,cvmix_r8)))
+    nonlocal(2) = GatS(2)*(Cstar*vonkar*(vonkar*surf_layer_ext*c_s)**         &
+                  (real(1,cvmix_r8)/real(3,cvmix_r8)))
+! EOC
+
+  end subroutine cvmix_kpp_compute_nonlocal
   
 !BOP
 
