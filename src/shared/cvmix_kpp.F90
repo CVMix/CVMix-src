@@ -635,8 +635,10 @@ contains
       OBL_diff(kw,2)   = OBL_depth * w_s(kw) * GatS(2)
       OBL_visc(kw)     = OBL_depth * w_m(kw) * GatS(3)
       if (.not.lstable) then
-        call cvmix_kpp_compute_nonlocal(shape_coeffs2, sigma(kw),             &
-                                        nonlocal(kw,:), CVmix_kpp_params_user)
+        call cvmix_kpp_compute_nonlocal(shape_coeffs2(:,1), sigma(kw),        &
+                                        nonlocal(kw,1), CVmix_kpp_params_user)
+        call cvmix_kpp_compute_nonlocal(shape_coeffs2(:,2), sigma(kw),        &
+                                        nonlocal(kw,2), CVmix_kpp_params_user)
       end if
     end do
 
@@ -1227,11 +1229,11 @@ contains
 ! !INPUT PARAMETERS:
     type(cvmix_kpp_params_type), intent(in), optional, target ::              &
                                            CVmix_kpp_params_user
-    real(cvmix_r8), dimension(4,3), intent(in) :: shape_fun
-    real(cvmix_r8),                 intent(in) :: sigma
+    real(cvmix_r8), dimension(4), intent(in) :: shape_fun
+    real(cvmix_r8),               intent(in) :: sigma
 
 ! !OUTPUT PARAMETERS:
-    real(cvmix_r8), dimension(2), intent(out) :: nonlocal
+    real(cvmix_r8), intent(out) :: nonlocal
 
     ! Local variables
     type(cvmix_kpp_params_type), pointer :: CVmix_kpp_params_in
@@ -1239,8 +1241,7 @@ contains
     ! Constants from params
     real(cvmix_r8) :: Cstar, vonkar, c_s, surf_layer_ext
 
-    integer :: i
-    real(cvmix_r8), dimension(3) :: GatS
+    real(cvmix_r8) :: GatS
 !EOP
 !BOC
 
@@ -1253,14 +1254,10 @@ contains
     surf_layer_ext = cvmix_get_kpp_real('surf_layer_ext', CVmix_kpp_params_in)
     c_s            = cvmix_get_kpp_real('c_s', CVmix_kpp_params_in)
 
-    do i=1,3
-      GatS(i) = cvmix_math_evaluate_cubic(shape_fun(:,i), sigma)
-    end do
+    GatS = cvmix_math_evaluate_cubic(shape_fun, sigma)
 
-    nonlocal(1) = GatS(1)*(Cstar*vonkar*(vonkar*surf_layer_ext*c_s)**         &
-                  (real(1,cvmix_r8)/real(3,cvmix_r8)))
-    nonlocal(2) = GatS(2)*(Cstar*vonkar*(vonkar*surf_layer_ext*c_s)**         &
-                  (real(1,cvmix_r8)/real(3,cvmix_r8)))
+    nonlocal = GatS*(Cstar*vonkar*(vonkar*surf_layer_ext*c_s)**               &
+               (real(1,cvmix_r8)/real(3,cvmix_r8)))
 ! EOC
 
   end subroutine cvmix_kpp_compute_nonlocal
