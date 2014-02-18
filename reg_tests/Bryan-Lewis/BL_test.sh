@@ -66,7 +66,7 @@ fi
 
 if [ "${USE_NETCDF}" == "netcdf" ]; then
   if [ -f data.nc ]; then
-    ncdump -v diff data.nc
+    ncdump -v Tdiff data.nc
   else
     echo "Execution error!"
     exit 1

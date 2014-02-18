@@ -112,13 +112,13 @@ Subroutine cvmix_BL_pointer_driver(nlev, ocn_depth)
   ! data will have diffusivity from both columns (needed for NCL script)
   call cvmix_io_open(fid, "data.nc", "nc")
   ! Note: all entries in string of variables to output must be
-  !       the same length... hence the space in "diff "
-  call cvmix_output_write(fid, CVmix_vars, (/"zw_iface", "diff    "/))
+  !       the same length... hence the space in "Tdiff"
+  call cvmix_output_write(fid, CVmix_vars, (/"zw_iface", "Tdiff   "/))
   call cvmix_output_write_att(fid, "long_name", "tracer diffusivity",         &
-                              var_name="diff")
-  call cvmix_output_write_att(fid, "units", "m^2/s", var_name="diff")
+                              var_name="Tdiff")
+  call cvmix_output_write_att(fid, "units", "m^2/s", var_name="Tdiff")
   call cvmix_output_write_att(fid, "long_name", "depth to interface",         &
-                              var_name="depth")
+                              var_name="zw_iface")
   call cvmix_output_write_att(fid, "positive", "up", var_name="zw_iface")
   call cvmix_output_write_att(fid, "units", "m", var_name="zw_iface")
   call cvmix_io_close(fid)
@@ -131,10 +131,10 @@ Subroutine cvmix_BL_pointer_driver(nlev, ocn_depth)
   call cvmix_io_open(fid3, "col2.out", "ascii")
 
   ! Note: all entries in string of variables to output must be
-  !       the same length... hence the space in "diff "
-  call cvmix_output_write(fid1, CVmix_vars,    (/"zw_iface", "diff    "/))
-  call cvmix_output_write(fid2, CVmix_vars(1), (/"zw_iface", "diff    "/))
-  call cvmix_output_write(fid3, CVmix_vars(2), (/"zw_iface", "diff    "/))
+  !       the same length... hence the space in "Tdiff"
+  call cvmix_output_write(fid1, CVmix_vars,    (/"zw_iface", "Tdiff   "/))
+  call cvmix_output_write(fid2, CVmix_vars(1), (/"zw_iface", "Tdiff   "/))
+  call cvmix_output_write(fid3, CVmix_vars(2), (/"zw_iface", "Tdiff   "/))
 
   call cvmix_io_close(fid1)
   call cvmix_io_close(fid2)

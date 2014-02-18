@@ -4,18 +4,22 @@ load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/contributed.ncl"
 
 begin
 
+  out_type = "pdf"
+  ; out_type = "ps"
+  ; out_type = "X11"
+
 ; Create Color Table
   my_color_map = (/"White", "Black"/)
 
   if (isfilepresent("data.nc")) then
     print((/"Reading netCDF data"/))
     f = addfile("data.nc", "r")
-    x = transpose(f->diff)
-    y = f->depth
+    x = transpose(f->Tdiff)
+    y = f->zw_iface
   else
     if (isfilepresent("data.out")) then
       print((/"Reading ascii data"/))
-      nml  = asciiread("input.nl", -1, "integer")
+      nml  = asciiread("input_pointer.nl", -1, "integer")
       nlev = nml(0)
       x = new((/2, nlev+1/), "double")
       y = new(nlev+1, "double")
@@ -30,8 +34,6 @@ begin
     end if
   end if
 
-  out_type = "ps"
-  ; out_type = "X11"
   wks = gsn_open_wks(out_type, "Bryan-Lewis_CVMix")
   gsn_define_colormap(wks, my_color_map)
 
