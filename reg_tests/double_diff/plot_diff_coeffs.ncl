@@ -8,6 +8,10 @@ load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/contributed.ncl"
 
 begin
 
+  out_type = "pdf"
+  ; out_type = "ps"
+  ; out_type = "X11"
+
 ; Create Color Table
   my_color_map = (/"White", "Black"/)
 
@@ -18,7 +22,7 @@ begin
     print((/"Reading netCDF data"/))
     f = addfile("data.nc", "r")
     x1 = f->Rrho
-    y1 = f->diff(0:nlev-1,:)
+    y1 = f->Tdiff(0:nlev-1,:)
   else
     if (isfilepresent("data.out")) then
       print((/"Reading ascii data"/))
@@ -34,8 +38,6 @@ begin
     end if
   end if
 
-  out_type = "ps"
-  ; out_type = "X11"
   wks = gsn_open_wks(out_type, "ddiff-salt_CVMix")
   gsn_define_colormap(wks, my_color_map)
 
@@ -117,7 +119,7 @@ begin
   res@tiXAxisString = "1/R:B::F8:r:E:"
   res@tiYAxisString = ":F8:k/n:F10::B:mol:E:"
 
-  plot = gsn_csm_xy(wks, 1.d/x1(0:nlev-1,1), y1(0:nlev-1,1)/1.5e-6, res)
+  plot = gsn_csm_xy(wks, 1.d/x1(:,1), y1(:,1)/1.5e-6, res)
 
   draw(plot)
   frame(wks)

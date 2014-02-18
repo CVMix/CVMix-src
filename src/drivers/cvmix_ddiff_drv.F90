@@ -96,7 +96,7 @@ Subroutine cvmix_ddiff_driver(nlev)
   call cvmix_io_open(fid, "data.out", "ascii")
 #endif
 
-  call cvmix_output_write(fid, CVmix_vars, (/"Rrho ", "Tdiff", "Sdiff"/))
+  call cvmix_output_write(fid, CVmix_vars, (/"Rrho ", "Tdiff"/))
 #ifdef _NETCDF
   call cvmix_output_write_att(fid, "long_name", "double diffusion " //        &
                               "stratification parameter", var_name="Rrho")
@@ -104,7 +104,6 @@ Subroutine cvmix_ddiff_driver(nlev)
   call cvmix_output_write_att(fid, "long_name", "tracer diffusivity",         &
                               var_name="diff")
   call cvmix_output_write_att(fid, "units", "m^2/s", var_name="Tdiff")
-  call cvmix_output_write_att(fid, "units", "m^2/s", var_name="Sdiff")
 #endif
   call cvmix_io_close(fid)
 
