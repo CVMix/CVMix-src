@@ -614,12 +614,15 @@ contains
             case ("Ri_bulk")
               call netcdf_check(nf90_put_var(file_id, var_id(var),            &
                                              CVmix_vars%Rib(:)))
-            case ("visc")
+            case ("Mdiff")
               call netcdf_check(nf90_put_var(file_id, var_id(var),            &
-                                             CVmix_vars%visc_iface(:)))
-            case ("diff")
+                                             CVmix_vars%Mdiff_iface(:)))
+            case ("Tdiff")
               call netcdf_check(nf90_put_var(file_id, var_id(var),            &
-                                             CVmix_vars%diff_iface(:,1)))
+                                             CVmix_vars%Tdiff_iface(:)))
+            case ("Sdiff")
+              call netcdf_check(nf90_put_var(file_id, var_id(var),            &
+                                             CVmix_vars%Sdiff_iface(:)))
             case ("Rrho")
               call netcdf_check(nf90_put_var(file_id, var_id(var),            &
                                              CVmix_vars%strat_param_num(:)/   &
@@ -663,12 +666,15 @@ contains
                 else
                   write(file_id,"(A)",advance='no') "--- Cell Center Vals ---"
                 end if
-              case ("visc")
+              case ("Mdiff")
                 write(file_id,"(E24.17E2)",advance='no') &
-                      CVmix_vars%visc_iface(kw)
-              case ("diff")
+                      CVmix_vars%Mdiff_iface(kw)
+              case ("Tdiff")
                 write(file_id,"(E24.17E2)",advance='no') &
-                      CVmix_vars%diff_iface(kw,1)
+                      CVmix_vars%Tdiff_iface(kw)
+              case ("Sdiff")
+                write(file_id,"(E24.17E2)",advance='no') &
+                      CVmix_vars%Sdiff_iface(kw)
               case ("Rrho")
                 if (kw.lt.CVmix_vars%nlev+1) then
                   write(file_id,"(E24.17E2)",advance='no') &
@@ -741,9 +747,10 @@ contains
     integer :: ncol, nw, icol, kw, var
     logical :: z_err
 #ifdef _NETCDF
-    integer                                          :: nt, nt_id, nw_id, ncol_id
+    integer :: nt, nt_id, nw_id, ncol_id
     integer,             dimension(:),   allocatable :: var_id
-    real(kind=cvmix_r8), dimension(:,:), allocatable :: lcl_visc, lcl_diff, lcl_Rrho
+    real(kind=cvmix_r8), dimension(:,:), allocatable :: lcl_Mdiff, lcl_Tdiff, &
+                                                        lcl_Sdiff, lcl_Rrho
 #endif
 !EOP
 !BOC
@@ -792,16 +799,22 @@ contains
                                   NF90_DOUBLE, (/ncol_id,nw_id/), var_id(var)))
             end if
           end if
-          if (trim(var_names(var)).eq."visc") then
-            allocate(lcl_visc(ncol,nw))
+          if (trim(var_names(var)).eq."Mdiff") then
+            allocate(lcl_Mdiff(ncol,nw))
             do icol=1,ncol
-              lcl_visc(icol,:) = CVmix_vars(icol)%visc_iface
+              lcl_Mdiff(icol,:) = CVmix_vars(icol)%Mdiff_iface
             end do
           endif
-          if (trim(var_names(var)).eq."diff") then
-            allocate(lcl_diff(ncol,nw))
+          if (trim(var_names(var)).eq."Tdiff") then
+            allocate(lcl_Tdiff(ncol,nw))
             do icol=1,ncol
-              lcl_diff(icol,:) = CVmix_vars(icol)%diff_iface(:,1)
+              lcl_Tdiff(icol,:) = CVmix_vars(icol)%Tdiff_iface
+            end do
+          endif
+          if (trim(var_names(var)).eq."Sdiff") then
+            allocate(lcl_Sdiff(ncol,nw))
+            do icol=1,ncol
+              lcl_Sdiff(icol,:) = CVmix_vars(icol)%Sdiff_iface
             end do
           endif
           if (trim(var_names(var)).eq."Rrho") then
@@ -821,14 +834,18 @@ contains
             case("Ri")
               call netcdf_check(nf90_put_var(file_id, var_id(var), &
                                 CVmix_vars(1)%Ri_iface(:)))
-            case("visc")
+            case("Mdiff")
               call netcdf_check(nf90_put_var(file_id, var_id(var), &
-                                lcl_visc))
-              deallocate(lcl_visc)
-            case("diff")
+                                lcl_Mdiff))
+              deallocate(lcl_Mdiff)
+            case("Tdiff")
               call netcdf_check(nf90_put_var(file_id, var_id(var), &
-                                lcl_diff))
-              deallocate(lcl_diff)
+                                lcl_Tdiff))
+              deallocate(lcl_Tdiff)
+            case("Sdiff")
+              call netcdf_check(nf90_put_var(file_id, var_id(var), &
+                                lcl_Sdiff))
+              deallocate(lcl_Sdiff)
             case("Rrho")
               call netcdf_check(nf90_put_var(file_id, var_id(var), &
                                 lcl_Rrho))
@@ -849,16 +866,22 @@ contains
               case ("Ri")
                 write(file_id,"(E24.17E2)",advance='no') &
                       CVmix_vars(1)%Ri_iface(kw)
-              case ("visc")
+              case ("Mdiff")
                 do icol=1,ncol
                   write(file_id,"(E24.17E2)",advance='no') &
-                        CVmix_vars(icol)%visc_iface(kw)
+                        CVmix_vars(icol)%Mdiff_iface(kw)
                   if (icol.ne.ncol) write(file_id, "(1X)", advance='no')
                 end do
-              case ("diff")
+              case ("Tdiff")
                 do icol=1,ncol
                   write(file_id,"(E24.17E2)",advance='no') &
-                        CVmix_vars(icol)%diff_iface(kw,1)
+                        CVmix_vars(icol)%Tdiff_iface(kw)
+                  if (icol.ne.ncol) write(file_id, "(1X)", advance='no')
+                end do
+              case ("Sdiff")
+                do icol=1,ncol
+                  write(file_id,"(E24.17E2)",advance='no') &
+                        CVmix_vars(icol)%Sdiff_iface(kw)
                   if (icol.ne.ncol) write(file_id, "(1X)", advance='no')
                 end do
               case ("Rrho")

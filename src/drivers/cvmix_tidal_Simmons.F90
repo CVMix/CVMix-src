@@ -41,7 +41,7 @@ Subroutine cvmix_tidal_driver()
   type(cvmix_global_params_type) :: CVmix_params
   type(cvmix_tidal_params_type)  :: CVmix_Simmons_params
 
-  real(cvmix_r8), dimension(:,:,:,:), allocatable, target :: diffusivity
+  real(cvmix_r8), dimension(:,:,:), allocatable, target :: Tdiff
 
   ! file index
   integer :: fid
@@ -117,10 +117,10 @@ Subroutine cvmix_tidal_driver()
   buoy(:,:,1) = 0.0_cvmix_r8
 
   ! Allocate memory to store diffusivity values
-  allocate(diffusivity(nlon, nlat, max_nlev+1,1))
+  allocate(Tdiff(nlon, nlat, max_nlev+1))
   ! Set diffusivity to _FillValue
   FillVal     = 100000.0_cvmix_r8
-  diffusivity = FillVal
+  Tdiff = FillVal
 
   ! Read in global data from grid file, physics file, and energy flux file
   call cvmix_io_open(fid, trim(grid_file), 'nc', read_only=.true.)
@@ -177,7 +177,7 @@ Subroutine cvmix_tidal_driver()
         call cvmix_put(CVmix_params, 'max_nlev',        max_nlev)
         call cvmix_put(CVmix_params,   'fw_rho', 1000.0_cvmix_r8)
         ! Point CVmix_vars values to memory allocated above
-        CVmix_vars(i,j)%diff_iface => diffusivity(i,j,1:nlev+1,:)
+        CVmix_vars(i,j)%Tdiff_iface => Tdiff(i,j,1:nlev+1)
 
         call cvmix_coeffs_tidal(CVmix_vars(i,j), CVmix_Simmons_params, &
                                 CVmix_params, energy_flux(i,j))
@@ -230,7 +230,7 @@ Subroutine cvmix_tidal_driver()
   ! Write diffusivity field to netcdf
   call cvmix_io_open(fid, "diff.nc", "nc")
   call cvmix_output_write(fid, "diff", (/"nlon  ", "nlat  ", "niface"/),      &
-                          diffusivity(:,:,:,1), FillVal=FillVal)
+                          Tdiff, FillVal=FillVal)
   call cvmix_output_write_att(fid, "long_name", "tracer diffusivity",         &
                               var_name="diff")
   call cvmix_output_write_att(fid, "units", "m^2/s", var_name="diff")

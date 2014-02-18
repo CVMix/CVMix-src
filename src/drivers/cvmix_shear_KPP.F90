@@ -46,9 +46,8 @@ Subroutine cvmix_shear_driver(nlev)
   type(cvmix_global_params_type) :: CVmix_params
   type(cvmix_shear_params_type)  :: CVmix_KPP_params
 
-  real(cvmix_r8), dimension(:),   allocatable, target :: Ri_g
-  real(cvmix_r8), dimension(:),   allocatable, target :: viscosity
-  real(cvmix_r8), dimension(:,:), allocatable, target :: diffusivity
+  real(cvmix_r8), dimension(:), allocatable, target :: Ri_g
+  real(cvmix_r8), dimension(:), allocatable, target :: Mdiff, Tdiff
 
   ! array index
   integer :: kw
@@ -70,15 +69,15 @@ Subroutine cvmix_shear_driver(nlev)
   end do
 
   ! Allocate memory to store viscosity and diffusivity values
-  allocate(diffusivity(nlev+1,1), viscosity(nlev+1))
+  allocate(Mdiff(nlev+1), Tdiff(nlev+1))
 
   ! Initialization for CVMix data types
   call cvmix_put(CVmix_params,  'max_nlev', nlev)
   call cvmix_put(CVmix_params,  'prandtl',  one)
   call cvmix_put(CVmix_vars,    'nlev',     nlev)
   ! Point CVmix_vars values to memory allocated above
-  CVmix_vars%visc_iface => viscosity
-  CVmix_vars%diff_iface => diffusivity
+  CVmix_vars%Mdiff_iface => Mdiff
+  CVmix_vars%Tdiff_iface => Tdiff
   CVmix_vars%Ri_iface => Ri_g
 
   ! Read / set KPP parameters

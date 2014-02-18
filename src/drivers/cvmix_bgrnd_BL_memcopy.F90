@@ -107,9 +107,9 @@ Subroutine cvmix_BL_memcopy_driver(nlev, ocn_depth)
 
   ! Compute B-L coefficients
   ! test icvmix_get_bkgnd_real_2D
-  CVmix_vars(1)%visc_iface      = reshape(                                    &
+  CVmix_vars(1)%Mdiff_iface = reshape(                                        &
                             cvmix_get_bkgnd_real_2D('static_visc'),(/nlev+1/))
-  CVmix_vars(1)%diff_iface(:,1) = reshape(                                    &
+  CVmix_vars(1)%Tdiff_iface = reshape(                                        &
                             cvmix_get_bkgnd_real_2D('static_diff'),(/nlev+1/))
 !  print*, shape(cvmix_get_bkgnd_real_2D('static_diff'))
   call cvmix_coeffs_bkgnd(CVmix_vars(2),                                      &

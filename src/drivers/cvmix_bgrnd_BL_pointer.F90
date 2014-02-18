@@ -46,12 +46,10 @@ Subroutine cvmix_BL_pointer_driver(nlev, ocn_depth)
   type(cvmix_data_type)         , dimension(2) :: CVmix_vars
   type(cvmix_global_params_type)               :: CVmix_params
 
-  ! Will use 2 columns, viscosity will be 2 x nlev+1 and diffusivity will 
-  ! be 2 x nlev+1 x 1 (diffusivity is 2D in column)
+  ! Will use 2 columns, diffusivities be 2 x nlev+1
   ! iface_depth is the depth of each interface;  same in both columns
-  real(cvmix_r8), dimension(:),     allocatable, target :: iface_depth
-  real(cvmix_r8), dimension(:,:),   allocatable, target :: viscosity
-  real(cvmix_r8), dimension(:,:,:), allocatable, target :: diffusivity
+  real(cvmix_r8), dimension(:),   allocatable, target :: iface_depth
+  real(cvmix_r8), dimension(:,:), allocatable, target :: Mdiff, Tdiff
 
   ! Namelist variables
   ! Bryan-Lewis mixing parameters for column 1
@@ -83,7 +81,7 @@ Subroutine cvmix_BL_pointer_driver(nlev, ocn_depth)
   end do
 
   ! Allocate memory to store viscosity and diffusivity values
-  allocate(diffusivity(2,nlev+1,1), viscosity(2,nlev+1))
+  allocate(Mdiff(2,nlev+1), Tdiff(2,nlev+1)) 
 
   ! Initialization for CVMix data types
   call cvmix_put(CVmix_params,  'max_nlev', nlev)
@@ -91,9 +89,9 @@ Subroutine cvmix_BL_pointer_driver(nlev, ocn_depth)
   do icol=1,2
     call cvmix_put(CVmix_vars(icol), 'nlev',     nlev)
     ! Point CVmix_vars values to memory allocated above
-    CVmix_vars(icol)%visc_iface => viscosity(icol,:)
-    CVmix_vars(icol)%diff_iface => diffusivity(icol,:,:)
-    CVmix_vars(icol)%zw_iface   => iface_depth
+    CVmix_vars(icol)%Mdiff_iface => Mdiff(icol,:)
+    CVmix_vars(icol)%Tdiff_iface => Tdiff(icol,:)
+    CVmix_vars(icol)%zw_iface    => iface_depth
   end do
 
   ! Read B-L parameters for columns

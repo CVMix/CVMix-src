@@ -41,8 +41,7 @@ Subroutine cvmix_kpp_driver()
   ! CVMix datatypes
   type(cvmix_data_type)       :: CVmix_vars1, CVmix_vars4, CVmix_vars5
 
-  real(cvmix_r8), dimension(:,:), allocatable, target :: diffusivity
-  real(cvmix_r8), dimension(:),   allocatable, target :: viscosity
+  real(cvmix_r8), dimension(:),   allocatable, target :: Mdiff, Tdiff, Sdiff
   real(cvmix_r8), dimension(:),   allocatable, target :: zt, zw_iface,        &
                                                          Ri_bulk, Ri_bulk2
   real(cvmix_r8), dimension(:),   allocatable, target :: w_m, w_s, zeta
@@ -286,13 +285,14 @@ Subroutine cvmix_kpp_driver()
     CVmix_vars4%zw_iface => zw_iface(:)
 
     ! Set up diffusivities
-    allocate(diffusivity(nlev4+1,2), viscosity(nlev4+1))
-    diffusivity = 0.0_cvmix_r8
-    diffusivity(2,1) = 10.0_cvmix_r8
-    diffusivity(3,1) = 5.0_cvmix_r8
-    diffusivity(4,1) = 1.0_cvmix_r8
-    CVmix_vars4%diff_iface => diffusivity
-    CVmix_vars4%visc_iface => viscosity
+    allocate(Mdiff(nlev4+1), Tdiff(nlev4+1), Sdiff(nlev4+1))
+    Tdiff    = 0.0_cvmix_r8
+    Tdiff(2) = 10.0_cvmix_r8
+    Tdiff(3) = 5.0_cvmix_r8
+    Tdiff(4) = 1.0_cvmix_r8
+    CVmix_vars4%Mdiff_iface => Mdiff
+    CVmix_vars4%Tdiff_iface => Tdiff
+    CVmix_vars4%Sdiff_iface => Sdiff
 
     ! Set physical properties of column for test 4
     call cvmix_put(CVmix_vars4, 'nlev', nlev4)
@@ -328,7 +328,7 @@ Subroutine cvmix_kpp_driver()
     call cvmix_io_close(fid)
 
     deallocate(zt, zw_iface)
-    deallocate(diffusivity, viscosity)
+    deallocate(Mdiff, Tdiff, Sdiff)
   end if ! ltest4
 
   ! Test 5: Recreate figure C1 from LMD94
