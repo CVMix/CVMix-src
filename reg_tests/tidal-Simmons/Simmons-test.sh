@@ -59,4 +59,4 @@ if [ $? != 0 ]; then
   exit 1
 fi
 
-ncdump -v diff single_col.nc
+ncdump -v Tdiff single_col.nc

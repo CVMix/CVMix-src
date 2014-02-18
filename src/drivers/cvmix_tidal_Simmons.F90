@@ -198,7 +198,7 @@ Subroutine cvmix_tidal_driver()
     this_lat = CVmix_vars(lon_out, lat_out)%lat
     call cvmix_io_open(fid, "single_col.nc", "nc")
     call cvmix_output_write(fid, CVmix_vars(lon_out, lat_out), &
-                            (/"zw_iface", "diff    "/))
+                            (/"zw_iface", "Tdiff   "/))
     if (this_lon.ge.0) then
       write(lonstr,"(F6.2,1X,A)") this_lon, "E"
     else
@@ -215,8 +215,8 @@ Subroutine cvmix_tidal_driver()
 
     ! Variable Attributes
     call cvmix_output_write_att(fid, "long_name", "tracer diffusivity", &
-                                var_name="diff")
-    call cvmix_output_write_att(fid, "units", "m^2/s", var_name="diff")
+                                var_name="Tdiff")
+    call cvmix_output_write_att(fid, "units", "m^2/s", var_name="Tdiff")
     call cvmix_output_write_att(fid, "long_name", "height at interface", &
                                 var_name="zw_iface")
     call cvmix_output_write_att(fid, "positive", "up", var_name="zw_iface")
@@ -229,11 +229,11 @@ Subroutine cvmix_tidal_driver()
 
   ! Write diffusivity field to netcdf
   call cvmix_io_open(fid, "diff.nc", "nc")
-  call cvmix_output_write(fid, "diff", (/"nlon  ", "nlat  ", "niface"/),      &
+  call cvmix_output_write(fid, "Tdiff", (/"nlon  ", "nlat  ", "niface"/),     &
                           Tdiff, FillVal=FillVal)
   call cvmix_output_write_att(fid, "long_name", "tracer diffusivity",         &
-                              var_name="diff")
-  call cvmix_output_write_att(fid, "units", "m^2/s", var_name="diff")
+                              var_name="Tdiff")
+  call cvmix_output_write_att(fid, "units", "m^2/s", var_name="Tdiff")
   call cvmix_io_close(fid)
 
   ! memory cleanup
