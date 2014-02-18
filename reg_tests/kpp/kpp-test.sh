@@ -68,7 +68,7 @@ if [ "$OUTPUT" == "TRUE" ]; then
 
   if [ "`grep ltest4 input.nl | cut -d. -f 2`" != "false" ]; then
     if [ "${USE_NETCDF}" == "netcdf" ]; then
-      ncdump -v zw,diff test4.nc
+      ncdump -v zw,Tdiff test4.nc
     else
       cat test4.out
     fi

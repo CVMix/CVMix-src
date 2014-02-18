@@ -102,7 +102,7 @@ Subroutine cvmix_ddiff_driver(nlev)
                               "stratification parameter", var_name="Rrho")
   call cvmix_output_write_att(fid, "units", "unitless", var_name="Rrho")
   call cvmix_output_write_att(fid, "long_name", "tracer diffusivity",         &
-                              var_name="diff")
+                              var_name="Tdiff")
   call cvmix_output_write_att(fid, "units", "m^2/s", var_name="Tdiff")
 #endif
   call cvmix_io_close(fid)

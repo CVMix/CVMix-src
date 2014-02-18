@@ -319,7 +319,7 @@ Subroutine cvmix_kpp_driver()
     call cvmix_io_open(fid, "test4.out", "ascii")
 #endif
 
-    call cvmix_output_write(fid, CVmix_vars4, (/"zt  ", "zw  ", "diff"/)) 
+    call cvmix_output_write(fid, CVmix_vars4, (/"zt   ", "zw   ", "Tdiff"/)) 
 #ifdef _NETCDF
     call cvmix_output_write_att(fid, "interp_type2", interp_type_t4)
     call cvmix_output_write_att(fid, "OBL_depth", CVmix_vars4%OBL_depth)
