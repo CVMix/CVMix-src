@@ -95,14 +95,14 @@ Subroutine cvmix_shear_driver(nlev)
   call cvmix_io_open(fid, "data.out", "ascii")
 #endif
 
-  call cvmix_output_write(fid, CVmix_vars, (/"Ri  ", "diff"/))
+  call cvmix_output_write(fid, CVmix_vars, (/"Ri   ", "Tdiff"/))
 #ifdef _NETCDF
   call cvmix_output_write_att(fid, "long_name", "Richardson number",          &
                               var_name="Ri")
   call cvmix_output_write_att(fid, "units", "unitless", var_name="Ri")
   call cvmix_output_write_att(fid, "long_name", "tracer diffusivity",         &
-                              var_name="diff")
-  call cvmix_output_write_att(fid, "units", "m^2/s", var_name="diff")
+                              var_name="Tdiff")
+  call cvmix_output_write_att(fid, "units", "m^2/s", var_name="Tdiff")
 #endif
   call cvmix_io_close(fid)
 

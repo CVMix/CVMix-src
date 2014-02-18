@@ -7,6 +7,10 @@ load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_csm.ncl"
 
 begin
 
+  out_type = "pdf"
+  ; out_type = "ps"
+  ; out_type = "X11"
+
   ; Create Color Table
   my_color_map = (/"White", "Black"/)
 
@@ -14,7 +18,7 @@ begin
     print((/"Reading netCDF data"/))
     f = addfile("data.nc", "r")
     x = f->Ri
-    y = f->diff
+    y = f->Tdiff
   else
     if (isfilepresent("data.out")) then
       print((/"Reading ascii data"/))
@@ -32,8 +36,6 @@ begin
     end if
   end if
 
-  out_type = "ps"
-  ; out_type = "X11"
   wks = gsn_open_wks(out_type, "shear_CVMix")
   gsn_define_colormap(wks, my_color_map)
 
