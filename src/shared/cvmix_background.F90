@@ -517,44 +517,44 @@ contains
     if ((old_vals.eq.CVMIX_SUM_OLD_AND_NEW_VALS).or.                          &
         (old_vals.eq.CVMIX_MAX_OLD_AND_NEW_VALS)) then
         allocate(old_diff(nlev+1), old_visc(nlev+1))
-        old_diff = CVmix_vars%diff_iface(:,1)
-        old_visc = CVmix_vars%visc_iface
+        old_diff = CVmix_vars%Tdiff_iface
+        old_visc = CVmix_vars%Mdiff_iface
     end if
 
     if (CVmix_bkgnd_params_in%lvary_horizontal) then
       if (CVmix_bkgnd_params_in%lvary_vertical) then
-        CVmix_vars%visc_iface(:)   =                                          &
+        CVmix_vars%Mdiff_iface =                                              &
                   CVmix_bkgnd_params_in%static_visc(colid,1:nlev+1)
-        CVmix_vars%diff_iface(:,1) =                                          &
+        CVmix_vars%Tdiff_iface =                                              &
                   CVmix_bkgnd_params_in%static_diff(colid,1:nlev+1)
       else
-        CVmix_vars%visc_iface(:)   = CVmix_bkgnd_params_in%static_visc(colid,1)
-        CVmix_vars%diff_iface(:,1) = CVmix_bkgnd_params_in%static_diff(colid,1)
+        CVmix_vars%Mdiff_iface = CVmix_bkgnd_params_in%static_visc(colid,1)
+        CVmix_vars%Tdiff_iface = CVmix_bkgnd_params_in%static_diff(colid,1)
       end if
     else
       if (CVmix_bkgnd_params_in%lvary_vertical) then
-        CVmix_vars%visc_iface(:)   =                                          &
+        CVmix_vars%Mdiff_iface =                                              &
                   CVmix_bkgnd_params_in%static_visc(1,1:nlev+1)
-        CVmix_vars%diff_iface(:,1) =                                          &
+        CVmix_vars%Tdiff_iface =                                              &
                   CVmix_bkgnd_params_in%static_diff(1,1:nlev+1)
       else
-        CVmix_vars%visc_iface(:)   = CVmix_bkgnd_params_in%static_visc(1,1)
-        CVmix_vars%diff_iface(:,1) = CVmix_bkgnd_params_in%static_diff(1,1)
+        CVmix_vars%Mdiff_iface = CVmix_bkgnd_params_in%static_visc(1,1)
+        CVmix_vars%Tdiff_iface = CVmix_bkgnd_params_in%static_diff(1,1)
       end if
     end if
 
     if (old_vals.eq.CVMIX_SUM_OLD_AND_NEW_VALS) then
-      CVmix_vars%diff_iface(:,1) = CVmix_vars%diff_iface(:,1) + old_diff
-      CVmix_vars%visc_iface      = CVmix_vars%visc_iface      + old_visc
+      CVmix_vars%Mdiff_iface = CVmix_vars%Mdiff_iface + old_visc
+      CVmix_vars%Tdiff_iface = CVmix_vars%Tdiff_iface + old_diff
       deallocate(old_diff, old_visc)
     end if
 
     if (old_vals.eq.CVMIX_MAX_OLD_AND_NEW_VALS) then
       do kw=1,nlev+1
-        CVmix_vars%diff_iface(kw,1) = max(CVmix_vars%diff_iface(kw,1),        &
-                                          old_diff(kw))
-        CVmix_vars%visc_iface(kw)   = max(CVmix_vars%visc_iface(kw),          &
-                                          old_visc(kw))
+        CVmix_vars%Mdiff_iface(kw) = max(CVmix_vars%Mdiff_iface(kw),          &
+                                         old_visc(kw))
+        CVmix_vars%Tdiff_iface(kw) = max(CVmix_vars%Tdiff_iface(kw),          &
+                                         old_diff(kw))
       end do
       deallocate(old_diff, old_visc)
     end if

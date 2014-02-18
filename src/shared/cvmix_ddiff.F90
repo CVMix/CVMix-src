@@ -16,6 +16,7 @@ module cvmix_ddiff
   use cvmix_kinds_and_types, only : one,                     &
                                     cvmix_r8,                &
                                     cvmix_data_type
+  use cvmix_put_get,         only : cvmix_put
 !EOP
 
   implicit none
@@ -265,7 +266,8 @@ module cvmix_ddiff
     end if
 
     ! Determine coefficients
-    CVmix_vars%diff_iface = 0_cvmix_r8
+    call cvmix_put(CVmix_vars, "Tdiff", 0.0_cvmix_r8)
+    call cvmix_put(CVmix_vars, "Sdiff", 0.0_cvmix_r8)
     do k = 1, CVmix_vars%nlev
       if ((CVmix_vars%strat_param_num(k).gt.CVmix_vars%strat_param_denom(k)).and.&
           (CVmix_vars%strat_param_denom(k).gt.0)) then
@@ -274,8 +276,8 @@ module cvmix_ddiff
         if (Rrho.lt.CVmix_ddiff_params_in%strat_param_max) then
           ddiff = (one-((Rrho-one)/(CVmix_ddiff_params_in%strat_param_max-one))** &
                 CVmix_ddiff_params_in%ddiff_exp1)**CVmix_ddiff_params_in%ddiff_exp2
-          CVmix_vars%diff_iface(k,1) = CVmix_ddiff_params_in%kappa_ddiff_t*ddiff
-          CVmix_vars%diff_iface(k,2) = CVmix_ddiff_params_in%kappa_ddiff_s*ddiff
+          CVmix_vars%Tdiff_iface(k) = CVmix_ddiff_params_in%kappa_ddiff_t*ddiff
+          CVmix_vars%Sdiff_iface(k) = CVmix_ddiff_params_in%kappa_ddiff_s*ddiff
         end if
       end if
       if ((CVmix_vars%strat_param_num(k).gt.CVmix_vars%strat_param_denom(k)).and.&
@@ -285,15 +287,16 @@ module cvmix_ddiff
         ddiff = CVmix_ddiff_params_in%mol_diff*CVmix_ddiff_params_in%kappa_ddiff_param1*&
                 exp(CVmix_ddiff_params_in%kappa_ddiff_param2*exp(&
                 CVmix_ddiff_params_in%kappa_ddiff_param3*(one/Rrho-one)))
-        CVmix_vars%diff_iface(k,1) = ddiff
+        CVmix_vars%Tdiff_iface(k) = ddiff
         if (Rrho.lt.0.5_cvmix_r8) then
-          CVmix_vars%diff_iface(k,2) = 0.15_cvmix_r8*Rrho*ddiff
+          CVmix_vars%Sdiff_iface(k) = 0.15_cvmix_r8*Rrho*ddiff
         else
-          CVmix_vars%diff_iface(k,2) = (1.85_cvmix_r8*Rrho-0.85_cvmix_r8)*ddiff
+          CVmix_vars%Sdiff_iface(k) = (1.85_cvmix_r8*Rrho-0.85_cvmix_r8)*ddiff
         end if
       end if
     end do
-    CVmix_vars%diff_iface(CVmix_vars%nlev+1,:) = 0.0_cvmix_r8
+    CVmix_vars%Tdiff_iface(CVmix_vars%nlev+1) = 0.0_cvmix_r8
+    CVmix_vars%Sdiff_iface(CVmix_vars%nlev+1) = 0.0_cvmix_r8
 
 !EOC
 

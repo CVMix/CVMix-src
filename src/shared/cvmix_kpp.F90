@@ -395,7 +395,8 @@ contains
 !BOC
 
     call cvmix_put(CVmix_vars, 'kpp_transport', 0.0_cvmix_r8)
-    call cvmix_coeffs_kpp(CVmix_vars%diff_iface, CVmix_vars%visc_iface,       &
+    call cvmix_coeffs_kpp(CVmix_vars%Mdiff_iface, CVmix_vars%Tdiff_iface,     &
+                          CVMix_vars%Sdiff_iface,                             &
                           CVmix_vars%zw_iface, CVmix_vars%zt,                 &
                           CVmix_vars%OBL_depth, CVmix_vars%kOBL_depth,        &
                           CVmix_vars%kpp_transport_iface,                     &
@@ -411,9 +412,9 @@ contains
 ! !IROUTINE: cvmix_coeffs_kpp_low
 ! !INTERFACE:
 
-  subroutine cvmix_coeffs_kpp_low(diff, visc, zw_iface, zt_cntr, OBL_depth,   &
-                                  kOBL_depth, nonlocal, surf_fric, surf_buoy, &
-                                  CVmix_kpp_params_user)
+  subroutine cvmix_coeffs_kpp_low(Mdiff, Tdiff, Sdiff, zw_iface, zt_cntr,     &
+                                  OBL_depth, kOBL_depth, nonlocal, surf_fric, &
+                                  surf_buoy, CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
 !  Computes vertical diffusion coefficients for the KPP boundary layer mixing
@@ -432,8 +433,8 @@ contains
                                                   surf_buoy, kOBL_depth
 
 ! !INPUT/OUTPUT PARAMETERS:
-    real(cvmix_r8), dimension(:,:), intent(inout) :: diff, nonlocal
-    real(cvmix_r8), dimension(:),   intent(inout) :: visc
+    real(cvmix_r8), dimension(:,:), intent(inout) :: nonlocal
+    real(cvmix_r8), dimension(:),   intent(inout) :: Mdiff, Tdiff, Sdiff
 
 !EOP
 !BOC
@@ -442,17 +443,16 @@ contains
     type(cvmix_kpp_params_type), pointer :: CVmix_kpp_params_in
 
     ! OBL_diff and OBL_visc are the diffusivity and viscosity in the whole OBL
-    real(cvmix_r8), dimension(:,:), allocatable :: OBL_diff
-    real(cvmix_r8), dimension(:),   allocatable :: OBL_visc
+    real(cvmix_r8), dimension(:), allocatable :: OBL_Mdiff, OBL_Tdiff,        &
+                                                 OBL_Sdiff
 
     ! diff_ktup and visc_ktup are the enhanced diffusivity and viscosity values
     ! at the deepest cell center above OBL_depth. Rest are intermediary
     ! variables needed to compute diff_ktup and visc_ktup
-    real(cvmix_r8), dimension(2) :: diff_ktup
-    real(cvmix_r8)               :: visc_ktup
-    real(cvmix_r8)               :: sigma_ktup, wm_ktup, ws_ktup
+    real(cvmix_r8) :: Mdiff_ktup, Tdiff_ktup, Sdiff_ktup
+    real(cvmix_r8) :: sigma_ktup, wm_ktup, ws_ktup
 
-    real(cvmix_r8)               :: delta
+    real(cvmix_r8) :: delta
 
     real(cvmix_r8), dimension(:), allocatable :: sigma, w_m, w_s
     real(cvmix_r8), dimension(4,3)            :: shape_coeffs, shape_coeffs2
@@ -484,9 +484,10 @@ contains
     ktup = nint(kOBL_depth)-1
 
     ! Allocate OBL_diff and OBL_visc
-    allocate(OBL_diff(kwup,2), OBL_visc(kwup))
-    OBL_diff = 0.0_cvmix_r8
-    OBL_visc = 0.0_cvmix_r8
+    allocate(OBL_Mdiff(kwup), OBL_Tdiff(kwup), OBL_Sdiff(kwup))
+    OBL_Mdiff = 0.0_cvmix_r8
+    OBL_Tdiff = 0.0_cvmix_r8
+    OBL_Sdiff = 0.0_cvmix_r8
 
     ! Stability => positive surface buoyancy flux
     lstable = (surf_buoy.gt.0.0_cvmix_r8)
@@ -537,32 +538,32 @@ contains
       if (kwup.eq.1) then
         visc_at_OBL(1) = compute_nu_at_OBL_depth(interp_type2,                &
                                        (/zw_iface(kwup), zw_iface(kwup+1)/),  &
-                                       (/diff(kwup,1), diff(kwup+1,1)/),      &
+                                       (/Tdiff(kwup), Tdiff(kwup)/),          &
                                        OBL_depth, dnu_dz=dvisc_OBL(1))
         visc_at_OBL(2) = compute_nu_at_OBL_depth(interp_type2,                &
                                        (/zw_iface(kwup), zw_iface(kwup+1)/),  &
-                                       (/diff(kwup,2), diff(kwup+1,2)/),      &
+                                       (/Sdiff(kwup), Sdiff(kwup+1)/),        &
                                        OBL_depth, dnu_dz=dvisc_OBL(2))
         visc_at_OBL(3) = compute_nu_at_OBL_depth(interp_type2,                &
                                        (/zw_iface(kwup), zw_iface(kwup+1)/),  &
-                                       (/visc(kwup), visc(kwup+1)/),          &
+                                       (/Mdiff(kwup), Mdiff(kwup+1)/),        &
                                        OBL_depth, dnu_dz=dvisc_OBL(3))
       else
         visc_at_OBL(1) = compute_nu_at_OBL_depth(interp_type2,                &
                                        (/zw_iface(kwup), zw_iface(kwup+1)/),  &
-                                       (/diff(kwup,1), diff(kwup+1,1)/),      &
+                                       (/Tdiff(kwup), Tdiff(kwup+1)/),        &
                                        OBL_depth, zw_iface(kwup-1),           &
-                                       diff(kwup-1,1), dvisc_OBL(1)) 
+                                       Tdiff(kwup-1), dvisc_OBL(1)) 
         visc_at_OBL(2) = compute_nu_at_OBL_depth(interp_type2,                &
                                        (/zw_iface(kwup), zw_iface(kwup+1)/),  &
-                                       (/diff(kwup,2), diff(kwup+1,2)/),      &
+                                       (/Sdiff(kwup), Sdiff(kwup)/),          &
                                        OBL_depth, zw_iface(kwup-1),           &
-                                       diff(kwup-1,2), dvisc_OBL(2)) 
+                                       Sdiff(kwup-1), dvisc_OBL(2)) 
         visc_at_OBL(3) = compute_nu_at_OBL_depth(interp_type2,                &
                                        (/zw_iface(kwup), zw_iface(kwup+1)/),  &
-                                       (/visc(kwup), visc(kwup+1)/),          &
+                                       (/Mdiff(kwup), Mdiff(kwup+1)/),        &
                                        OBL_depth, zw_iface(kwup-1),           &
-                                       visc(kwup-1), dvisc_OBL(3))
+                                       Mdiff(kwup-1), dvisc_OBL(3))
       end if
       if (OBL_depth.eq.zero) then
         Gat1  = zero ! value doesn't really matter, K = 0
@@ -624,16 +625,16 @@ contains
     do i=1,3
       GatS(i) = cvmix_math_evaluate_cubic(shape_coeffs(:,i), sigma_ktup)
     end do
-    diff_ktup(1)   = OBL_depth * ws_ktup * GatS(1)
-    diff_ktup(2)   = OBL_depth * ws_ktup * GatS(2)
-    visc_ktup      = OBL_depth * wm_ktup * GatS(3)
+    Tdiff_ktup = OBL_depth * ws_ktup * GatS(1)
+    Sdiff_ktup = OBL_depth * ws_ktup * GatS(2)
+    Mdiff_ktup = OBL_depth * wm_ktup * GatS(3)
     do kw=1,kwup
       do i=1,3
         GatS(i)  = cvmix_math_evaluate_cubic( shape_coeffs(:,i), sigma(kw))
       end do
-      OBL_diff(kw,1)   = OBL_depth * w_s(kw) * GatS(1)
-      OBL_diff(kw,2)   = OBL_depth * w_s(kw) * GatS(2)
-      OBL_visc(kw)     = OBL_depth * w_m(kw) * GatS(3)
+      OBL_Tdiff(kw) = OBL_depth * w_s(kw) * GatS(1)
+      OBL_Sdiff(kw) = OBL_depth * w_s(kw) * GatS(2)
+      OBL_Mdiff(kw) = OBL_depth * w_m(kw) * GatS(3)
       if (.not.lstable) then
         call cvmix_kpp_compute_nonlocal(shape_coeffs2(:,1), sigma(kw),        &
                                         nonlocal(kw,1), CVmix_kpp_params_user)
@@ -660,35 +661,40 @@ contains
     select case (ktup - kwup)
       case (-1)
         ! => ktup = kwup - 1
-        call cvmix_kpp_compute_enhanced_diff(diff_ktup, visc_ktup,            &
-                                             diff(ktup+1,:), visc(ktup+1),    &
-                                             OBL_diff(ktup+1,:),              &
-                                             OBL_visc(ktup),                  &
+        call cvmix_kpp_compute_enhanced_diff(Mdiff_ktup, Tdiff_ktup,          &
+                                             Sdiff_ktup, Mdiff(ktup+1),       &
+                                             Tdiff(ktup+1), Sdiff(ktup+1),    &
+                                             OBL_Mdiff(ktup+1),               &
+                                             OBL_Tdiff(ktup+1),               &
+                                             OBL_Sdiff(ktup+1),               &
                                              delta, lkteqkw=.false.)
 
       case (0)
         ! => ktup = kwup
-        call cvmix_kpp_compute_enhanced_diff(diff_ktup, visc_ktup,            &
-                                             diff(ktup+1,:), visc(ktup+1),    &
-                                             OBL_diff(ktup+1,:),              &
-                                             OBL_visc(ktup),                  &
+        call cvmix_kpp_compute_enhanced_diff(Mdiff_ktup, Tdiff_ktup,          &
+                                             Sdiff_ktup, Mdiff(ktup+1),       &
+                                             Tdiff(ktup+1), Sdiff(ktup+1),    &
+                                             OBL_Mdiff(ktup+1),               &
+                                             OBL_Tdiff(ktup+1),               &
+                                             OBL_Sdiff(ktup+1),               &
                                              delta, lkteqkw=.true.)
 
       case DEFAULT
         print*, "ERROR: ktup should be either kwup or kwup-1!"
         print*, "ktup = ", ktup, " and kwup = ", kwup
         deallocate(sigma, w_m, w_s)
-        deallocate(OBL_diff, OBL_visc)
+        deallocate(OBL_Mdiff, OBL_Tdiff, OBL_Sdiff)
         stop 1
     end select
 
     ! (5) Combine interior and boundary coefficients
-    diff(1:kwup,:) = OBL_diff
-    visc(1:kwup) = OBL_visc
+    Mdiff(1:kwup) = OBL_Mdiff
+    Tdiff(1:kwup) = OBL_Tdiff
+    Sdiff(1:kwup) = OBL_Sdiff
 
     ! Clean up memory
     deallocate(sigma, w_m, w_s)
-    deallocate(OBL_diff, OBL_visc)
+    deallocate(OBL_Mdiff, OBL_Tdiff, OBL_Sdiff)
 
 !EOC
   end subroutine cvmix_coeffs_kpp_low
@@ -1129,9 +1135,10 @@ contains
 ! !IROUTINE: cvmix_kpp_compute_enhanced_diff
 ! !INTERFACE:
 
-  subroutine cvmix_kpp_compute_enhanced_diff(diff_ktup, visc_ktup, diff, visc,&
-                                             OBL_diff, OBL_visc, delta,       &
-                                             lkteqkw)
+  subroutine cvmix_kpp_compute_enhanced_diff(Mdiff_ktup, Tdiff_ktup,          &
+                                             Sdiff_ktup, Mdiff, Tdiff, Sdiff, &
+                                             OBL_Mdiff, OBL_Tdiff, OBL_Sdiff, &
+                                             delta, lkteqkw)
 
 ! !DESCRIPTION:
 !  The enhanced mixing described in Appendix D of LMD94 changes the diffusivity
@@ -1146,8 +1153,7 @@ contains
 ! !INPUT PARAMETERS:
 
     ! Diffusivity and viscosity at cell center above OBL_depth
-    real(cvmix_r8), dimension(2), intent(in) :: diff_ktup
-    real(cvmix_r8),               intent(in) :: visc_ktup
+    real(cvmix_r8), intent(in) :: Mdiff_ktup, Tdiff_ktup, Sdiff_ktup
 
     ! Weight to use in averaging (distance between OBL_depth and cell center
     ! above OBL_depth divided by distance between cell centers bracketing
@@ -1162,8 +1168,8 @@ contains
 ! !OUTPUT PARAMETERS:
     ! Will change either diff & visc or OBL_diff & OBL_visc, depending on value
     ! of lkteqkw
-    real(cvmix_r8), dimension(2), intent(inout) :: diff, OBL_diff
-    real(cvmix_r8),               intent(inout) :: visc, OBL_visc
+    real(cvmix_r8), intent(inout) :: Mdiff, Tdiff, Sdiff,                     &
+                                     OBL_Mdiff, OBL_Tdiff, OBL_Sdiff
 
 !EOP
 !BOC
@@ -1172,8 +1178,7 @@ contains
 
     ! enh_diff and enh_visc are the enhanced diffusivity and viscosity values
     ! at the interface nearest OBL_depth
-    real(cvmix_r8), dimension(2) :: enh_diff
-    real(cvmix_r8)               :: enh_visc
+    real(cvmix_r8) :: enh_Mdiff, enh_Tdiff, enh_Sdiff
 
     real(cvmix_r8) :: omd ! one minus delta
 
@@ -1185,29 +1190,29 @@ contains
 
       ! (a) compute enhanced diffs: get diffusivity values at kw = ktup+1
       !     from diff and visc rather than OBL_diff and OBL_visc
-      enh_diff(1) = (omd**2)*diff_ktup(1) + (delta**2)*diff(1)
-      enh_diff(2) = (omd**2)*diff_ktup(2) + (delta**2)*diff(2)
-      enh_visc    = (omd**2)*visc_ktup    + (delta**2)*visc
+      enh_Mdiff = (omd**2)*Mdiff_ktup + (delta**2)*Mdiff
+      enh_Tdiff = (omd**2)*Tdiff_ktup + (delta**2)*Tdiff
+      enh_Sdiff = (omd**2)*Sdiff_ktup + (delta**2)*Sdiff
       
       ! (b) modify diffusivity values at kw = ktup+1 (again in diff and visc)
-      diff(1) = omd*diff(1) + delta*enh_diff(1)
-      diff(2) = omd*diff(2) + delta*enh_diff(2)
-      visc    = omd*visc    + delta*enh_visc
+      Mdiff = omd*Mdiff + delta*enh_Mdiff
+      Tdiff = omd*Tdiff + delta*enh_Tdiff
+      Sdiff = omd*Sdiff + delta*enh_Sdiff
     else
       ! => ktup = kwup - 1
       ! Interface kw = ktup+1 is in the OBL
 
       ! (a) compute enhanced diffs: get diffusivity values at kw = ktup+1
       !     from OBL_diff and OBL_visc rather than diff and visc
-      enh_diff(1) = (omd**2)*diff_ktup(1) + (delta**2)*OBL_diff(1)
-      enh_diff(2) = (omd**2)*diff_ktup(2) + (delta**2)*OBL_diff(2)
-      enh_visc    = (omd**2)*visc_ktup    + (delta**2)*OBL_visc
+      enh_Mdiff = (omd**2)*Mdiff_ktup + (delta**2)*OBL_Mdiff
+      enh_Tdiff = (omd**2)*Tdiff_ktup + (delta**2)*OBL_Tdiff
+      enh_Sdiff = (omd**2)*Sdiff_ktup + (delta**2)*OBL_Sdiff
       
       ! (b) modify diffusivity values at kw = ktup+1 (again in OBL_diff and
       !     OBL_visc)
-      OBL_diff(1) = omd*diff(1) + delta*enh_diff(1)
-      OBL_diff(2) = omd*diff(2) + delta*enh_diff(2)
-      OBL_visc    = omd*visc    + delta*enh_visc
+      OBL_Mdiff = omd*Mdiff + delta*enh_Mdiff
+      OBL_Tdiff = omd*Tdiff + delta*enh_Tdiff
+      OBL_Sdiff = omd*Sdiff + delta*enh_Sdiff
     end if
 
 ! EOC

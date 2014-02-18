@@ -93,12 +93,13 @@ module cvmix_kinds_and_types
       real(cvmix_r8), dimension(:,:), pointer :: kpp_transport_iface => NULL()
                                              ! units: unitless (see note above)
       ! nlev+1, 2
-      ! diffusivity coefficients at interfaces (2 columns needed for double diff)
-      real(cvmix_r8), dimension(:,:), pointer :: diff_iface => NULL()
-                                              ! units: m^2/s
-      ! nlev+1
+      ! diffusivity coefficients at interfaces
+      ! different coefficients for momentum (Mdiff), temperature (Tdiff), and
+      ! salinity / non-temp tracers (Sdiff)
       ! viscosity (momentum diffusivity) coefficients at interfaces
-      real(cvmix_r8), dimension(:),   pointer :: visc_iface => NULL()
+      real(cvmix_r8), dimension(:),   pointer :: Mdiff_iface => NULL()
+      real(cvmix_r8), dimension(:),   pointer :: Tdiff_iface => NULL()
+      real(cvmix_r8), dimension(:),   pointer :: Sdiff_iface => NULL()
                                               ! units: m^2/s
       ! height of interfaces in column (positive up => most are negative)
       real(cvmix_r8), dimension(:),   pointer :: zw_iface   => NULL()

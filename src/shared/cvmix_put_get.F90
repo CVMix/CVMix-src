@@ -44,7 +44,7 @@ contains
 ! !IROUTINE: cvmix_put_int
 ! !INTERFACE:
 
-  subroutine cvmix_put_int(CVmix_vars, varname, val, opts)
+  subroutine cvmix_put_int(CVmix_vars, varname, val)
 
 ! !DESCRIPTION:
 !  Write an integer value into a cvmix\_data\_type variable.
@@ -57,7 +57,6 @@ contains
 ! !INPUT PARAMETERS:
     character(len=*),           intent(in) :: varname
     integer,                    intent(in) :: val
-    character(len=*), optional, intent(in) :: opts
 
 ! !OUTPUT PARAMETERS:
     type(cvmix_data_type), intent(inout) :: CVmix_vars
@@ -81,7 +80,7 @@ contains
         CVmix_vars%nlev = val
       case default
         ! All other scalars are real(cvmix_r8)
-        call cvmix_put_real(CVmix_vars, varname, real(val,cvmix_r8), opts)
+        call cvmix_put_real(CVmix_vars, varname, real(val,cvmix_r8))
     end select
 !EOC
 
@@ -92,7 +91,7 @@ contains
 ! !IROUTINE: cvmix_put_real
 ! !INTERFACE:
 
-  subroutine cvmix_put_real(CVmix_vars, varname, val, opts)
+  subroutine cvmix_put_real(CVmix_vars, varname, val)
 
 ! !DESCRIPTION:
 !  Write a real value into a cvmix\_data\_type variable.
@@ -105,7 +104,6 @@ contains
 ! !INPUT PARAMETERS:
     character(len=*),           intent(in) :: varname
     real(cvmix_r8),             intent(in) :: val
-    character(len=*), optional, intent(in) :: opts
 
 ! !OUTPUT PARAMETERS:
     type(cvmix_data_type), intent(inout) :: CVmix_vars
@@ -143,28 +141,24 @@ contains
         CVmix_vars%lon = val
       case ('Coriolis')
         CVmix_vars%Coriolis = val
-      case ('diff')
-        if (.not.associated(CVmix_vars%diff_iface)) then
-          allocate(CVmix_vars%diff_iface(nlev+1,2))
-        end if
-        if (present(opts)) then
-          select case (trim(opts))
-            case ('col1')
-              CVmix_vars%diff_iface(:,1) = val
-            case ('col2')
-              CVmix_vars%diff_iface(:,2) = val
-            case DEFAULT
-              print*, "WARNING: ignoring opts = ", trim(opts)
-              CVmix_vars%diff_iface      = val
-          end select
-        else
-          CVmix_vars%diff_iface      = val
-        end if
-      case ('visc')
-      if (.not.associated(CVmix_vars%visc_iface)) then
-        allocate(CVmix_vars%visc_iface(nlev+1))
+
+      case ('Mdiff')
+      if (.not.associated(CVmix_vars%Mdiff_iface)) then
+        allocate(CVmix_vars%Mdiff_iface(nlev+1))
       end if
-      CVmix_vars%visc_iface(:) = val
+      CVmix_vars%Mdiff_iface(:) = val
+
+      case ('Tdiff')
+      if (.not.associated(CVmix_vars%Tdiff_iface)) then
+        allocate(CVmix_vars%Tdiff_iface(nlev+1))
+      end if
+      CVmix_vars%Tdiff_iface(:) = val
+
+      case ('Sdiff')
+      if (.not.associated(CVmix_vars%Sdiff_iface)) then
+        allocate(CVmix_vars%Sdiff_iface(nlev+1))
+      end if
+      CVmix_vars%Sdiff_iface(:) = val
 
       case ('dens')
       print*, "WARNING: you are setting the density in all levels to a", &
@@ -291,31 +285,23 @@ contains
     end if
     
     select case (trim(varname))
-      case ('diff')
-      if (.not.associated(CVmix_vars%diff_iface)) then
-        allocate(CVmix_vars%diff_iface(nlev+1,2))
+      case ('Mdiff')
+      if (.not.associated(CVmix_vars%Mdiff_iface)) then
+        allocate(CVmix_vars%Mdiff_iface(nlev+1))
       end if
-      if (present(opts)) then
-        select case (trim(opts))
-          case ('col1')
-            CVmix_vars%diff_iface(:,1) = val
-          case ('col2')
-            CVmix_vars%diff_iface(:,2) = val
-          case DEFAULT
-            print*, "WARNING: ignoring opts = ", trim(opts)
-            CVmix_vars%diff_iface(:,1) = val
-            CVmix_vars%diff_iface(:,2) = val
-        end select
-      else
-        CVmix_vars%diff_iface(:,1) = val
-        CVmix_vars%diff_iface(:,2) = val
-      end if
+      CVmix_vars%Mdiff_iface(:) = val
 
-      case ('visc')
-      if (.not.associated(CVmix_vars%visc_iface)) then
-        allocate(CVmix_vars%visc_iface(nlev+1))
+      case ('Tdiff')
+      if (.not.associated(CVmix_vars%Tdiff_iface)) then
+        allocate(CVmix_vars%Tdiff_iface(nlev+1))
       end if
-      CVmix_vars%visc_iface(:) = val
+      CVmix_vars%Tdiff_iface(:) = val
+
+      case ('Sdiff')
+      if (.not.associated(CVmix_vars%Sdiff_iface)) then
+        allocate(CVmix_vars%Sdiff_iface(nlev+1))
+      end if
+      CVmix_vars%Sdiff_iface(:) = val
 
       case ('dens')
       if (.not.associated(CVmix_vars%dens)) then

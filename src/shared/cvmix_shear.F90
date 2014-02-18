@@ -228,9 +228,9 @@
           bkgnd_diff = cvmix_bkgnd_static_diff(CVmix_bkgnd_params, kw, colid)
           bkgnd_visc = cvmix_bkgnd_static_visc(CVmix_bkgnd_params, kw, colid)
           nu = nu_zero/((one+PP_alpha*RICH(kw))**loc_exp)+bkgnd_visc
-          CVmix_vars%visc_iface(kw) = nu
+          CVmix_vars%Mdiff_iface(kw) = nu
           if (calc_diff) &
-            CVmix_vars%diff_iface(kw,1) = nu/(one+PP_alpha*RICH(kw)) + bkgnd_diff
+            CVmix_vars%Tdiff_iface(kw) = nu/(one+PP_alpha*RICH(kw)) + bkgnd_diff
         end do
 
       case ('KPP')
@@ -242,16 +242,16 @@
         ! Large, et al
         do kw=1,CVmix_vars%nlev+1
             if (RICH(kw).lt.0) then
-              CVmix_vars%diff_iface(kw,1) = nu_zero
+              CVmix_vars%Tdiff_iface(kw) = nu_zero
             else if (RICH(kw).lt.KPP_Ri_zero) then
-              CVmix_vars%diff_iface(kw,1) = nu_zero * (one -                  &
+              CVmix_vars%Tdiff_iface(kw) = nu_zero * (one -                  &
                    (RICH(kw)/KPP_Ri_zero)**2)**loc_exp
             else ! Ri_g >= Ri_zero
-              CVmix_vars%diff_iface(kw,1) = 0
+              CVmix_vars%Tdiff_iface(kw) = 0
             end if
         end do
         ! to do: include global params for prandtl number!
-        CVmix_vars%visc_iface = CVmix_vars%diff_iface(:,1)
+        CVmix_vars%Mdiff_iface = CVmix_vars%Tdiff_iface
 
       case DEFAULT
         ! Note: this error should be caught in cvmix_init_shear

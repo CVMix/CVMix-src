@@ -13,39 +13,40 @@
 
 ! !USES:
 
-   use cvmix_kinds_and_types, only : cvmix_r8,                 &
-                                     cvmix_data_type,          &
-                                     cvmix_strlen,             &
-                                     cvmix_global_params_type
+  use cvmix_kinds_and_types, only : cvmix_r8,                                 &
+                                    cvmix_data_type,                          &
+                                    cvmix_strlen,                             &
+                                    cvmix_global_params_type
+  use cvmix_put_get,         only : cvmix_put
 !EOP
 
-   implicit none
-   private
-   save
+  implicit none
+  private
+  save
 
 !BOP
 
 ! !PUBLIC MEMBER FUNCTIONS:
 
-   public :: cvmix_init_tidal
-   public :: cvmix_compute_vert_dep
-   public :: cvmix_coeffs_tidal
-   public :: cvmix_put_tidal
-   public :: cvmix_get_tidal_real
-   public :: cvmix_get_tidal_str
+  public :: cvmix_init_tidal
+  public :: cvmix_compute_vert_dep
+  public :: cvmix_coeffs_tidal
+  public :: cvmix_put_tidal
+  public :: cvmix_get_tidal_real
+  public :: cvmix_get_tidal_str
 
-   interface cvmix_put_tidal
-     module procedure cvmix_put_tidal_real
-     module procedure cvmix_put_tidal_str
-   end interface cvmix_put_tidal
+  interface cvmix_put_tidal
+    module procedure cvmix_put_tidal_real
+    module procedure cvmix_put_tidal_str
+  end interface cvmix_put_tidal
 
 ! !PUBLIC TYPES:
 
-   ! cvmix_tidal_params_type contains the necessary parameters for tidal mixing
-   ! (currently just Simmons)
-   type, public :: cvmix_tidal_params_type
-      private
-      ! Tidal mixing scheme being used (currently only support Simmons et al)
+  ! cvmix_tidal_params_type contains the necessary parameters for tidal mixing
+  ! (currently just Simmons)
+  type, public :: cvmix_tidal_params_type
+    private
+    ! Tidal mixing scheme being used (currently only support Simmons et al)
       character(len=cvmix_strlen) :: mix_scheme
       ! efficiency is the mixing efficiency (Gamma in Simmons)
       real(cvmix_r8) :: efficiency           ! units: unitless (fraction)
@@ -59,10 +60,10 @@
       real(cvmix_r8) :: depth_cutoff         ! units: m
       ! max_coefficient is the largest acceptable value for diffusivity 
       real(cvmix_r8) :: max_coefficient      ! units: m^2/s
-   end type cvmix_tidal_params_type
+  end type cvmix_tidal_params_type
 !EOP
 
- contains
+contains
 
 !BOP
 
@@ -182,15 +183,15 @@
         coef = CVmix_tidal_params%local_mixing_frac * &
                CVmix_tidal_params%efficiency *        &
                energy_flux
-        CVmix_vars%diff_iface = 0.0_cvmix_r8
+        call cvmix_put(CVmix_vars, "Tdiff", 0.0_cvmix_r8)
         if (CVmix_vars%ocn_depth.ge.CVmix_tidal_params%depth_cutoff) then
           do k=1, nlev+1
             buoy = CVmix_vars%buoy_iface(k)
             z_cut = CVmix_tidal_params%depth_cutoff
             if (buoy.gt.0.0_cvmix_r8) &
-              CVmix_vars%diff_iface(k,1) = coef*vert_dep(k)/(rho*buoy)
-            if (CVmix_vars%diff_iface(k,1).gt.CVmix_tidal_params%max_coefficient) &
-              CVmix_vars%diff_iface(k,1) = CVmix_tidal_params%max_coefficient
+              CVmix_vars%Tdiff_iface(k) = coef*vert_dep(k)/(rho*buoy)
+            if (CVmix_vars%Tdiff_iface(k).gt.CVmix_tidal_params%max_coefficient) &
+              CVmix_vars%Tdiff_iface(k) = CVmix_tidal_params%max_coefficient
           end do
         end if
         deallocate(vert_dep)

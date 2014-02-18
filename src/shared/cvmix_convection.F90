@@ -192,26 +192,26 @@ contains
               wgt = 1.0_cvmix_r8
             end if
           end if
-          CVmix_vars%visc_iface(kw) = wgt*cvmix_get_conv_real('convect_visc', &
-                                          CVmix_conv_params_in)
-          CVmix_vars%diff_iface(kw,:)=wgt*cvmix_get_conv_real('convect_diff', &
-                                          CVmix_conv_params_in)
+          CVmix_vars%Mdiff_iface(kw) = wgt*cvmix_get_conv_real('convect_visc',&
+                                       CVmix_conv_params_in)
+          CVmix_vars%Tdiff_iface(kw) = wgt*cvmix_get_conv_real('convect_diff',&
+                                       CVmix_conv_params_in)
         end do
       else ! BVsqr_convect >= 0 => step function
         do kw=1,CVmix_vars%nlev-1
           if (CVmix_vars%buoy_iface(kw).le.0) then
-            CVmix_vars%visc_iface(kw)   = cvmix_get_conv_real('convect_visc', &
-                                          CVmix_conv_params_in)
-            CVmix_vars%diff_iface(kw,:) = cvmix_get_conv_real('convect_diff', &
-                                          CVmix_conv_params_in)
+            CVmix_vars%Mdiff_iface(kw) = cvmix_get_conv_real('convect_visc', &
+                                         CVmix_conv_params_in)
+            CVmix_vars%Tdiff_iface(kw) = cvmix_get_conv_real('convect_diff', &
+                                         CVmix_conv_params_in)
           else
-            CVmix_vars%visc_iface(kw)   = 0.0_cvmix_r8
-            CVmix_vars%diff_iface(kw,:) = 0.0_cvmix_r8
+            CVmix_vars%Mdiff_iface(kw) = 0.0_cvmix_r8
+            CVmix_vars%Tdiff_iface(kw) = 0.0_cvmix_r8
           end if
         end do
       end if
-      CVmix_vars%visc_iface(CVmix_vars%nlev+1)   = 0.0_cvmix_r8
-      CVmix_vars%diff_iface(CVmix_vars%nlev+1,:) = 0.0_cvmix_r8
+      CVmix_vars%Mdiff_iface(CVmix_vars%nlev+1) = 0.0_cvmix_r8
+      CVmix_vars%Tdiff_iface(CVmix_vars%nlev+1) = 0.0_cvmix_r8
     else
       ! Default convection mixing based on density
       do kw=1,CVmix_vars%nlev-1
@@ -219,13 +219,13 @@ contains
            vvconv = cvmix_get_conv_real('convect_visc', CVmix_conv_params_in)
         else
           ! convection only affects tracers
-          vvconv = CVmix_vars%visc_iface(kw)
+          vvconv = CVmix_vars%Mdiff_iface(kw)
         end if
 
         if (CVmix_vars%dens(kw).gt.CVmix_vars%dens_lwr(kw)) then
-          CVmix_vars%diff_iface(kw+1,1) = cvmix_get_conv_real('convect_diff', &
-                                          CVmix_conv_params_in)
-          CVmix_vars%visc_iface(kw+1)   = vvconv
+          CVmix_vars%Mdiff_iface(kw+1) = vvconv
+          CVmix_vars%Tdiff_iface(kw+1) = cvmix_get_conv_real('convect_diff',  &
+                                         CVmix_conv_params_in)
         end if
       end do
     end if
