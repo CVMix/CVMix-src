@@ -14,8 +14,9 @@
 
 ! !USES:
 
-   use cvmix_kinds_and_types, only : one,                          &
-                                     cvmix_r8,                     &
+   use cvmix_kinds_and_types, only : cvmix_r8,                     &
+                                     cvmix_zero,                   &
+                                     cvmix_one,                    &
                                      cvmix_strlen,                 &
                                      cvmix_data_type
    use cvmix_background, only :      cvmix_bkgnd_params_type,      &
@@ -198,7 +199,7 @@
     real(cvmix_r8), pointer, dimension(:) :: RICH
 
     ! Pointer to make the code more legible
-    RICH => CVmix_vars%Ri_iface
+    RICH => CVmix_vars%ShearRichardson_iface
     if (.not.present(no_diff)) then
       calc_diff = .true.
     else
@@ -212,8 +213,9 @@
           print*, "ERROR: can not run PP mixing without background mixing."
           stop 1
         end if
-        if (cvmix_bkgnd_lvary_horizontal(CVmix_bkgnd_params).and.(.not.present(colid))) then
-          print*, "ERROR: background visc and diff vary in horizontal so you", &
+        if (cvmix_bkgnd_lvary_horizontal(CVmix_bkgnd_params).and.             &
+            (.not.present(colid))) then
+          print*, "ERROR: background visc and diff vary in horizontal so you",&
                   "must pass column index to cvmix_coeffs_shear"
           stop 1
         end if
@@ -227,10 +229,11 @@
         do kw=1,CVmix_vars%nlev+1
           bkgnd_diff = cvmix_bkgnd_static_diff(CVmix_bkgnd_params, kw, colid)
           bkgnd_visc = cvmix_bkgnd_static_visc(CVmix_bkgnd_params, kw, colid)
-          nu = nu_zero/((one+PP_alpha*RICH(kw))**loc_exp)+bkgnd_visc
+          nu = nu_zero/((cvmix_one+PP_alpha*RICH(kw))**loc_exp)+bkgnd_visc
           CVmix_vars%Mdiff_iface(kw) = nu
           if (calc_diff) &
-            CVmix_vars%Tdiff_iface(kw) = nu/(one+PP_alpha*RICH(kw)) + bkgnd_diff
+            CVmix_vars%Tdiff_iface(kw) = nu/(cvmix_one+PP_alpha*RICH(kw)) +   &
+                                         bkgnd_diff
         end do
 
       case ('KPP')
@@ -244,7 +247,7 @@
             if (RICH(kw).lt.0) then
               CVmix_vars%Tdiff_iface(kw) = nu_zero
             else if (RICH(kw).lt.KPP_Ri_zero) then
-              CVmix_vars%Tdiff_iface(kw) = nu_zero * (one -                  &
+              CVmix_vars%Tdiff_iface(kw) = nu_zero * (cvmix_one -             &
                    (RICH(kw)/KPP_Ri_zero)**2)**loc_exp
             else ! Ri_g >= Ri_zero
               CVmix_vars%Tdiff_iface(kw) = 0
@@ -372,7 +375,7 @@
 !EOP
 !BOC
 
-    cvmix_get_shear_real = 0.0_cvmix_r8
+    cvmix_get_shear_real = cvmix_zero
     select case (trim(varname))
       case ('PP_nu_zero')
         cvmix_get_shear_real =CVmix_shear_params%PP_nu_zero

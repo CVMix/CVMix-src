@@ -13,7 +13,9 @@ module cvmix_convection
 !\\
 
 ! !USES:
-   use cvmix_kinds_and_types, only : cvmix_r8,               &
+   use cvmix_kinds_and_types, only : cvmix_r8,        &
+                                     cvmix_zero,      &
+                                     cvmix_one,       &
                                      cvmix_data_type
 !EOP
 
@@ -110,7 +112,7 @@ contains
       call cvmix_put_conv(CVmix_conv_params_out, "BVsqr_convect",             &
                           BVsqr_convect)
     else
-      call cvmix_put_conv(CVmix_conv_params_out, "BVsqr_convect", 0.0_cvmix_r8)
+      call cvmix_put_conv(CVmix_conv_params_out, "BVsqr_convect", cvmix_zero)
     end if
 
 !EOC
@@ -134,10 +136,12 @@ contains
 
 ! !INPUT PARAMETERS:
 
-    type (cvmix_conv_params_type), optional, target, intent(in)  :: CVmix_conv_params_user
+    type (cvmix_conv_params_type), optional, target, intent(in)  ::           &
+                                                     CVmix_conv_params_user
 
 ! !INPUT/OUTPUT PARAMETERS:
     type (cvmix_data_type), intent(inout) :: CVmix_vars
+
 !EOP
 !BOC
 
@@ -181,15 +185,15 @@ contains
       ! Compute wgt
       if (CVmix_conv_params_in%BVsqr_convect.lt.0) then
         do kw=1,CVmix_vars%nlev
-          wgt = 0.0_cvmix_r8
-          if (CVmix_vars%buoy_iface(kw).le.0) then
-            if (CVmix_vars%buoy_iface(kw).gt.                                 &
+          wgt = cvmix_zero
+          if (CVmix_vars%SqrBuoyancyFreq_iface(kw).le.0) then
+            if (CVmix_vars%SqrBuoyancyFreq_iface(kw).gt.                      &
                 CVmix_conv_params_in%BVsqr_convect) then
-              wgt = 1.0_cvmix_r8 - CVmix_vars%buoy_iface(kw) /                &
-                    CVmix_conv_params_in%BVsqr_convect
-              wgt = (1.0_cvmix_r8 - wgt**2)**3
+              wgt = cvmix_one - CVmix_vars%SqrBuoyancyFreq_iface(kw) /        &
+                                CVmix_conv_params_in%BVsqr_convect
+              wgt = (cvmix_one - wgt**2)**3
             else
-              wgt = 1.0_cvmix_r8
+              wgt = cvmix_one
             end if
           end if
           CVmix_vars%Mdiff_iface(kw) = wgt*cvmix_get_conv_real('convect_visc',&
@@ -199,19 +203,19 @@ contains
         end do
       else ! BVsqr_convect >= 0 => step function
         do kw=1,CVmix_vars%nlev-1
-          if (CVmix_vars%buoy_iface(kw).le.0) then
+          if (CVmix_vars%SqrBuoyancyFreq_iface(kw).le.0) then
             CVmix_vars%Mdiff_iface(kw) = cvmix_get_conv_real('convect_visc', &
                                          CVmix_conv_params_in)
             CVmix_vars%Tdiff_iface(kw) = cvmix_get_conv_real('convect_diff', &
                                          CVmix_conv_params_in)
           else
-            CVmix_vars%Mdiff_iface(kw) = 0.0_cvmix_r8
-            CVmix_vars%Tdiff_iface(kw) = 0.0_cvmix_r8
+            CVmix_vars%Mdiff_iface(kw) = cvmix_zero
+            CVmix_vars%Tdiff_iface(kw) = cvmix_zero
           end if
         end do
       end if
-      CVmix_vars%Mdiff_iface(CVmix_vars%nlev+1) = 0.0_cvmix_r8
-      CVmix_vars%Tdiff_iface(CVmix_vars%nlev+1) = 0.0_cvmix_r8
+      CVmix_vars%Mdiff_iface(CVmix_vars%nlev+1) = cvmix_zero
+      CVmix_vars%Tdiff_iface(CVmix_vars%nlev+1) = cvmix_zero
     else
       ! Default convection mixing based on density
       do kw=1,CVmix_vars%nlev-1
@@ -222,7 +226,8 @@ contains
           vvconv = CVmix_vars%Mdiff_iface(kw)
         end if
 
-        if (CVmix_vars%dens(kw).gt.CVmix_vars%dens_lwr(kw)) then
+        if (CVmix_vars%WaterDensity_cntr(kw).gt.                              &
+            CVmix_vars%AdiabWaterDensity_cntr(kw)) then
           CVmix_vars%Mdiff_iface(kw+1) = vvconv
           CVmix_vars%Tdiff_iface(kw+1) = cvmix_get_conv_real('convect_diff',  &
                                          CVmix_conv_params_in)
@@ -344,7 +349,7 @@ contains
       CVmix_conv_params_get => CVmix_conv_params_saved
     end if
 
-    cvmix_get_conv_real = 0.0_cvmix_r8
+    cvmix_get_conv_real = cvmix_zero
     select case (trim(varname))
       case ('convect_diff')
         cvmix_get_conv_real = CVmix_conv_params_get%convect_diff

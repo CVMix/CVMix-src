@@ -14,6 +14,8 @@
 ! !USES:
 
   use cvmix_kinds_and_types, only : cvmix_r8,                                 &
+                                    cvmix_zero,                               &
+                                    cvmix_one,                                &
                                     cvmix_data_type,                          &
                                     cvmix_strlen,                             &
                                     cvmix_global_params_type
@@ -108,25 +110,25 @@ contains
         if (present(local_mixing_frac)) then
           CVmix_tidal_params%local_mixing_frac = local_mixing_frac
         else
-          CVmix_tidal_params%local_mixing_frac = 1.0_cvmix_r8/3.0_cvmix_r8
+          CVmix_tidal_params%local_mixing_frac = cvmix_one/real(3,cvmix_r8)
         end if
 
         ! Parameters with units
         if (present(vertical_decay_scale)) then
           CVmix_tidal_params%vertical_decay_scale = vertical_decay_scale
         else
-          CVmix_tidal_params%vertical_decay_scale = 500.0_cvmix_r8
+          CVmix_tidal_params%vertical_decay_scale = real(500,cvmix_r8)
         end if
         if (present(depth_cutoff)) then
           CVmix_tidal_params%depth_cutoff = depth_cutoff
         else
           ! Default: no cutoff depth => 0 m
-          CVmix_tidal_params%depth_cutoff = 0.0_cvmix_r8
+          CVmix_tidal_params%depth_cutoff = cvmix_zero
         end if
         if (present(max_coefficient)) then
           CVmix_tidal_params%max_coefficient = max_coefficient
         else
-          CVmix_tidal_params%max_coefficient = 50.0e-4_cvmix_r8
+          CVmix_tidal_params%max_coefficient = 50e-4_cvmix_r8
         end if
 
       case DEFAULT
@@ -174,7 +176,7 @@ contains
     real(cvmix_r8), allocatable, dimension(:) :: vert_dep
 
     nlev = CVmix_vars%nlev
-    rho  = CVmix_params%fw_rho
+    rho  = CVmix_params%FreshWaterDensity
 
     select case (trim(CVmix_tidal_params%mix_scheme))
       case ('simmons','Simmons')
@@ -183,12 +185,12 @@ contains
         coef = CVmix_tidal_params%local_mixing_frac * &
                CVmix_tidal_params%efficiency *        &
                energy_flux
-        call cvmix_put(CVmix_vars, "Tdiff", 0.0_cvmix_r8)
-        if (CVmix_vars%ocn_depth.ge.CVmix_tidal_params%depth_cutoff) then
+        call cvmix_put(CVmix_vars, "Tdiff", cvmix_zero)
+        if (CVmix_vars%OceanDepth.ge.CVmix_tidal_params%depth_cutoff) then
           do k=1, nlev+1
-            buoy = CVmix_vars%buoy_iface(k)
+            buoy = CVmix_vars%SqrBuoyancyFreq_iface(k)
             z_cut = CVmix_tidal_params%depth_cutoff
-            if (buoy.gt.0.0_cvmix_r8) &
+            if (buoy.gt.cvmix_zero) &
               CVmix_vars%Tdiff_iface(k) = coef*vert_dep(k)/(rho*buoy)
             if (CVmix_vars%Tdiff_iface(k).gt.CVmix_tidal_params%max_coefficient) &
               CVmix_vars%Tdiff_iface(k) = CVmix_tidal_params%max_coefficient
@@ -240,9 +242,9 @@ contains
     nlev = CVmix_vars%nlev
 
     ! Compute vertical deposition
-    tot_area = 0.0_cvmix_r8
-    cvmix_compute_vert_dep(1) = 0.0_cvmix_r8
-    cvmix_compute_vert_dep(nlev+1) = 0.0_cvmix_r8
+    tot_area = cvmix_zero
+    cvmix_compute_vert_dep(1) = cvmix_zero
+    cvmix_compute_vert_dep(nlev+1) = cvmix_zero
     do k=2,nlev
       num = -CVmix_vars%zw_iface(k)/CVmix_tidal_params%vertical_decay_scale
       ! Simmons vertical deposition
@@ -252,7 +254,7 @@ contains
 
       ! Compute integral of vert_dep via trapezoid rule
       ! (looks like midpoint rule, but vert_dep = 0 at z=0 and z=-ocn_depth)
-      thick = CVmix_vars%zt(k-1) - CVmix_vars%zt(k)
+      thick = CVmix_vars%zt_cntr(k-1) - CVmix_vars%zt_cntr(k)
       tot_area = tot_area + cvmix_compute_vert_dep(k)*thick
     end do
     ! Normalize vert_dep (need integral = 1.0D0)
@@ -368,7 +370,7 @@ contains
 !EOP
 !BOC
 
-    cvmix_get_tidal_real = 0.0_cvmix_r8
+    cvmix_get_tidal_real = cvmix_zero
     select case (trim(varname))
       case ('efficiency')
         cvmix_get_tidal_real = CVmix_tidal_params%efficiency

@@ -55,11 +55,12 @@ contains
 !  Only those used by entire module. 
 
 ! !INPUT PARAMETERS:
-    character(len=*),           intent(in) :: varname
-    integer,                    intent(in) :: val
+    character(len=*), intent(in) :: varname
+    integer,          intent(in) :: val
 
 ! !OUTPUT PARAMETERS:
     type(cvmix_data_type), intent(inout) :: CVmix_vars
+
 !EOP
 !BOC
 
@@ -123,21 +124,21 @@ contains
     end if
     
     select case (trim(varname))
-      case ('ocn_depth','depth')
-        CVmix_vars%ocn_depth = val
-      case ('OBL_depth')
-        CVmix_vars%OBL_depth = val
+      case ('OceanDepth','ocn_depth','depth')
+        CVmix_vars%OceanDepth = val
+      case ('BoundaryLayerDepth','OBL_depth')
+        CVmix_vars%BoundaryLayerDepth = val
       case ('kOBL_depth')
         CVmix_vars%kOBL_depth = val
-      case ('surf_hgt')
-        CVmix_vars%surf_hgt = val
-      case ('surf_fric')
-        CVmix_vars%surf_fric = val
-      case ('surf_buoy')
-        CVmix_vars%surf_buoy = val
-      case ('lat')
+      case ('SurfaceHeight','SeaSurfaceHeight','surf_hgt')
+        CVmix_vars%SeaSurfaceHeight = val
+      case ('SurfaceFriction','surf_fric')
+        CVmix_vars%SurfaceFriction = val
+      case ('SurfaceBuoyancy','SurfaceBuoyancyForcing','surf_buoy')
+        CVmix_vars%SurfaceBuoyancyForcing = val
+      case ('lat','latitude')
         CVmix_vars%lat = val
-      case ('lon')
+      case ('lon','longitude')
         CVmix_vars%lon = val
       case ('Coriolis')
         CVmix_vars%Coriolis = val
@@ -160,39 +161,40 @@ contains
       end if
       CVmix_vars%Sdiff_iface(:) = val
 
-      case ('dens')
-      print*, "WARNING: you are setting the density in all levels to a", &
+      case ('WaterDensity','dens')
+      print*, "WARNING: you are setting the density in all levels to a",      &
               "constant value"
-      if (.not.associated(CVmix_vars%dens)) then
-        allocate(CVmix_vars%dens(nlev))
+      if (.not.associated(CVmix_vars%WaterDensity_cntr)) then
+        allocate(CVmix_vars%WaterDensity_cntr(nlev))
       end if
-      CVmix_vars%dens(:) = val
+      CVmix_vars%WaterDensity_cntr(:) = val
 
       case ('dens_lwr')
-      print*, "WARNING: you are setting the density in all levels to a", &
-              "constant value"
-      if (.not.associated(CVmix_vars%dens_lwr)) then
-        allocate(CVmix_vars%dens_lwr(nlev))
+      print*, "WARNING: you are setting the adiabatic density in all levels", &
+              "to a constant value"
+      if (.not.associated(CVmix_vars%AdiabWaterDensity_cntr)) then
+        allocate(CVmix_vars%AdiabWaterDensity_cntr(nlev))
       end if
-      CVmix_vars%dens_lwr(:) = val
+      CVmix_vars%AdiabWaterDensity_cntr(:) = val
 
-      case ('Ri', 'Ri_iface')
+      case ('Richardson','ShearRichardson','RichardsonNumber',                &
+            'ShearRichardsonNumer','Ri','Ri_iface')
       print*, "WARNING: you are setting the Richardson number in all", &
               "levels to a constant value"
-      if (.not.associated(CVmix_vars%Ri_iface)) then
-        allocate(CVmix_vars%Ri_iface(nlev+1))
+      if (.not.associated(CVmix_vars%ShearRichardson_iface)) then
+        allocate(CVmix_vars%ShearRichardson_iface(nlev+1))
       end if
-      CVmix_vars%Ri_iface(:) = val
+      CVmix_vars%ShearRichardson_iface(:) = val
 
-      case ('Rib', 'Ri_bulk')
+      case ('BulkRichardson','BulkRichardsonNumber','Rib','Ri_bulk')
       print*, "WARNING: you are setting the bulk Richardson number in all",  &
               "levels to a constant value"
-      if (.not.associated(CVmix_vars%Rib)) then
-        allocate(CVmix_vars%Rib(nlev))
+      if (.not.associated(CVmix_vars%BulkRichardson_cntr)) then
+        allocate(CVmix_vars%BulkRichardson_cntr(nlev))
       end if
-      CVmix_vars%Rib(:) = val
+      CVmix_vars%BulkRichardson_cntr(:) = val
 
-      case ('dz', 'dzt')
+      case ('dz','dzt')
       print*, "WARNING: you are setting the cell thickness in all levels to", &
               "a constant value"
       if (.not.associated(CVmix_vars%dzt)) then
@@ -203,24 +205,40 @@ contains
       case ('dzw', 'dzw_iface')
       print*, "WARNING: you are setting the cell midpoint to midpoint", &
               "distance in all levels to a constant value"
-      if (.not.associated(CVmix_vars%dzw_iface)) then
-        allocate(CVmix_vars%dzw_iface(nlev+1))
+      if (.not.associated(CVmix_vars%dzw)) then
+        allocate(CVmix_vars%dzw(nlev+1))
       end if
-      CVmix_vars%dzw_iface(:) = val
+      CVmix_vars%dzw(:) = val
 
-      case ('buoy', 'buoy_iface')
+      case ('Buoyancy','SqrBuoyancy','SqrBuoyancyFreq','buoy', 'buoy_iface')
       print*, "WARNING: you are setting the buoyancy in all levels to a", &
               "constant value"
-      if (.not.associated(CVmix_vars%buoy_iface)) then
-        allocate(CVmix_vars%buoy_iface(nlev+1))
+      if (.not.associated(CVmix_vars%SqrBuoyancyFreq_iface)) then
+        allocate(CVmix_vars%SqrBuoyancyFreq_iface(nlev+1))
       end if
-      CVmix_vars%buoy_iface(:) = val
+      CVmix_vars%SqrBuoyancyFreq_iface(:) = val
 
-      case ('kpp_transport', 'kpp_transport_iface', 'non_local_transport')
-      if (.not.associated(CVmix_vars%kpp_transport_iface)) then
-        allocate(CVmix_vars%kpp_transport_iface(nlev+1,4))
+      case ('kpp_transport','kpp_nonlocal','nonlocal_transport')
+      if (.not.associated(CVmix_vars%kpp_Tnonlocal_iface)) then
+        allocate(CVmix_vars%kpp_Tnonlocal_iface(nlev+1))
       end if
-      CVmix_vars%kpp_transport_iface(:,:) = val
+      if (.not.associated(CVmix_vars%kpp_Snonlocal_iface)) then
+        allocate(CVmix_vars%kpp_Snonlocal_iface(nlev+1))
+      end if
+      CVmix_vars%kpp_Tnonlocal_iface(:) = val
+      CVmix_vars%kpp_Snonlocal_iface(:) = val
+
+      case ('kpp_Ttransport','kpp_Tnonlocal','Tnonlocal')
+      if (.not.associated(CVmix_vars%kpp_Tnonlocal_iface)) then
+        allocate(CVmix_vars%kpp_Tnonlocal_iface(nlev+1))
+      end if
+      CVmix_vars%kpp_Tnonlocal_iface(:) = val
+
+      case ('kpp_Stransport','kpp_Snonlocal','Snonlocal')
+      if (.not.associated(CVmix_vars%kpp_Snonlocal_iface)) then
+        allocate(CVmix_vars%kpp_Snonlocal_iface(nlev+1))
+      end if
+      CVmix_vars%kpp_Snonlocal_iface(:) = val
 
       case ('strat_param_num')
       print*, "WARNING: you are setting the numerator of the statification", & 
@@ -252,7 +270,7 @@ contains
 ! !IROUTINE: cvmix_put_real_1D
 ! !INTERFACE:
 
-  subroutine cvmix_put_real_1D(CVmix_vars, varname, val, opts)
+  subroutine cvmix_put_real_1D(CVmix_vars, varname, val)
 
 ! !DESCRIPTION:
 !  Write an array of real values into a cvmix\_data\_type variable.
@@ -265,7 +283,6 @@ contains
 ! !INPUT PARAMETERS:
     character(len=*),             intent(in) :: varname
     real(cvmix_r8), dimension(:), intent(in) :: val
-    character(len=*), optional,   intent(in) :: opts
 
 ! !OUTPUT PARAMETERS:
     type(cvmix_data_type), intent(inout) :: CVmix_vars
@@ -303,87 +320,83 @@ contains
       end if
       CVmix_vars%Sdiff_iface(:) = val
 
-      case ('dens')
-      if (.not.associated(CVmix_vars%dens)) then
-        allocate(CVmix_vars%dens(nlev))
+      case ('WaterDensity','dens')
+      if (.not.associated(CVmix_vars%WaterDensity_cntr)) then
+        allocate(CVmix_vars%WaterDensity_cntr(nlev))
       end if
-      CVmix_vars%dens(:) = val
+      CVmix_vars%WaterDensity_cntr(:) = val
 
       case ('dens_lwr')
-      if (.not.associated(CVmix_vars%dens_lwr)) then
-        allocate(CVmix_vars%dens_lwr(nlev))
+      if (.not.associated(CVmix_vars%AdiabWaterDensity_cntr)) then
+        allocate(CVmix_vars%AdiabWaterDensity_cntr(nlev))
       end if
-      CVmix_vars%dens_lwr(:) = val
+      CVmix_vars%AdiabWaterDensity_cntr(:) = val
 
-      case ('Ri', 'Ri_iface')
-      if (.not.associated(CVmix_vars%Ri_iface)) then
-        allocate(CVmix_vars%Ri_iface(nlev+1))
+      case ('Richardson','ShearRichardson','RichardsonNumber',                &
+            'ShearRichardsonNumer','Ri','Ri_iface')
+      if (.not.associated(CVmix_vars%ShearRichardson_iface)) then
+        allocate(CVmix_vars%ShearRichardson_iface(nlev+1))
       end if
-      CVmix_vars%Ri_iface(:) = val
+      CVmix_vars%ShearRichardson_iface(:) = val
 
-      case ('Rib', 'Ri_bulk')
-      if (.not.associated(CVmix_vars%Rib)) then
-        allocate(CVmix_vars%Rib(nlev))
+      case ('BulkRichardson','BulkRichardsonNumber','Rib','Ri_bulk')
+      if (.not.associated(CVmix_vars%BulkRichardson_cntr)) then
+        allocate(CVmix_vars%BulkRichardson_cntr(nlev))
       end if
-      CVmix_vars%Rib(:) = val
+      CVmix_vars%BulkRichardson_cntr(:) = val
 
-      case ('z', 'zt')
-      if (.not.associated(CVmix_vars%zt)) then
-        allocate(CVmix_vars%zt(nlev))
+      case ('z','zt','zt_cntr')
+      if (.not.associated(CVmix_vars%zt_cntr)) then
+        allocate(CVmix_vars%zt_cntr(nlev))
       end if
-      CVmix_vars%zt(:) = val
+      CVmix_vars%zt_cntr(:) = val
 
-      case ('dz', 'dzt')
+      case ('dz','dzt')
       if (.not.associated(CVmix_vars%dzt)) then
         allocate(CVmix_vars%dzt(nlev))
       end if
       CVmix_vars%dzt(:) = val
 
-      case ('zw', 'zw_iface')
+      case ('zw','zw_iface')
       if (.not.associated(CVmix_vars%zw_iface)) then
         allocate(CVmix_vars%zw_iface(nlev+1))
       end if
       CVmix_vars%zw_iface(:) = val
 
-      case ('dzw', 'dzw_iface')
-      if (.not.associated(CVmix_vars%dzw_iface)) then
-        allocate(CVmix_vars%dzw_iface(nlev+1))
+      case ('dzw')
+      if (.not.associated(CVmix_vars%dzw)) then
+        allocate(CVmix_vars%dzw(nlev+1))
       end if
-      CVmix_vars%dzw_iface(:) = val
+      CVmix_vars%dzw(:) = val
 
-      case ('buoy', 'buoy_iface')
-      if (.not.associated(CVmix_vars%buoy_iface)) then
-        allocate(CVmix_vars%buoy_iface(nlev+1))
+      case ('Buoyancy','SqrBuoyancy','SqrBuoyancyFreq','buoy', 'buoy_iface')
+      if (.not.associated(CVmix_vars%SqrBuoyancyFreq_iface)) then
+        allocate(CVmix_vars%SqrBuoyancyFreq_iface(nlev+1))
       end if
-      CVmix_vars%buoy_iface(:) = val
+      CVmix_vars%SqrBuoyancyFreq_iface(:) = val
 
-      case ('kpp_transport', 'kpp_transport_iface', 'non_local_transport')
-      if (.not.associated(CVmix_vars%kpp_transport_iface)) then
-        allocate(CVmix_vars%kpp_transport_iface(nlev+1,4))
+      case ('kpp_transport','kpp_nonlocal','nonlocal_transport')
+      if (.not.associated(CVmix_vars%kpp_Tnonlocal_iface)) then
+        allocate(CVmix_vars%kpp_Tnonlocal_iface(nlev+1))
       end if
-      if (present(opts)) then
-        select case (trim(opts))
-          case ('col1')
-            CVmix_vars%kpp_transport_iface(:,1) = val
-          case ('col2')
-            CVmix_vars%kpp_transport_iface(:,2) = val
-          case ('col3')
-            CVmix_vars%kpp_transport_iface(:,3) = val
-          case ('col4')
-            CVmix_vars%kpp_transport_iface(:,4) = val
-          case DEFAULT
-            print*, "WARNING: ignoring opts = ", trim(opts)
-            CVmix_vars%kpp_transport_iface(:,1) = val
-            CVmix_vars%kpp_transport_iface(:,2) = val
-            CVmix_vars%kpp_transport_iface(:,3) = val
-            CVmix_vars%kpp_transport_iface(:,4) = val
-        end select
-      else
-        CVmix_vars%kpp_transport_iface(:,1) = val
-        CVmix_vars%kpp_transport_iface(:,2) = val
-        CVmix_vars%kpp_transport_iface(:,3) = val
-        CVmix_vars%kpp_transport_iface(:,4) = val
+      if (.not.associated(CVmix_vars%kpp_Snonlocal_iface)) then
+        allocate(CVmix_vars%kpp_Snonlocal_iface(nlev+1))
       end if
+      CVmix_vars%kpp_Tnonlocal_iface(:) = val
+      CVmix_vars%kpp_Snonlocal_iface(:) = val
+
+      case ('kpp_Ttransport','kpp_Tnonlocal','Tnonlocal')
+      if (.not.associated(CVmix_vars%kpp_Tnonlocal_iface)) then
+        allocate(CVmix_vars%kpp_Tnonlocal_iface(nlev+1))
+      end if
+      CVmix_vars%kpp_Tnonlocal_iface(:) = val
+
+      case ('kpp_Stransport','kpp_Snonlocal','Snonlocal')
+      if (.not.associated(CVmix_vars%kpp_Snonlocal_iface)) then
+        allocate(CVmix_vars%kpp_Snonlocal_iface(nlev+1))
+      end if
+      CVmix_vars%kpp_Snonlocal_iface(:) = val
+
       case ('strat_param_num')
       if (.not.associated(CVmix_vars%strat_param_num)) then
         allocate(CVmix_vars%strat_param_num(nlev))
@@ -470,10 +483,10 @@ contains
     select case (trim(varname))
       case ('prandtl')
         CVmix_params%prandtl = val
-      case ('fw_rho')
-        CVmix_params%fw_rho  = val
-      case ('sw_rho')
-        CVmix_params%sw_rho  = val
+      case ('fw_rho','FreshWaterDensity')
+        CVmix_params%FreshWaterDensity = val
+      case ('sw_rho','SaltWaterDensity')
+        CVmix_params%SaltWaterDensity= val
         
       case default
         print*, "ERROR: ", trim(varname), " not a valid choice!"

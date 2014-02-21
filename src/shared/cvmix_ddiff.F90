@@ -13,8 +13,9 @@ module cvmix_ddiff
 
 ! !USES:
 
-  use cvmix_kinds_and_types, only : one,                     &
-                                    cvmix_r8,                &
+  use cvmix_kinds_and_types, only : cvmix_r8,                &
+                                    cvmix_zero,              &
+                                    cvmix_one,               &
                                     cvmix_data_type
   use cvmix_put_get,         only : cvmix_put
 !EOP
@@ -266,27 +267,31 @@ module cvmix_ddiff
     end if
 
     ! Determine coefficients
-    call cvmix_put(CVmix_vars, "Tdiff", 0.0_cvmix_r8)
-    call cvmix_put(CVmix_vars, "Sdiff", 0.0_cvmix_r8)
+    call cvmix_put(CVmix_vars, "Tdiff", cvmix_zero)
+    call cvmix_put(CVmix_vars, "Sdiff", cvmix_zero)
     do k = 1, CVmix_vars%nlev
-      if ((CVmix_vars%strat_param_num(k).gt.CVmix_vars%strat_param_denom(k)).and.&
+      if ((CVmix_vars%strat_param_num(k).gt.                                  &
+           CVmix_vars%strat_param_denom(k)).and.                              &
           (CVmix_vars%strat_param_denom(k).gt.0)) then
         ! Rrho > 1 and dS/dz < 0 => Salt fingering
         Rrho = CVmix_vars%strat_param_num(k) / CVmix_vars%strat_param_denom(k)
         if (Rrho.lt.CVmix_ddiff_params_in%strat_param_max) then
-          ddiff = (one-((Rrho-one)/(CVmix_ddiff_params_in%strat_param_max-one))** &
-                CVmix_ddiff_params_in%ddiff_exp1)**CVmix_ddiff_params_in%ddiff_exp2
+          ddiff = (cvmix_one - ((Rrho-cvmix_one)/                             &
+                  (CVmix_ddiff_params_in%strat_param_max-cvmix_one))**        &
+            CVmix_ddiff_params_in%ddiff_exp1)**CVmix_ddiff_params_in%ddiff_exp2
           CVmix_vars%Tdiff_iface(k) = CVmix_ddiff_params_in%kappa_ddiff_t*ddiff
           CVmix_vars%Sdiff_iface(k) = CVmix_ddiff_params_in%kappa_ddiff_s*ddiff
         end if
       end if
-      if ((CVmix_vars%strat_param_num(k).gt.CVmix_vars%strat_param_denom(k)).and.&
-          (CVmix_vars%strat_param_num(k).lt.0)) then
+      if ((CVmix_vars%strat_param_num(k).gt.CVmix_vars%strat_param_denom(k))  &
+          .and.(CVmix_vars%strat_param_num(k).lt.0)) then
         ! Rrho < 1 and dT/dz > 0 => Diffusive convection
         Rrho = CVmix_vars%strat_param_num(k) / CVmix_vars%strat_param_denom(k)
-        ddiff = CVmix_ddiff_params_in%mol_diff*CVmix_ddiff_params_in%kappa_ddiff_param1*&
-                exp(CVmix_ddiff_params_in%kappa_ddiff_param2*exp(&
-                CVmix_ddiff_params_in%kappa_ddiff_param3*(one/Rrho-one)))
+        ddiff = CVmix_ddiff_params_in%mol_diff *                              &
+                CVmix_ddiff_params_in%kappa_ddiff_param1*&
+                exp(CVmix_ddiff_params_in%kappa_ddiff_param2*exp(             &
+                        CVmix_ddiff_params_in%kappa_ddiff_param3*             &
+                        (cvmix_one/Rrho-cvmix_one)))
         CVmix_vars%Tdiff_iface(k) = ddiff
         if (Rrho.lt.0.5_cvmix_r8) then
           CVmix_vars%Sdiff_iface(k) = 0.15_cvmix_r8*Rrho*ddiff
@@ -295,8 +300,8 @@ module cvmix_ddiff
         end if
       end if
     end do
-    CVmix_vars%Tdiff_iface(CVmix_vars%nlev+1) = 0.0_cvmix_r8
-    CVmix_vars%Sdiff_iface(CVmix_vars%nlev+1) = 0.0_cvmix_r8
+    CVmix_vars%Tdiff_iface(CVmix_vars%nlev+1) = cvmix_zero
+    CVmix_vars%Sdiff_iface(CVmix_vars%nlev+1) = cvmix_zero
 
 !EOC
 
@@ -390,7 +395,7 @@ module cvmix_ddiff
       CVmix_ddiff_params_get => CVmix_ddiff_params_saved
     end if
 
-    cvmix_get_ddiff_real = 0.0_cvmix_r8
+    cvmix_get_ddiff_real = cvmix_zero
     select case (trim(varname))
       case ('strat_param_max')
         cvmix_get_ddiff_real = CVmix_ddiff_params_get%strat_param_max

@@ -16,8 +16,8 @@
 ! !USES:
 
   use cvmix_kinds_and_types, only : cvmix_r8,                     &
-                                    zero,                         &
-                                    one,                          &
+                                    cvmix_zero,                   &
+                                    cvmix_one,                    &
                                     cvmix_data_type
   use cvmix_put_get, only :         cvmix_put
   use cvmix_math, only :            CVMIX_MATH_INTERP_LINEAR,      &
@@ -189,7 +189,7 @@ contains
     end if
 
     if (present(ri_crit)) then
-      if (ri_crit.lt.zero) then
+      if (ri_crit.lt.cvmix_zero) then
         print*, "ERROR: ri_crit can not be negative."
         stop 1
       end if
@@ -199,7 +199,7 @@ contains
     end if
 
     if (present(vonkarman)) then
-      if (vonkarman.lt.zero) then
+      if (vonkarman.lt.cvmix_zero) then
         print*, "ERROR: vonkarman can not be negative."
         stop 1
       end if
@@ -211,11 +211,11 @@ contains
     if (present(Cstar)) then
       call cvmix_put_kpp('Cstar', Cstar, CVmix_kpp_params_user)
     else
-      call cvmix_put_kpp('Cstar', 10.0_cvmix_r8, CVmix_kpp_params_user)
+      call cvmix_put_kpp('Cstar', real(10,cvmix_r8), CVmix_kpp_params_user)
     end if
 
     if (present(zeta_m)) then
-      if (zeta_m.ge.zero) then
+      if (zeta_m.ge.cvmix_zero) then
         print*, "ERROR: zeta_m must be negative."
         stop 1
       end if
@@ -227,32 +227,36 @@ contains
     call cvmix_put_kpp('zeta_m', zm, CVmix_kpp_params_user)
 
     if (present(zeta_s)) then
-      if (zeta_s.ge.zero) then
+      if (zeta_s.ge.cvmix_zero) then
         print*, "ERROR: zeta_s must be negative."
         stop 1
       end if
       zs = zeta_s
     else
       ! Default value for zeta_s is -1
-      zs = -1.0_cvmix_r8
+      zs = -cvmix_one
     end if
     call cvmix_put_kpp('zeta_s', zs, CVmix_kpp_params_user)
 
     ! a_m, a_s, c_m, and c_s are computed from zeta_m and zeta_s
     ! a_m, c_m, and c_s are all non-negative. a_s may be negative depending
     ! on the value of zeta_s
-    a_m = ((one - 16.0_cvmix_r8*zm)**(-0.25_cvmix_r8))*(one - 4.0_cvmix_r8*zm)
-    c_m = 12.0_cvmix_r8*((one - 16.0_cvmix_r8*zm)**(-0.25_cvmix_r8))
+    a_m = ((cvmix_one - real(16,cvmix_r8)*zm)**(-0.25_cvmix_r8))*             &
+          (cvmix_one - real(4,cvmix_r8)*zm)
+    c_m = ((cvmix_one - real(16,cvmix_r8)*zm)**(-0.25_cvmix_r8))*             &
+          real(12,cvmix_r8)
     call cvmix_put_kpp('a_m', a_m, CVmix_kpp_params_user)
     call cvmix_put_kpp('c_m', c_m, CVmix_kpp_params_user)
 
-    a_s = sqrt(one - 16.0_cvmix_r8*zs)*(one + 8.0_cvmix_r8*zs)
-    c_s = 24.0_cvmix_r8*sqrt(one - 16.0_cvmix_r8*zs)
+    a_s = sqrt(cvmix_one - real(16,cvmix_r8)*zs)*                             &
+          (cvmix_one + real(8,cvmix_r8)*zs)
+    c_s = real(24,cvmix_r8)*sqrt(cvmix_one - real(16,cvmix_r8)*zs)
     call cvmix_put_kpp('a_s', a_s, CVmix_kpp_params_user)
     call cvmix_put_kpp('c_s', c_s, CVmix_kpp_params_user)
 
     if (present(surf_layer_ext)) then
-      if ((surf_layer_ext.lt.zero).or.(surf_layer_ext.gt.one)) then
+      if ((surf_layer_ext.lt.cvmix_zero).or.(surf_layer_ext.gt.cvmix_one))    &
+      then
         print*, "surf_layer_ext must be between 0 and 1, inclusive."
         stop 1
       end if
@@ -394,13 +398,16 @@ contains
 !EOP
 !BOC
 
-    call cvmix_put(CVmix_vars, 'kpp_transport', 0.0_cvmix_r8)
+    call cvmix_put(CVmix_vars, 'kpp_transport', cvmix_zero)
     call cvmix_coeffs_kpp(CVmix_vars%Mdiff_iface, CVmix_vars%Tdiff_iface,     &
                           CVMix_vars%Sdiff_iface,                             &
-                          CVmix_vars%zw_iface, CVmix_vars%zt,                 &
-                          CVmix_vars%OBL_depth, CVmix_vars%kOBL_depth,        &
-                          CVmix_vars%kpp_transport_iface,                     &
-                          CVmix_vars%surf_fric, CVmix_vars%surf_buoy,         &
+                          CVmix_vars%zw_iface, CVmix_vars%zt_cntr,            &
+                          CVmix_vars%BoundaryLayerDepth,                      &
+                          CVmix_vars%kOBL_depth,                              &
+                          CVmix_vars%kpp_Tnonlocal_iface,                     &
+                          CVmix_vars%kpp_Snonlocal_iface,                     &
+                          CVmix_vars%SurfaceFriction,                         &
+                          CVmix_vars%SurfaceBuoyancyForcing,                  &
                           CVmix_kpp_params_user)
 
 !EOC
@@ -413,8 +420,8 @@ contains
 ! !INTERFACE:
 
   subroutine cvmix_coeffs_kpp_low(Mdiff, Tdiff, Sdiff, zw_iface, zt_cntr,     &
-                                  OBL_depth, kOBL_depth, nonlocal, surf_fric, &
-                                  surf_buoy, CVmix_kpp_params_user)
+                                  OBL_depth, kOBL_depth, Tnonlocal, Snonlocal,&
+                                  surf_fric, surf_buoy, CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
 !  Computes vertical diffusion coefficients for the KPP boundary layer mixing
@@ -433,7 +440,7 @@ contains
                                                   surf_buoy, kOBL_depth
 
 ! !INPUT/OUTPUT PARAMETERS:
-    real(cvmix_r8), dimension(:,:), intent(inout) :: nonlocal
+    real(cvmix_r8), dimension(:), intent(inout) :: Tnonlocal, Snonlocal
     real(cvmix_r8), dimension(:),   intent(inout) :: Mdiff, Tdiff, Sdiff
 
 !EOP
@@ -485,37 +492,37 @@ contains
 
     ! Allocate OBL_diff and OBL_visc
     allocate(OBL_Mdiff(kwup), OBL_Tdiff(kwup), OBL_Sdiff(kwup))
-    OBL_Mdiff = 0.0_cvmix_r8
-    OBL_Tdiff = 0.0_cvmix_r8
-    OBL_Sdiff = 0.0_cvmix_r8
+    OBL_Mdiff = cvmix_zero
+    OBL_Tdiff = cvmix_zero
+    OBL_Sdiff = cvmix_zero
 
     ! Stability => positive surface buoyancy flux
-    lstable = (surf_buoy.gt.0.0_cvmix_r8)
+    lstable = (surf_buoy.gt.cvmix_zero)
 
     ! (1) Compute turbulent velocity scales in column and at OBL_depth. Per
     !     
     call cvmix_kpp_compute_turbulent_scales(sigma, OBL_depth, surf_buoy,      &
                                             surf_fric, w_m, w_s,              &
                                             CVmix_kpp_params_user)
-    call cvmix_kpp_compute_turbulent_scales(1.0_cvmix_r8, OBL_depth,          &
-                                            surf_buoy, surf_fric, wm_OBL,     &
-                                            ws_OBL, CVmix_kpp_params_user)
+    call cvmix_kpp_compute_turbulent_scales(cvmix_one, OBL_depth, surf_buoy,  &
+                                            surf_fric, wm_OBL, ws_OBL,        &
+                                            CVmix_kpp_params_user)
 
     ! (2) Set coefficients for shape function(s)
     !     Default is sigma*(1-sigma)^2
-    shape_coeffs(1,:) =  0.0_cvmix_r8
-    shape_coeffs(2,:) =  1.0_cvmix_r8
-    shape_coeffs(3,:) = -2.0_cvmix_r8
-    shape_coeffs(4,:) =  1.0_cvmix_r8
+    shape_coeffs(1,:) =  cvmix_zero
+    shape_coeffs(2,:) =  cvmix_one 
+    shape_coeffs(3,:) = -real(2,cvmix_r8)
+    shape_coeffs(4,:) =  cvmix_one
     shape_coeffs2 = shape_coeffs
 
     !     'ParabolicNonLocal' => non-local term shape function is (1-sigma)^2
     if (CVmix_kpp_params_in%MatchTechnique.eq.CVMIX_KPP_PARABOLIC_NONLOCAL)   &
        then
-      shape_coeffs2(1,:) =  1.0_cvmix_r8
-      shape_coeffs2(2,:) = -2.0_cvmix_r8
-      shape_coeffs2(3,:) =  1.0_cvmix_r8
-      shape_coeffs2(4,:) =  0.0_cvmix_r8
+      shape_coeffs(1,:) =  cvmix_one 
+      shape_coeffs(2,:) = -real(2,cvmix_r8)
+      shape_coeffs(3,:) =  cvmix_one
+      shape_coeffs(4,:) =  cvmix_zero
     end if
 
     ! If MatchTechnique = 'SimpleShape' or 'ParabolicNonLocal' then we just use
@@ -565,35 +572,35 @@ contains
                                        OBL_depth, zw_iface(kwup-1),           &
                                        Mdiff(kwup-1), dvisc_OBL(3))
       end if
-      if (OBL_depth.eq.zero) then
-        Gat1  = zero ! value doesn't really matter, K = 0
+      if (OBL_depth.eq.cvmix_zero) then
+        Gat1 = cvmix_zero ! value doesn't really matter, K = 0
       else
-        if (ws_OBL.ne.zero) then
+        if (ws_OBL.ne.cvmix_zero) then
           Gat1(1) = visc_at_OBL(1)/(OBL_depth*ws_OBL)
           Gat1(2) = visc_at_OBL(2)/(OBL_depth*ws_OBL)
         else
-          Gat1(1:2) = zero ! value doesn't really matter, Ks = 0
+          Gat1(1:2) = cvmix_zero ! value doesn't really matter, Ks = 0
         end if
-        if (wm_OBL.ne.zero) then
+        if (wm_OBL.ne.cvmix_zero) then
           Gat1(3) = visc_at_OBL(3)/(OBL_depth*wm_OBL)
         else
-          Gat1(3) = zero ! value doesn't really matter, Km = 0
+          Gat1(3) = cvmix_zero ! value doesn't really matter, Km = 0
         end if
       end if
-      if (CVmix_kpp_params_in%lnoDGat1.or.(OBL_depth.eq.zero)) then
-        DGat1 = zero ! value doesn't really matter, K = 0
+      if (CVmix_kpp_params_in%lnoDGat1.or.(OBL_depth.eq.cvmix_zero)) then
+        DGat1 = cvmix_zero ! value doesn't really matter, K = 0
       else
         ! Avoid dividing by zero
-        if (ws_OBL.ne.zero) then
+        if (ws_OBL.ne.cvmix_zero) then
           DGat1(1) = -dvisc_OBL(1)/ws_OBL
           DGat1(2) = -dvisc_OBL(2)/ws_OBL
         else
-          DGat1(1:2) = zero ! value doesn't really matter, Ks = 0
+          DGat1(1:2) = cvmix_zero ! value doesn't really matter, Ks = 0
         end if
-        if (wm_OBL.ne.zero) then
+        if (wm_OBL.ne.cvmix_zero) then
           DGat1(3) = -dvisc_OBL(3)/wm_OBL
         else
-          DGat1(3) = zero ! value doesn't really matter, Km = 0
+          DGat1(3) = cvmix_zero ! value doesn't really matter, Km = 0
         end if
         if (lstable) then
           second_term = real(5,cvmix_r8)*surf_buoy/(surf_fric**4)
@@ -615,9 +622,10 @@ contains
 
     ! (3) Compute diffusivities and viscosity in ocean boundary layer and at
     !     the z = zt_cntr(ktup) [z coordinate of last cell center still in the
-    !     OBL]. Also compute the non-local transport terms (see note about
-    !     what is actually stored in "nonlocal")
-    nonlocal = 0.0_cvmix_r8
+    !     OBL]. Also compute the non-local transport terms (see note in
+    !     cvmix_kinds_and_types about what is actually stored in "nonlocal")
+    Tnonlocal = cvmix_zero
+    Snonlocal = cvmix_zero
     sigma_ktup = -zt_cntr(ktup)/OBL_depth
     call cvmix_kpp_compute_turbulent_scales(sigma_ktup, OBL_depth, surf_buoy, &
                                             surf_fric, wm_ktup, ws_ktup,      &
@@ -637,9 +645,9 @@ contains
       OBL_Mdiff(kw) = OBL_depth * w_m(kw) * GatS(3)
       if (.not.lstable) then
         call cvmix_kpp_compute_nonlocal(shape_coeffs2(:,1), sigma(kw),        &
-                                        nonlocal(kw,1), CVmix_kpp_params_user)
+                                        Tnonlocal(kw), CVmix_kpp_params_user)
         call cvmix_kpp_compute_nonlocal(shape_coeffs2(:,2), sigma(kw),        &
-                                        nonlocal(kw,2), CVmix_kpp_params_user)
+                                        Snonlocal(kw), CVmix_kpp_params_user)
       end if
     end do
 
@@ -881,7 +889,7 @@ contains
       CVmix_kpp_params_get => CVmix_kpp_params_user
     end if
 
-    cvmix_get_kpp_real = 0.0_cvmix_r8
+    cvmix_get_kpp_real = cvmix_zero
     select case (trim(varname))
       case ('Ri_crit')
         cvmix_get_kpp_real = CVmix_kpp_params_get%Ri_crit
@@ -1006,7 +1014,7 @@ contains
     ! Since depth gets more negative as you go deeper, that translates into
     ! OBL_depth = max(abs(computed depth), abs(Ekman depth), abs(M-O depth))
     if (CVmix_kpp_params_in%lEkman) then
-      if (Coriolis.eq.0.0_cvmix_r8) then
+      if (Coriolis.eq.cvmix_zero) then
         ! Rather than divide by zero, set Ekman depth to ocean bottom
         Ekman = abs(zt_cntr(nlev))
       else
@@ -1017,7 +1025,7 @@ contains
 
     if (CVmix_kpp_params_in%lMonOb) then
       ! Column is stable if surf_buoy > 0
-      lstable = (surf_buoy.gt.0.0_cvmix_r8)
+      lstable = (surf_buoy.gt.cvmix_zero)
 
       if (lstable) then
         MoninObukhov = surf_fric**3/(surf_buoy*cvmix_get_kpp_real('vonkarman',&
@@ -1050,8 +1058,8 @@ contains
       end if
       coeffs(1) = coeffs(1)-CVmix_kpp_params_in%ri_crit
 
-      OBL_depth = -cvmix_math_cubic_root_find(coeffs,                         &
-                                         0.5_cvmix_r8*(depth(k)+depth(k+1)))
+      OBL_depth = -cvmix_math_cubic_root_find(coeffs, 0.5_cvmix_r8 *          &
+                                                      (depth(k)+depth(k+1)))
 
       ! OBL_depth needs to be at or below the center of the top level
       ! Note: OBL_depth can only be computed to be above this point if k=1,
@@ -1182,7 +1190,7 @@ contains
 
     real(cvmix_r8) :: omd ! one minus delta
 
-    omd = 1.0_cvmix_r8 - delta
+    omd = cvmix_one - delta
 
     if (lkteqkw) then
       ! => ktup = kwup
@@ -1295,11 +1303,12 @@ contains
     ! Local variables
     real(cvmix_r8) :: lcl_obl_depth, lcl_kobl_depth
 
-    call cvmix_kpp_compute_OBL_depth(CVmix_vars%Rib, CVmix_vars%zw_iface,     &
+    call cvmix_kpp_compute_OBL_depth(CVmix_vars%BulkRichardson_cntr,          &
+                                     CVmix_vars%zw_iface,                     &
                                      lcl_obl_depth,  lcl_kobl_depth,          &
-                                     CVmix_vars%zt,                           &
-                                     CVmix_vars%surf_fric,                    &
-                                     CVmix_vars%surf_buoy,                    & 
+                                     CVmix_vars%zt_cntr,                      &
+                                     CVmix_vars%SurfaceFriction,              &
+                                     CVmix_vars%SurfaceBuoyancyForcing,       & 
                                      CVmix_vars%Coriolis,                     &
                                      CVmix_kpp_params_user)
     call cvmix_put(CVmix_vars, 'OBL_depth', lcl_obl_depth)
@@ -1393,7 +1402,7 @@ contains
       ! Negative sign because we use positive-up for height
       num   = -zt_cntr(kt)*delta_buoy_cntr(kt)
       denom = delta_Vsqr_cntr(kt) + unresolved_shear_cntr_sqr(kt)
-      if (denom.ne.0.0_cvmix_r8) then
+      if (denom.ne.cvmix_zero) then
         cvmix_kpp_compute_bulk_Richardson(kt) = num/denom
       else
         ! Need a better fudge factor?
@@ -1531,7 +1540,7 @@ contains
     vonkar = cvmix_get_kpp_real('vonkarman', CVmix_kpp_params_in)
     surf_layer_ext = cvmix_get_kpp_real('surf_layer_ext', CVmix_kpp_params_in)
 
-    if (surf_fric_vel.ne.0.0_cvmix_r8) then
+    if (surf_fric_vel.ne.cvmix_zero) then
       allocate(zeta(n_sigma))
       do kw=1,n_sigma
         ! compute scales at sigma if sigma < surf_layer_ext, otherwise compute
@@ -1585,9 +1594,9 @@ contains
           stop 1
         end if
 
-        if (surf_buoy_force.ge.0.0_cvmix_r8) then
+        if (surf_buoy_force.ge.cvmix_zero) then
           ! Stable regime with surf_fric_vel = 0 => w_m = 0
-          w_m = 0.0_cvmix_r8
+          w_m = cvmix_zero
         else
           ! Unstable forcing, Eqs. (13) and (B1c) reduce to following
           do kw=1,n_sigma
@@ -1609,9 +1618,9 @@ contains
           stop 1
         end if
 
-        if (surf_buoy_force.ge.0.0_cvmix_r8) then
+        if (surf_buoy_force.ge.cvmix_zero) then
           ! Stable regime with surf_fric_vel = 0 => w_s = 0
-          w_s = 0.0_cvmix_r8
+          w_s = cvmix_zero
         else
           ! Unstable forcing, Eqs. (13) and (B1e) reduce to following
           do kw=1,n_sigma
@@ -1719,11 +1728,11 @@ contains
         allocate(N_cntr(nlev))
         do kt=1,nlev
           if (CVmix_kpp_params_in%lavg_N_or_Nsqr) then
-            N_cntr(kt)=sqrt((max(Nsqr_iface(kt),0.0_cvmix_r8) +               &
-                             max(Nsqr_iface(kt+1),0.0_cvmix_r8)) *            &
+            N_cntr(kt)=sqrt((max(Nsqr_iface(kt),cvmix_zero) +                 &
+                             max(Nsqr_iface(kt+1),cvmix_zero)) *              &
                              0.5_cvmix_r8)
           else
-            N_cntr(kt)=sqrt(max(Nsqr_iface(kt+1),0.0_cvmix_r8))
+            N_cntr(kt)=sqrt(max(Nsqr_iface(kt+1),cvmix_zero))
           end if
         end do
       else
@@ -1742,7 +1751,7 @@ contains
       else
         ! Cv computation comes from Danabasoglu et al., 2006
         if (N_cntr(kt).lt.0.002_cvmix_r8) then
-          Cv = 2.1_cvmix_r8-200.0_cvmix_r8*N_cntr(kt)
+          Cv = 2.1_cvmix_r8-real(200,cvmix_r8)*N_cntr(kt)
         else
           Cv = 1.7_cvmix_r8
         end if
@@ -1771,7 +1780,7 @@ contains
     ! If not specifying lphi_m or lphi_s, routine will error out, but
     ! initializing result to 0 removes warning about possibly returning an
     ! un-initialized value
-    compute_phi_inv = 0.0_cvmix_r8
+    compute_phi_inv = cvmix_zero
 
     if (present(lphi_m)) then
       lm = lphi_m
@@ -1791,28 +1800,28 @@ contains
     end if
 
     if (lm) then
-      if (zeta.ge.0.0_cvmix_r8) then
+      if (zeta.ge.cvmix_zero) then
         ! Stable region
-        compute_phi_inv = one/(one + real(5,cvmix_r8)*zeta)
+        compute_phi_inv = cvmix_one/(cvmix_one + real(5,cvmix_r8)*zeta)
       else if (zeta.ge.cvmix_get_kpp_real('zeta_m', CVmix_kpp_params_in)) then
-        compute_phi_inv = (one - real(16,cvmix_r8)*zeta)**0.25_cvmix_r8
+        compute_phi_inv = (cvmix_one - real(16,cvmix_r8)*zeta)**0.25_cvmix_r8
       else
         compute_phi_inv = (cvmix_get_kpp_real('a_m', CVmix_kpp_params_in) -      &
                           cvmix_get_kpp_real('c_m', CVmix_kpp_params_in)*zeta)** &
-                          (one/real(3,cvmix_r8))
+                          (cvmix_one/real(3,cvmix_r8))
       end if
     end if
 
     if (ls) then
-      if (zeta.ge.0.0_cvmix_r8) then
+      if (zeta.ge.cvmix_zero) then
         ! Stable region
-        compute_phi_inv = one/(one + real(5,cvmix_r8)*zeta)
+        compute_phi_inv = cvmix_one/(cvmix_one + real(5,cvmix_r8)*zeta)
       else if (zeta.ge.cvmix_get_kpp_real('zeta_s', CVmix_kpp_params_in)) then
-        compute_phi_inv = (one - real(16,cvmix_r8)*zeta)**0.5_cvmix_r8
+        compute_phi_inv = (cvmix_one - real(16,cvmix_r8)*zeta)**0.5_cvmix_r8
       else
         compute_phi_inv = (cvmix_get_kpp_real('a_s', CVmix_kpp_params_in) -      &
                           cvmix_get_kpp_real('c_s', CVmix_kpp_params_in)*zeta)** &
-                          (one/real(3,cvmix_r8))
+                          (cvmix_one/real(3,cvmix_r8))
       end if
     end if
 
@@ -1852,10 +1861,10 @@ contains
 !EOP
 !BOC
 
-    coeffs(1) =  0.0_cvmix_r8
-    coeffs(2) =  1.0_cvmix_r8
-    coeffs(3) =  3.0_cvmix_r8*GAT1 - DGAT1 - 2.0_cvmix_r8
-    coeffs(4) = -2.0_cvmix_r8*GAT1 + DGAT1 + 1.0_cvmix_r8
+    coeffs(1) =  cvmix_zero
+    coeffs(2) =  cvmix_one
+    coeffs(3) =  real(3,cvmix_r8)*GAT1 - DGAT1 - real(2,cvmix_r8)
+    coeffs(4) = -real(2,cvmix_r8)*GAT1 + DGAT1 + cvmix_one
 
 !EOC
 
@@ -1904,7 +1913,7 @@ contains
       if (present(depth_2above).and.present(nu_2above)) then
         dnu_dz_above = (layer_nu(1)-nu_2above)/(layer_depth(1)-depth_2above)
       else
-        dnu_dz_above = 0.0_cvmix_r8
+        dnu_dz_above = cvmix_zero
       end if
       dnu_dz_below = (layer_nu(2)-layer_nu(1))/(layer_depth(2)-layer_depth(1))
       call cvmix_math_poly_interp(coeffs, CVMIX_MATH_INTERP_LINEAR,           &
@@ -1913,7 +1922,7 @@ contains
       dnu_dz_local = cvmix_math_evaluate_cubic(coeffs, -OBL_depth)
       ! (3) Linear interpolant: slope = value computed in (2) and the line goes
       !     through the point (layer_depth(2), layer_nu(2))
-      coeffs = 0.0_cvmix_r8
+      coeffs = cvmix_zero
       coeffs(1) = layer_nu(2) - dnu_dz_local*layer_depth(2)
       coeffs(2) = dnu_dz_local
     else
