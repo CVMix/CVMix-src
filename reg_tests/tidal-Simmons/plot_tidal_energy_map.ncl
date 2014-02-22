@@ -3,6 +3,10 @@ load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_csm.ncl"
 
 begin
 
+  out_type = "pdf"
+  ; out_type = "ps"
+  ; out_type = "X11"
+
   in_file = "../../inputdata/tidal_energy_gx1v6_20130512.nc"
   if (isfilepresent(in_file)) then
     print((/"Reading netCDF data"/))
@@ -28,8 +32,6 @@ begin
     exit
   end if
 
-  out_type = "ps"
-  ; out_type = "X11"
   wks = gsn_open_wks(out_type, "tidal_energy_flux")
   gsn_define_colormap(wks, "BlAqGrYeOrRe")
 

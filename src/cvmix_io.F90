@@ -614,7 +614,10 @@ contains
             case ("Rrho")
               call netcdf_check(nf90_def_var(file_id, "Rrho", NF90_DOUBLE,    &
                                              (/nt_id/), var_id(var)))
-            case ("Buoyancy","SqrBuoyancy","SqrBuoyancyFreq","buoy",          &
+            case ("Buoyancy","buoyancy","buoyancy_cntr")
+              call netcdf_check(nf90_def_var(file_id, "buoyancy", NF90_DOUBLE,&
+                                             (/nt_id/), var_id(var)))
+            case ("BuoyancyFreq","SqrBuoyancy","SqrBuoyancyFreq","buoy",      &
                   "buoy_iface")
               call netcdf_check(nf90_def_var(file_id, "SqrBuoyancyFreq",      &
                                              NF90_DOUBLE, (/nw_id/),          &
@@ -659,7 +662,10 @@ contains
               call netcdf_check(nf90_put_var(file_id, var_id(var),            &
                                              CVmix_vars%strat_param_num(:)/   &
                                              CVmix_vars%strat_param_denom(:)))
-            case ("Buoyancy","SqrBuoyancy","SqrBuoyancyFreq","buoy",          &
+            case ("Buoyancy","buoyancy","buoyancy_cntr")
+              call netcdf_check(nf90_put_var(file_id, var_id(var),            &
+                                         CVmix_vars%buoyancy_cntr(:)))
+            case ("BuoyancyFreq","SqrBuoyancy","SqrBuoyancyFreq","buoy",      &
                   "buoy_iface")
               call netcdf_check(nf90_put_var(file_id, var_id(var),            &
                                          CVmix_vars%SqrBuoyancyFreq_iface(:)))
@@ -681,60 +687,63 @@ contains
             select case(trim(var_names(var)))
               case ('z',"zt","zt_cntr")
                 if (kw.gt.1) then
-                  write(file_id,"(E24.17E2)",advance='no') &
+                  write(file_id,"(E24.17E2)",advance='no')                    &
                         CVmix_vars%zt_cntr(kw-1)
                 else
                   write(file_id,"(A)",advance='no') "--- Cell Center Vals ---"
                 end if
               case ("zw", "zw_iface")
-                write(file_id,"(E24.17E2)",advance='no') &
+                write(file_id,"(E24.17E2)",advance='no')                      &
                       CVmix_vars%zw_iface(kw)
               case ("Richardson","ShearRichardson","RichardsonNumber",        &
                     "ShearRichardsonNumber","Ri","Ri_iface")
-                write(file_id,"(E24.17E2)",advance='no') &
+                write(file_id,"(E24.17E2)",advance='no')                      &
                       CVmix_vars%ShearRichardson_iface(kw)
               case ("BulkRichardson","BulkRichardsonNumber","Rib","Ri_bulk")
                 if (kw.gt.1) then
-                  write(file_id,"(E24.17E2)",advance='no') &
+                  write(file_id,"(E24.17E2)",advance='no')                    &
                         CVmix_vars%BulkRichardson_cntr(kw-1)
                 else
                   write(file_id,"(A)",advance='no') "--- Cell Center Vals ---"
                 end if
               case ("Mdiff")
-                write(file_id,"(E24.17E2)",advance='no') &
+                write(file_id,"(E24.17E2)",advance='no')                      &
                       CVmix_vars%Mdiff_iface(kw)
               case ("Tdiff")
-                write(file_id,"(E24.17E2)",advance='no') &
+                write(file_id,"(E24.17E2)",advance='no')                      &
                       CVmix_vars%Tdiff_iface(kw)
               case ("Sdiff")
-                write(file_id,"(E24.17E2)",advance='no') &
+                write(file_id,"(E24.17E2)",advance='no')                      &
                       CVmix_vars%Sdiff_iface(kw)
               case ("Rrho")
                 if (kw.lt.CVmix_vars%nlev+1) then
-                  write(file_id,"(E24.17E2)",advance='no') &
-                        CVmix_vars%strat_param_num(kw) / &
+                  write(file_id,"(E24.17E2)",advance='no')                    &
+                        CVmix_vars%strat_param_num(kw) /                      &
                         CVmix_vars%strat_param_denom(kw)
                 else
                   write(file_id,"(E24.17E2)",advance='no') 0.0
                 end if
-              case ("Buoyancy","SqrBuoyancy","SqrBuoyancyFreq","buoy",        &
-                    "buoy_iface")
+              case ("Buoyancy","buoyancy","buoyancy_cntr")
                 if (kw.gt.1) then
-                  write(file_id,"(E24.17E2)",advance='no') &
-                        CVmix_vars%SqrBuoyancyFreq_iface(kw-1)
+                  write(file_id,"(E24.17E2)",advance='no')                    &
+                        CVmix_vars%buoyancy_cntr(kw-1)
                 else
                   write(file_id,"(A)",advance='no') "--- Cell Center Vals ---"
                 end if
+              case ("BuoyancyFreq","SqrBuoyancy","SqrBuoyancyFreq","buoy",    &
+                    "buoy_iface")
+                write(file_id,"(E24.17E2)",advance='no')                      &
+                      CVmix_vars%SqrBuoyancyFreq_iface(kw)
               case ("Vx", "U")
                 if (kw.gt.1) then
-                  write(file_id,"(E24.17E2)",advance='no') &
+                  write(file_id,"(E24.17E2)",advance='no')                    &
                         CVmix_vars%Vx_cntr(kw-1)
                 else
                   write(file_id,"(A)",advance='no') "--- Cell Center Vals ---"
                 end if
               case ("Vy", "V")
                 if (kw.gt.1) then
-                  write(file_id,"(E24.17E2)",advance='no') &
+                  write(file_id,"(E24.17E2)",advance='no')                    &
                         CVmix_vars%Vy_cntr(kw-1)
                 else
                   write(file_id,"(A)",advance='no') "--- Cell Center Vals ---"

@@ -16,7 +16,7 @@ begin
     print((/"Reading netCDF data"/))
     f = addfile(in_file, "r")
     x = f->Tdiff
-    y = f->zw_iface
+    y = f->zw
     nlev = dimsizes(y)
   else
     print((/"ERROR: can not find output (looking for "+in_file+")"/))

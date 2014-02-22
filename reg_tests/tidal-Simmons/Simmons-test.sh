@@ -44,10 +44,8 @@ if [ "${USE_NETCDF}" != "netcdf" ]; then
   exit 1
 fi
 
-CVMix=$PWD/../..
-make -f $CVMix/src/Makefile ${USE_NETCDF}
-# Note: if make error, include CVMIX_ROOT as below
-#make -f $CVMix/src/Makefile ${USE_NETCDF} CVMIX_ROOT=$CVMix
+CVMix=$( cd ../.. ; pwd )
+make -f $CVMix/src/Makefile CVMIX_ROOT=$CVMix ${USE_NETCDF}
 if [ $? != 0 ]; then
   echo "Build error!"
   exit 1

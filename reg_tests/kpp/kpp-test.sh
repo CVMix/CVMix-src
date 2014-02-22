@@ -60,7 +60,7 @@ fi
 if [ "$OUTPUT" == "TRUE" ]; then
   if [ "`grep ltest1 input.nl | cut -d. -f 2`" != "false" ]; then
     if [ "${USE_NETCDF}" == "netcdf" ]; then
-      ncdump -v zt,Ri_bulk test1.nc
+      ncdump -v zt,BulkRichardson test1.nc
     else
       cat test1.out
     fi
@@ -76,7 +76,7 @@ if [ "$OUTPUT" == "TRUE" ]; then
 
   if [ "`grep ltest5 input.nl | cut -d. -f 2`" != "false" ]; then
     if [ "${USE_NETCDF}" == "netcdf" ]; then
-      ncdump -v zt,Ri_bulk test5.nc
+      ncdump -v zt,BulkRichardson test5.nc
     else
       cat test5.out
     fi

@@ -429,12 +429,12 @@ Subroutine cvmix_kpp_driver()
             "to see output."
 #endif
 
-    CVmix_vars5%nlev                   =  nlev5
-    CVmix_vars5%BoundaryLayerDepth     =  OBL_depth5
-    CVmix_vars5%zt_cntr                => zt
-    CVmix_vars5%BulkRichardson_cntr    => Ri_bulk
-    CVmix_vars5%SqrBuoyancyFreq_iface  => buoyancy
-    CVmix_vars5%Vx_cntr                => hor_vel(:,1)
+    CVmix_vars5%nlev                =  nlev5
+    CVmix_vars5%BoundaryLayerDepth  =  OBL_depth5
+    CVmix_vars5%zt_cntr             => zt
+    CVmix_vars5%BulkRichardson_cntr => Ri_bulk
+    CVmix_vars5%buoyancy_cntr       => buoyancy
+    CVmix_vars5%Vx_cntr             => hor_vel(:,1)
 #ifdef _NETCDF
     call cvmix_io_open(fid, "test5.nc", "nc")
 #else
@@ -450,12 +450,12 @@ Subroutine cvmix_kpp_driver()
     call cvmix_output_write_att(fid, "longname", "ocean height (cell center)",&
                                 "zt")
     call cvmix_output_write_att(fid, "units", "m", "zt")
-    call cvmix_output_write_att(fid, "longname", "horizontal velocity", "Vx")
-    call cvmix_output_write_att(fid, "units", "m/s", "Vx")
+    call cvmix_output_write_att(fid, "longname", "horizontal velocity", "U")
+    call cvmix_output_write_att(fid, "units", "m/s", "U")
     call cvmix_output_write_att(fid, "units", "m/s^2", "buoyancy")
     call cvmix_output_write_att(fid, "longname", "Bulk Richardson number",    &
-                                "Ri_bulk")
-    call cvmix_output_write_att(fid, "units", "unitless", "Ri_bulk")
+                                "BulkRichardson")
+    call cvmix_output_write_att(fid, "units", "unitless", "BulkRichardson")
 #endif
     call cvmix_io_close(fid)
 

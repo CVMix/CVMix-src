@@ -203,7 +203,7 @@ contains
       CVmix_vars%dzt(:) = val
 
       case ('dzw', 'dzw_iface')
-      print*, "WARNING: you are setting the cell midpoint to midpoint", &
+      print*, "WARNING: you are setting the cell midpoint to midpoint",       &
               "distance in all levels to a constant value"
       if (.not.associated(CVmix_vars%dzw)) then
         allocate(CVmix_vars%dzw(nlev+1))

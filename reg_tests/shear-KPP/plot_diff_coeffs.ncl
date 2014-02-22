@@ -17,7 +17,7 @@ begin
   if (isfilepresent("data.nc")) then
     print((/"Reading netCDF data"/))
     f = addfile("data.nc", "r")
-    x = f->Ri
+    x = f->ShearRichardson
     y = f->Tdiff
   else
     if (isfilepresent("data.out")) then

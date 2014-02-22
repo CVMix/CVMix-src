@@ -16,8 +16,8 @@ begin
     f = addfile("test5.nc", "r")
     zt      = f->zt
     B       = f->buoyancy
-    U       = f->Vx
-    Ri_bulk = f->Ri_bulk
+    U       = f->U
+    Ri_bulk = f->BulkRichardson
     hd      = -f@OBL_depth
   else
     if (isfilepresent("test5.out")) then
