@@ -18,8 +18,9 @@ Subroutine cvmix_shear_driver(nlev)
 
 ! !USES:
 
-  use cvmix_kinds_and_types, only : one,                      &
-                                    cvmix_r8,                 &
+  use cvmix_kinds_and_types, only : cvmix_r8,                 &
+                                    cvmix_zero,               &
+                                    cvmix_one,                &
                                     cvmix_data_type,          &
                                     cvmix_global_params_type
   use cvmix_shear,           only : cvmix_init_shear,         &
@@ -63,9 +64,9 @@ Subroutine cvmix_shear_driver(nlev)
 
   ! Ri_g should increase from 0 to 1
   allocate(Ri_g(nlev+1))
-  Ri_g(1) = 0.0_cvmix_r8
+  Ri_g(1) = cvmix_zero
   do kw = 2,nlev+1
-    Ri_g(kw) = Ri_g(kw-1) + one/real(nlev,cvmix_r8)
+    Ri_g(kw) = Ri_g(kw-1) + cvmix_one/real(nlev,cvmix_r8)
   end do
 
   ! Allocate memory to store viscosity and diffusivity values
@@ -73,12 +74,12 @@ Subroutine cvmix_shear_driver(nlev)
 
   ! Initialization for CVMix data types
   call cvmix_put(CVmix_params,  'max_nlev', nlev)
-  call cvmix_put(CVmix_params,  'prandtl',  one)
+  call cvmix_put(CVmix_params,  'prandtl',  cvmix_one)
   call cvmix_put(CVmix_vars,    'nlev',     nlev)
   ! Point CVmix_vars values to memory allocated above
   CVmix_vars%Mdiff_iface => Mdiff
   CVmix_vars%Tdiff_iface => Tdiff
-  CVmix_vars%Ri_iface => Ri_g
+  CVmix_vars%ShearRichardson_iface => Ri_g
 
   ! Read / set KPP parameters
   read(*, nml=KPP_nml)

@@ -12,8 +12,8 @@ Subroutine cvmix_ddiff_driver(nlev)
 
 ! !USES:
 
-  use cvmix_kinds_and_types, only : one,                     &
-                                    cvmix_r8,                &
+  use cvmix_kinds_and_types, only : cvmix_r8,                &
+                                    cvmix_one,               &
                                     cvmix_data_type
   use cvmix_ddiff,           only : cvmix_init_ddiff,        &
                                     cvmix_coeffs_ddiff,      &
@@ -56,12 +56,13 @@ Subroutine cvmix_ddiff_driver(nlev)
   allocate(Rrho_num(nlev,ncol), Rrho_denom(nlev,ncol))
   do k=1,nlev
     ! For first column, Rrho varies from 1 to 2
-    Rrho_num(k,1) = real(k-1,cvmix_r8)/real(nlev-1,cvmix_r8)+one
-    Rrho_denom(k,1) = one
+    Rrho_num(k,1) = real(k-1,cvmix_r8)/real(nlev-1,cvmix_r8)+cvmix_one
+    Rrho_denom(k,1) = cvmix_one
     ! For second column, 1/Rrho varies from 1 to 10
     ! (Note: last column has diff=0, hence only using nlev instead of nlev+1)
-    Rrho_num(k,2) = -one/(real(9.0*(k-1),cvmix_r8)/real(nlev-1,cvmix_r8)+one)
-    Rrho_denom(k,2) = -one
+    Rrho_num(k,2) = -cvmix_one/                                               &
+                    (real(9.0*(k-1),cvmix_r8)/real(nlev-1,cvmix_r8)+cvmix_one)
+    Rrho_denom(k,2) = -cvmix_one
   end do
 
   ! Point CVmix_vars values to memory allocated above
