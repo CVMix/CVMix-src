@@ -44,6 +44,57 @@ if [ "${USE_NETCDF}" != "netcdf" ]; then
   exit 1
 fi
 
+# Files needed to run tidal example
+GRID_FILE=gx1v6_130522.nc
+PHYS_FILE=gx1v6_physics_130523.nc
+ENERGY_FILE=tidal_energy_gx1v6_20130512.nc
+
+echo "Checking for necessary input data files in" \
+     "$( cd ../../inputdata ; pwd )..."
+echo ""
+
+echo "Looking for grid file ${GRID_FILE}..."
+if [ -e ../../inputdata/${GRID_FILE} ]; then
+  echo "Found!"
+else
+  wget https://raw.github.com/CVMix/CVMix-data/master/${GRID_FILE}            \
+       --directory-prefix=../../inputdata/
+  if [ $? != 0 ]; then
+       echo "Install wget or manually populate inputdata from"
+       echo "https://github.com/CVMix/CVMix-data"
+       exit 2
+  fi
+  echo "... Downloaded!"
+fi
+
+echo "Looking for physics file ${PHYS_FILE}..."
+if [ -e ../../inputdata/${PHYS_FILE} ]; then
+  echo "Found!"
+else
+  wget https://raw.github.com/CVMix/CVMix-data/master/${PHYS_FILE}            \
+       --directory-prefix=../../inputdata/
+  if [ $? != 0 ]; then
+       echo "Install wget or manually populate inputdata from"
+       echo "https://github.com/CVMix/CVMix-data"
+       exit 2
+  fi
+  echo "... Downloaded!"
+fi
+
+echo "Looking for energy map file ${ENERGY_FILE}..."
+if [ -e ../../inputdata/${ENERGY_FILE} ]; then
+  echo "Found!"
+else
+  wget https://raw.github.com/CVMix/CVMix-data/master/${ENERGY_FILE}            \
+       --directory-prefix=../../inputdata/
+  if [ $? != 0 ]; then
+       echo "Install wget or manually populate inputdata from"
+       echo "https://github.com/CVMix/CVMix-data"
+       exit 2
+  fi
+  echo "... Downloaded!"
+fi
+
 CVMix=$( cd ../.. ; pwd )
 make -f $CVMix/src/Makefile CVMIX_ROOT=$CVMix ${USE_NETCDF}
 if [ $? != 0 ]; then

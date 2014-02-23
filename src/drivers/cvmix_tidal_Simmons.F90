@@ -218,9 +218,9 @@ Subroutine cvmix_tidal_driver()
                                 var_name="Tdiff")
     call cvmix_output_write_att(fid, "units", "m^2/s", var_name="Tdiff")
     call cvmix_output_write_att(fid, "long_name", "height at interface", &
-                                var_name="zw_iface")
-    call cvmix_output_write_att(fid, "positive", "up", var_name="zw_iface")
-    call cvmix_output_write_att(fid, "units", "m", var_name="zw_iface")
+                                var_name="zw")
+    call cvmix_output_write_att(fid, "positive", "up", var_name="zw")
+    call cvmix_output_write_att(fid, "units", "m", var_name="zw")
     call cvmix_io_close(fid)
   else
     print*, "ERROR: column requested for output is a land cell."
