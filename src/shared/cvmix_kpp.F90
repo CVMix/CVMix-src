@@ -462,10 +462,25 @@ contains
     real(cvmix_r8) :: delta
 
     real(cvmix_r8), dimension(:), allocatable :: sigma, w_m, w_s
+
     ! [MTS]shape are the coefficients of the shape function in the gradient
     ! term; [TS]shape2 are the coefficients for the nonlocal term
     real(cvmix_r8), dimension(4) :: Mshape, Tshape, Sshape, Tshape2, Sshape2
-    real(cvmix_r8), dimension(3) :: Gat1, DGat1, GatS, visc_at_OBL, dvisc_OBL
+
+    ! [MTS]shapeAt1 is value of shape function at sigma = 1
+    ! d[MTS]shapeAt1 is value of derivative of shape function at sigma = 1
+    ! (Used for matching the shape function at OBL depth)
+    real(cvmix_r8) :: MshapeAt1, TshapeAt1, SshapeAt1
+    real(cvmix_r8) :: dMshapeAt1, dTshapeAt1, dSshapeAt1
+
+    ! [MTS]shapeAtS is value of shape function at sigma = S
+    real(cvmix_r8) :: MshapeAtS, TshapeAtS, SshapeAtS
+
+    ! [MTS]diff_OBL is value of diffusivity at OBL depth
+    ! d[MTS]diff_OBL is value of derivative of diffusivity at OBL depth
+    ! w[ms]_OBL is value of wm or ws at OBL depth
+    real(cvmix_r8) :: Mdiff_OBL, Tdiff_OBL, Sdiff_OBL
+    real(cvmix_r8) :: dMdiff_OBL, dTdiff_OBL, dSdiff_OBL
     real(cvmix_r8) :: wm_OBL, ws_OBL, second_term
 
     ! Constant from params
@@ -549,77 +564,86 @@ contains
       !     listed as (i), (ii), and (iii). If ws = 0, it applies only to (i)
       !     and (ii). If wm = 0, it applies only to (iii).
       if (kwup.eq.1) then
-        visc_at_OBL(1) = compute_nu_at_OBL_depth(interp_type2,                &
+        Tdiff_OBL = compute_nu_at_OBL_depth(interp_type2,                     &
                                        (/zw_iface(kwup), zw_iface(kwup+1)/),  &
                                        (/Tdiff(kwup), Tdiff(kwup)/),          &
-                                       OBL_depth, dnu_dz=dvisc_OBL(1))
-        visc_at_OBL(2) = compute_nu_at_OBL_depth(interp_type2,                &
+                                       OBL_depth, dnu_dz=dMdiff_OBL)
+        Sdiff_OBL = compute_nu_at_OBL_depth(interp_type2,                     &
                                        (/zw_iface(kwup), zw_iface(kwup+1)/),  &
                                        (/Sdiff(kwup), Sdiff(kwup+1)/),        &
-                                       OBL_depth, dnu_dz=dvisc_OBL(2))
-        visc_at_OBL(3) = compute_nu_at_OBL_depth(interp_type2,                &
+                                       OBL_depth, dnu_dz=dSdiff_OBL)
+        Mdiff_OBL = compute_nu_at_OBL_depth(interp_type2,                     &
                                        (/zw_iface(kwup), zw_iface(kwup+1)/),  &
                                        (/Mdiff(kwup), Mdiff(kwup+1)/),        &
-                                       OBL_depth, dnu_dz=dvisc_OBL(3))
+                                       OBL_depth, dnu_dz=dMdiff_OBL)
       else
-        visc_at_OBL(1) = compute_nu_at_OBL_depth(interp_type2,                &
+        Tdiff_OBL = compute_nu_at_OBL_depth(interp_type2,                     &
                                        (/zw_iface(kwup), zw_iface(kwup+1)/),  &
                                        (/Tdiff(kwup), Tdiff(kwup+1)/),        &
                                        OBL_depth, zw_iface(kwup-1),           &
-                                       Tdiff(kwup-1), dvisc_OBL(1)) 
-        visc_at_OBL(2) = compute_nu_at_OBL_depth(interp_type2,                &
+                                       Tdiff(kwup-1), dTdiff_OBL) 
+        Sdiff_OBL = compute_nu_at_OBL_depth(interp_type2,                     &
                                        (/zw_iface(kwup), zw_iface(kwup+1)/),  &
                                        (/Sdiff(kwup), Sdiff(kwup)/),          &
                                        OBL_depth, zw_iface(kwup-1),           &
-                                       Sdiff(kwup-1), dvisc_OBL(2)) 
-        visc_at_OBL(3) = compute_nu_at_OBL_depth(interp_type2,                &
+                                       Sdiff(kwup-1), dSdiff_OBL) 
+        Mdiff_OBL = compute_nu_at_OBL_depth(interp_type2,                     &
                                        (/zw_iface(kwup), zw_iface(kwup+1)/),  &
                                        (/Mdiff(kwup), Mdiff(kwup+1)/),        &
                                        OBL_depth, zw_iface(kwup-1),           &
-                                       Mdiff(kwup-1), dvisc_OBL(3))
+                                       Mdiff(kwup-1), dMdiff_OBL)
       end if
       if (OBL_depth.eq.cvmix_zero) then
-        Gat1 = cvmix_zero ! value doesn't really matter, K = 0
+        MshapeAt1 = cvmix_zero ! value doesn't really matter, K = 0
+        TshapeAt1 = cvmix_zero ! value doesn't really matter, K = 0
+        SshapeAt1 = cvmix_zero ! value doesn't really matter, K = 0
       else
         if (ws_OBL.ne.cvmix_zero) then
-          Gat1(1) = visc_at_OBL(1)/(OBL_depth*ws_OBL)
-          Gat1(2) = visc_at_OBL(2)/(OBL_depth*ws_OBL)
+          TshapeAt1 = Tdiff_OBL/(OBL_depth*ws_OBL)
+          SshapeAt1 = Sdiff_OBL/(OBL_depth*ws_OBL)
         else
-          Gat1(1:2) = cvmix_zero ! value doesn't really matter, Ks = 0
+          TshapeAt1 = cvmix_zero ! value doesn't really matter, Ks = 0
+          SshapeAt1 = cvmix_zero ! value doesn't really matter, Ks = 0
         end if
         if (wm_OBL.ne.cvmix_zero) then
-          Gat1(3) = visc_at_OBL(3)/(OBL_depth*wm_OBL)
+          MshapeAt1 = Mdiff_OBL/(OBL_depth*wm_OBL)
         else
-          Gat1(3) = cvmix_zero ! value doesn't really matter, Km = 0
+          MshapeAt1 = cvmix_zero ! value doesn't really matter, Km = 0
         end if
       end if
       if (CVmix_kpp_params_in%lnoDGat1.or.(OBL_depth.eq.cvmix_zero)) then
-        DGat1 = cvmix_zero ! value doesn't really matter, K = 0
+        dTshapeAt1 = cvmix_zero ! value doesn't really matter, K = 0
+        dSshapeAt1 = cvmix_zero ! value doesn't really matter, K = 0
+        dMshapeAt1 = cvmix_zero ! value doesn't really matter, K = 0
       else
         ! Avoid dividing by zero
         if (ws_OBL.ne.cvmix_zero) then
-          DGat1(1) = -dvisc_OBL(1)/ws_OBL
-          DGat1(2) = -dvisc_OBL(2)/ws_OBL
+          dTshapeAt1 = -dTdiff_OBL/ws_OBL
+          dSshapeAt1 = -dSdiff_OBL/ws_OBL
         else
-          DGat1(1:2) = cvmix_zero ! value doesn't really matter, Ks = 0
+          dTshapeAt1 = cvmix_zero ! value doesn't really matter, Ks = 0
+          dSshapeAt1 = cvmix_zero ! value doesn't really matter, Ks = 0
         end if
         if (wm_OBL.ne.cvmix_zero) then
-          DGat1(3) = -dvisc_OBL(3)/wm_OBL
+          dMshapeAt1 = -dMdiff_OBL/wm_OBL
         else
-          DGat1(3) = cvmix_zero ! value doesn't really matter, Km = 0
+          dMshapeAt1 = cvmix_zero ! value doesn't really matter, Km = 0
         end if
         if (lstable) then
           second_term = real(5,cvmix_r8)*surf_buoy/(surf_fric**4)
-          DGat1(1) = DGat1(1) + second_term*visc_at_OBL(1)
-          DGat1(2) = DGat1(2) + second_term*visc_at_OBL(2)
-          DGat1(3) = DGat1(3) + second_term*visc_at_OBL(3)
+          dTshapeAt1 = dTshapeAt1 + second_term*Tdiff_OBL
+          dSshapeAt1 = dSshapeAt1 + second_term*Sdiff_OBL
+          dMshapeAt1 = dMshapeAt1 + second_term*Mdiff_OBL
         end if
       end if
 
       ! (2b) Compute coefficients of shape function
-      call cvmix_kpp_compute_shape_function_coeffs(Gat1(1), DGat1(1), Tshape)
-      call cvmix_kpp_compute_shape_function_coeffs(Gat1(2), DGat1(2), Sshape)
-      call cvmix_kpp_compute_shape_function_coeffs(Gat1(3), DGat1(3), Mshape)
+      call cvmix_kpp_compute_shape_function_coeffs(TshapeAt1, dTshapeAt1,     &
+                                                   Tshape)
+      call cvmix_kpp_compute_shape_function_coeffs(SshapeAt1, dSshapeAt1,     &
+                                                   Sshape)
+      call cvmix_kpp_compute_shape_function_coeffs(MshapeAt1, dMshapeAt1,     &
+                                                   Mshape)
       if (CVmix_kpp_params_in%MatchTechnique.eq.CVMIX_KPP_MATCH_BOTH) then
         Tshape2 = Tshape
         Sshape2 = Sshape
@@ -636,21 +660,21 @@ contains
     call cvmix_kpp_compute_turbulent_scales(sigma_ktup, OBL_depth, surf_buoy, &
                                             surf_fric, wm_ktup, ws_ktup,      &
                                             CVmix_kpp_params_user)
-    GatS(1) = cvmix_math_evaluate_cubic(Tshape, sigma_ktup)
-    GatS(2) = cvmix_math_evaluate_cubic(Sshape, sigma_ktup)
-    GatS(3) = cvmix_math_evaluate_cubic(Mshape, sigma_ktup)
+    TshapeAtS = cvmix_math_evaluate_cubic(Tshape, sigma_ktup)
+    SshapeAtS = cvmix_math_evaluate_cubic(Sshape, sigma_ktup)
+    MshapeAtS = cvmix_math_evaluate_cubic(Mshape, sigma_ktup)
 
-    Tdiff_ktup = OBL_depth * ws_ktup * GatS(1)
-    Sdiff_ktup = OBL_depth * ws_ktup * GatS(2)
-    Mdiff_ktup = OBL_depth * wm_ktup * GatS(3)
+    Tdiff_ktup = OBL_depth * ws_ktup * TshapeAtS
+    Sdiff_ktup = OBL_depth * ws_ktup * SshapeAtS
+    Mdiff_ktup = OBL_depth * wm_ktup * MshapeAtS
     do kw=1,kwup
-      GatS(1)  = cvmix_math_evaluate_cubic(Tshape, sigma(kw))
-      GatS(2)  = cvmix_math_evaluate_cubic(Sshape, sigma(kw))
-      GatS(3)  = cvmix_math_evaluate_cubic(Mshape, sigma(kw))
+      TshapeAtS = cvmix_math_evaluate_cubic(Tshape, sigma(kw))
+      SshapeAtS = cvmix_math_evaluate_cubic(Sshape, sigma(kw))
+      MshapeAtS = cvmix_math_evaluate_cubic(Mshape, sigma(kw))
 
-      OBL_Tdiff(kw) = OBL_depth * w_s(kw) * GatS(1)
-      OBL_Sdiff(kw) = OBL_depth * w_s(kw) * GatS(2)
-      OBL_Mdiff(kw) = OBL_depth * w_m(kw) * GatS(3)
+      OBL_Tdiff(kw) = OBL_depth * w_s(kw) * TshapeAtS
+      OBL_Sdiff(kw) = OBL_depth * w_s(kw) * SshapeAtS
+      OBL_Mdiff(kw) = OBL_depth * w_m(kw) * MshapeAtS
       if (.not.lstable) then
         call cvmix_kpp_compute_nonlocal(Tshape2, sigma(kw), Tnonlocal(kw),    &
                                         CVmix_kpp_params_user)
