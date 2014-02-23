@@ -449,27 +449,29 @@ contains
     ! Local variables
     type(cvmix_kpp_params_type), pointer :: CVmix_kpp_params_in
 
-    ! OBL_diff and OBL_visc are the diffusivity and viscosity in the whole OBL
+    ! OBL_[MTS]diff are the diffusivities in the whole OBL
     real(cvmix_r8), dimension(:), allocatable :: OBL_Mdiff, OBL_Tdiff,        &
                                                  OBL_Sdiff
 
-    ! diff_ktup and visc_ktup are the enhanced diffusivity and viscosity values
-    ! at the deepest cell center above OBL_depth. Rest are intermediary
-    ! variables needed to compute diff_ktup and visc_ktup
+    ! [MTS]diff_ktup are the enhanced diffusivity and viscosity values at the
+    ! deepest cell center above OBL_depth. Other _ktup vars are intermediary
+    ! variables needed to compute [MTS]diff_ktup
     real(cvmix_r8) :: Mdiff_ktup, Tdiff_ktup, Sdiff_ktup
     real(cvmix_r8) :: sigma_ktup, wm_ktup, ws_ktup
 
     real(cvmix_r8) :: delta
 
     real(cvmix_r8), dimension(:), allocatable :: sigma, w_m, w_s
-    real(cvmix_r8), dimension(4,3)            :: shape_coeffs, shape_coeffs2
+    ! [MTS]shape are the coefficients of the shape function in the gradient
+    ! term; [TS]shape2 are the coefficients for the nonlocal term
+    real(cvmix_r8), dimension(4) :: Mshape, Tshape, Sshape, Tshape2, Sshape2
     real(cvmix_r8), dimension(3) :: Gat1, DGat1, GatS, visc_at_OBL, dvisc_OBL
     real(cvmix_r8) :: wm_OBL, ws_OBL, second_term
 
     ! Constant from params
     integer :: interp_type2
 
-    integer :: nlev_p1, nlev, kw, i
+    integer :: nlev_p1, nlev, kw
     logical :: lstable
     integer :: ktup, & ! kt index of cell center above OBL_depth
                kwup    ! kw index of iface above OBL_depth (= kt index of
@@ -510,23 +512,27 @@ contains
 
     ! (2) Set coefficients for shape function(s)
     !     Default is sigma*(1-sigma)^2
-    shape_coeffs(1,:) =  cvmix_zero
-    shape_coeffs(2,:) =  cvmix_one 
-    shape_coeffs(3,:) = -real(2,cvmix_r8)
-    shape_coeffs(4,:) =  cvmix_one
-    shape_coeffs2 = shape_coeffs
+    Mshape(1) =  cvmix_zero
+    Mshape(2) =  cvmix_one 
+    Mshape(3) = -real(2,cvmix_r8)
+    Mshape(4) =  cvmix_one
+    Tshape    = Mshape
+    Sshape    = Mshape
+    Tshape2   = Tshape
+    Sshape2   = Sshape
 
     !     'ParabolicNonLocal' => non-local term shape function is (1-sigma)^2
     if (CVmix_kpp_params_in%MatchTechnique.eq.CVMIX_KPP_PARABOLIC_NONLOCAL)   &
        then
-      shape_coeffs(1,:) =  cvmix_one 
-      shape_coeffs(2,:) = -real(2,cvmix_r8)
-      shape_coeffs(3,:) =  cvmix_one
-      shape_coeffs(4,:) =  cvmix_zero
+      Tshape2(1) =  cvmix_one 
+      Tshape2(2) = -real(2,cvmix_r8)
+      Tshape2(3) =  cvmix_one
+      Tshape2(4) =  cvmix_zero
+      Sshape2    = Tshape2
     end if
 
     ! If MatchTechnique = 'SimpleShape' or 'ParabolicNonLocal' then we just use
-    ! shape_coeffs that have already been set. Otherwise:
+    ! [MTS]shape that have already been set. Otherwise:
     if ((CVmix_kpp_params_in%MatchTechnique.ne.CVMIX_KPP_SIMPLE_SHAPES).and.  &
        (CVmix_kpp_params_in%MatchTechnique.ne.CVMIX_KPP_PARABOLIC_NONLOCAL))  &
        then
@@ -611,12 +617,12 @@ contains
       end if
 
       ! (2b) Compute coefficients of shape function
-      do i=1,3
-        call cvmix_kpp_compute_shape_function_coeffs(Gat1(i), DGat1(i),       &
-                                                    shape_coeffs(:,i))
-      end do
+      call cvmix_kpp_compute_shape_function_coeffs(Gat1(1), DGat1(1), Tshape)
+      call cvmix_kpp_compute_shape_function_coeffs(Gat1(2), DGat1(2), Sshape)
+      call cvmix_kpp_compute_shape_function_coeffs(Gat1(3), DGat1(3), Mshape)
       if (CVmix_kpp_params_in%MatchTechnique.eq.CVMIX_KPP_MATCH_BOTH) then
-        shape_coeffs2 = shape_coeffs
+        Tshape2 = Tshape
+        Sshape2 = Sshape
       end if
     end if
 
@@ -630,24 +636,26 @@ contains
     call cvmix_kpp_compute_turbulent_scales(sigma_ktup, OBL_depth, surf_buoy, &
                                             surf_fric, wm_ktup, ws_ktup,      &
                                             CVmix_kpp_params_user)
-    do i=1,3
-      GatS(i) = cvmix_math_evaluate_cubic(shape_coeffs(:,i), sigma_ktup)
-    end do
+    GatS(1) = cvmix_math_evaluate_cubic(Tshape, sigma_ktup)
+    GatS(2) = cvmix_math_evaluate_cubic(Sshape, sigma_ktup)
+    GatS(3) = cvmix_math_evaluate_cubic(Mshape, sigma_ktup)
+
     Tdiff_ktup = OBL_depth * ws_ktup * GatS(1)
     Sdiff_ktup = OBL_depth * ws_ktup * GatS(2)
     Mdiff_ktup = OBL_depth * wm_ktup * GatS(3)
     do kw=1,kwup
-      do i=1,3
-        GatS(i)  = cvmix_math_evaluate_cubic( shape_coeffs(:,i), sigma(kw))
-      end do
+      GatS(1)  = cvmix_math_evaluate_cubic(Tshape, sigma(kw))
+      GatS(2)  = cvmix_math_evaluate_cubic(Sshape, sigma(kw))
+      GatS(3)  = cvmix_math_evaluate_cubic(Mshape, sigma(kw))
+
       OBL_Tdiff(kw) = OBL_depth * w_s(kw) * GatS(1)
       OBL_Sdiff(kw) = OBL_depth * w_s(kw) * GatS(2)
       OBL_Mdiff(kw) = OBL_depth * w_m(kw) * GatS(3)
       if (.not.lstable) then
-        call cvmix_kpp_compute_nonlocal(shape_coeffs2(:,1), sigma(kw),        &
-                                        Tnonlocal(kw), CVmix_kpp_params_user)
-        call cvmix_kpp_compute_nonlocal(shape_coeffs2(:,2), sigma(kw),        &
-                                        Snonlocal(kw), CVmix_kpp_params_user)
+        call cvmix_kpp_compute_nonlocal(Tshape2, sigma(kw), Tnonlocal(kw),    &
+                                        CVmix_kpp_params_user)
+        call cvmix_kpp_compute_nonlocal(Sshape2, sigma(kw), Tnonlocal(kw),    &
+                                        CVmix_kpp_params_user)
       end if
     end do
 
