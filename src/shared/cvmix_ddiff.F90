@@ -139,14 +139,14 @@ module cvmix_ddiff
 !  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
-    real(cvmix_r8),   optional, intent(in) :: strat_param_max, &
-                                              kappa_ddiff_t, &
-                                              kappa_ddiff_s, &
-                                              ddiff_exp1, &
-                                              ddiff_exp2, &
-                                              mol_diff, &
-                                              kappa_ddiff_param1, &
-                                              kappa_ddiff_param2, &
+    real(cvmix_r8),   optional, intent(in) :: strat_param_max,                &
+                                              kappa_ddiff_t,                  &
+                                              kappa_ddiff_s,                  &
+                                              ddiff_exp1,                     &
+                                              ddiff_exp2,                     &
+                                              mol_diff,                       &
+                                              kappa_ddiff_param1,             &
+                                              kappa_ddiff_param2,             &
                                               kappa_ddiff_param3
 
 ! !OUTPUT PARAMETERS:

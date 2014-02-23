@@ -24,8 +24,7 @@ Subroutine cvmix_shear_driver(nlev)
                                     cvmix_data_type,          &
                                     cvmix_global_params_type
   use cvmix_shear,           only : cvmix_init_shear,         &
-                                    cvmix_coeffs_shear,       &
-                                    cvmix_shear_params_type
+                                    cvmix_coeffs_shear
   use cvmix_put_get,         only : cvmix_put
   use cvmix_io,              only : cvmix_io_open,            &
                                     cvmix_output_write,       &
@@ -45,7 +44,6 @@ Subroutine cvmix_shear_driver(nlev)
   ! CVMix datatypes
   type(cvmix_data_type)          :: CVmix_vars
   type(cvmix_global_params_type) :: CVmix_params
-  type(cvmix_shear_params_type)  :: CVmix_KPP_params
 
   real(cvmix_r8), dimension(:), allocatable, target :: Ri_g
   real(cvmix_r8), dimension(:), allocatable, target :: Mdiff, Tdiff
@@ -83,10 +81,9 @@ Subroutine cvmix_shear_driver(nlev)
 
   ! Read / set KPP parameters
   read(*, nml=KPP_nml)
-  call cvmix_init_shear(CVmix_KPP_params, 'KPP',                           &
-                        KPP_nu_zero=KPP_nu_zero, KPP_Ri_zero=KPP_Ri_zero,  &
-                        KPP_exp=KPP_exp)
-  call cvmix_coeffs_shear(CVmix_vars, CVmix_KPP_params)
+  call cvmix_init_shear(mix_scheme='KPP', KPP_nu_zero=KPP_nu_zero,            &
+                        KPP_Ri_zero=KPP_Ri_zero, KPP_exp=KPP_exp)
+  call cvmix_coeffs_shear(CVmix_vars)
 
   ! Output
   ! data will have diffusivity from both columns (needed for NCL script)

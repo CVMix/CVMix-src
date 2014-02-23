@@ -942,7 +942,7 @@ contains
     integer,                        intent(in) :: ncol, nlev
 
 ! !OUTPUT PARAMETERS:
-    type (cvmix_bkgnd_params_type), intent(out) :: CVmix_bkgnd_params_put
+    type (cvmix_bkgnd_params_type), intent(inout) :: CVmix_bkgnd_params_put
 !EOP
 !BOC
 
