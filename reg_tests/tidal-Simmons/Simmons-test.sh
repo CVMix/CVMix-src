@@ -58,7 +58,7 @@ if [ -e ../../inputdata/${GRID_FILE} ]; then
   echo "Found!"
 else
   wget https://raw.github.com/CVMix/CVMix-data/master/${GRID_FILE}            \
-       --directory-prefix=../../inputdata/
+       --directory-prefix=../../inputdata/ --no-check-certificate
   if [ $? != 0 ]; then
        echo "Install wget or manually populate inputdata from"
        echo "https://github.com/CVMix/CVMix-data"
@@ -72,7 +72,7 @@ if [ -e ../../inputdata/${PHYS_FILE} ]; then
   echo "Found!"
 else
   wget https://raw.github.com/CVMix/CVMix-data/master/${PHYS_FILE}            \
-       --directory-prefix=../../inputdata/
+       --directory-prefix=../../inputdata/ --no-check-certificate
   if [ $? != 0 ]; then
        echo "Install wget or manually populate inputdata from"
        echo "https://github.com/CVMix/CVMix-data"
@@ -86,7 +86,7 @@ if [ -e ../../inputdata/${ENERGY_FILE} ]; then
   echo "Found!"
 else
   wget https://raw.github.com/CVMix/CVMix-data/master/${ENERGY_FILE}            \
-       --directory-prefix=../../inputdata/
+       --directory-prefix=../../inputdata/ --no-check-certificate
   if [ $? != 0 ]; then
        echo "Install wget or manually populate inputdata from"
        echo "https://github.com/CVMix/CVMix-data"
