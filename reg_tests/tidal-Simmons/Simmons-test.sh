@@ -44,58 +44,44 @@ if [ "${USE_NETCDF}" != "netcdf" ]; then
   exit 1
 fi
 
+CVMix=$( cd ../.. ; pwd )
+DATA_DIR=$CVMix/inputdata
+
 # Files needed to run tidal example
 GRID_FILE=gx1v6_130522.nc
 PHYS_FILE=gx1v6_physics_130523.nc
 ENERGY_FILE=tidal_energy_gx1v6_20130512.nc
 
-echo "Checking for necessary input data files in" \
-     "$( cd ../../inputdata ; pwd )..."
+# Input Data repository (currently using "svn export")
+DATA_REPO=https://github.com/CVMix/CVMix-data/trunk/
+
+echo "Checking for necessary input data files in ${DATA_DIR}..."
 echo ""
 
 echo "Looking for grid file ${GRID_FILE}..."
-if [ -e ../../inputdata/${GRID_FILE} ]; then
+if [ -e ${DATA_DIR}/${GRID_FILE} ]; then
   echo "Found!"
 else
-  wget https://raw.github.com/CVMix/CVMix-data/master/${GRID_FILE}            \
-       --directory-prefix=../../inputdata/ --no-check-certificate
-  if [ $? != 0 ]; then
-       echo "Install wget or manually populate inputdata from"
-       echo "https://github.com/CVMix/CVMix-data"
-       exit 2
-  fi
+  svn export ${DATA_REPO}/${GRID_FILE} ${DATA_DIR}
   echo "... Downloaded!"
 fi
 
 echo "Looking for physics file ${PHYS_FILE}..."
-if [ -e ../../inputdata/${PHYS_FILE} ]; then
+if [ -e ${DATA_DIR}/${PHYS_FILE} ]; then
   echo "Found!"
 else
-  wget https://raw.github.com/CVMix/CVMix-data/master/${PHYS_FILE}            \
-       --directory-prefix=../../inputdata/ --no-check-certificate
-  if [ $? != 0 ]; then
-       echo "Install wget or manually populate inputdata from"
-       echo "https://github.com/CVMix/CVMix-data"
-       exit 2
-  fi
+  svn export ${DATA_REPO}/${PHYS_FILE} ${DATA_DIR}
   echo "... Downloaded!"
 fi
 
 echo "Looking for energy map file ${ENERGY_FILE}..."
-if [ -e ../../inputdata/${ENERGY_FILE} ]; then
+if [ -e ${DATA_DIR}/${ENERGY_FILE} ]; then
   echo "Found!"
 else
-  wget https://raw.github.com/CVMix/CVMix-data/master/${ENERGY_FILE}            \
-       --directory-prefix=../../inputdata/ --no-check-certificate
-  if [ $? != 0 ]; then
-       echo "Install wget or manually populate inputdata from"
-       echo "https://github.com/CVMix/CVMix-data"
-       exit 2
-  fi
+  svn export ${DATA_REPO}/${ENERGY_FILE} ${DATA_DIR}
   echo "... Downloaded!"
 fi
 
-CVMix=$( cd ../.. ; pwd )
 make -f $CVMix/src/Makefile CVMIX_ROOT=$CVMix ${USE_NETCDF}
 if [ $? != 0 ]; then
   echo "Build error!"
