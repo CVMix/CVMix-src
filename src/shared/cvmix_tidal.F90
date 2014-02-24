@@ -38,6 +38,7 @@
   public :: cvmix_get_tidal_str
 
   interface cvmix_put_tidal
+    module procedure cvmix_put_tidal_int
     module procedure cvmix_put_tidal_real
     module procedure cvmix_put_tidal_str
   end interface cvmix_put_tidal
@@ -65,6 +66,8 @@
   end type cvmix_tidal_params_type
 !EOP
 
+  type(cvmix_tidal_params_type), target :: CVmix_tidal_params_saved
+
 contains
 
 !BOP
@@ -72,7 +75,7 @@ contains
 ! !IROUTINE: cvmix_init_tidal
 ! !INTERFACE:
 
-  subroutine cvmix_init_tidal(CVmix_tidal_params, mix_scheme, efficiency,     &
+  subroutine cvmix_init_tidal(CVmix_tidal_params_user, mix_scheme, efficiency,&
                               vertical_decay_scale, max_coefficient,          &
                               local_mixing_frac, depth_cutoff)
 
@@ -85,50 +88,76 @@ contains
 !  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
-    character(len=*),         intent(in) :: mix_scheme
-    real(cvmix_r8), optional, intent(in) :: efficiency
-    real(cvmix_r8), optional, intent(in) :: vertical_decay_scale
-    real(cvmix_r8), optional, intent(in) :: max_coefficient
-    real(cvmix_r8), optional, intent(in) :: local_mixing_frac
-    real(cvmix_r8), optional, intent(in) :: depth_cutoff
+    character(len=*), optional, intent(in) :: mix_scheme
+    real(cvmix_r8),   optional, intent(in) :: efficiency
+    real(cvmix_r8),   optional, intent(in) :: vertical_decay_scale
+    real(cvmix_r8),   optional, intent(in) :: max_coefficient
+    real(cvmix_r8),   optional, intent(in) :: local_mixing_frac
+    real(cvmix_r8),   optional, intent(in) :: depth_cutoff
 
 ! !OUTPUT PARAMETERS:
-    type(cvmix_tidal_params_type), intent(inout) :: CVmix_tidal_params
+    type(cvmix_tidal_params_type), optional, target, intent(inout) ::         &
+                                              CVmix_tidal_params_user
 !EOP
 !BOC
 
-    select case (trim(mix_scheme))
-      case ('simmons','Simmons')
-        CVmix_tidal_params%mix_scheme = trim(mix_scheme)
+    type(cvmix_tidal_params_type), pointer :: CVmix_tidal_params_out
 
+    if (present(CVmix_tidal_params_user)) then
+      CVmix_tidal_params_out => CVmix_tidal_params_user
+    else
+      CVmix_tidal_params_out => CVmix_tidal_params_saved
+    end if
+
+    if (present(mix_scheme)) then
+      call cvmix_put_tidal(CVmix_tidal_params_out, "mix_scheme",              &
+                           trim(mix_scheme))
+    else
+      call cvmix_put_tidal(CVmix_tidal_params_out, "mix_scheme", "Simmons")
+    end if
+
+    select case (trim(CVmix_tidal_params_out%mix_scheme))
+      case ('simmons','Simmons')
         ! Unitless parameters
         if (present(efficiency)) then
-          CVmix_tidal_params%efficiency = efficiency
+          call cvmix_put_tidal(CVmix_tidal_params_out, "efficiency",          &
+                               efficiency)
         else
-          CVmix_tidal_params%efficiency = 0.2_cvmix_r8
+          call cvmix_put_tidal(CVmix_tidal_params_out, "efficiency",          &
+                               0.2_cvmix_r8)
         end if
+
         if (present(local_mixing_frac)) then
-          CVmix_tidal_params%local_mixing_frac = local_mixing_frac
+          call cvmix_put_tidal(CVmix_tidal_params_out, "local_mixing_frac",   &
+                               local_mixing_frac)
         else
-          CVmix_tidal_params%local_mixing_frac = cvmix_one/real(3,cvmix_r8)
+          call cvmix_put_tidal(CVmix_tidal_params_out, "local_mixing_frac", 3)
         end if
 
         ! Parameters with units
         if (present(vertical_decay_scale)) then
-          CVmix_tidal_params%vertical_decay_scale = vertical_decay_scale
+          call cvmix_put_tidal(CVmix_tidal_params_out, "vertical_decay_scale",&
+                               vertical_decay_scale)
         else
-          CVmix_tidal_params%vertical_decay_scale = real(500,cvmix_r8)
+          call cvmix_put_tidal(CVmix_tidal_params_out, "vertical_decay_scale",&
+                               500)
         end if
+
         if (present(depth_cutoff)) then
-          CVmix_tidal_params%depth_cutoff = depth_cutoff
+          call cvmix_put_tidal(CVmix_tidal_params_out, "depth_cutoff",        &
+                               depth_cutoff)
         else
           ! Default: no cutoff depth => 0 m
-          CVmix_tidal_params%depth_cutoff = cvmix_zero
+          call cvmix_put_tidal(CVmix_tidal_params_out, "depth_cutoff",        &
+                               cvmix_zero)
         end if
+
         if (present(max_coefficient)) then
-          CVmix_tidal_params%max_coefficient = max_coefficient
+          call cvmix_put_tidal(CVmix_tidal_params_out, "max_coefficient",     &
+                               max_coefficient)
         else
-          CVmix_tidal_params%max_coefficient = 50e-4_cvmix_r8
+          call cvmix_put_tidal(CVmix_tidal_params_out, "max_coefficient",     &
+                               50e-4_cvmix_r8)
         end if
 
       case DEFAULT
@@ -147,8 +176,8 @@ contains
 ! !IROUTINE: cvmix_coeffs_tidal
 ! !INTERFACE:
 
-  subroutine cvmix_coeffs_tidal(CVmix_vars, CVmix_tidal_params, CVmix_params, &
-                                energy_flux)
+  subroutine cvmix_coeffs_tidal(CVmix_vars, CVmix_params, energy_flux,        &
+                                CVmix_tidal_params_user)
 
 ! !DESCRIPTION:
 !  Computes vertical diffusion coefficients for tidal mixing
@@ -160,7 +189,8 @@ contains
 !  only those used by entire module.
 
 ! !INPUT PARAMETERS:
-    type(cvmix_tidal_params_type),  intent(in) :: CVmix_tidal_params
+    type(cvmix_tidal_params_type),  target, optional, intent(in) ::           &
+                                            CVmix_tidal_params_user
     type(cvmix_global_params_type), intent(in) :: CVmix_params
     real(cvmix_r8),                 intent(in) :: energy_flux
 
@@ -174,6 +204,14 @@ contains
     integer        :: nlev, k
     real(cvmix_r8) :: coef, rho, buoy, z_cut
     real(cvmix_r8), allocatable, dimension(:) :: vert_dep
+
+    type(cvmix_tidal_params_type), pointer :: CVmix_tidal_params
+
+    if (present(CVmix_tidal_params_user)) then
+      CVmix_tidal_params => CVmix_tidal_params_user
+    else
+      CVmix_tidal_params => CVmix_tidal_params_saved
+    end if
 
     nlev = CVmix_vars%nlev
     rho  = CVmix_params%FreshWaterDensity
@@ -263,6 +301,37 @@ contains
 !EOC
 
   end function cvmix_compute_vert_dep
+
+!BOP
+
+! !IROUTINE: cvmix_put_tidal_real
+! !INTERFACE:
+
+  subroutine cvmix_put_tidal_int(CVmix_tidal_params, varname, val)
+
+! !DESCRIPTION:
+!  Write an integer value into a cvmix\_tidal\_params\_type variable.
+!\\
+!\\
+
+! !USES:
+!  Only those used by entire module. 
+
+! !INPUT PARAMETERS:
+    character(len=*), intent(in) :: varname
+    integer,          intent(in) :: val
+
+! !OUTPUT PARAMETERS:
+    type(cvmix_tidal_params_type), intent(inout) :: CVmix_tidal_params
+
+!EOP
+!BOC
+
+    call cvmix_put_tidal(CVmix_tidal_params, varname, real(val,cvmix_r8))
+
+!EOC
+
+  end subroutine cvmix_put_tidal_int
 
 !BOP
 

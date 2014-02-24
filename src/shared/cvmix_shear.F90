@@ -140,14 +140,14 @@
       CVmix_shear_params_out => CVmix_shear_params_saved
     end if
 
-    if (.not.present(mix_scheme)) then
-      call cvmix_put_shear(CVmix_shear_params_out, "mix_scheme", "KPP")
-    else
+    if (present(mix_scheme)) then
       call cvmix_put_shear(CVmix_shear_params_out, "mix_scheme",              &
                            trim(mix_scheme))
+    else
+      call cvmix_put_shear(CVmix_shear_params_out, "mix_scheme", "KPP")
     end if
 
-    select case (CVmix_shear_params_out%mix_scheme)
+    select case (trim(CVmix_shear_params_out%mix_scheme))
       case ('PP')
         if (present(PP_nu_zero)) then
           call cvmix_put_shear(CVmix_shear_params_out, "PP_nu_zero",          &

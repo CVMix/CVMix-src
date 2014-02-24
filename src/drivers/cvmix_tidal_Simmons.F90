@@ -12,23 +12,23 @@ Subroutine cvmix_tidal_driver()
 
 ! !USES:
 
-  use cvmix_kinds_and_types, only : cvmix_r8,                   &
-                                    cvmix_strlen,               &
-                                    cvmix_data_type,            &
+  use cvmix_kinds_and_types, only : cvmix_r8,                                 &
+                                    cvmix_strlen,                             &
+                                    cvmix_data_type,                          &
                                     cvmix_global_params_type
-  use cvmix_tidal,           only : cvmix_init_tidal,           &
-                                    cvmix_coeffs_tidal,         &
-                                    cvmix_tidal_params_type,    &
-                                    cvmix_get_tidal_str,        &
+  use cvmix_tidal,           only : cvmix_init_tidal,                         &
+                                    cvmix_coeffs_tidal,                       &
+                                    cvmix_tidal_params_type,                  &
+                                    cvmix_get_tidal_str,                      &
                                     cvmix_get_tidal_real
   use cvmix_put_get,         only : cvmix_put
-  use cvmix_io,              only : cvmix_io_open,              &
-                                    cvmix_input_read,           &
+  use cvmix_io,              only : cvmix_io_open,                            &
+                                    cvmix_input_read,                         &
 #ifdef _NETCDF
-                                    cvmix_input_get_netcdf_dim, &
+                                    cvmix_input_get_netcdf_dim,               &
 #endif
-                                    cvmix_output_write,         &
-                                    cvmix_output_write_att,     &
+                                    cvmix_output_write,                       &
+                                    cvmix_output_write_att,                   &
                                     cvmix_io_close
 
   Implicit None
@@ -47,13 +47,13 @@ Subroutine cvmix_tidal_driver()
   integer :: fid
 
   ! Namelist variables
-  character(len=cvmix_strlen) :: grid_file, physics_file, energy_flux_file, &
+  character(len=cvmix_strlen) :: grid_file, physics_file, energy_flux_file,   &
                                  energy_flux_var
   integer :: lon_out, lat_out
 
   ! Local variables
   real(cvmix_r8), dimension(:,:,:), allocatable :: buoy
-  real(cvmix_r8), dimension(:,:),   allocatable :: ocn_depth, energy_flux, &
+  real(cvmix_r8), dimension(:,:),   allocatable :: ocn_depth, energy_flux,    &
                                                    lat, lon
   integer,        dimension(:,:),   allocatable :: ocn_levels
   real(cvmix_r8), dimension(:),     allocatable :: zw_iface, zt
@@ -143,19 +143,25 @@ Subroutine cvmix_tidal_driver()
   end do
 
   ! Initialize tidal mixing parameters
-  call cvmix_init_tidal(CVmix_Simmons_params, 'Simmons',        &
-                        local_mixing_frac=0.33_cvmix_r8,        &
+  call cvmix_init_tidal(CVMix_tidal_params_user=CVmix_Simmons_params,         &
+                        local_mixing_frac=0.33_cvmix_r8,                      &
                         max_coefficient=0.01_cvmix_r8)
 
   ! Print parameter values to screen
   print*, "Namelist variables"
   print*, "------------------"
-  print*, "mix_scheme = ", trim(cvmix_get_tidal_str(CVmix_Simmons_params,'mix_scheme'))
-  print*, "efficiency = ", cvmix_get_tidal_real(CVmix_Simmons_params,'efficiency')
-  print*, "vertical_decay_scale = ", cvmix_get_tidal_real(CVmix_Simmons_params,'vertical_decay_scale')
-  print*, "max_coefficient = ", cvmix_get_tidal_real(CVmix_Simmons_params,'max_coefficient')
-  print*, "local_mixing_frac = ", cvmix_get_tidal_real(CVmix_Simmons_params,'local_mixing_frac')
-  print*, "depth_cutoff = ", cvmix_get_tidal_real(CVmix_Simmons_params,'depth_cutoff')
+  print*, "mix_scheme = ",                                                    &
+          trim(cvmix_get_tidal_str(CVmix_Simmons_params,'mix_scheme'))
+  print*, "efficiency = ",                                                    &
+          cvmix_get_tidal_real(CVmix_Simmons_params,'efficiency')
+  print*, "vertical_decay_scale = ",                                          &
+          cvmix_get_tidal_real(CVmix_Simmons_params,'vertical_decay_scale')
+  print*, "max_coefficient = ",                                               &
+          cvmix_get_tidal_real(CVmix_Simmons_params,'max_coefficient')
+  print*, "local_mixing_frac = ",                                             &
+          cvmix_get_tidal_real(CVmix_Simmons_params,'local_mixing_frac')
+  print*, "depth_cutoff = ",                                                  &
+          cvmix_get_tidal_real(CVmix_Simmons_params,'depth_cutoff')
 
   ! For starters, using column from 353.9634 E, 58.84838 N)
   ! That's i=35, j=345 (compare result to KVMIX(0, :, 344, 34) in NCL)
@@ -179,8 +185,8 @@ Subroutine cvmix_tidal_driver()
         ! Point CVmix_vars values to memory allocated above
         CVmix_vars(i,j)%Tdiff_iface => Tdiff(i,j,1:nlev+1)
 
-        call cvmix_coeffs_tidal(CVmix_vars(i,j), CVmix_Simmons_params, &
-                                CVmix_params, energy_flux(i,j))
+        call cvmix_coeffs_tidal(CVmix_vars(i,j), CVmix_params,                &
+                                energy_flux(i,j), CVmix_Simmons_params)
 
       end if
     end do
@@ -197,7 +203,7 @@ Subroutine cvmix_tidal_driver()
     end do
     this_lat = CVmix_vars(lon_out, lat_out)%lat
     call cvmix_io_open(fid, "single_col.nc", "nc")
-    call cvmix_output_write(fid, CVmix_vars(lon_out, lat_out), &
+    call cvmix_output_write(fid, CVmix_vars(lon_out, lat_out),                &
                             (/"zw_iface", "Tdiff   "/))
     if (this_lon.ge.0) then
       write(lonstr,"(F6.2,1X,A)") this_lon, "E"
@@ -214,10 +220,10 @@ Subroutine cvmix_tidal_driver()
     call cvmix_output_write_att(fid, "column_lat", latstr)
 
     ! Variable Attributes
-    call cvmix_output_write_att(fid, "long_name", "tracer diffusivity", &
+    call cvmix_output_write_att(fid, "long_name", "tracer diffusivity",       &
                                 var_name="Tdiff")
     call cvmix_output_write_att(fid, "units", "m^2/s", var_name="Tdiff")
-    call cvmix_output_write_att(fid, "long_name", "height at interface", &
+    call cvmix_output_write_att(fid, "long_name", "height at interface",      &
                                 var_name="zw")
     call cvmix_output_write_att(fid, "positive", "up", var_name="zw")
     call cvmix_output_write_att(fid, "units", "m", var_name="zw")
