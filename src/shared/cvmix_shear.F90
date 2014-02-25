@@ -129,6 +129,7 @@
 ! !OUTPUT PARAMETERS:
     type(cvmix_shear_params_type), optional, target, intent(inout) ::         &
                                               CVmix_shear_params_user
+
 !EOP
 !BOC
 
@@ -141,55 +142,55 @@
     end if
 
     if (present(mix_scheme)) then
-      call cvmix_put_shear(CVmix_shear_params_out, "mix_scheme",              &
-                           trim(mix_scheme))
+      call cvmix_put_shear("mix_scheme", trim(mix_scheme),                    &
+                           CVmix_shear_params_user)
     else
-      call cvmix_put_shear(CVmix_shear_params_out, "mix_scheme", "KPP")
+      call cvmix_put_shear("mix_scheme", "KPP", CVmix_shear_params_user)
     end if
 
     select case (trim(CVmix_shear_params_out%mix_scheme))
       case ('PP')
         if (present(PP_nu_zero)) then
-          call cvmix_put_shear(CVmix_shear_params_out, "PP_nu_zero",          &
-                               PP_nu_zero)
+          call cvmix_put_shear("PP_nu_zero", PP_nu_zero,                      &
+                               CVmix_shear_params_user)
         else
-          call cvmix_put_shear(CVmix_shear_params_out, "PP_nu_zero",          &
-                               0.01_cvmix_r8)
+          call cvmix_put_shear("PP_nu_zero", 0.01_cvmix_r8,                   &
+                               CVmix_shear_params_user)
         end if
 
         if (present(PP_alpha)) then
-          call cvmix_put_shear(CVmix_shear_params_out, "PP_alpha", PP_alpha)
+          call cvmix_put_shear("PP_alpha", PP_alpha, CVmix_shear_params_user)
         else
-          call cvmix_put_shear(CVmix_shear_params_out, "PP_alpha", 5)
+          call cvmix_put_shear("PP_alpha", 5, CVmix_shear_params_user)
         end if
 
         if (present(PP_exp)) then
-          call cvmix_put_shear(CVmix_shear_params_out, "PP_exp", PP_exp)
+          call cvmix_put_shear("PP_exp", PP_exp, CVmix_shear_params_user)
         else
-          call cvmix_put_shear(CVmix_shear_params_out, "PP_exp", 2)
+          call cvmix_put_shear("PP_exp", 2, CVmix_shear_params_user)
         end if
 
       case ('KPP')
         if (present(KPP_nu_zero)) then
-          call cvmix_put_shear(CVmix_shear_params_out, "KPP_nu_zero",         &
-                               KPP_nu_zero)
+          call cvmix_put_shear("KPP_nu_zero", KPP_nu_zero,                    &
+                               CVmix_shear_params_user)
         else
-          call cvmix_put_shear(CVmix_shear_params_out, "KPP_nu_zero",         &
-                               50e-4_cvmix_r8)
+          call cvmix_put_shear("KPP_nu_zero", 50e-4_cvmix_r8,                 &
+                               CVmix_shear_params_user)
         end if
 
         if (present(KPP_Ri_zero)) then
-          call cvmix_put_shear(CVmix_shear_params_out, "KPP_Ri_zero",         &
-                               KPP_Ri_zero)
+          call cvmix_put_shear("KPP_Ri_zero", KPP_Ri_zero,                    &
+                               CVmix_shear_params_user)
         else
-          call cvmix_put_shear(CVmix_shear_params_out, "KPP_Ri_zero",         &
-                               0.7_cvmix_r8)
+          call cvmix_put_shear("KPP_Ri_zero", 0.7_cvmix_r8,                   &
+                               CVmix_shear_params_user)
         end if
 
         if (present(KPP_exp)) then
-          call cvmix_put_shear(CVmix_shear_params_out, "KPP_exp", KPP_exp)
+          call cvmix_put_shear("KPP_exp", KPP_exp, CVmix_shear_params_user)
         else
-          call cvmix_put_shear(CVmix_shear_params_out, "KPP_exp", 3)
+          call cvmix_put_shear("KPP_exp", 3, CVmix_shear_params_user)
         end if
 
       case DEFAULT
@@ -323,7 +324,7 @@
 ! !IROUTINE: cvmix_put_shear_int
 ! !INTERFACE:
 
-  subroutine cvmix_put_shear_int(CVmix_shear_params_put, varname, val)
+  subroutine cvmix_put_shear_int(varname, val, CVmix_shear_params_user)
 
 ! !DESCRIPTION:
 !  Write an integer value into a cvmix\_shear\_params\_type variable.
@@ -338,11 +339,13 @@
     integer,          intent(in) :: val
 
 ! !OUTPUT PARAMETERS:
-    type(cvmix_shear_params_type), intent(inout) :: CVmix_shear_params_put
+    type(cvmix_shear_params_type), optional, target, intent(inout) ::         &
+                                              CVmix_shear_params_user
+
 !EOP
 !BOC
 
-    call cvmix_put_shear(CVmix_shear_params_put, varname, real(val,cvmix_r8))
+    call cvmix_put_shear(varname, real(val,cvmix_r8), CVmix_shear_params_user)
 
 !EOC
 
@@ -353,7 +356,7 @@
 ! !IROUTINE: cvmix_put_shear_real
 ! !INTERFACE:
 
-  subroutine cvmix_put_shear_real(CVmix_shear_params_put, varname, val)
+  subroutine cvmix_put_shear_real(varname, val, CVmix_shear_params_user)
 
 ! !DESCRIPTION:
 !  Write a real value into a cvmix\_shear\_params\_type variable.
@@ -368,23 +371,33 @@
     real(cvmix_r8),   intent(in) :: val
 
 ! !OUTPUT PARAMETERS:
-    type(cvmix_shear_params_type), intent(inout) :: CVmix_shear_params_put
+    type(cvmix_shear_params_type), optional, target, intent(inout) ::         &
+                                              CVmix_shear_params_user
+
 !EOP
 !BOC
 
+    type(cvmix_shear_params_type), pointer :: CVmix_shear_params_out
+
+    if (present(CVmix_shear_params_user)) then
+      CVmix_shear_params_out => CVmix_shear_params_user
+    else
+      CVmix_shear_params_out => CVmix_shear_params_saved
+    end if
+
     select case (trim(varname))
       case ('PP_nu_zero')
-        CVmix_shear_params_put%PP_nu_zero = val
+        CVmix_shear_params_out%PP_nu_zero = val
       case ('PP_alpha')
-        CVmix_shear_params_put%PP_alpha = val
+        CVmix_shear_params_out%PP_alpha = val
       case ('PP_exp')
-        CVmix_shear_params_put%PP_exp = val
+        CVmix_shear_params_out%PP_exp = val
       case ('KPP_nu_zero')
-        CVmix_shear_params_put%KPP_nu_zero = val
+        CVmix_shear_params_out%KPP_nu_zero = val
       case ('KPP_Ri_zero')
-        CVmix_shear_params_put%KPP_Ri_zero = val
+        CVmix_shear_params_out%KPP_Ri_zero = val
       case ('KPP_exp')
-        CVmix_shear_params_put%KPP_exp = val
+        CVmix_shear_params_out%KPP_exp = val
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
         stop 1
@@ -400,7 +413,7 @@
 ! !IROUTINE: cvmix_put_shear_str
 ! !INTERFACE:
 
-  subroutine cvmix_put_shear_str(CVmix_shear_params_put, varname, val)
+  subroutine cvmix_put_shear_str(varname, val, CVmix_shear_params_user)
 
 ! !DESCRIPTION:
 !  Write a string into a cvmix\_shear\_params\_type variable.
@@ -415,13 +428,23 @@
     character(len=*), intent(in) :: val
 
 ! !OUTPUT PARAMETERS:
-    type(cvmix_shear_params_type), intent(inout) :: CVmix_shear_params_put
+    type(cvmix_shear_params_type), optional, target, intent(inout) ::         &
+                                              CVmix_shear_params_user
+
 !EOP
 !BOC
 
+    type(cvmix_shear_params_type), pointer :: CVmix_shear_params_out
+
+    if (present(CVmix_shear_params_user)) then
+      CVmix_shear_params_out => CVmix_shear_params_user
+    else
+      CVmix_shear_params_out => CVmix_shear_params_saved
+    end if
+
     select case (trim(varname))
       case ('mix_scheme')
-        CVmix_shear_params_put%mix_scheme = val
+        CVmix_shear_params_out%mix_scheme = val
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
         stop 1
