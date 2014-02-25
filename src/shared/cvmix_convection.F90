@@ -77,8 +77,8 @@ contains
 !  Only those used by entire module. 
 
 ! !OUTPUT PARAMETERS:
-    type (cvmix_conv_params_type), optional, target, intent(out) ::           &
-                                                        CVmix_conv_params_user
+    type (cvmix_conv_params_type), optional, intent(inout) ::                 &
+                                       CVmix_conv_params_user
 
 ! !INPUT PARAMETERS:
     real(cvmix_r8), intent(in) :: &
@@ -86,33 +86,26 @@ contains
       convect_visc        ! viscosity to parameterize convection
     logical,        intent(in), optional :: lBruntVaisala ! True => B-V mixing
     real(cvmix_r8), intent(in), optional :: BVsqr_convect ! B-V parameter
+
 !EOP
 !BOC
 
-    type (cvmix_conv_params_type), pointer :: CVmix_conv_params_out
-
-    if (present(CVmix_conv_params_user)) then
-      CVmix_conv_params_out => CVmix_conv_params_user
-    else
-      CVmix_conv_params_out => CVmix_conv_params_saved
-    end if
-
     ! Set convect_diff and convect_visc in conv_params_type
-    call cvmix_put_conv(CVmix_conv_params_out, "convect_diff", convect_diff)
-    call cvmix_put_conv(CVmix_conv_params_out, "convect_visc", convect_visc)
+    call cvmix_put_conv("convect_diff", convect_diff, CVmix_conv_params_user)
+    call cvmix_put_conv("convect_visc", convect_visc, CVmix_conv_params_user)
 
     if (present(lBruntVaisala)) then
-      call cvmix_put_conv(CVmix_conv_params_out, "lBruntVaisala",             &
-                          lBruntVaisala)
+      call cvmix_put_conv("lBruntVaisala", lBruntVaisala,                     &
+                          CVmix_conv_params_user)
     else
-      call cvmix_put_conv(CVmix_conv_params_out, "lBruntVaisala", .false.)
+      call cvmix_put_conv("lBruntVaisala", .false., CVmix_conv_params_user)
     end if
 
     if (present(BVsqr_convect)) then
-      call cvmix_put_conv(CVmix_conv_params_out, "BVsqr_convect",             &
-                          BVsqr_convect)
+      call cvmix_put_conv("BVsqr_convect", BVsqr_convect,                     &
+                          CVmix_conv_params_user)
     else
-      call cvmix_put_conv(CVmix_conv_params_out, "BVsqr_convect", cvmix_zero)
+      call cvmix_put_conv("BVsqr_convect", cvmix_zero, CVmix_conv_params_user)
     end if
 
 !EOC
@@ -137,7 +130,7 @@ contains
 ! !INPUT PARAMETERS:
 
     type (cvmix_conv_params_type), optional, target, intent(in)  ::           &
-                                                     CVmix_conv_params_user
+                                             CVmix_conv_params_user
 
 ! !INPUT/OUTPUT PARAMETERS:
     type (cvmix_data_type), intent(inout) :: CVmix_vars
@@ -244,7 +237,7 @@ contains
 ! !IROUTINE: cvmix_put_conv_real
 ! !INTERFACE:
 
-  subroutine cvmix_put_conv_real(CVmix_conv_params_put, varname, val)
+  subroutine cvmix_put_conv_real(varname, val, CVmix_conv_params_user)
 
 ! !DESCRIPTION:
 !  Write a real value into a cvmix\_conv\_params\_type variable.
@@ -259,17 +252,27 @@ contains
     real(cvmix_r8),   intent(in) :: val
 
 ! !OUTPUT PARAMETERS:
-    type(cvmix_conv_params_type), intent(inout) :: CVmix_conv_params_put
+    type (cvmix_conv_params_type), optional, target, intent(inout) ::         &
+                                               CVmix_conv_params_user
+
 !EOP
 !BOC
 
+    type (cvmix_conv_params_type), pointer :: CVmix_conv_params_out
+
+    if (present(CVmix_conv_params_user)) then
+      CVmix_conv_params_out => CVmix_conv_params_user
+    else
+      CVmix_conv_params_out => CVmix_conv_params_saved
+    end if
+
     select case (trim(varname))
       case ('convect_diff')
-        CVmix_conv_params_put%convect_diff = val
+        CVmix_conv_params_out%convect_diff = val
       case ('convect_visc')
-        CVmix_conv_params_put%convect_visc = val
+        CVmix_conv_params_out%convect_visc = val
       case ('BVsqr_convect')
-        CVmix_conv_params_put%BVsqr_convect = val
+        CVmix_conv_params_out%BVsqr_convect = val
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
         stop 1
@@ -285,7 +288,7 @@ contains
 ! !IROUTINE: cvmix_put_conv_logical
 ! !INTERFACE:
 
-  subroutine cvmix_put_conv_logical(CVmix_conv_params_put, varname, val)
+  subroutine cvmix_put_conv_logical(varname, val, CVmix_conv_params_user)
 
 ! !DESCRIPTION:
 !  Write a Boolean value into a cvmix\_conv\_params\_type variable.
@@ -300,13 +303,23 @@ contains
     logical,          intent(in) :: val
 
 ! !OUTPUT PARAMETERS:
-    type(cvmix_conv_params_type), intent(inout) :: CVmix_conv_params_put
+    type (cvmix_conv_params_type), optional, target, intent(inout) ::         &
+                                               CVmix_conv_params_user
+
 !EOP
 !BOC
 
+    type (cvmix_conv_params_type), pointer :: CVmix_conv_params_out
+
+    if (present(CVmix_conv_params_user)) then
+      CVmix_conv_params_out => CVmix_conv_params_user
+    else
+      CVmix_conv_params_out => CVmix_conv_params_saved
+    end if
+
     select case (trim(varname))
       case ('lBruntVaisala')
-        CVmix_conv_params_put%lBruntVaisala = val
+        CVmix_conv_params_out%lBruntVaisala = val
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
         stop 1
