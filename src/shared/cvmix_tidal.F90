@@ -202,7 +202,7 @@ contains
 
     ! Local variables
     integer        :: nlev, k
-    real(cvmix_r8) :: coef, rho, buoy, z_cut
+    real(cvmix_r8) :: coef, rho, Nsqr, z_cut
     real(cvmix_r8), allocatable, dimension(:) :: vert_dep
 
     type(cvmix_tidal_params_type), pointer :: CVmix_tidal_params
@@ -226,10 +226,10 @@ contains
         call cvmix_put(CVmix_vars, "Tdiff", cvmix_zero)
         if (CVmix_vars%OceanDepth.ge.CVmix_tidal_params%depth_cutoff) then
           do k=1, nlev+1
-            buoy = CVmix_vars%SqrBuoyancyFreq_iface(k)
+            Nsqr = CVmix_vars%SqrBuoyancyFreq_iface(k)
             z_cut = CVmix_tidal_params%depth_cutoff
-            if (buoy.gt.cvmix_zero) &
-              CVmix_vars%Tdiff_iface(k) = coef*vert_dep(k)/(rho*buoy)
+            if (Nsqr.gt.cvmix_zero) &
+              CVmix_vars%Tdiff_iface(k) = coef*vert_dep(k)/(rho*Nsqr)
             if (CVmix_vars%Tdiff_iface(k).gt.CVmix_tidal_params%max_coefficient) &
               CVmix_vars%Tdiff_iface(k) = CVmix_tidal_params%max_coefficient
           end do

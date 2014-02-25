@@ -7,16 +7,20 @@ module cvmix_convection
 ! !DESCRIPTION:
 !  This module contains routines to initialize the derived types needed for
 !  specifying mixing coefficients to parameterize vertical convective mixing,
-!  and to set the viscosity and diffusivity in gravitationally unstable portions
-!  of the water column.
+!  and to set the viscosity and diffusivity in gravitationally unstable
+!  portions of the water column.
 !\\
 !\\
 
 ! !USES:
-   use cvmix_kinds_and_types, only : cvmix_r8,        &
-                                     cvmix_zero,      &
-                                     cvmix_one,       &
-                                     cvmix_data_type
+  use cvmix_kinds_and_types, only : cvmix_r8,                                 &
+                                    cvmix_zero,                               &
+                                    cvmix_one,                                &
+                                    cvmix_data_type,                          &
+                                    CVMIX_OVERWRITE_OLD_VAL,                  &
+                                    CVMIX_SUM_OLD_AND_NEW_VALS,               &
+                                    CVMIX_MAX_OLD_AND_NEW_VALS
+
 !EOP
 
   implicit none
@@ -27,15 +31,20 @@ module cvmix_convection
 
 ! !PUBLIC MEMBER FUNCTIONS:
 
-   public :: cvmix_init_conv
-   public :: cvmix_coeffs_conv
-   public :: cvmix_put_conv
-   public :: cvmix_get_conv_real
+  public :: cvmix_init_conv
+  public :: cvmix_coeffs_conv
+  public :: cvmix_put_conv
+  public :: cvmix_get_conv_real
 
-   interface cvmix_put_conv
-     module procedure cvmix_put_conv_real
-     module procedure cvmix_put_conv_logical
-   end interface cvmix_put_conv
+  interface cvmix_coeffs_conv
+    module procedure cvmix_coeffs_conv_low
+    module procedure cvmix_coeffs_conv_wrap
+  end interface cvmix_coeffs_conv
+
+  interface cvmix_put_conv
+    module procedure cvmix_put_conv_real
+    module procedure cvmix_put_conv_logical
+  end interface cvmix_put_conv
 
 ! !PUBLIC TYPES:
 
@@ -43,15 +52,17 @@ module cvmix_convection
   ! mixing.
   type, public :: cvmix_conv_params_type
     private
-    ! Convective diff
-    ! diffusivity coefficient used in convective regime
-    real(cvmix_r8) :: convect_diff ! units: m^2/s
-    ! viscosity coefficient used in convective regime
-    real(cvmix_r8) :: convect_visc ! units: m^2/s
-    logical        :: lBruntVaisala
-    ! Threshold for squared buoyancy frequency needed to trigger Brunt-Vaisala
-    ! parameterization
-    real(cvmix_r8) :: BVsqr_convect ! units: s^-2
+      ! Convective diff
+      ! diffusivity coefficient used in convective regime
+        real(cvmix_r8) :: convect_diff ! units: m^2/s
+      ! viscosity coefficient used in convective regime
+      real(cvmix_r8) :: convect_visc ! units: m^2/s
+      logical        :: lBruntVaisala
+      ! Threshold for squared buoyancy frequency needed to trigger
+      ! Brunt-Vaisala parameterization
+      real(cvmix_r8) :: BVsqr_convect ! units: s^-2
+      ! Flag for what to do with old values of CVmix_vars%[MTS]diff
+      integer :: handle_old_vals
   end type cvmix_conv_params_type
 
 !EOP
@@ -114,10 +125,10 @@ contains
 
 !BOP
 
-! !IROUTINE: cvmix_coeffs_conv
+! !IROUTINE: cvmix_coeffs_conv_wrap
 ! !INTERFACE:
 
-  subroutine cvmix_coeffs_conv(CVmix_vars, CVmix_conv_params_user)
+  subroutine cvmix_coeffs_conv_wrap(CVmix_vars, CVmix_conv_params_user)
 
 ! !DESCRIPTION:
 !  Computes vertical diffusion coefficients for convective mixing.
@@ -144,9 +155,8 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    real(cvmix_r8) :: vvconv, wgt
-    integer        :: kw  ! vertical level index 
-
+    real(cvmix_r8), dimension(:), allocatable :: new_Mdiff, new_Tdiff
+    integer :: nlev, kw
     type (cvmix_conv_params_type), pointer :: CVmix_conv_params_in
 
     if (present(CVmix_conv_params_user)) then
@@ -154,6 +164,87 @@ contains
     else
       CVmix_conv_params_in => CVmix_conv_params_saved
     end if
+    nlev = CVmix_vars%nlev
+    allocate(new_Mdiff(nlev+1), new_Tdiff(nlev+1))
+
+    call cvmix_coeffs_conv(new_Mdiff, new_Tdiff,                              &
+                           CVmix_vars%SqrBuoyancyFreq_iface,                  &
+                           CVmix_vars%WaterDensity_cntr,                      &
+                           CVmix_vars%AdiabWaterDensity_cntr,                 &
+                           CVmix_conv_params_user)
+
+    select case (CVmix_conv_params_in%handle_old_vals)
+      case (CVMIX_SUM_OLD_AND_NEW_VALS)
+        call cvmix_put(CVmix_vars,"Mdiff", new_Mdiff + CVmix_vars%Mdiff_iface)
+        call cvmix_put(CVmix_vars,"Tdiff", new_Tdiff + CVmix_vars%Tdiff_iface)
+      case (CVMIX_MAX_OLD_AND_NEW_VALS)
+        do kw=1,nlev+1
+          CVmix_vars%Mdiff_iface(kw) = max(CVmix_vars%Mdiff_iface(kw),        &
+                                           new_Mdiff(kw))
+          CVmix_vars%Tdiff_iface(kw) = max(CVmix_vars%Tdiff_iface(kw),        &
+                                           new_Tdiff(kw))
+        end do
+      case (CVMIX_OVERWRITE_OLD_VAL)
+        call cvmix_put(CVmix_vars,"Mdiff", new_Mdiff)
+        call cvmix_put(CVmix_vars,"Tdiff", new_Tdiff)
+      case DEFAULT
+        print*, "ERROR: do not know how to handle old values!"
+        stop 1
+    end select
+
+    deallocate(new_Mdiff, new_Tdiff)
+
+!EOC
+
+  end subroutine cvmix_coeffs_conv_wrap
+!BOP
+
+! !IROUTINE: cvmix_coeffs_conv_low
+! !INTERFACE:
+
+  subroutine cvmix_coeffs_conv_low(Mdiff_out, Tdiff_out, Nsqr, dens,          &
+                                   dens_lwr, CVmix_conv_params_user)
+
+! !DESCRIPTION:
+!  Computes vertical diffusion coefficients for convective mixing.
+!\\
+!\\
+
+! !USES:
+!  Only those used by entire module. 
+
+! !INPUT PARAMETERS:
+
+    ! nlev+1
+    real(cvmix_r8), dimension(:), intent(in) :: Nsqr
+    ! nlev
+    real(cvmix_r8), dimension(:), intent(in) :: dens, dens_lwr
+    type (cvmix_conv_params_type), optional, target, intent(in)  ::           &
+                                             CVmix_conv_params_user
+
+! !INPUT/OUTPUT PARAMETERS:
+    ! nlev+1
+    real(cvmix_r8), dimension(:), intent(inout) :: Mdiff_out, Tdiff_out
+
+!EOP
+!BOC
+
+!-----------------------------------------------------------------------
+!
+!  local variables
+!
+!-----------------------------------------------------------------------
+
+    real(cvmix_r8) :: vvconv, wgt
+    integer        :: nlev, kw
+    type (cvmix_conv_params_type), pointer :: CVmix_conv_params_in
+
+    if (present(CVmix_conv_params_user)) then
+      CVmix_conv_params_in => CVmix_conv_params_user
+    else
+      CVmix_conv_params_in => CVmix_conv_params_saved
+    end if
+    nlev = size(dens)
 
 !-----------------------------------------------------------------------
 !
@@ -177,60 +268,61 @@ contains
 
       ! Compute wgt
       if (CVmix_conv_params_in%BVsqr_convect.lt.0) then
-        do kw=1,CVmix_vars%nlev
+        do kw=1, nlev
           wgt = cvmix_zero
-          if (CVmix_vars%SqrBuoyancyFreq_iface(kw).le.0) then
-            if (CVmix_vars%SqrBuoyancyFreq_iface(kw).gt.                      &
-                CVmix_conv_params_in%BVsqr_convect) then
-              wgt = cvmix_one - CVmix_vars%SqrBuoyancyFreq_iface(kw) /        &
-                                CVmix_conv_params_in%BVsqr_convect
+          if (Nsqr(kw).le.0) then
+            if (Nsqr(kw).gt.CVmix_conv_params_in%BVsqr_convect) then
+              wgt = cvmix_one - Nsqr(kw) / CVmix_conv_params_in%BVsqr_convect
               wgt = (cvmix_one - wgt**2)**3
             else
               wgt = cvmix_one
             end if
           end if
-          CVmix_vars%Mdiff_iface(kw) = wgt*cvmix_get_conv_real('convect_visc',&
-                                       CVmix_conv_params_in)
-          CVmix_vars%Tdiff_iface(kw) = wgt*cvmix_get_conv_real('convect_diff',&
-                                       CVmix_conv_params_in)
+          Mdiff_out(kw) = wgt*cvmix_get_conv_real('convect_visc',             &
+                                                  CVmix_conv_params_in)
+          Tdiff_out(kw) = wgt*cvmix_get_conv_real('convect_diff',             &
+                                                  CVmix_conv_params_in)
         end do
       else ! BVsqr_convect >= 0 => step function
-        do kw=1,CVmix_vars%nlev-1
-          if (CVmix_vars%SqrBuoyancyFreq_iface(kw).le.0) then
-            CVmix_vars%Mdiff_iface(kw) = cvmix_get_conv_real('convect_visc', &
-                                         CVmix_conv_params_in)
-            CVmix_vars%Tdiff_iface(kw) = cvmix_get_conv_real('convect_diff', &
-                                         CVmix_conv_params_in)
+        do kw=1,nlev-1
+          if (Nsqr(kw).le.0) then
+            Mdiff_out(kw) = cvmix_get_conv_real('convect_visc',               &
+                                                CVmix_conv_params_in)
+            Tdiff_out(kw) = cvmix_get_conv_real('convect_diff',               &
+                                                CVmix_conv_params_in)
           else
-            CVmix_vars%Mdiff_iface(kw) = cvmix_zero
-            CVmix_vars%Tdiff_iface(kw) = cvmix_zero
+            Mdiff_out(kw) = cvmix_zero
+            Tdiff_out(kw) = cvmix_zero
           end if
         end do
+        Mdiff_out(nlev) = cvmix_zero
+        Tdiff_out(nlev) = cvmix_zero
       end if
-      CVmix_vars%Mdiff_iface(CVmix_vars%nlev+1) = cvmix_zero
-      CVmix_vars%Tdiff_iface(CVmix_vars%nlev+1) = cvmix_zero
+      Mdiff_out(nlev+1) = cvmix_zero
+      Tdiff_out(nlev+1) = cvmix_zero
     else
       ! Default convection mixing based on density
-      do kw=1,CVmix_vars%nlev-1
-        if (CVmix_conv_params_in%convect_visc.ne.0_cvmix_r8) then
+      do kw=1,nlev-1
+        if (CVmix_conv_params_in%convect_visc.ne.cvmix_zero) then
            vvconv = cvmix_get_conv_real('convect_visc', CVmix_conv_params_in)
         else
           ! convection only affects tracers
-          vvconv = CVmix_vars%Mdiff_iface(kw)
+          vvconv = Mdiff_out(kw)
         end if
 
-        if (CVmix_vars%WaterDensity_cntr(kw).gt.                              &
-            CVmix_vars%AdiabWaterDensity_cntr(kw)) then
-          CVmix_vars%Mdiff_iface(kw+1) = vvconv
-          CVmix_vars%Tdiff_iface(kw+1) = cvmix_get_conv_real('convect_diff',  &
-                                         CVmix_conv_params_in)
+!        if (CVmix_vars%WaterDensity_cntr(kw).gt.                              &
+!            CVmix_vars%AdiabWaterDensity_cntr(kw)) then
+        if (dens(kw).gt.dens_lwr(kw)) then
+          Mdiff_out(kw+1) = vvconv
+          Tdiff_out(kw+1) = cvmix_get_conv_real('convect_diff',               &
+                                                CVmix_conv_params_in)
         end if
       end do
     end if
 
 !EOC
 
-  end subroutine cvmix_coeffs_conv
+  end subroutine cvmix_coeffs_conv_low
 
 !BOP
 

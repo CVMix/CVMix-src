@@ -15,16 +15,17 @@ module cvmix_background
 
 ! !USES:
 
-  use cvmix_kinds_and_types, only : cvmix_PI,                   &
-                                    cvmix_r8,                   &
-                                    cvmix_strlen,               &
-                                    cvmix_zero,                 &
-                                    cvmix_data_type,            &
-                                    cvmix_global_params_type,   &
-                                    CVMIX_OVERWRITE_OLD_VAL,    &
-                                    CVMIX_SUM_OLD_AND_NEW_VALS, &
+  use cvmix_kinds_and_types, only : cvmix_PI,                                 &
+                                    cvmix_r8,                                 &
+                                    cvmix_strlen,                             &
+                                    cvmix_zero,                               &
+                                    cvmix_data_type,                          &
+                                    cvmix_global_params_type,                 &
+                                    CVMIX_OVERWRITE_OLD_VAL,                  &
+                                    CVMIX_SUM_OLD_AND_NEW_VALS,               &
                                     CVMIX_MAX_OLD_AND_NEW_VALS
   use cvmix_put_get,         only : cvmix_put
+
 !EOP
 
   implicit none
@@ -35,13 +36,13 @@ module cvmix_background
 
 ! !PUBLIC MEMBER FUNCTIONS:
 
-   public :: cvmix_init_bkgnd
-   public :: cvmix_coeffs_bkgnd
-   public :: cvmix_bkgnd_lvary_horizontal
-   public :: cvmix_bkgnd_static_diff
-   public :: cvmix_bkgnd_static_visc
-   public :: cvmix_put_bkgnd
-   public :: cvmix_get_bkgnd_real_2D
+  public :: cvmix_init_bkgnd
+  public :: cvmix_coeffs_bkgnd
+  public :: cvmix_bkgnd_lvary_horizontal
+  public :: cvmix_bkgnd_static_diff
+  public :: cvmix_bkgnd_static_visc
+  public :: cvmix_put_bkgnd
+  public :: cvmix_get_bkgnd_real_2D
 
   interface cvmix_init_bkgnd
     module procedure cvmix_init_bkgnd_scalar
@@ -68,7 +69,7 @@ module cvmix_background
   ! mixing. Background mixing fields can vary from level to level as well as
   ! over latitude and longitude.
   type, public :: cvmix_bkgnd_params_type
-      private
+    private
       ! 3D viscosity field (horizontal dimensions are collapsed into first
       ! dimension, vertical is second dimension)
       real(cvmix_r8), allocatable :: static_visc(:,:) ! ncol, nlev+1
@@ -78,13 +79,13 @@ module cvmix_background
       real(cvmix_r8), allocatable :: static_diff(:,:) ! ncol, nlev+1
                                                       ! units: m^2/s
 
-      ! Flag for what to do with old values of CVmix_vars%diff and %visc
+      ! Flag for what to do with old values of CVmix_vars%[MTS]diff
       integer :: handle_old_vals
 
       ! Note: need to include some logic to avoid excessive memory use
       !       when static_visc and static_diff are constant or 1-D
-      logical                     :: lvary_vertical   ! True => second dim not 1
-      logical                     :: lvary_horizontal ! True => first dim not 1
+      logical :: lvary_vertical   ! True => multiple levels
+      logical :: lvary_horizontal ! True => multiple columns
   end type cvmix_bkgnd_params_type
 
 !EOP
@@ -536,6 +537,8 @@ contains
         print*, "ERROR: do not know how to handle old values!"
         stop 1
     end select
+
+    deallocate(new_Mdiff, new_Tdiff)
 
 !EOC
 
