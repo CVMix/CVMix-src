@@ -35,6 +35,7 @@ module cvmix_ddiff
 
   interface cvmix_put_ddiff
     module procedure cvmix_put_ddiff_real
+    module procedure cvmix_put_ddiff_int 
   end interface cvmix_put_ddiff
 
 ! !PUBLIC TYPES:
@@ -155,73 +156,73 @@ module cvmix_ddiff
 !EOP
 !BOC
 
-    type(cvmix_ddiff_params_type), pointer :: CVmix_ddiff_params_out
-
-    if (present(CVmix_ddiff_params_user)) then
-      CVmix_ddiff_params_out => CVmix_ddiff_params_user
-    else
-      CVmix_ddiff_params_out => CVmix_ddiff_params_saved
-    end if
-
     ! Unitless parameters
     if (present(strat_param_max)) then
-      call cvmix_put_ddiff(CVmix_ddiff_params_out, "strat_param_max",         &
-                           strat_param_max)
+      call cvmix_put_ddiff("strat_param_max", strat_param_max,                 &
+                           CVmix_ddiff_params_user)
     else
-      call cvmix_put_ddiff(CVmix_ddiff_params_out, "strat_param_max",          &
-                           2.55_cvmix_r8)
-    end if
-    if (present(ddiff_exp1)) then
-      call cvmix_put_ddiff(CVmix_ddiff_params_out, "ddiff_exp1", ddiff_exp1)
-    else
-      call cvmix_put_ddiff(CVmix_ddiff_params_out, "ddiff_exp1", 1.0_cvmix_r8)
-    end if
-    if (present(ddiff_exp2)) then
-      call cvmix_put_ddiff(CVmix_ddiff_params_out, "ddiff_exp2", ddiff_exp2)
-    else
-      call cvmix_put_ddiff(CVmix_ddiff_params_out, "ddiff_exp2", 3.0_cvmix_r8)
-    end if
-    if (present(kappa_ddiff_param1)) then
-      call cvmix_put_ddiff(CVmix_ddiff_params_out, "kappa_ddiff_param1",       &
-                           kappa_ddiff_param1)
-    else
-      call cvmix_put_ddiff(CVmix_ddiff_params_out, "kappa_ddiff_param1",       &
-                           0.909_cvmix_r8)
-    end if
-    if (present(kappa_ddiff_param2)) then
-      call cvmix_put_ddiff(CVmix_ddiff_params_out, "kappa_ddiff_param2",       &
-                           kappa_ddiff_param2)
-    else
-      call cvmix_put_ddiff(CVmix_ddiff_params_out, "kappa_ddiff_param2",       &
-                           4.6_cvmix_r8)
-    end if
-    if (present(kappa_ddiff_param3)) then
-      call cvmix_put_ddiff(CVmix_ddiff_params_out, "kappa_ddiff_param3",       &
-                           kappa_ddiff_param3)
-    else
-      call cvmix_put_ddiff(CVmix_ddiff_params_out, "kappa_ddiff_param3",       &
-                           -0.54_cvmix_r8)
+      call cvmix_put_ddiff("strat_param_max", 2.55_cvmix_r8,                   &
+                           CVmix_ddiff_params_user)
     end if
 
-    ! Parameters with units
+    if (present(ddiff_exp1)) then
+      call cvmix_put_ddiff("ddiff_exp1", ddiff_exp1, CVmix_ddiff_params_user)
+    else
+      call cvmix_put_ddiff("ddiff_exp1", cvmix_one, CVmix_ddiff_params_user)
+    end if
+
+    if (present(ddiff_exp2)) then
+      call cvmix_put_ddiff("ddiff_exp2", ddiff_exp2, CVmix_ddiff_params_user)
+    else
+      call cvmix_put_ddiff("ddiff_exp2", 3, CVmix_ddiff_params_user)
+    end if
+
+    if (present(kappa_ddiff_param1)) then
+      call cvmix_put_ddiff("kappa_ddiff_param1", kappa_ddiff_param1,          &
+                           CVmix_ddiff_params_user)
+    else
+      call cvmix_put_ddiff("kappa_ddiff_param1", 0.909_cvmix_r8,              &
+                           CVmix_ddiff_params_user)
+    end if
+
+    if (present(kappa_ddiff_param2)) then
+      call cvmix_put_ddiff("kappa_ddiff_param2", kappa_ddiff_param2,          &
+                           CVmix_ddiff_params_user)
+    else
+      call cvmix_put_ddiff("kappa_ddiff_param2", 4.6_cvmix_r8,                &
+                           CVmix_ddiff_params_user)
+    end if
+
+    if (present(kappa_ddiff_param3)) then
+      call cvmix_put_ddiff("kappa_ddiff_param3", kappa_ddiff_param3,          &
+                           CVmix_ddiff_params_user)
+    else
+      call cvmix_put_ddiff("kappa_ddiff_param3", -0.54_cvmix_r8,              &
+                           CVmix_ddiff_params_user)
+    end if
+
+    ! Parameters with physical units
     if (present(kappa_ddiff_t)) then
-      call cvmix_put_ddiff(CVmix_ddiff_params_out, "kappa_ddiff_t",            &
-                           kappa_ddiff_t)
+      call cvmix_put_ddiff("kappa_ddiff_t", kappa_ddiff_t,                    &
+                           CVmix_ddiff_params_user)
     else
-      call cvmix_put_ddiff(CVmix_ddiff_params_out, "kappa_ddiff_t",            &
-                           7e-5_cvmix_r8)
+      call cvmix_put_ddiff("kappa_ddiff_t", 7e-5_cvmix_r8,                    &
+                           CVmix_ddiff_params_user)
     end if
+
     if (present(kappa_ddiff_s)) then
-      call cvmix_put_ddiff(CVmix_ddiff_params_out, "kappa_ddiff_s",            &
-                           kappa_ddiff_s)
+      call cvmix_put_ddiff("kappa_ddiff_s", kappa_ddiff_s,                    &
+                           CVmix_ddiff_params_user)
     else
-      call cvmix_put_ddiff(CVmix_ddiff_params_out, "kappa_ddiff_s",            &
-                           1e-4_cvmix_r8)
+      call cvmix_put_ddiff("kappa_ddiff_s", 1e-4_cvmix_r8,                    &
+                           CVmix_ddiff_params_user)
     end if
+
     if (present(mol_diff)) then
-      call cvmix_put_ddiff(CVmix_ddiff_params_out, "mol_diff", mol_diff)
+      call cvmix_put_ddiff("mol_diff", mol_diff, CVmix_ddiff_params_user)
     else
-      call cvmix_put_ddiff(CVmix_ddiff_params_out, "mol_diff", 1.5e-6_cvmix_r8)
+      call cvmix_put_ddiff("mol_diff", 1.5e-6_cvmix_r8,                       &
+                           CVmix_ddiff_params_user)
     end if
 
 !EOC
@@ -312,7 +313,7 @@ module cvmix_ddiff
 ! !IROUTINE: cvmix_put_ddiff_real
 ! !INTERFACE:
 
-  subroutine cvmix_put_ddiff_real(CVmix_ddiff_params, varname, val)
+  subroutine cvmix_put_ddiff_real(varname, val, CVmix_ddiff_params_user)
 
 ! !DESCRIPTION:
 !  Write a real value into a cvmix\_ddiff\_params\_type variable.
@@ -327,29 +328,38 @@ module cvmix_ddiff
     real(cvmix_r8),   intent(in) :: val
 
 ! !OUTPUT PARAMETERS:
-    type(cvmix_ddiff_params_type), intent(inout) :: CVmix_ddiff_params
+    type(cvmix_ddiff_params_type), optional, target, intent(inout) ::         &
+                                              CVmix_ddiff_params_user
 !EOP
 !BOC
 
+    type(cvmix_ddiff_params_type), pointer :: CVmix_ddiff_params_out
+
+    if (present(CVmix_ddiff_params_user)) then
+      CVmix_ddiff_params_out => CVmix_ddiff_params_user
+    else
+      CVmix_ddiff_params_out => CVmix_ddiff_params_saved
+    end if
+
     select case (trim(varname))
       case ('strat_param_max')
-        CVmix_ddiff_params%strat_param_max = val
+        CVmix_ddiff_params_out%strat_param_max = val
       case ('ddiff_exp1')
-        CVmix_ddiff_params%ddiff_exp1 = val
+        CVmix_ddiff_params_out%ddiff_exp1 = val
       case ('ddiff_exp2')
-        CVmix_ddiff_params%ddiff_exp2 = val
+        CVmix_ddiff_params_out%ddiff_exp2 = val
       case ('kappa_ddiff_param1')
-        CVmix_ddiff_params%kappa_ddiff_param1 = val
+        CVmix_ddiff_params_out%kappa_ddiff_param1 = val
       case ('kappa_ddiff_param2')
-        CVmix_ddiff_params%kappa_ddiff_param2 = val
+        CVmix_ddiff_params_out%kappa_ddiff_param2 = val
       case ('kappa_ddiff_param3')
-        CVmix_ddiff_params%kappa_ddiff_param3 = val
+        CVmix_ddiff_params_out%kappa_ddiff_param3 = val
       case ('kappa_ddiff_t')
-        CVmix_ddiff_params%kappa_ddiff_t = val
+        CVmix_ddiff_params_out%kappa_ddiff_t = val
       case ('kappa_ddiff_s')
-        CVmix_ddiff_params%kappa_ddiff_s = val
+        CVmix_ddiff_params_out%kappa_ddiff_s = val
       case ('mol_diff')
-        CVmix_ddiff_params%mol_diff = val
+        CVmix_ddiff_params_out%mol_diff = val
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
         stop 1
@@ -359,6 +369,38 @@ module cvmix_ddiff
 !EOC
 
   end subroutine cvmix_put_ddiff_real
+
+!BOP
+
+! !IROUTINE: cvmix_put_ddiff_int
+! !INTERFACE:
+
+  subroutine cvmix_put_ddiff_int(varname, val, CVmix_ddiff_params_user)
+
+! !DESCRIPTION:
+!  Write an integer value into a cvmix\_ddiff\_params\_type variable.
+!\\
+!\\
+
+! !USES:
+!  Only those used by entire module. 
+
+! !INPUT PARAMETERS:
+    character(len=*), intent(in) :: varname
+    integer,          intent(in) :: val
+
+! !OUTPUT PARAMETERS:
+    type(cvmix_ddiff_params_type), optional, target, intent(inout) ::         &
+                                              CVmix_ddiff_params_user
+
+!EOP
+!BOC
+
+    call cvmix_put_ddiff(varname, real(val,cvmix_r8), CVmix_ddiff_params_user)
+
+!EOC
+
+  end subroutine cvmix_put_ddiff_int
 
 !BOP
 
