@@ -460,7 +460,7 @@
 ! !IROUTINE: cvmix_get_shear_real
 ! !INTERFACE:
 
-  function cvmix_get_shear_real(CVmix_shear_params, varname)
+  function cvmix_get_shear_real(varname, CVmix_shear_params_user)
 
 ! !DESCRIPTION:
 !  Read the real value of a cvmix\_shear\_params\_type variable.
@@ -471,28 +471,38 @@
 !  Only those used by entire module. 
 
 ! !INPUT PARAMETERS:
-    type(cvmix_shear_params_type), intent(in) :: CVmix_shear_params
-    character(len=*),              intent(in) :: varname
+    character(len=*),                                intent(in) :: varname
+    type(cvmix_shear_params_type), optional, target, intent(in) ::            &
+                                           CVmix_shear_params_user
 
 ! !OUTPUT PARAMETERS:
     real(cvmix_r8) :: cvmix_get_shear_real
+
 !EOP
 !BOC
+
+    type(cvmix_shear_params_type), pointer :: CVmix_shear_params_in
+
+    if (present(CVmix_shear_params_user)) then
+      CVmix_shear_params_in => CVmix_shear_params_user
+    else
+      CVmix_shear_params_in => CVmix_shear_params_saved
+    end if
 
     cvmix_get_shear_real = cvmix_zero
     select case (trim(varname))
       case ('PP_nu_zero')
-        cvmix_get_shear_real =CVmix_shear_params%PP_nu_zero
+        cvmix_get_shear_real =CVmix_shear_params_in%PP_nu_zero
       case ('PP_alpha')
-        cvmix_get_shear_real =CVmix_shear_params%PP_alpha
+        cvmix_get_shear_real =CVmix_shear_params_in%PP_alpha
       case ('PP_exp')
-        cvmix_get_shear_real =CVmix_shear_params%PP_exp
+        cvmix_get_shear_real =CVmix_shear_params_in%PP_exp
       case ('KPP_nu_zero')
-        cvmix_get_shear_real =CVmix_shear_params%KPP_nu_zero
+        cvmix_get_shear_real =CVmix_shear_params_in%KPP_nu_zero
       case ('KPP_Ri_zero')
-        cvmix_get_shear_real =CVmix_shear_params%KPP_Ri_zero
+        cvmix_get_shear_real =CVmix_shear_params_in%KPP_Ri_zero
       case ('KPP_exp')
-        cvmix_get_shear_real =CVmix_shear_params%KPP_exp
+        cvmix_get_shear_real =CVmix_shear_params_in%KPP_exp
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
         stop 1
@@ -508,7 +518,7 @@
 ! !IROUTINE: cvmix_get_shear_str
 ! !INTERFACE:
 
-  function cvmix_get_shear_str(CVmix_shear_params, varname)
+  function cvmix_get_shear_str(varname, CVmix_shear_params_user)
 
 ! !DESCRIPTION:
 !  Read the string contents of a cvmix\_shear\_params\_type variable.
@@ -519,17 +529,27 @@
 !  Only those used by entire module. 
 
 ! !INPUT PARAMETERS:
-    type(cvmix_shear_params_type), intent(in) :: CVmix_shear_params
-    character(len=*),              intent(in) :: varname
+    character(len=*),                                intent(in) :: varname
+    type(cvmix_shear_params_type), optional, target, intent(in) ::            &
+                                           CVmix_shear_params_user
 
 ! !OUTPUT PARAMETERS:
     character(len=cvmix_strlen) :: cvmix_get_shear_str
+
 !EOP
 !BOC
 
+    type(cvmix_shear_params_type), pointer :: CVmix_shear_params_in
+
+    if (present(CVmix_shear_params_user)) then
+      CVmix_shear_params_in => CVmix_shear_params_user
+    else
+      CVmix_shear_params_in => CVmix_shear_params_saved
+    end if
+
     select case (trim(varname))
       case ('mix_scheme')
-        cvmix_get_shear_str =CVmix_shear_params%mix_scheme
+        cvmix_get_shear_str = trim(CVmix_shear_params_in%mix_scheme)
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
         stop 1

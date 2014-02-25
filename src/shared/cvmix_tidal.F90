@@ -441,7 +441,7 @@ contains
 ! !IROUTINE: cvmix_get_tidal_real
 ! !INTERFACE:
 
-  function cvmix_get_tidal_real(CVmix_tidal_params, varname)
+  function cvmix_get_tidal_real(varname, CVmix_tidal_params_user)
 
 ! !DESCRIPTION:
 !  Returns the real value of a cvmix\_tidal\_params\_type variable.
@@ -452,26 +452,35 @@ contains
 !  Only those used by entire module. 
 
 ! !INPUT PARAMETERS:
-    character(len=*), intent(in) :: varname
-    type(cvmix_tidal_params_type), intent(in) :: CVmix_tidal_params
+    character(len=*),                                intent(in) :: varname
+    type(cvmix_tidal_params_type), optional, target, intent(in) ::            &
+                                           CVmix_tidal_params_user
 
 ! !OUTPUT PARAMETERS:
     real(cvmix_r8) :: cvmix_get_tidal_real
+
 !EOP
 !BOC
 
-    cvmix_get_tidal_real = cvmix_zero
+    type(cvmix_tidal_params_type), pointer :: CVmix_tidal_params_in
+
+    if (present(CVmix_tidal_params_user)) then
+      CVmix_tidal_params_in => CVmix_tidal_params_user
+    else
+      CVmix_tidal_params_in => CVmix_tidal_params_saved
+    end if
+
     select case (trim(varname))
       case ('efficiency')
-        cvmix_get_tidal_real = CVmix_tidal_params%efficiency
+        cvmix_get_tidal_real = CVmix_tidal_params_in%efficiency
       case ('vertical_decay_scale')
-        cvmix_get_tidal_real = CVmix_tidal_params%vertical_decay_scale
+        cvmix_get_tidal_real = CVmix_tidal_params_in%vertical_decay_scale
       case ('max_coefficient')
-        cvmix_get_tidal_real = CVmix_tidal_params%max_coefficient
+        cvmix_get_tidal_real = CVmix_tidal_params_in%max_coefficient
       case ('local_mixing_frac')
-        cvmix_get_tidal_real = CVmix_tidal_params%local_mixing_frac
+        cvmix_get_tidal_real = CVmix_tidal_params_in%local_mixing_frac
       case ('depth_cutoff')
-        cvmix_get_tidal_real = CVmix_tidal_params%depth_cutoff
+        cvmix_get_tidal_real = CVmix_tidal_params_in%depth_cutoff
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
         stop 1
@@ -487,7 +496,7 @@ contains
 ! !IROUTINE: cvmix_get_tidal_str
 ! !INTERFACE:
 
-  function cvmix_get_tidal_str(CVmix_tidal_params, varname)
+  function cvmix_get_tidal_str(varname, CVmix_tidal_params_user)
 
 ! !DESCRIPTION:
 !  Returns the string value of a cvmix\_tidal\_params\_type variable.
@@ -498,17 +507,27 @@ contains
 !  Only those used by entire module. 
 
 ! !INPUT PARAMETERS:
-    character(len=*), intent(in) :: varname
-    type(cvmix_tidal_params_type), intent(inout) :: CVmix_tidal_params
+    character(len=*),                                intent(in) :: varname
+    type(cvmix_tidal_params_type), optional, target, intent(in) ::            &
+                                           CVmix_tidal_params_user
 
 ! !OUTPUT PARAMETERS:
     character(len=cvmix_strlen) :: cvmix_get_tidal_str
+
 !EOP
 !BOC
 
+    type(cvmix_tidal_params_type), pointer :: CVmix_tidal_params_in
+
+    if (present(CVmix_tidal_params_user)) then
+      CVmix_tidal_params_in => CVmix_tidal_params_user
+    else
+      CVmix_tidal_params_in => CVmix_tidal_params_saved
+    end if
+
     select case (trim(varname))
       case ('mix_scheme')
-        cvmix_get_tidal_str = CVmix_tidal_params%mix_scheme
+        cvmix_get_tidal_str = trim(CVmix_tidal_params_in%mix_scheme)
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
         stop 1

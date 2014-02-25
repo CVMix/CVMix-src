@@ -151,17 +151,17 @@ Subroutine cvmix_tidal_driver()
   print*, "Namelist variables"
   print*, "------------------"
   print*, "mix_scheme = ",                                                    &
-          trim(cvmix_get_tidal_str(CVmix_Simmons_params,'mix_scheme'))
+          trim(cvmix_get_tidal_str('mix_scheme', CVmix_Simmons_params))
   print*, "efficiency = ",                                                    &
-          cvmix_get_tidal_real(CVmix_Simmons_params,'efficiency')
+          cvmix_get_tidal_real('efficiency', CVmix_Simmons_params)
   print*, "vertical_decay_scale = ",                                          &
-          cvmix_get_tidal_real(CVmix_Simmons_params,'vertical_decay_scale')
+          cvmix_get_tidal_real('vertical_decay_scale', CVmix_Simmons_params)
   print*, "max_coefficient = ",                                               &
-          cvmix_get_tidal_real(CVmix_Simmons_params,'max_coefficient')
+          cvmix_get_tidal_real('max_coefficient', CVmix_Simmons_params)
   print*, "local_mixing_frac = ",                                             &
-          cvmix_get_tidal_real(CVmix_Simmons_params,'local_mixing_frac')
+          cvmix_get_tidal_real('local_mixing_frac', CVmix_Simmons_params)
   print*, "depth_cutoff = ",                                                  &
-          cvmix_get_tidal_real(CVmix_Simmons_params,'depth_cutoff')
+          cvmix_get_tidal_real('depth_cutoff', CVmix_Simmons_params)
 
   ! For starters, using column from 353.9634 E, 58.84838 N)
   ! That's i=35, j=345 (compare result to KVMIX(0, :, 344, 34) in NCL)
