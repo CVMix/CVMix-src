@@ -14,6 +14,7 @@ module cvmix_convection
 
 ! !USES:
   use cvmix_kinds_and_types, only : cvmix_r8,                                 &
+                                    cvmix_strlen,                             &
                                     cvmix_zero,                               &
                                     cvmix_one,                                &
                                     cvmix_data_type,                          &
@@ -42,6 +43,7 @@ module cvmix_convection
   end interface cvmix_coeffs_conv
 
   interface cvmix_put_conv
+    module procedure cvmix_put_conv_int
     module procedure cvmix_put_conv_real
     module procedure cvmix_put_conv_logical
   end interface cvmix_put_conv
@@ -77,7 +79,7 @@ contains
 ! !INTERFACE:
 
   subroutine cvmix_init_conv(convect_diff, convect_visc, lBruntVaisala,       &
-                             BVsqr_convect, CVmix_conv_params_user)
+                             BVsqr_convect, old_vals, CVmix_conv_params_user)
 
 ! !DESCRIPTION:
 !  Initialization routine for specifying convective mixing coefficients.
@@ -97,6 +99,7 @@ contains
       convect_visc        ! viscosity to parameterize convection
     logical,        intent(in), optional :: lBruntVaisala ! True => B-V mixing
     real(cvmix_r8), intent(in), optional :: BVsqr_convect ! B-V parameter
+    character(len=cvmix_strlen), optional, intent(in) :: old_vals
 
 !EOP
 !BOC
@@ -119,6 +122,26 @@ contains
       call cvmix_put_conv("BVsqr_convect", cvmix_zero, CVmix_conv_params_user)
     end if
 
+    if (present(old_vals)) then
+      select case (trim(old_vals))
+        case ("overwrite")
+          call cvmix_put_conv('handle_old_vals', CVMIX_OVERWRITE_OLD_VAL,     &
+                               cvmix_conv_params_user)
+        case ("sum")
+          call cvmix_put_conv('handle_old_vals', CVMIX_SUM_OLD_AND_NEW_VALS,  &
+                               cvmix_conv_params_user)
+        case ("max")
+          call cvmix_put_conv('handle_old_vals', CVMIX_MAX_OLD_AND_NEW_VALS,  &
+                               cvmix_conv_params_user)
+        case DEFAULT
+          print*, "ERROR: ", trim(old_vals), " is not a valid option for ",   &
+                  "handling old values of diff and visc."
+          stop 1
+      end select
+    else
+      call cvmix_put_conv('handle_old_vals', CVMIX_OVERWRITE_OLD_VAL,         &
+                               cvmix_conv_params_user)
+    end if
 !EOC
 
   end subroutine cvmix_init_conv
@@ -166,6 +189,10 @@ contains
     end if
     nlev = CVmix_vars%nlev
     allocate(new_Mdiff(nlev+1), new_Tdiff(nlev+1))
+    if (.not.associated(CVmix_vars%Mdiff_iface)) &
+      call cvmix_put(CVmix_vars, "Mdiff", cvmix_zero)
+    if (.not.associated(CVmix_vars%Tdiff_iface)) &
+      call cvmix_put(CVmix_vars, "Tdiff", cvmix_zero)
 
     call cvmix_coeffs_conv(new_Mdiff, new_Tdiff,                              &
                            CVmix_vars%SqrBuoyancyFreq_iface,                  &
@@ -323,6 +350,52 @@ contains
 !EOC
 
   end subroutine cvmix_coeffs_conv_low
+
+!BOP
+
+! !IROUTINE: cvmix_put_conv_int
+! !INTERFACE:
+
+  subroutine cvmix_put_conv_int(varname, val, CVmix_conv_params_user)
+
+! !DESCRIPTION:
+!  Write a real value into a cvmix\_conv\_params\_type variable.
+!\\
+!\\
+
+! !USES:
+!  Only those used by entire module. 
+
+! !INPUT PARAMETERS:
+    character(len=*), intent(in) :: varname
+    integer,          intent(in) :: val
+
+! !OUTPUT PARAMETERS:
+    type (cvmix_conv_params_type), optional, target, intent(inout) ::         &
+                                               CVmix_conv_params_user
+
+!EOP
+!BOC
+
+    type (cvmix_conv_params_type), pointer :: CVmix_conv_params_out
+
+    if (present(CVmix_conv_params_user)) then
+      CVmix_conv_params_out => CVmix_conv_params_user
+    else
+      CVmix_conv_params_out => CVmix_conv_params_saved
+    end if
+
+    select case (trim(varname))
+      case ("old_vals", "handle_old_vals")
+        CVmix_conv_params_out%handle_old_vals = val
+      case DEFAULT
+        call cvmix_put_conv(varname, real(val, cvmix_r8),                     &
+                            CVmix_conv_params_user)
+    end select
+
+!EOC
+
+  end subroutine cvmix_put_conv_int
 
 !BOP
 

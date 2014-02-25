@@ -13,10 +13,13 @@ module cvmix_ddiff
 
 ! !USES:
 
-  use cvmix_kinds_and_types, only : cvmix_r8,                &
-                                    cvmix_zero,              &
-                                    cvmix_one,               &
-                                    cvmix_data_type
+  use cvmix_kinds_and_types, only : cvmix_r8,                                 &
+                                    cvmix_zero,                               &
+                                    cvmix_one,                                &
+                                    cvmix_data_type,                          &
+                                    CVMIX_OVERWRITE_OLD_VAL,                  &
+                                    CVMIX_SUM_OLD_AND_NEW_VALS,               &
+                                    CVMIX_MAX_OLD_AND_NEW_VALS
   use cvmix_put_get,         only : cvmix_put
 !EOP
 
@@ -33,6 +36,11 @@ module cvmix_ddiff
   public :: cvmix_put_ddiff
   public :: cvmix_get_ddiff_real
 
+  interface cvmix_coeffs_ddiff
+    module procedure cvmix_coeffs_ddiff_low
+    module procedure cvmix_coeffs_ddiff_wrap
+  end interface cvmix_coeffs_ddiff
+
   interface cvmix_put_ddiff
     module procedure cvmix_put_ddiff_real
     module procedure cvmix_put_ddiff_int 
@@ -44,30 +52,42 @@ module cvmix_ddiff
   ! diffusion mixing
   type, public :: cvmix_ddiff_params_type
     private
-    ! Max value of the stratification parameter (diffusivity = 0 for values
-    ! that exceed this constant). R_p^0 in LMD94.
-    real(cvmix_r8) :: strat_param_max    ! units: unitless
-    ! leading coefficient in formula for salt-fingering regime for salinity
-    ! diffusion (nu_f in LMD94, kappa_0 in Gokhan's paper)
-    real(cvmix_r8) :: kappa_ddiff_s      ! units: m^2/s
-    ! leading coefficient in formula for salt-fingering regime for temperature
-    ! diffusion (0.7*nu_f in LMD94)
-    real(cvmix_r8) :: kappa_ddiff_t      ! units: m^2/s
-    ! interior exponent in salt-fingering regime formula (2 in LMD94, 1 in
-    ! Gokhan's paper)
-    real(cvmix_r8) :: ddiff_exp1         ! units: unitless
-    ! exterior exponent in salt-fingering regime formula (p2 in LMD94, 3 in
-    ! Gokhan's paper)
-    real(cvmix_r8) :: ddiff_exp2         ! units: unitless
-    ! Exterior coefficient in diffusive convection regime (0.909 in LMD94)
-    real(cvmix_r8) :: kappa_ddiff_param1 ! units: unitless
-    ! Middle coefficient in diffusive convection regime (4.6 in LMD94)
-    real(cvmix_r8) :: kappa_ddiff_param2 ! units: unitless
-    ! Interior coefficient in diffusive convection regime (-0.54 in LMD94)
-    real(cvmix_r8) :: kappa_ddiff_param3 ! units: unitless
-    ! Molecular diffusivity (leading coefficient in diffusive convection
-    ! regime)
-    real(cvmix_r8) :: mol_diff           ! units: m^2/s
+      ! Max value of the stratification parameter (diffusivity = 0 for values
+      ! that exceed this constant). R_p^0 in LMD94.
+      real(cvmix_r8) :: strat_param_max    ! units: unitless
+
+      ! leading coefficient in formula for salt-fingering regime for salinity
+      ! diffusion (nu_f in LMD94, kappa_0 in Gokhan's paper)
+      real(cvmix_r8) :: kappa_ddiff_s      ! units: m^2/s
+
+      ! leading coefficient in formula for salt-fingering regime for
+      ! temperature diffusion (0.7*nu_f in LMD94)
+      real(cvmix_r8) :: kappa_ddiff_t      ! units: m^2/s
+
+      ! interior exponent in salt-fingering regime formula (2 in LMD94, 1 in
+      ! Gokhan's paper)
+      real(cvmix_r8) :: ddiff_exp1         ! units: unitless
+
+      ! exterior exponent in salt-fingering regime formula (p2 in LMD94, 3 in
+      ! Gokhan's paper)
+      real(cvmix_r8) :: ddiff_exp2         ! units: unitless
+
+      ! Exterior coefficient in diffusive convection regime (0.909 in LMD94)
+      real(cvmix_r8) :: kappa_ddiff_param1 ! units: unitless
+
+      ! Middle coefficient in diffusive convection regime (4.6 in LMD94)
+      real(cvmix_r8) :: kappa_ddiff_param2 ! units: unitless
+
+      ! Interior coefficient in diffusive convection regime (-0.54 in LMD94)
+      real(cvmix_r8) :: kappa_ddiff_param3 ! units: unitless
+
+      ! Molecular diffusivity (leading coefficient in diffusive convection
+      ! regime)
+      real(cvmix_r8) :: mol_diff           ! units: m^2/s
+
+      ! Flag for what to do with old values of CVmix_vars%[MTS]diff
+      integer :: handle_old_vals
+
   end type cvmix_ddiff_params_type
 
 !EOP
@@ -84,7 +104,7 @@ module cvmix_ddiff
   subroutine cvmix_init_ddiff(CVmix_ddiff_params_user, strat_param_max,        &
                               kappa_ddiff_t, kappa_ddiff_s, ddiff_exp1,        &
                               ddiff_exp2, mol_diff, kappa_ddiff_param1,        &
-                              kappa_ddiff_param2, kappa_ddiff_param3)
+                              kappa_ddiff_param2, kappa_ddiff_param3, old_vals)
 
 ! !DESCRIPTION:
 !  Initialization routine for double diffusion mixing. This mixing technique
@@ -149,6 +169,7 @@ module cvmix_ddiff
                                               kappa_ddiff_param1,             &
                                               kappa_ddiff_param2,             &
                                               kappa_ddiff_param3
+    character(len=*), optional, intent(in) :: old_vals
 
 ! !OUTPUT PARAMETERS:
     type(cvmix_ddiff_params_type), optional, target, intent(inout) ::         &
@@ -225,6 +246,27 @@ module cvmix_ddiff
                            CVmix_ddiff_params_user)
     end if
 
+    if (present(old_vals)) then
+      select case (trim(old_vals))
+        case ("overwrite")
+          call cvmix_put_ddiff('handle_old_vals', CVMIX_OVERWRITE_OLD_VAL,    &
+                               cvmix_ddiff_params_user)
+        case ("sum")
+          call cvmix_put_ddiff('handle_old_vals', CVMIX_SUM_OLD_AND_NEW_VALS, &
+                               cvmix_ddiff_params_user)
+        case ("max")
+          call cvmix_put_ddiff('handle_old_vals', CVMIX_MAX_OLD_AND_NEW_VALS, &
+                               cvmix_ddiff_params_user)
+        case DEFAULT
+          print*, "ERROR: ", trim(old_vals), " is not a valid option for ",   &
+                  "handling old values of diff and visc."
+          stop 1
+      end select
+    else
+      call cvmix_put_ddiff('handle_old_vals', CVMIX_OVERWRITE_OLD_VAL,        &
+                               cvmix_ddiff_params_user)
+    end if
+
 !EOC
 
   end subroutine cvmix_init_ddiff
@@ -234,7 +276,7 @@ module cvmix_ddiff
 ! !IROUTINE: cvmix_coeffs_ddiff
 ! !INTERFACE:
 
-  subroutine cvmix_coeffs_ddiff(CVmix_vars, CVmix_ddiff_params_user)
+  subroutine cvmix_coeffs_ddiff_wrap(CVmix_vars, CVmix_ddiff_params_user)
 
 ! !DESCRIPTION:
 !  Computes vertical diffusion coefficients for the double diffusion mixing
@@ -252,8 +294,83 @@ module cvmix_ddiff
 ! !INPUT/OUTPUT PARAMETERS:
     type(cvmix_data_type), intent(inout) :: CVmix_vars
 
+!EOP
+!BOC
+
+    real(cvmix_r8), dimension(:), allocatable :: new_Tdiff, new_Sdiff
+    integer :: kw, nlev
+    type(cvmix_ddiff_params_type), pointer :: CVmix_ddiff_params_in
+
+    if (present(CVmix_ddiff_params_user)) then
+      CVmix_ddiff_params_in => CVmix_ddiff_params_user
+    else
+      CVmix_ddiff_params_in => CVmix_ddiff_params_saved
+    end if
+
+    nlev = CVmix_vars%nlev
+    allocate(new_Tdiff(nlev+1), new_Sdiff(nlev+1))
+    if (.not.associated(CVmix_vars%Tdiff_iface)) &
+      call cvmix_put(CVmix_vars, "Tdiff", cvmix_zero)
+    if (.not.associated(CVmix_vars%Sdiff_iface)) &
+      call cvmix_put(CVmix_vars, "Sdiff", cvmix_zero)
+
+    call cvmix_coeffs_ddiff(new_Tdiff, new_Sdiff, CVmix_vars%strat_param_num, &
+                            CVmix_vars%strat_param_denom,                     &
+                            CVmix_ddiff_params_user)
+
+    select case (CVmix_ddiff_params_in%handle_old_vals)
+      case (CVMIX_SUM_OLD_AND_NEW_VALS)
+        call cvmix_put(CVmix_vars,"Tdiff", new_Tdiff + CVmix_vars%Tdiff_iface)
+        call cvmix_put(CVmix_vars,"Sdiff", new_Sdiff + CVmix_vars%Sdiff_iface)
+      case (CVMIX_MAX_OLD_AND_NEW_VALS)
+        do kw=1,nlev+1
+          CVmix_vars%Tdiff_iface(kw) = max(CVmix_vars%Tdiff_iface(kw),        &
+                                           new_Tdiff(kw))
+          CVmix_vars%Sdiff_iface(kw) = max(CVmix_vars%Sdiff_iface(kw),        &
+                                           new_Sdiff(kw))
+        end do
+      case (CVMIX_OVERWRITE_OLD_VAL)
+        call cvmix_put(CVmix_vars,"Tdiff", new_Tdiff)
+        call cvmix_put(CVmix_vars,"Sdiff", new_Sdiff)
+      case DEFAULT
+        print*, "ERROR: do not know how to handle old values!"
+        stop 1
+    end select
+
+    deallocate(new_Tdiff, new_Sdiff)
+
+!EOC
+
+  end subroutine cvmix_coeffs_ddiff_wrap
+
+!BOP
+
+! !IROUTINE: cvmix_coeffs_ddiff_low
+! !INTERFACE:
+
+  subroutine cvmix_coeffs_ddiff_low(Tdiff_out, Sdiff_out, strat_param_num,    &
+                                    strat_param_denom, CVmix_ddiff_params_user)
+
+! !DESCRIPTION:
+!  Computes vertical diffusion coefficients for the double diffusion mixing
+!  parameterization.
+!\\
+!\\
+!
+! !USES:
+!  only those used by entire module.
+
+! !INPUT PARAMETERS:
+    type(cvmix_ddiff_params_type), optional, target, intent(in) ::            &
+                                           CVmix_ddiff_params_user
+    real(cvmix_r8), dimension(:), intent(in) :: strat_param_num,              &
+                                                strat_param_denom
+
+! !INPUT/OUTPUT PARAMETERS:
+    real(cvmix_r8), dimension(:), intent(inout) :: Tdiff_out, Sdiff_out
+
 ! !LOCAL VARIABLES:
-    integer :: k ! column index
+    integer :: k, nlev
     real(cvmix_r8) :: ddiff, Rrho
 
 !EOP
@@ -266,47 +383,47 @@ module cvmix_ddiff
     else
       CVmix_ddiff_params_in => CVmix_ddiff_params_saved
     end if
+    nlev = size(strat_param_num)
 
     ! Determine coefficients
-    call cvmix_put(CVmix_vars, "Tdiff", cvmix_zero)
-    call cvmix_put(CVmix_vars, "Sdiff", cvmix_zero)
-    do k = 1, CVmix_vars%nlev
-      if ((CVmix_vars%strat_param_num(k).gt.                                  &
-           CVmix_vars%strat_param_denom(k)).and.                              &
-          (CVmix_vars%strat_param_denom(k).gt.0)) then
+    Tdiff_out=cvmix_zero
+    Sdiff_out=cvmix_zero
+    do k = 1, nlev
+      if ((strat_param_num(k).gt.strat_param_denom(k)).and.                   &
+          (strat_param_denom(k).gt.cvmix_zero)) then
         ! Rrho > 1 and dS/dz < 0 => Salt fingering
-        Rrho = CVmix_vars%strat_param_num(k) / CVmix_vars%strat_param_denom(k)
+        Rrho = strat_param_num(k) / strat_param_denom(k)
         if (Rrho.lt.CVmix_ddiff_params_in%strat_param_max) then
           ddiff = (cvmix_one - ((Rrho-cvmix_one)/                             &
                   (CVmix_ddiff_params_in%strat_param_max-cvmix_one))**        &
             CVmix_ddiff_params_in%ddiff_exp1)**CVmix_ddiff_params_in%ddiff_exp2
-          CVmix_vars%Tdiff_iface(k) = CVmix_ddiff_params_in%kappa_ddiff_t*ddiff
-          CVmix_vars%Sdiff_iface(k) = CVmix_ddiff_params_in%kappa_ddiff_s*ddiff
+          Tdiff_out(k) = CVmix_ddiff_params_in%kappa_ddiff_t*ddiff
+          Sdiff_out(k) = CVmix_ddiff_params_in%kappa_ddiff_s*ddiff
         end if
       end if
-      if ((CVmix_vars%strat_param_num(k).gt.CVmix_vars%strat_param_denom(k))  &
-          .and.(CVmix_vars%strat_param_num(k).lt.0)) then
+      if ((strat_param_num(k).gt.strat_param_denom(k)).and.                   &
+          (strat_param_num(k).lt.0)) then
         ! Rrho < 1 and dT/dz > 0 => Diffusive convection
-        Rrho = CVmix_vars%strat_param_num(k) / CVmix_vars%strat_param_denom(k)
+        Rrho = strat_param_num(k) / strat_param_denom(k)
         ddiff = CVmix_ddiff_params_in%mol_diff *                              &
                 CVmix_ddiff_params_in%kappa_ddiff_param1*&
                 exp(CVmix_ddiff_params_in%kappa_ddiff_param2*exp(             &
                         CVmix_ddiff_params_in%kappa_ddiff_param3*             &
                         (cvmix_one/Rrho-cvmix_one)))
-        CVmix_vars%Tdiff_iface(k) = ddiff
+        Tdiff_out(k) = ddiff
         if (Rrho.lt.0.5_cvmix_r8) then
-          CVmix_vars%Sdiff_iface(k) = 0.15_cvmix_r8*Rrho*ddiff
+          Sdiff_out(k) = 0.15_cvmix_r8*Rrho*ddiff
         else
-          CVmix_vars%Sdiff_iface(k) = (1.85_cvmix_r8*Rrho-0.85_cvmix_r8)*ddiff
+          Sdiff_out(k) = (1.85_cvmix_r8*Rrho-0.85_cvmix_r8)*ddiff
         end if
       end if
     end do
-    CVmix_vars%Tdiff_iface(CVmix_vars%nlev+1) = cvmix_zero
-    CVmix_vars%Sdiff_iface(CVmix_vars%nlev+1) = cvmix_zero
+    Tdiff_out(nlev+1) = cvmix_zero
+    Sdiff_out(nlev+1) = cvmix_zero
 
 !EOC
 
-  end subroutine cvmix_coeffs_ddiff
+  end subroutine cvmix_coeffs_ddiff_low
 
 !BOP
 
@@ -396,7 +513,21 @@ module cvmix_ddiff
 !EOP
 !BOC
 
-    call cvmix_put_ddiff(varname, real(val,cvmix_r8), CVmix_ddiff_params_user)
+    type(cvmix_ddiff_params_type), pointer :: CVmix_ddiff_params_out
+
+    if (present(CVmix_ddiff_params_user)) then
+      CVmix_ddiff_params_out => CVmix_ddiff_params_user
+    else
+      CVmix_ddiff_params_out => CVmix_ddiff_params_saved
+    end if
+
+    select case (trim(varname))
+      case ('old_vals', 'handle_old_vals')
+        CVmix_ddiff_params_out%handle_old_vals = val
+      case DEFAULT
+        call cvmix_put_ddiff(varname, real(val,cvmix_r8),                     &
+                             CVmix_ddiff_params_user)
+    end select
 
 !EOC
 
