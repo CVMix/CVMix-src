@@ -17,6 +17,7 @@ module cvmix_io
    use cvmix_kinds_and_types, only : cvmix_data_type, &
                                      cvmix_r8,        &
                                      cvmix_strlen
+   use cvmix_put_get,         only : cvmix_att_name
 #ifdef _NETCDF
    use netcdf
 #endif
@@ -586,46 +587,44 @@ contains
         call netcdf_check(nf90_def_dim(file_id, "nw", nw, nw_id))
         allocate(var_id(size(var_names)))
         do var=1,size(var_names)
-          select case(trim(var_names(var)))
-            case ("z","zt","zt_cntr")
+          select case(trim(cvmix_att_name(var_names(var))))
+            case ("zt_cntr")
               call netcdf_check(nf90_def_var(file_id, "zt", NF90_DOUBLE,      &
                                              (/nt_id/), var_id(var)))
-            case ("zw", "zw_iface")
+            case ("zw_iface")
               call netcdf_check(nf90_def_var(file_id, "zw", NF90_DOUBLE,      &
                                              (/nw_id/), var_id(var)))
-            case ("Richardson","ShearRichardson","RichardsonNumber",          &
-                  "ShearRichardsonNumber","Ri","Ri_iface")
+            case ("ShearRichardson_iface")
               call netcdf_check(nf90_def_var(file_id, "ShearRichardson",      &
                                              NF90_DOUBLE, (/nw_id/),          &
                                              var_id(var)))
-            case ("BulkRichardson","BulkRichardsonNumber","Rib","Ri_bulk")
+            case ("BulkRichardson_cntr")
               call netcdf_check(nf90_def_var(file_id, "BulkRichardson",       &
                                              NF90_DOUBLE, (/nt_id/),          &
                                              var_id(var)))
-            case ("Mdiff")
+            case ("Mdiff_iface")
               call netcdf_check(nf90_def_var(file_id, "Mdiff", NF90_DOUBLE,   &
                                              (/nw_id/), var_id(var)))
-            case ("Tdiff")
+            case ("Tdiff_iface")
               call netcdf_check(nf90_def_var(file_id, "Tdiff", NF90_DOUBLE,   &
                                              (/nw_id/), var_id(var)))
-            case ("Sdiff")
+            case ("Sdiff_iface")
               call netcdf_check(nf90_def_var(file_id, "Sdiff", NF90_DOUBLE,   &
                                              (/nw_id/), var_id(var)))
-            case ("Rrho")
+            case ("strat_param")
               call netcdf_check(nf90_def_var(file_id, "Rrho", NF90_DOUBLE,    &
                                              (/nt_id/), var_id(var)))
-            case ("Buoyancy","buoyancy","buoyancy_cntr")
+            case ("buoyancy_cntr")
               call netcdf_check(nf90_def_var(file_id, "buoyancy", NF90_DOUBLE,&
                                              (/nt_id/), var_id(var)))
-            case ("BuoyancyFreq","SqrBuoyancy","SqrBuoyancyFreq","buoy",      &
-                  "buoy_iface")
+            case ("SqrBuoyancyFreq_iface")
               call netcdf_check(nf90_def_var(file_id, "SqrBuoyancyFreq",      &
                                              NF90_DOUBLE, (/nw_id/),          &
                                              var_id(var)))
-            case ("Vx", "U")
+            case ("Vx_cntr")
               call netcdf_check(nf90_def_var(file_id, "U", NF90_DOUBLE,       &
                                              (/nt_id/), var_id(var)))
-            case ("Vy", "V")
+            case ("Vy_cntr")
               call netcdf_check(nf90_def_var(file_id, "V", NF90_DOUBLE,       &
                                              (/nt_id/), var_id(var)))
             case DEFAULT
@@ -635,44 +634,42 @@ contains
         end do
         call netcdf_check(nf90_enddef(file_id))
         do var=1,size(var_names)
-          select case(trim(var_names(var)))
-            case ("z","zt","zt_cntr")
+          select case(trim(cvmix_att_name(var_names(var))))
+            case ("zt_cntr")
               call netcdf_check(nf90_put_var(file_id, var_id(var),            &
                                              CVmix_vars%zt_cntr(:)))
-            case ("zw", "zw_iface")
+            case ("zw_iface")
               call netcdf_check(nf90_put_var(file_id, var_id(var),            &
                                              CVmix_vars%zw_iface(:)))
-            case ("Richardson","ShearRichardson","RichardsonNumber",          &
-                  "ShearRichardsonNumber","Ri","Ri_iface")
+            case ("ShearRichardson_iface")
               call netcdf_check(nf90_put_var(file_id, var_id(var),            &
                                          CVmix_vars%ShearRichardson_iface(:)))
-            case ("BulkRichardson","BulkRichardsonNumber","Rib","Ri_bulk")
+            case ("BulkRichardson_cntr")
               call netcdf_check(nf90_put_var(file_id, var_id(var),            &
                                            CVmix_vars%BulkRichardson_cntr(:)))
-            case ("Mdiff")
+            case ("Mdiff_iface")
               call netcdf_check(nf90_put_var(file_id, var_id(var),            &
                                              CVmix_vars%Mdiff_iface(:)))
-            case ("Tdiff")
+            case ("Tdiff_iface")
               call netcdf_check(nf90_put_var(file_id, var_id(var),            &
                                              CVmix_vars%Tdiff_iface(:)))
-            case ("Sdiff")
+            case ("Sdiff_iface")
               call netcdf_check(nf90_put_var(file_id, var_id(var),            &
                                              CVmix_vars%Sdiff_iface(:)))
-            case ("Rrho")
+            case ("strat_param")
               call netcdf_check(nf90_put_var(file_id, var_id(var),            &
                                              CVmix_vars%strat_param_num(:)/   &
                                              CVmix_vars%strat_param_denom(:)))
-            case ("Buoyancy","buoyancy","buoyancy_cntr")
+            case ("buoyancy_cntr")
               call netcdf_check(nf90_put_var(file_id, var_id(var),            &
                                          CVmix_vars%buoyancy_cntr(:)))
-            case ("BuoyancyFreq","SqrBuoyancy","SqrBuoyancyFreq","buoy",      &
-                  "buoy_iface")
+            case ("SqrBuoyancyFreq_iface")
               call netcdf_check(nf90_put_var(file_id, var_id(var),            &
                                          CVmix_vars%SqrBuoyancyFreq_iface(:)))
-            case ("Vx", "U")
+            case ("Vx_cntr")
               call netcdf_check(nf90_put_var(file_id, var_id(var),            &
                                              CVmix_vars%Vx_cntr(:)))
-            case ("Vy", "V")
+            case ("Vy_cntr")
               call netcdf_check(nf90_put_var(file_id, var_id(var),            &
                                              CVmix_vars%Vy_cntr(:)))
             case DEFAULT
@@ -684,38 +681,37 @@ contains
       case (ASCII_FILE_TYPE)
         do kw=1,CVmix_vars%nlev+1
           do var=1,size(var_names)
-            select case(trim(var_names(var)))
-              case ('z',"zt","zt_cntr")
+            select case(trim(cvmix_att_name(var_names(var))))
+              case ("zt_cntr")
                 if (kw.gt.1) then
                   write(file_id,"(E24.17E2)",advance='no')                    &
                         CVmix_vars%zt_cntr(kw-1)
                 else
                   write(file_id,"(A)",advance='no') "--- Cell Center Vals ---"
                 end if
-              case ("zw", "zw_iface")
+              case ("zw_iface")
                 write(file_id,"(E24.17E2)",advance='no')                      &
                       CVmix_vars%zw_iface(kw)
-              case ("Richardson","ShearRichardson","RichardsonNumber",        &
-                    "ShearRichardsonNumber","Ri","Ri_iface")
+              case ("ShearRichardson_iface")
                 write(file_id,"(E24.17E2)",advance='no')                      &
                       CVmix_vars%ShearRichardson_iface(kw)
-              case ("BulkRichardson","BulkRichardsonNumber","Rib","Ri_bulk")
+              case ("BulkRichardson_cntr")
                 if (kw.gt.1) then
                   write(file_id,"(E24.17E2)",advance='no')                    &
                         CVmix_vars%BulkRichardson_cntr(kw-1)
                 else
                   write(file_id,"(A)",advance='no') "--- Cell Center Vals ---"
                 end if
-              case ("Mdiff")
+              case ("Mdiff_iface")
                 write(file_id,"(E24.17E2)",advance='no')                      &
                       CVmix_vars%Mdiff_iface(kw)
-              case ("Tdiff")
+              case ("Tdiff_iface")
                 write(file_id,"(E24.17E2)",advance='no')                      &
                       CVmix_vars%Tdiff_iface(kw)
-              case ("Sdiff")
+              case ("Sdiff_iface")
                 write(file_id,"(E24.17E2)",advance='no')                      &
                       CVmix_vars%Sdiff_iface(kw)
-              case ("Rrho")
+              case ("strat_param")
                 if (kw.lt.CVmix_vars%nlev+1) then
                   write(file_id,"(E24.17E2)",advance='no')                    &
                         CVmix_vars%strat_param_num(kw) /                      &
@@ -723,25 +719,24 @@ contains
                 else
                   write(file_id,"(E24.17E2)",advance='no') 0.0
                 end if
-              case ("Buoyancy","buoyancy","buoyancy_cntr")
+              case ("buoyancy_cntr")
                 if (kw.gt.1) then
                   write(file_id,"(E24.17E2)",advance='no')                    &
                         CVmix_vars%buoyancy_cntr(kw-1)
                 else
                   write(file_id,"(A)",advance='no') "--- Cell Center Vals ---"
                 end if
-              case ("BuoyancyFreq","SqrBuoyancy","SqrBuoyancyFreq","buoy",    &
-                    "buoy_iface")
+              case ("SqrBuoyancyFreq_iface")
                 write(file_id,"(E24.17E2)",advance='no')                      &
                       CVmix_vars%SqrBuoyancyFreq_iface(kw)
-              case ("Vx", "U")
+              case ("Vx_cntr")
                 if (kw.gt.1) then
                   write(file_id,"(E24.17E2)",advance='no')                    &
                         CVmix_vars%Vx_cntr(kw-1)
                 else
                   write(file_id,"(A)",advance='no') "--- Cell Center Vals ---"
                 end if
-              case ("Vy", "V")
+              case ("Vy_cntr")
                 if (kw.gt.1) then
                   write(file_id,"(E24.17E2)",advance='no')                    &
                         CVmix_vars%Vy_cntr(kw-1)
@@ -871,26 +866,26 @@ contains
         end do
         call netcdf_check(nf90_enddef(file_id))
         do var=1,size(var_names)
-          select case(trim(var_names(var)))
-            case("zw", "zw_iface")
+          select case(trim(cvmix_att_name(var_names(var))))
+            case ("zw_iface")
               call netcdf_check(nf90_put_var(file_id, var_id(var),            &
                                 CVmix_vars(1)%zw_iface(:)))
-            case("Ri")
+            case ("ShearRichardson_iface")
               call netcdf_check(nf90_put_var(file_id, var_id(var),            &
                                 CVmix_vars(1)%ShearRichardson_iface(:)))
-            case("Mdiff")
+            case("Mdiff_iface")
               call netcdf_check(nf90_put_var(file_id, var_id(var),            &
                                 lcl_Mdiff))
               deallocate(lcl_Mdiff)
-            case("Tdiff")
+            case("Tdiff_iface")
               call netcdf_check(nf90_put_var(file_id, var_id(var),            &
                                 lcl_Tdiff))
               deallocate(lcl_Tdiff)
-            case("Sdiff")
+            case("Sdiff_iface")
               call netcdf_check(nf90_put_var(file_id, var_id(var),            &
                                 lcl_Sdiff))
               deallocate(lcl_Sdiff)
-            case("Rrho")
+            case("strat_param")
               call netcdf_check(nf90_put_var(file_id, var_id(var),            &
                                 lcl_Rrho))
               deallocate(lcl_Rrho)
@@ -903,33 +898,32 @@ contains
       case (ASCII_FILE_TYPE)
         do kw=1,nw
           do var=1,size(var_names)
-            select case(trim(var_names(var)))
-              case ("zw", "zw_iface")
+            select case(trim(cvmix_att_name(var_names(var))))
+              case ("zw_iface")
                 write(file_id,"(E24.17E2)",advance='no') &
                       CVmix_vars(1)%zw_iface(kw)
-              case ("Richardson","ShearRichardson","RichardsonNumber",        &
-                    "ShearRichardsonNumber","Ri","Ri_iface")
+              case ("ShearRichardson_iface")
                 write(file_id,"(E24.17E2)",advance='no') &
                       CVmix_vars(1)%ShearRichardson_iface(kw)
-              case ("Mdiff")
+              case ("Mdiff_iface")
                 do icol=1,ncol
                   write(file_id,"(E24.17E2)",advance='no') &
                         CVmix_vars(icol)%Mdiff_iface(kw)
                   if (icol.ne.ncol) write(file_id, "(1X)", advance='no')
                 end do
-              case ("Tdiff")
+              case ("Tdiff_iface")
                 do icol=1,ncol
                   write(file_id,"(E24.17E2)",advance='no') &
                         CVmix_vars(icol)%Tdiff_iface(kw)
                   if (icol.ne.ncol) write(file_id, "(1X)", advance='no')
                 end do
-              case ("Sdiff")
+              case ("Sdiff_iface")
                 do icol=1,ncol
                   write(file_id,"(E24.17E2)",advance='no') &
                         CVmix_vars(icol)%Sdiff_iface(kw)
                   if (icol.ne.ncol) write(file_id, "(1X)", advance='no')
                 end do
-              case ("Rrho")
+              case ("strat_param")
                 do icol=1,ncol
                   if (kw.ne.nw) then
                     write(file_id,"(E24.17E2)",advance='no')     &
