@@ -180,13 +180,7 @@ contains
 !EOP
 !BOC
 
-    type(cvmix_kpp_params_type), pointer :: CVmix_kpp_params_out
     real(cvmix_r8) :: zm, zs, a_m, a_s, c_m, c_s
-
-    CVmix_kpp_params_out => CVmix_kpp_params_saved
-    if (present(CVmix_kpp_params_user)) then
-      CVmix_kpp_params_out => CVmix_kpp_params_user
-    end if
 
     if (present(ri_crit)) then
       if (ri_crit.lt.cvmix_zero) then
@@ -211,7 +205,7 @@ contains
     if (present(Cstar)) then
       call cvmix_put_kpp('Cstar', Cstar, CVmix_kpp_params_user)
     else
-      call cvmix_put_kpp('Cstar', real(10,cvmix_r8), CVmix_kpp_params_user)
+      call cvmix_put_kpp('Cstar', 10, CVmix_kpp_params_user)
     end if
 
     if (present(zeta_m)) then
@@ -269,103 +263,104 @@ contains
     if (present(Cv)) then
       ! Use scalar Cv parameter
       call cvmix_put_kpp('Cv', CV, CVmix_kpp_params_user)
-      call cvmix_put_kpp(CVmix_kpp_params_out, 'lscalar_Cv', .true.)
+      call cvmix_put_kpp('lscalar_Cv', .true., CVmix_kpp_params_user)
     else
       ! Use Eq. (A3) from Danabasoglu et al.
-      call cvmix_put_kpp(CVmix_kpp_params_out, 'lscalar_Cv', .false.)
+      call cvmix_put_kpp('lscalar_Cv', .false., CVmix_kpp_params_user)
     end if
 
     if (present(interp_type)) then
       select case (trim(interp_type))
         case ('line', 'linear')
-          call cvmix_put_kpp(CVmix_kpp_params_out, 'interp_type', &
-                             CVMIX_MATH_INTERP_LINEAR)
+          call cvmix_put_kpp('interp_type', CVMIX_MATH_INTERP_LINEAR,         &
+                             CVmix_kpp_params_user)
         case ('quad', 'quadratic')
-          call cvmix_put_kpp(CVmix_kpp_params_out, 'interp_type', &
-                             CVMIX_MATH_INTERP_QUAD)
+          call cvmix_put_kpp('interp_type', CVMIX_MATH_INTERP_QUAD,           &
+                             CVmix_kpp_params_user)
         case ('cube', 'cubic', 'cubic_spline', 'cubic spline')
-          call cvmix_put_kpp(CVmix_kpp_params_out, 'interp_type', &
-                             CVMIX_MATH_INTERP_CUBE_SPLINE)
+          call cvmix_put_kpp('interp_type', CVMIX_MATH_INTERP_CUBE_SPLINE,    &
+                             CVmix_kpp_params_user)
         case DEFAULT
-          print*, "ERROR: ", trim(interp_type), " is not a valid type of ", &
+          print*, "ERROR: ", trim(interp_type), " is not a valid type of ",   &
                   "interpolation!"
           stop 1
       end select
     else
-      call cvmix_put_kpp(CVmix_kpp_params_out, 'interp_type', &
-                         CVMIX_MATH_INTERP_QUAD)
+      call cvmix_put_kpp('interp_type', CVMIX_MATH_INTERP_QUAD,               &
+                         CVmix_kpp_params_user)
     end if
 
     if (present(interp_type2)) then
       select case (trim(interp_type2))
         case ('line', 'linear')
-          call cvmix_put_kpp(CVmix_kpp_params_out, 'interp_type2', &
-                             CVMIX_MATH_INTERP_LINEAR)
+          call cvmix_put_kpp('interp_type2', CVMIX_MATH_INTERP_LINEAR,        &
+                             CVmix_kpp_params_user)
         case ('quad', 'quadratic')
-          call cvmix_put_kpp(CVmix_kpp_params_out, 'interp_type2', &
-                             CVMIX_MATH_INTERP_QUAD)
+          call cvmix_put_kpp('interp_type2', CVMIX_MATH_INTERP_QUAD,          &
+                             CVmix_kpp_params_user)
         case ('cube', 'cubic', 'cubic_spline', 'cubic spline')
-          call cvmix_put_kpp(CVmix_kpp_params_out, 'interp_type2', &
-                             CVMIX_MATH_INTERP_CUBE_SPLINE)
+          call cvmix_put_kpp('interp_type2', CVMIX_MATH_INTERP_CUBE_SPLINE,   &
+                             CVmix_kpp_params_user)
         case ('POP')
-          call cvmix_put_kpp(CVmix_kpp_params_out, 'interp_type2', &
-                             CVMIX_KPP_INTERP_POP)
+          call cvmix_put_kpp('interp_type2', CVMIX_KPP_INTERP_POP,            &
+                             CVmix_kpp_params_user)
         case DEFAULT
-          print*, "ERROR: ", trim(interp_type), " is not a valid type of ", &
+          print*, "ERROR: ", trim(interp_type2), " is not a valid type of ",  &
                   "interpolation!"
           stop 1
       end select
     else
-      call cvmix_put_kpp(CVmix_kpp_params_out, 'interp_type2', &
-                         CVMIX_MATH_INTERP_CUBE_SPLINE)
+      call cvmix_put_kpp('interp_type2', CVMIX_MATH_INTERP_QUAD,              &
+                         CVmix_kpp_params_user)
     end if
 
     if (present(MatchTechnique)) then
       select case (trim(MatchTechnique))
         case ('MatchBoth')
-          call cvmix_put_kpp(CVmix_kpp_params_out, 'MatchTechnique',          &
-                             CVMIX_KPP_MATCH_BOTH)
+          call cvmix_put_kpp('MatchTechnique', CVMIX_KPP_MATCH_BOTH,          &
+                             CVmix_kpp_params_user)
         case ('MatchGradient')
-          call cvmix_put_kpp(CVmix_kpp_params_out, 'MatchTechnique',          &
-                             CVMIX_KPP_MATCH_GRADIENT)
+          call cvmix_put_kpp('MatchTechnique', CVMIX_KPP_MATCH_GRADIENT,      &
+                             CVmix_kpp_params_user)
         case ('SimpleShapes')
-          call cvmix_put_kpp(CVmix_kpp_params_out, 'MatchTechnique',          &
-                             CVMIX_KPP_SIMPLE_SHAPES)
+          call cvmix_put_kpp('MatchTechnique', CVMIX_KPP_SIMPLE_SHAPES,       &
+                             CVmix_kpp_params_user)
         case ('ParabolicNonLocal')
-          call cvmix_put_kpp(CVmix_kpp_params_out, 'MatchTechnique',          &
-                             CVMIX_KPP_PARABOLIC_NONLOCAL)
+          call cvmix_put_kpp('MatchTechnique', CVMIX_KPP_PARABOLIC_NONLOCAL,  &
+                             CVmix_kpp_params_user)
         case DEFAULT
           print*, "ERROR: ", trim(MatchTechnique), " is not a valid choice ", &
                   "for MatchTechnique!"
           stop 1
         end select
     else
-      call cvmix_put_kpp(CVmix_kpp_params_out, 'MatchTechnique',              &
-                         CVMIX_KPP_SIMPLE_SHAPES)
+      call cvmix_put_kpp('MatchTechnique', CVMIX_KPP_SIMPLE_SHAPES,           &
+                         CVmix_kpp_params_user)
     end if
 
     if (present(lEkman)) then
-      call cvmix_put_kpp(CVmix_kpp_params_out, 'lEkman', lEkman)
+      call cvmix_put_kpp('lEkman', lEkman, CVmix_kpp_params_user)
     else
-      call cvmix_put_kpp(CVmix_kpp_params_out, 'lEkman', .false.)
+      call cvmix_put_kpp('lEkman', .false., CVmix_kpp_params_user)
     end if
 
     if (present(lMonOb)) then
-      call cvmix_put_kpp(CVmix_kpp_params_out, 'lMonOb', lMonOb)
+      call cvmix_put_kpp('lMonOb', lMonOb, CVmix_kpp_params_user)
     else
-      call cvmix_put_kpp(CVmix_kpp_params_out, 'lMonOb', .false.)
+      call cvmix_put_kpp('lMonOb', .false., CVmix_kpp_params_user)
     end if
 
     if (present(lnoDGat1)) then
-      call cvmix_put_kpp(CVmix_kpp_params_out, 'lnoDGat1', lnoDGat1)
+      call cvmix_put_kpp('lnoDGat1', lnoDGat1, CVmix_kpp_params_user)
     else
-      call cvmix_put_kpp(CVmix_kpp_params_out, 'lnoDGat1', .true.)
+      call cvmix_put_kpp('lnoDGat1', .true., CVmix_kpp_params_user)
     end if
 
     if (present(lavg_N_or_Nsqr)) then
-      call cvmix_put_kpp(CVmix_kpp_params_out,'lavg_N_or_Nsqr',lavg_N_or_Nsqr)
+      call cvmix_put_kpp('lavg_N_or_Nsqr', lavg_N_or_Nsqr,                    &
+                         CVmix_kpp_params_user)
     else
-      call cvmix_put_kpp(CVmix_kpp_params_out,'lavg_N_or_Nsqr',.false.)
+      call cvmix_put_kpp('lavg_N_or_Nsqr', .false., CVmix_kpp_params_user)
     end if
 
 !EOC
@@ -809,7 +804,7 @@ contains
 ! !IROUTINE: cvmix_put_kpp_int
 ! !INTERFACE:
 
-  subroutine cvmix_put_kpp_int(CVmix_kpp_params, varname, val)
+  subroutine cvmix_put_kpp_int(varname, val, CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
 !  Write an integer value into a cvmix\_kpp\_params\_type variable.
@@ -824,19 +819,28 @@ contains
     integer,          intent(in) :: val
 
 ! !OUTPUT PARAMETERS:
-    type(cvmix_kpp_params_type), intent(inout) :: CVmix_kpp_params
+    type(cvmix_kpp_params_type), intent(inout), target, optional ::           &
+                                              CVmix_kpp_params_user
+
 !EOP
 !BOC
 
+    type(cvmix_kpp_params_type), pointer :: CVmix_kpp_params_out
+
+    CVmix_kpp_params_out => CVmix_kpp_params_saved
+    if (present(CVmix_kpp_params_user)) then
+      CVmix_kpp_params_out => CVmix_kpp_params_user
+    end if
+
     select case (trim(varname))
       case ('interp_type')
-        CVmix_kpp_params%interp_type = val
+        CVmix_kpp_params_out%interp_type = val
       case ('interp_type2')
-        CVmix_kpp_params%interp_type2 = val
+        CVmix_kpp_params_out%interp_type2 = val
       case ('MatchTechnique')
-        CVmix_kpp_params%MatchTechnique = val
+        CVmix_kpp_params_out%MatchTechnique = val
       case DEFAULT
-        call cvmix_put_kpp(varname, real(val, cvmix_r8), CVmix_kpp_params)
+        call cvmix_put_kpp(varname, real(val, cvmix_r8), CVmix_kpp_params_out)
     end select
 
 !EOC
@@ -848,7 +852,7 @@ contains
 ! !IROUTINE: cvmix_put_kpp_logical
 ! !INTERFACE:
 
-  subroutine cvmix_put_kpp_logical(CVmix_kpp_params, varname, val)
+  subroutine cvmix_put_kpp_logical(varname, val, CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
 !  Write a Boolean value into a cvmix\_kpp\_params\_type variable.
@@ -863,21 +867,30 @@ contains
     logical,          intent(in) :: val
 
 ! !OUTPUT PARAMETERS:
-    type(cvmix_kpp_params_type), intent(inout) :: CVmix_kpp_params
+    type(cvmix_kpp_params_type), intent(inout), target, optional ::           &
+                                              CVmix_kpp_params_user
+
 !EOP
 !BOC
 
+    type(cvmix_kpp_params_type), pointer :: CVmix_kpp_params_out
+
+    CVmix_kpp_params_out => CVmix_kpp_params_saved
+    if (present(CVmix_kpp_params_user)) then
+      CVmix_kpp_params_out => CVmix_kpp_params_user
+    end if
+
     select case (trim(varname))
       case ('lscalar_Cv')
-        CVmix_kpp_params%lscalar_Cv = val
+        CVmix_kpp_params_out%lscalar_Cv = val
       case ('lEkman')
-        CVmix_kpp_params%lEkman = val
+        CVmix_kpp_params_out%lEkman = val
       case ('lMonOb')
-        CVmix_kpp_params%lMonOb = val
+        CVmix_kpp_params_out%lMonOb = val
       case ('lnoDGat1')
-        CVmix_kpp_params%lnoDGat1 = val
+        CVmix_kpp_params_out%lnoDGat1 = val
       case ('lavg_N_or_Nsqr')
-        CVmix_kpp_params%lavg_N_or_Nsqr = val
+        CVmix_kpp_params_out%lavg_N_or_Nsqr = val
       case DEFAULT
         print*, "ERROR: ", trim(varname), " is not a boolean variable!"
         stop 1
