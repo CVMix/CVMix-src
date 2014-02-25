@@ -112,6 +112,7 @@ contains
 ! !OUTPUT PARAMETERS:
     type(cvmix_bkgnd_params_type), optional, target, intent(inout) :: &
                                               CVmix_bkgnd_params_user
+
 !EOP
 !BOC
 
@@ -136,22 +137,22 @@ contains
     if (present(old_vals)) then
       select case (trim(old_vals))
         case ("overwrite")
-          call cvmix_put_bkgnd(CVmix_bkgnd_params_out, 'handle_old_vals',     &
-                               CVMIX_OVERWRITE_OLD_VAL)
+          call cvmix_put_bkgnd('handle_old_vals', CVMIX_OVERWRITE_OLD_VAL,    &
+                               cvmix_bkgnd_params_user)
         case ("sum")
-          call cvmix_put_bkgnd(CVmix_bkgnd_params_out, 'handle_old_vals',     &
-                               CVMIX_SUM_OLD_AND_NEW_VALS)
+          call cvmix_put_bkgnd('handle_old_vals', CVMIX_SUM_OLD_AND_NEW_VALS, &
+                               cvmix_bkgnd_params_user)
         case ("max")
-          call cvmix_put_bkgnd(CVmix_bkgnd_params_out, 'handle_old_vals',     &
-                               CVMIX_MAX_OLD_AND_NEW_VALS)
+          call cvmix_put_bkgnd('handle_old_vals', CVMIX_MAX_OLD_AND_NEW_VALS, &
+                               cvmix_bkgnd_params_user)
         case DEFAULT
           print*, "ERROR: ", trim(old_vals), " is not a valid option for ",   &
                   "handling old values of diff and visc."
           stop 1
       end select
     else
-      call cvmix_put_bkgnd(CVmix_bkgnd_params_out, 'handle_old_vals',         &
-                           CVMIX_OVERWRITE_OLD_VAL)
+      call cvmix_put_bkgnd('handle_old_vals', CVMIX_OVERWRITE_OLD_VAL,        &
+                               cvmix_bkgnd_params_user)
     end if
 
 !EOC
@@ -234,22 +235,22 @@ contains
     if (present(old_vals)) then
       select case (trim(old_vals))
         case ("overwrite")
-          call cvmix_put_bkgnd(CVmix_bkgnd_params_out, 'handle_old_vals',     &
-                               CVMIX_OVERWRITE_OLD_VAL)
+          call cvmix_put_bkgnd('handle_old_vals', CVMIX_OVERWRITE_OLD_VAL,    &
+                               cvmix_bkgnd_params_user)
         case ("sum")
-          call cvmix_put_bkgnd(CVmix_bkgnd_params_out, 'handle_old_vals',     &
-                               CVMIX_SUM_OLD_AND_NEW_VALS)
+          call cvmix_put_bkgnd('handle_old_vals', CVMIX_SUM_OLD_AND_NEW_VALS, &
+                               cvmix_bkgnd_params_user)
         case ("max")
-          call cvmix_put_bkgnd(CVmix_bkgnd_params_out, 'handle_old_vals',     &
-                               CVMIX_MAX_OLD_AND_NEW_VALS)
+          call cvmix_put_bkgnd('handle_old_vals', CVMIX_MAX_OLD_AND_NEW_VALS, &
+                               cvmix_bkgnd_params_user)
         case DEFAULT
           print*, "ERROR: ", trim(old_vals), " is not a valid option for ",   &
                   "handling old values of diff and visc."
           stop 1
       end select
     else
-      call cvmix_put_bkgnd(CVmix_bkgnd_params_out, 'handle_old_vals',         &
-                           CVMIX_OVERWRITE_OLD_VAL)
+      call cvmix_put_bkgnd('handle_old_vals', CVMIX_OVERWRITE_OLD_VAL,        &
+                               cvmix_bkgnd_params_user)
     end if
 
 !EOC
@@ -320,22 +321,22 @@ contains
     if (present(old_vals)) then
       select case (trim(old_vals))
         case ("overwrite")
-          call cvmix_put_bkgnd(CVmix_bkgnd_params_out, 'handle_old_vals',     &
-                               CVMIX_OVERWRITE_OLD_VAL)
+          call cvmix_put_bkgnd('handle_old_vals', CVMIX_OVERWRITE_OLD_VAL,    &
+                               cvmix_bkgnd_params_user)
         case ("sum")
-          call cvmix_put_bkgnd(CVmix_bkgnd_params_out, 'handle_old_vals',     &
-                               CVMIX_SUM_OLD_AND_NEW_VALS)
+          call cvmix_put_bkgnd('handle_old_vals', CVMIX_SUM_OLD_AND_NEW_VALS, &
+                               cvmix_bkgnd_params_user)
         case ("max")
-          call cvmix_put_bkgnd(CVmix_bkgnd_params_out, 'handle_old_vals',     &
-                               CVMIX_MAX_OLD_AND_NEW_VALS)
+          call cvmix_put_bkgnd('handle_old_vals', CVMIX_MAX_OLD_AND_NEW_VALS, &
+                               cvmix_bkgnd_params_user)
         case DEFAULT
           print*, "ERROR: ", trim(old_vals), " is not a valid option for ",   &
                   "handling old values of diff and visc."
           stop 1
       end select
     else
-      call cvmix_put_bkgnd(CVmix_bkgnd_params_out, 'handle_old_vals',         &
-                           CVMIX_OVERWRITE_OLD_VAL)
+      call cvmix_put_bkgnd('handle_old_vals', CVMIX_OVERWRITE_OLD_VAL,        &
+                               cvmix_bkgnd_params_user)
     end if
 
 !EOC
@@ -432,28 +433,30 @@ contains
     diff = bl1 + (bl2/cvmix_PI)*atan(bl3*(zw-bl4))
     visc = CVmix_params_in%prandtl*diff
 
-    call cvmix_put_bkgnd(CVmix_bkgnd_params_out, "static_diff", diff, nlev=nlev)
-    call cvmix_put_bkgnd(CVmix_bkgnd_params_out, "static_visc", visc, nlev=nlev)
+    call cvmix_put_bkgnd("static_diff", diff, CVmix_bkgnd_params_user,        &
+                         nlev=nlev)
+    call cvmix_put_bkgnd("static_visc", visc, CVmix_bkgnd_params_user,        &
+                         nlev=nlev)
 
     if (present(old_vals)) then
       select case (trim(old_vals))
         case ("overwrite")
-          call cvmix_put_bkgnd(CVmix_bkgnd_params_out, 'handle_old_vals',     &
-                               CVMIX_OVERWRITE_OLD_VAL)
+          call cvmix_put_bkgnd('handle_old_vals', CVMIX_OVERWRITE_OLD_VAL,    &
+                               cvmix_bkgnd_params_user)
         case ("sum")
-          call cvmix_put_bkgnd(CVmix_bkgnd_params_out, 'handle_old_vals',     &
-                               CVMIX_SUM_OLD_AND_NEW_VALS)
+          call cvmix_put_bkgnd('handle_old_vals', CVMIX_SUM_OLD_AND_NEW_VALS, &
+                               cvmix_bkgnd_params_user)
         case ("max")
-          call cvmix_put_bkgnd(CVmix_bkgnd_params_out, 'handle_old_vals',     &
-                               CVMIX_MAX_OLD_AND_NEW_VALS)
+          call cvmix_put_bkgnd('handle_old_vals', CVMIX_MAX_OLD_AND_NEW_VALS, &
+                               cvmix_bkgnd_params_user)
         case DEFAULT
           print*, "ERROR: ", trim(old_vals), " is not a valid option for ",   &
                   "handling old values of diff and visc."
           stop 1
       end select
     else
-      call cvmix_put_bkgnd(CVmix_bkgnd_params_out, 'handle_old_vals',         &
-                           CVMIX_OVERWRITE_OLD_VAL)
+      call cvmix_put_bkgnd('handle_old_vals', CVMIX_OVERWRITE_OLD_VAL,        &
+                               cvmix_bkgnd_params_user)
     end if
     deallocate(zw, visc, diff)
 
@@ -716,7 +719,7 @@ contains
 ! !IROUTINE: cvmix_put_bkgnd_int
 ! !INTERFACE:
 
-  subroutine cvmix_put_bkgnd_int(CVmix_bkgnd_params_put, varname, val)
+  subroutine cvmix_put_bkgnd_int(varname, val, CVmix_bkgnd_params_user)
 
 ! !DESCRIPTION:
 !  Write a real value into a cvmix\_bkgnd\_params\_type variable.
@@ -731,16 +734,25 @@ contains
     integer,          intent(in) :: val
 
 ! !OUTPUT PARAMETERS:
-    type(cvmix_bkgnd_params_type), intent(inout) :: CVmix_bkgnd_params_put
+    type(cvmix_bkgnd_params_type), target, optional, intent(inout) ::         &
+                                              CVmix_bkgnd_params_user
+
 !EOP
 !BOC
 
+    type(cvmix_bkgnd_params_type), pointer :: CVmix_bkgnd_params_out
+
+    CVmix_bkgnd_params_out => CVmix_bkgnd_params_saved
+    if (present(CVmix_bkgnd_params_user)) then
+      CVmix_bkgnd_params_out => CVmix_bkgnd_params_user
+    end if
+
     select case (trim(varname))
       case ('old_vals', 'handle_old_vals')
-        CVmix_bkgnd_params_put%handle_old_vals = val
+        CVmix_bkgnd_params_out%handle_old_vals = val
       case DEFAULT
-        call cvmix_put_bkgnd(CVmix_bkgnd_params_put, varname,                 &
-                             real(val,cvmix_r8))
+        call cvmix_put_bkgnd(varname, real(val,cvmix_r8),                     &
+                             CVmix_bkgnd_params_user)
     end select
 
 !EOC
@@ -752,7 +764,7 @@ contains
 ! !IROUTINE: cvmix_put_bkgnd_real
 ! !INTERFACE:
 
-  subroutine cvmix_put_bkgnd_real(CVmix_bkgnd_params_put, varname, val)
+  subroutine cvmix_put_bkgnd_real(varname, val, CVmix_bkgnd_params_user)
 
 ! !DESCRIPTION:
 !  Write a real value into a cvmix\_bkgnd\_params\_type variable.
@@ -767,30 +779,39 @@ contains
     real(cvmix_r8),   intent(in) :: val
 
 ! !OUTPUT PARAMETERS:
-    type(cvmix_bkgnd_params_type), intent(inout) :: CVmix_bkgnd_params_put
+    type(cvmix_bkgnd_params_type), target, optional, intent(inout) ::         &
+                                              CVmix_bkgnd_params_user
+
 !EOP
 !BOC
 
+    type(cvmix_bkgnd_params_type), pointer :: CVmix_bkgnd_params_out
+
+    CVmix_bkgnd_params_out => CVmix_bkgnd_params_saved
+    if (present(CVmix_bkgnd_params_user)) then
+      CVmix_bkgnd_params_out => CVmix_bkgnd_params_user
+    end if
+
     select case (trim(varname))
       case ('static_visc')
-        if (.not.allocated(CVmix_bkgnd_params_put%static_visc)) then
-          allocate(CVmix_bkgnd_params_put%static_visc(1,1))
-          CVmix_bkgnd_params_put%lvary_horizontal=.false.
-          CVmix_bkgnd_params_put%lvary_vertical=.false.
+        if (.not.allocated(CVmix_bkgnd_params_out%static_visc)) then
+          allocate(CVmix_bkgnd_params_out%static_visc(1,1))
+          CVmix_bkgnd_params_out%lvary_horizontal=.false.
+          CVmix_bkgnd_params_out%lvary_vertical=.false.
         else
           print*, "WARNING: overwriting static_visc in cvmix_bkgnd_params_type."
         end if
-        CVmix_bkgnd_params_put%static_visc(:,:) = val
+        CVmix_bkgnd_params_out%static_visc(:,:) = val
 
       case ('static_diff')
-        if (.not.allocated(CVmix_bkgnd_params_put%static_diff)) then
-          allocate(CVmix_bkgnd_params_put%static_diff(1,1))
-          CVmix_bkgnd_params_put%lvary_horizontal=.false.
-          CVmix_bkgnd_params_put%lvary_vertical=.false.
+        if (.not.allocated(CVmix_bkgnd_params_out%static_diff)) then
+          allocate(CVmix_bkgnd_params_out%static_diff(1,1))
+          CVmix_bkgnd_params_out%lvary_horizontal=.false.
+          CVmix_bkgnd_params_out%lvary_vertical=.false.
         else
           print*, "WARNING: overwriting static_diff in cvmix_bkgnd_params_type."
         end if
-        CVmix_bkgnd_params_put%static_diff(:,:) = val
+        CVmix_bkgnd_params_out%static_diff(:,:) = val
 
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
@@ -807,7 +828,7 @@ contains
 ! !IROUTINE: cvmix_put_bkgnd_real_1D
 ! !INTERFACE:
 
-  subroutine cvmix_put_bkgnd_real_1D(CVmix_bkgnd_params_put, varname, val, &
+  subroutine cvmix_put_bkgnd_real_1D(varname, val, CVmix_bkgnd_params_user,   &
                                     ncol, nlev)
 
 ! !DESCRIPTION:
@@ -826,7 +847,9 @@ contains
     integer, optional,            intent(in) :: ncol, nlev
 
 ! !OUTPUT PARAMETERS:
-    type (cvmix_bkgnd_params_type), intent(inout) :: CVmix_bkgnd_params_put
+    type(cvmix_bkgnd_params_type), target, optional, intent(inout) ::         &
+                                              CVmix_bkgnd_params_user
+
 !EOP
 !BOC
 
@@ -834,6 +857,8 @@ contains
     integer, dimension(2) :: dims
     integer               :: data_dims
     logical               :: lvary_horizontal
+
+    type(cvmix_bkgnd_params_type), pointer :: CVmix_bkgnd_params_out
 
     ! Error checking to make sure dimension is specified
     if ((.not.present(ncol)).and.(.not.present(nlev))) then
@@ -846,6 +871,11 @@ contains
       print*, "ERROR: when putting 1D data in cvmix_bkgnd_params_type ", &
               "you can not specify both nlev or ncol!"
       stop 1
+    end if
+
+    CVmix_bkgnd_params_out => CVmix_bkgnd_params_saved
+    if (present(CVmix_bkgnd_params_user)) then
+      CVmix_bkgnd_params_out => CVmix_bkgnd_params_user
     end if
 
     data_dims = size(val)
@@ -869,45 +899,45 @@ contains
 
     select case (trim(varname))
       case ('static_visc')
-        if (.not.allocated(CVmix_bkgnd_params_put%static_visc)) then
-          allocate(CVmix_bkgnd_params_put%static_visc(dims(1),dims(2)))
-          CVmix_bkgnd_params_put%lvary_horizontal = lvary_horizontal
-          CVmix_bkgnd_params_put%lvary_vertical = .not.lvary_horizontal
+        if (.not.allocated(CVmix_bkgnd_params_out%static_visc)) then
+          allocate(CVmix_bkgnd_params_out%static_visc(dims(1),dims(2)))
+          CVmix_bkgnd_params_out%lvary_horizontal = lvary_horizontal
+          CVmix_bkgnd_params_out%lvary_vertical = .not.lvary_horizontal
         else
           print*, "WARNING: overwriting static_visc in cvmix_bkgnd_params_type."
         end if
-        if (any(shape(CVmix_bkgnd_params_put%static_visc).ne.dims)) then
+        if (any(shape(CVmix_bkgnd_params_out%static_visc).ne.dims)) then
           print*, "ERROR: dimensions of static_visc do not match what was ", &
                   "sent to cvmix_put"
           stop 1
         end if
         if (lvary_horizontal) then
-          CVmix_bkgnd_params_put%static_visc(:,1)           = 0_cvmix_r8
-          CVmix_bkgnd_params_put%static_visc(1:data_dims,1) = val
+          CVmix_bkgnd_params_out%static_visc(:,1)           = 0_cvmix_r8
+          CVmix_bkgnd_params_out%static_visc(1:data_dims,1) = val
         else
-          CVmix_bkgnd_params_put%static_visc(1,:)           = 0_cvmix_r8
-          CVmix_bkgnd_params_put%static_visc(1,1:data_dims) = val
+          CVmix_bkgnd_params_out%static_visc(1,:)           = 0_cvmix_r8
+          CVmix_bkgnd_params_out%static_visc(1,1:data_dims) = val
         end if
 
       case ('static_diff')
-        if (.not.allocated(CVmix_bkgnd_params_put%static_diff)) then
-          allocate(CVmix_bkgnd_params_put%static_diff(dims(1),dims(2)))
-          CVmix_bkgnd_params_put%lvary_horizontal = lvary_horizontal
-          CVmix_bkgnd_params_put%lvary_vertical = .not.lvary_horizontal
+        if (.not.allocated(CVmix_bkgnd_params_out%static_diff)) then
+          allocate(CVmix_bkgnd_params_out%static_diff(dims(1),dims(2)))
+          CVmix_bkgnd_params_out%lvary_horizontal = lvary_horizontal
+          CVmix_bkgnd_params_out%lvary_vertical = .not.lvary_horizontal
         else
           print*, "WARNING: overwriting static_diff in cvmix_bkgnd_params_type."
         end if
-        if (any(shape(CVmix_bkgnd_params_put%static_diff).ne.dims)) then
+        if (any(shape(CVmix_bkgnd_params_out%static_diff).ne.dims)) then
           print*, "ERROR: dimensions of static_diff do not match what was ", &
                   "sent to cvmix_put"
           stop 1
         end if
         if (lvary_horizontal) then
-          CVmix_bkgnd_params_put%static_diff(:,1)           = 0_cvmix_r8
-          CVmix_bkgnd_params_put%static_diff(1:data_dims,1) = val
+          CVmix_bkgnd_params_out%static_diff(:,1)           = 0_cvmix_r8
+          CVmix_bkgnd_params_out%static_diff(1:data_dims,1) = val
         else
-          CVmix_bkgnd_params_put%static_diff(1,:)           = 0_cvmix_r8
-          CVmix_bkgnd_params_put%static_diff(1,1:data_dims) = val
+          CVmix_bkgnd_params_out%static_diff(1,:)           = 0_cvmix_r8
+          CVmix_bkgnd_params_out%static_diff(1,1:data_dims) = val
         end if
 
       case DEFAULT
@@ -925,7 +955,7 @@ contains
 ! !IROUTINE: cvmix_put_bkgnd_real_2D
 ! !INTERFACE:
 
-  subroutine cvmix_put_bkgnd_real_2D(CVmix_bkgnd_params_put, varname, val, &
+  subroutine cvmix_put_bkgnd_real_2D(CVmix_bkgnd_params_out, varname, val, &
                                     ncol, nlev)
 
 ! !DESCRIPTION:
@@ -942,7 +972,7 @@ contains
     integer,                        intent(in) :: ncol, nlev
 
 ! !OUTPUT PARAMETERS:
-    type (cvmix_bkgnd_params_type), intent(inout) :: CVmix_bkgnd_params_put
+    type (cvmix_bkgnd_params_type), intent(inout) :: CVmix_bkgnd_params_out
 !EOP
 !BOC
 
@@ -960,36 +990,36 @@ contains
 
     select case (trim(varname))
       case ('static_visc')
-        if (.not.allocated(CVmix_bkgnd_params_put%static_visc)) then
-          allocate(CVmix_bkgnd_params_put%static_visc(dims(1),dims(2)))
-          CVmix_bkgnd_params_put%lvary_horizontal=.true.
-          CVmix_bkgnd_params_put%lvary_vertical=.true.
+        if (.not.allocated(CVmix_bkgnd_params_out%static_visc)) then
+          allocate(CVmix_bkgnd_params_out%static_visc(dims(1),dims(2)))
+          CVmix_bkgnd_params_out%lvary_horizontal=.true.
+          CVmix_bkgnd_params_out%lvary_vertical=.true.
         else
           print*, "WARNING: overwriting static_visc in cvmix_bkgnd_params_type."
         end if
-        if (any(shape(CVmix_bkgnd_params_put%static_visc).ne.dims)) then
+        if (any(shape(CVmix_bkgnd_params_out%static_visc).ne.dims)) then
           print*, "ERROR: dimensions of static_visc do not match what was ", &
                   "sent to cvmix_put"
           stop 1
         end if
-        CVmix_bkgnd_params_put%static_visc = 0.0_cvmix_r8
-        CVmix_bkgnd_params_put%static_visc(1:data_dims(1), 1:data_dims(2)) = val
+        CVmix_bkgnd_params_out%static_visc = 0.0_cvmix_r8
+        CVmix_bkgnd_params_out%static_visc(1:data_dims(1), 1:data_dims(2)) = val
 
       case ('static_diff')
-        if (.not.allocated(CVmix_bkgnd_params_put%static_diff)) then
-          allocate(CVmix_bkgnd_params_put%static_diff(dims(1),dims(2)))
-          CVmix_bkgnd_params_put%lvary_horizontal=.true.
-          CVmix_bkgnd_params_put%lvary_vertical=.true.
+        if (.not.allocated(CVmix_bkgnd_params_out%static_diff)) then
+          allocate(CVmix_bkgnd_params_out%static_diff(dims(1),dims(2)))
+          CVmix_bkgnd_params_out%lvary_horizontal=.true.
+          CVmix_bkgnd_params_out%lvary_vertical=.true.
         else
           print*, "WARNING: overwriting static_diff in cvmix_bkgnd_params_type."
         end if
-        if (any(shape(CVmix_bkgnd_params_put%static_diff).ne.dims)) then
+        if (any(shape(CVmix_bkgnd_params_out%static_diff).ne.dims)) then
           print*, "ERROR: dimensions of static_diff do not match what was ", &
                   "sent to cvmix_put"
           stop 1
         end if
-        CVmix_bkgnd_params_put%static_diff = 0.0_cvmix_r8
-        CVmix_bkgnd_params_put%static_diff(1:data_dims(1), 1:data_dims(2)) = val
+        CVmix_bkgnd_params_out%static_diff = 0.0_cvmix_r8
+        CVmix_bkgnd_params_out%static_diff(1:data_dims(1), 1:data_dims(2)) = val
 
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
@@ -1018,7 +1048,7 @@ contains
 
 ! !INPUT PARAMETERS:
     character(len=*),                                intent(in) :: varname
-    type(cvmix_bkgnd_params_type), optional, target, intent(in) ::            &
+    type(cvmix_bkgnd_params_type), target, optional, intent(in) ::            &
                                              CVmix_bkgnd_params_user
 
 ! !OUTPUT PARAMETERS:
