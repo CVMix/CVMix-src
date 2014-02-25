@@ -53,6 +53,7 @@ module cvmix_background
     module procedure cvmix_put_bkgnd_real
     module procedure cvmix_put_bkgnd_real_1D
     module procedure cvmix_put_bkgnd_real_2D
+    module procedure cvmix_put_bkgnd_logical
   end interface cvmix_put_bkgnd
 
 ! !PUBLIC TYPES:
@@ -124,15 +125,18 @@ contains
     end if
 
     if (.not.allocated(CVmix_bkgnd_params_out%static_visc)) then
-      CVmix_bkgnd_params_out%lvary_vertical   = .false.
-      CVmix_bkgnd_params_out%lvary_horizontal = .false.
+      call cvmix_put_bkgnd('lvary_vertical', .false., CVmix_bkgnd_params_user)
+      call cvmix_put_bkgnd('lvary_horizontal', .false.,                       &
+                           CVmix_bkgnd_params_user)
       allocate(CVmix_bkgnd_params_out%static_visc(1,1))
+      if (allocated(CVmix_bkgnd_params_out%static_diff))                      &
+        deallocate(CVmix_bkgnd_params_out%static_diff)
       allocate(CVmix_bkgnd_params_out%static_diff(1,1))
     end if
 
     ! Set static_visc and static_diff in background_input_type
-    CVmix_bkgnd_params_out%static_visc(1,1) = bkgnd_visc
-    CVmix_bkgnd_params_out%static_diff(1,1) = bkgnd_diff
+    call cvmix_put_bkgnd('static_visc', bkgnd_visc, CVmix_bkgnd_params_user)
+    call cvmix_put_bkgnd('static_diff', bkgnd_diff, CVmix_bkgnd_params_user)
 
     if (present(old_vals)) then
       select case (trim(old_vals))
@@ -199,6 +203,13 @@ contains
     nullify(CVmix_params_in)
     if (present(CVmix_params_user)) then
       CVmix_params_in => CVmix_params_user
+      nlev = CVmix_params_in%max_nlev
+    else
+      if (.not.present(ncol)) then
+        print*, "ERROR: You must specify either ncol or a global param type", &
+                "containing max_nlev!"
+        stop 1
+      end if
     endif
 
     CVmix_bkgnd_params_out => CVmix_bkgnd_params_saved
@@ -211,25 +222,39 @@ contains
 
     if (.not.allocated(CVmix_bkgnd_params_out%static_visc)) then
       if (present(ncol)) then
-        CVmix_bkgnd_params_out%lvary_vertical   = .false.
-        CVmix_bkgnd_params_out%lvary_horizontal = .true.
+        call cvmix_put_bkgnd('lvary_vertical', .false.,                       &
+                           CVmix_bkgnd_params_user)
+        call cvmix_put_bkgnd('lvary_horizontal', .true.,                      &
+                           CVmix_bkgnd_params_user)
         allocate(CVmix_bkgnd_params_out%static_visc(ncol,1))
+        if (allocated(CVmix_bkgnd_params_out%static_diff))                    &
+          deallocate(CVmix_bkgnd_params_out%static_diff)
         allocate(CVmix_bkgnd_params_out%static_diff(ncol,1))
 
-        ! Set static_visc and static_diff in background_input_type
-        CVmix_bkgnd_params_out%static_visc(:,1) = bkgnd_visc(:)
-        CVmix_bkgnd_params_out%static_diff(:,1) = bkgnd_diff(:)
       else
-        nlev = CVmix_params_in%max_nlev
-        CVmix_bkgnd_params_out%lvary_vertical   = .true.
-        CVmix_bkgnd_params_out%lvary_horizontal = .false.
+        call cvmix_put_bkgnd('lvary_vertical', .true.,                        &
+                           CVmix_bkgnd_params_user)
+        call cvmix_put_bkgnd('lvary_horizontal', .false.,                     &
+                           CVmix_bkgnd_params_user)
         allocate(CVmix_bkgnd_params_out%static_visc(1,nlev+1))
+        if (allocated(CVmix_bkgnd_params_out%static_diff))                    &
+          deallocate(CVmix_bkgnd_params_out%static_diff)
         allocate(CVmix_bkgnd_params_out%static_diff(1,nlev+1))
 
-        ! Set static_visc and static_diff in background_input_type
-        CVmix_bkgnd_params_out%static_visc(1,:) = bkgnd_visc(:)
-        CVmix_bkgnd_params_out%static_diff(1,:) = bkgnd_diff(:)
       end if
+    end if
+
+    ! Set static_visc and static_diff in background_input_type
+    if (present(ncol)) then
+      call cvmix_put_bkgnd('static_visc', bkgnd_visc,                         &
+                           CVmix_bkgnd_params_user, ncol=ncol)
+      call cvmix_put_bkgnd('static_diff', bkgnd_diff,                         &
+                           CVmix_bkgnd_params_user, ncol=ncol)
+    else
+      call cvmix_put_bkgnd('static_visc', bkgnd_visc,                         &
+                           CVmix_bkgnd_params_user, nlev=nlev)
+      call cvmix_put_bkgnd('static_diff', bkgnd_diff,                         &
+                           CVmix_bkgnd_params_user, nlev=nlev)
     end if
 
     if (present(old_vals)) then
@@ -262,8 +287,9 @@ contains
 ! !IROUTINE: cvmix_init_bkgnd_2D
 ! !INTERFACE:
 
-  subroutine cvmix_init_bkgnd_2D(bkgnd_diff, bkgnd_visc, ncol, old_vals,      &
-                                 CVmix_params_user, CVmix_bkgnd_params_user)
+  subroutine cvmix_init_bkgnd_2D(bkgnd_diff, bkgnd_visc, ncol,                &
+                                 CVmix_params_in, old_vals,                   &
+                                 CVmix_bkgnd_params_user)
 
 ! !DESCRIPTION:
 !  Initialization routine for static background mixing coefficients. For each
@@ -280,24 +306,17 @@ contains
     real(cvmix_r8), dimension(:,:),        intent(in) :: bkgnd_visc
     integer,                               intent(in) :: ncol
     character(len=cvmix_strlen), optional, intent(in) :: old_vals
-    type(cvmix_global_params_type), target, optional, intent(in) :: &
-                                                  CVmix_params_user
+    type(cvmix_global_params_type),        intent(in) :: CVmix_params_in
 
 ! !OUTPUT PARAMETERS:
-    type(cvmix_bkgnd_params_type),  target, optional, intent(inout) :: &
+    type(cvmix_bkgnd_params_type),  target, optional, intent(inout) ::        &
                                                CVmix_bkgnd_params_user
 !EOP
 !BOC
 
     ! local vars
     integer :: nlev
-    type(cvmix_global_params_type), pointer :: CVmix_params_in
     type(cvmix_bkgnd_params_type),  pointer :: CVmix_bkgnd_params_out
-
-    nullify(CVmix_params_in)
-    if (present(CVmix_params_user)) then
-      CVmix_params_in => CVmix_params_user
-    endif
 
     CVmix_bkgnd_params_out => CVmix_bkgnd_params_saved
     if (present(CVmix_bkgnd_params_user)) then
@@ -306,17 +325,21 @@ contains
 
     ! NOTE: need to verify that bkgnd_visc and bkgnd_diff are ncol x nlev+1
 
+    nlev = CVmix_params_in%max_nlev
     if (.not.allocated(CVmix_bkgnd_params_out%static_visc)) then
-      CVmix_bkgnd_params_out%lvary_vertical   = .true.
-      CVmix_bkgnd_params_out%lvary_horizontal = .true.
-      nlev = CVmix_params_in%max_nlev
+      call cvmix_put_bkgnd('lvary_vertical', .true., CVmix_bkgnd_params_user)
+      call cvmix_put_bkgnd('lvary_horizontal', .true., CVmix_bkgnd_params_user)
       allocate(CVmix_bkgnd_params_out%static_visc(ncol,nlev+1))
+      if (allocated(CVmix_bkgnd_params_out%static_diff))                      &
+        deallocate(CVmix_bkgnd_params_out%static_diff)
       allocate(CVmix_bkgnd_params_out%static_diff(ncol,nlev+1))
-
-      ! Set static_visc and static_diff in background_input_type
-      CVmix_bkgnd_params_out%static_visc(:,:) = bkgnd_visc(:,:)
-      CVmix_bkgnd_params_out%static_diff(:,:) = bkgnd_diff(:,:)
     end if
+
+    ! Set static_visc and static_diff in background_input_type
+    call cvmix_put_bkgnd("static_visc", bkgnd_visc, ncol, nlev,              &
+                         CVmix_bkgnd_params_user)
+    call cvmix_put_bkgnd("static_diff", bkgnd_diff, ncol, nlev,              &
+                         CVmix_bkgnd_params_user)
  
     if (present(old_vals)) then
       select case (trim(old_vals))
@@ -349,7 +372,7 @@ contains
 ! !INTERFACE:
 
   subroutine cvmix_init_bkgnd_BryanLewis(CVmix_vars, bl1, bl2, bl3, bl4,      &
-                                         old_vals, CVmix_params_user,         &
+                                         CVmix_params_in, old_vals,           &
                                          CVmix_bkgnd_params_user)
 
 ! !DESCRIPTION:
@@ -394,8 +417,7 @@ contains
                                   bl3,     &! 1/m   or 1/cm
                                   bl4       ! m     or cm
     character(len=cvmix_strlen),            optional, intent(in) :: old_vals
-    type(cvmix_global_params_type), target, optional, intent(in) ::           &
-                                                  CVmix_params_user
+    type(cvmix_global_params_type), intent(in) :: CVmix_params_in
 
 ! !OUTPUT PARAMETERS:
     type(cvmix_bkgnd_params_type),  target, optional, intent(inout) :: &
@@ -404,7 +426,6 @@ contains
 !BOC
 
     ! Pointers to parameter data type
-    type(cvmix_global_params_type), pointer :: CVmix_params_in
     type(cvmix_bkgnd_params_type),  pointer :: CVmix_bkgnd_params_out
 
     ! Local index
@@ -412,11 +433,6 @@ contains
 
     ! Local copies to make code easier to read
     real(cvmix_r8), dimension(:), allocatable :: visc, diff, zw
-
-    nullify(CVmix_params_in)
-    if (present(CVmix_params_user)) then
-      CVmix_params_in => CVmix_params_user
-    endif
 
     CVmix_bkgnd_params_out => CVmix_bkgnd_params_saved
     if (present(CVmix_bkgnd_params_user)) then
@@ -955,8 +971,8 @@ contains
 ! !IROUTINE: cvmix_put_bkgnd_real_2D
 ! !INTERFACE:
 
-  subroutine cvmix_put_bkgnd_real_2D(CVmix_bkgnd_params_out, varname, val, &
-                                    ncol, nlev)
+  subroutine cvmix_put_bkgnd_real_2D(varname, val, ncol, nlev,                &
+                                     CVmix_bkgnd_params_user)
 
 ! !DESCRIPTION:
 !  Write a 2D array of real values into a cvmix\_bkgnd\_params\_type variable.
@@ -972,12 +988,20 @@ contains
     integer,                        intent(in) :: ncol, nlev
 
 ! !OUTPUT PARAMETERS:
-    type (cvmix_bkgnd_params_type), intent(inout) :: CVmix_bkgnd_params_out
+    type(cvmix_bkgnd_params_type),  optional, target, intent(inout) ::        &
+                                               CVmix_bkgnd_params_user
+
 !EOP
 !BOC
 
     ! Local vars
     integer, dimension(2) :: dims, data_dims
+    type(cvmix_bkgnd_params_type),  pointer :: CVmix_bkgnd_params_out
+
+    CVmix_bkgnd_params_out => CVmix_bkgnd_params_saved
+    if (present(CVmix_bkgnd_params_user)) then
+      CVmix_bkgnd_params_out => CVmix_bkgnd_params_user
+    end if
 
     dims      = (/ncol, nlev+1/)
     data_dims = shape(val)
@@ -1033,6 +1057,53 @@ contains
 
 !BOP
 
+! !IROUTINE: cvmix_put_bkgnd_logical
+! !INTERFACE:
+
+  subroutine cvmix_put_bkgnd_logical(varname, val, CVmix_bkgnd_params_user)
+
+! !DESCRIPTION:
+!  Write a real value into a cvmix\_bkgnd\_params\_type variable.
+!\\
+!\\
+
+! !USES:
+!  Only those used by entire module. 
+
+! !INPUT PARAMETERS:
+    character(len=*), intent(in) :: varname
+    logical,          intent(in) :: val
+
+! !OUTPUT PARAMETERS:
+    type(cvmix_bkgnd_params_type), target, optional, intent(inout) ::         &
+                                              CVmix_bkgnd_params_user
+
+!EOP
+!BOC
+
+    type(cvmix_bkgnd_params_type), pointer :: CVmix_bkgnd_params_out
+
+    CVmix_bkgnd_params_out => CVmix_bkgnd_params_saved
+    if (present(CVmix_bkgnd_params_user)) then
+      CVmix_bkgnd_params_out => CVmix_bkgnd_params_user
+    end if
+
+    select case (trim(varname))
+      case ('lvary_vertical')
+        CVmix_bkgnd_params_out%lvary_vertical = val
+      case ('lvary_horizontal')
+        CVmix_bkgnd_params_out%lvary_horizontal = val
+      case DEFAULT
+        print*, "ERROR: ", trim(varname), " not a valid choice!"
+        stop 1
+    end select
+
+!EOC
+
+  end subroutine cvmix_put_bkgnd_logical
+
+!BOP
+
 ! !IROUTINE: cvmix_get_bkgnd_real_2D
 ! !INTERFACE:
 
@@ -1071,14 +1142,11 @@ contains
     select case (trim(varname))
       case ('static_visc')
         cvmix_get_bkgnd_real_2D = CVmix_bkgnd_params_get%static_visc(:,:)
-
       case ('static_diff')
         cvmix_get_bkgnd_real_2D = CVmix_bkgnd_params_get%static_diff(:,:)
-
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
         stop 1
-      
     end select
 
 !EOC
