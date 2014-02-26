@@ -43,7 +43,7 @@ contains
                                Tdiff_out, new_Tdiff, Sdiff_out, new_Sdiff)
 
 ! !DESCRIPTION:
-!  Update diffusivity values based on old_val (either overwrite, sum, or find
+!  Update diffusivity values based on \verb|old_vals| (either overwrite, sum, or find
 !  the level-by-level max)
 !\\
 !\\

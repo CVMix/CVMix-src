@@ -14,66 +14,85 @@
 
 ! !USES:
 
-   use cvmix_kinds_and_types, only : cvmix_r8,                     &
-                                     cvmix_zero,                   &
-                                     cvmix_one,                    &
-                                     cvmix_strlen,                 &
-                                     cvmix_data_type
-   use cvmix_background, only :      cvmix_bkgnd_params_type,      &
-                                     cvmix_bkgnd_lvary_horizontal, &
-                                     cvmix_bkgnd_static_diff,      &
-                                     cvmix_bkgnd_static_visc
+  use cvmix_kinds_and_types, only : cvmix_r8,                                 &
+                                    cvmix_zero,                               &
+                                    cvmix_one,                                &
+                                    cvmix_strlen,                             &
+                                    cvmix_data_type,                          &
+                                    CVMIX_OVERWRITE_OLD_VAL,                  &
+                                    CVMIX_SUM_OLD_AND_NEW_VALS,               &
+                                    CVMIX_MAX_OLD_AND_NEW_VALS
+  use cvmix_background,      only : cvmix_bkgnd_params_type,                  &
+                                    cvmix_bkgnd_lvary_horizontal,             &
+                                    cvmix_bkgnd_static_diff,                  &
+                                    cvmix_bkgnd_static_visc
+  use cvmix_put_get,         only : cvmix_put
+  use cvmix_utils,           only : cvmix_update_wrap
 !EOP
 
-   implicit none
-   private
-   save
+  implicit none
+  private
+  save
 
 !BOP
 
 ! !PUBLIC MEMBER FUNCTIONS:
 
-   public :: cvmix_init_shear
-   public :: cvmix_coeffs_shear
-   public :: cvmix_put_shear
-   public :: cvmix_get_shear_real
-   public :: cvmix_get_shear_str
+  public :: cvmix_init_shear
+  public :: cvmix_coeffs_shear
+  public :: cvmix_put_shear
+  public :: cvmix_get_shear_real
+  public :: cvmix_get_shear_str
 
-   interface cvmix_put_shear
-     module procedure cvmix_put_shear_int
-     module procedure cvmix_put_shear_real
-     module procedure cvmix_put_shear_str
-   end interface cvmix_put_shear
+  interface cvmix_coeffs_shear
+    module procedure cvmix_coeffs_shear_low
+    module procedure cvmix_coeffs_shear_wrap
+  end interface cvmix_coeffs_shear
+
+  interface cvmix_put_shear
+    module procedure cvmix_put_shear_int
+    module procedure cvmix_put_shear_real
+    module procedure cvmix_put_shear_str
+  end interface cvmix_put_shear
 
 ! !PUBLIC TYPES:
 
   ! cvmix_shear_params_type contains the necessary parameters for shear mixing
   ! (currently Pacanowski-Philander or Large et al)
   type, public :: cvmix_shear_params_type
-      private
+    private
       ! Type of shear mixing to run (PP => Pacanowski-Philander, KPP => LMD94)
       character(len=cvmix_strlen) :: mix_scheme
+
       ! numerator in viscosity term in PP81
       ! See Eqs. (1) and (2)
       real(cvmix_r8) :: PP_nu_zero  ! units: m^2/s
+
       ! coefficient of Richardson number in denominator of diff / visc terms
       real(cvmix_r8) :: PP_alpha    ! units: unitless
+
       ! exponent of denominator in viscosity term
       real(cvmix_r8) :: PP_exp      ! units: unitless
+
       ! leading coefficient of LMD94 shear mixing formula (max diff / visc)
       ! see Eq. (28b)
       real(cvmix_r8) :: KPP_nu_zero ! units: m^2/s
+
       ! critical Richardson number value (larger values result in 0 diffusivity
       ! and viscosity)
       real(cvmix_r8) :: KPP_Ri_zero ! units: unitless
+
       ! Exponent of unitless factor of diff / visc
       real(cvmix_r8) :: KPP_exp     ! units: unitless
+
+      ! Flag for what to do with old values of CVmix_vars%[MTS]diff
+      integer :: handle_old_vals
   end type cvmix_shear_params_type
 !EOP
 
   type(cvmix_shear_params_type), target :: CVmix_shear_params_saved
 
- contains
+contains
 
 !BOP
 
@@ -82,7 +101,7 @@
 
   subroutine cvmix_init_shear(CVmix_shear_params_user, mix_scheme,            &
                               PP_nu_zero, PP_alpha, PP_exp, KPP_nu_zero,      &
-                              KPP_Ri_zero, KPP_exp)
+                              KPP_Ri_zero, KPP_exp, old_vals)
 
 ! !DESCRIPTION:
 !  Initialization routine for shear (Richardson number-based) mixing. There are
@@ -118,7 +137,8 @@
 !  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
-    character(len=*), optional, intent(in) :: mix_scheme 
+    character(len=*), optional, intent(in) :: mix_scheme,                     &
+                                              old_vals
     real(cvmix_r8),   optional, intent(in) :: PP_nu_zero,                     &
                                               PP_alpha,                       &
                                               PP_exp,                         &
@@ -200,17 +220,38 @@
 
     end select
 
+    if (present(old_vals)) then
+      select case (trim(old_vals))
+        case ("overwrite")
+          call cvmix_put_shear('handle_old_vals', CVMIX_OVERWRITE_OLD_VAL,    &
+                               cvmix_shear_params_user)
+        case ("sum")
+          call cvmix_put_shear('handle_old_vals', CVMIX_SUM_OLD_AND_NEW_VALS, &
+                               cvmix_shear_params_user)
+        case ("max")
+          call cvmix_put_shear('handle_old_vals', CVMIX_MAX_OLD_AND_NEW_VALS, &
+                               cvmix_shear_params_user)
+        case DEFAULT
+          print*, "ERROR: ", trim(old_vals), " is not a valid option for ",   &
+                  "handling old values of diff and visc."
+          stop 1
+      end select
+    else
+      call cvmix_put_shear('handle_old_vals', CVMIX_OVERWRITE_OLD_VAL,        &
+                               cvmix_shear_params_user)
+    end if
+
 !EOC
 
   end subroutine cvmix_init_shear
 
 !BOP
 
-! !IROUTINE: cvmix_coeffs_shear
+! !IROUTINE: cvmix_coeffs_shear_wrap
 ! !INTERFACE:
 
-  subroutine cvmix_coeffs_shear(CVmix_vars, CVmix_bkgnd_params, colid,        &
-                                no_diff, CVmix_shear_params_user)
+  subroutine cvmix_coeffs_shear_wrap(CVmix_vars, CVmix_bkgnd_params, colid,   &
+                                     no_diff, CVmix_shear_params_user)
 
 ! !DESCRIPTION:
 !  Computes vertical tracer and velocity mixing coefficients for
@@ -236,12 +277,79 @@
 !EOP
 !BOC
 
+    real(cvmix_r8), dimension(:), allocatable :: new_Mdiff, new_Tdiff
+    integer :: nlev
+    type(cvmix_shear_params_type), pointer :: CVmix_shear_params_in
+
+    if (present(CVmix_shear_params_user)) then
+      CVmix_shear_params_in => CVmix_shear_params_user
+    else
+      CVmix_shear_params_in => CVmix_shear_params_saved
+    end if
+
+    nlev = CVmix_vars%nlev
+    allocate(new_Mdiff(nlev+1), new_Tdiff(nlev+1))
+    if (.not.associated(CVmix_vars%Mdiff_iface)) &
+      call cvmix_put(CVmix_vars, "Mdiff", cvmix_zero)
+    if (.not.associated(CVmix_vars%Tdiff_iface)) &
+      call cvmix_put(CVmix_vars, "Tdiff", cvmix_zero)
+
+    call cvmix_coeffs_shear(new_Mdiff, new_Tdiff,                             &
+                            CVmix_vars%ShearRichardson_iface,                 &
+                            nlev, CVmix_bkgnd_params, colid, no_diff,         &
+                            CVmix_shear_params_user)
+    call cvmix_update_wrap(CVmix_shear_params_in%handle_old_vals, nlev,       &
+                           Mdiff_out = CVmix_vars%Mdiff_iface,                &
+                           new_Mdiff = new_Mdiff,                             &
+                           Tdiff_out = CVmix_vars%Tdiff_iface,                &
+                           new_Tdiff = new_Tdiff)
+    deallocate(new_Mdiff, new_Tdiff)
+
+!EOC
+
+  end subroutine cvmix_coeffs_shear_wrap
+!BOP
+
+! !IROUTINE: cvmix_coeffs_shear_low
+! !INTERFACE:
+
+  subroutine cvmix_coeffs_shear_low(Mdiff_out, Tdiff_out, RICH, nlev,         &
+                                    CVmix_bkgnd_params_user, colid, no_diff,  &
+                                    CVmix_shear_params_user)
+
+! !DESCRIPTION:
+!  Computes vertical tracer and velocity mixing coefficients for
+!  shear-type mixing parameterizations. Note that Richardson number
+!  is needed at both T-points and U-points.
+!\\
+!\\
+!
+! !USES:
+!  only those used by entire module.
+
+! !INPUT PARAMETERS:
+    type(cvmix_shear_params_type), target, optional, intent(in) ::            &
+                                           CVmix_shear_params_user
+    real(cvmix_r8), dimension(:), intent(in) :: RICH
+    integer, intent(in) :: nlev
+    ! PP mixing requires CVmix_bkgnd_params
+    type(cvmix_bkgnd_params_type), optional, intent(in) ::                    &
+                                   CVmix_bkgnd_params_user
+    ! colid is only needed if CVmix_bkgnd_params_user%lvary_horizontal is true
+    integer,                       optional, intent(in) :: colid
+    logical,                       optional, intent(in) :: no_diff
+
+! !INPUT/OUTPUT PARAMETERS:
+    real(cvmix_r8), dimension(:), intent(inout) :: Mdiff_out, Tdiff_out
+
+!EOP
+!BOC
+
     integer                   :: kw ! vertical cell index
     logical                   :: calc_diff
     real(cvmix_r8)            :: nu
     real(cvmix_r8)            :: nu_zero, PP_alpha, KPP_Ri_zero, loc_exp
     real(cvmix_r8)            :: bkgnd_diff, bkgnd_visc
-    real(cvmix_r8), pointer, dimension(:) :: RICH
     type(cvmix_shear_params_type), pointer :: CVmix_shear_params
 
     if (present(CVmix_shear_params_user)) then
@@ -250,8 +358,6 @@
       CVmix_shear_params => CVmix_shear_params_saved
     end if
 
-    ! Pointer to make the code more legible
-    RICH => CVmix_vars%ShearRichardson_iface
     if (.not.present(no_diff)) then
       calc_diff = .true.
     else
@@ -261,11 +367,11 @@
     select case (trim(CVmix_shear_params%mix_scheme))
       case ('PP')
         ! Error checks
-        if (.not.present(CVmix_bkgnd_params)) then
+        if (.not.present(CVmix_bkgnd_params_user)) then
           print*, "ERROR: can not run PP mixing without background mixing."
           stop 1
         end if
-        if (cvmix_bkgnd_lvary_horizontal(CVmix_bkgnd_params).and.             &
+        if (cvmix_bkgnd_lvary_horizontal(CVmix_bkgnd_params_user).and.        &
             (.not.present(colid))) then
           print*, "ERROR: background visc and diff vary in horizontal so you",&
                   "must pass column index to cvmix_coeffs_shear"
@@ -278,14 +384,15 @@
         loc_exp  = CVmix_shear_params%PP_exp
 
         ! Pacanowski-Philander
-        do kw=1,CVmix_vars%nlev+1
-          bkgnd_diff = cvmix_bkgnd_static_diff(CVmix_bkgnd_params, kw, colid)
-          bkgnd_visc = cvmix_bkgnd_static_visc(CVmix_bkgnd_params, kw, colid)
+        do kw=1,nlev+1
+          bkgnd_diff = cvmix_bkgnd_static_diff(CVmix_bkgnd_params_user, kw,   &
+                                               colid)
+          bkgnd_visc = cvmix_bkgnd_static_visc(CVmix_bkgnd_params_user, kw,   &
+                                               colid)
           nu = nu_zero/((cvmix_one+PP_alpha*RICH(kw))**loc_exp)+bkgnd_visc
-          CVmix_vars%Mdiff_iface(kw) = nu
+          Mdiff_out(kw) = nu
           if (calc_diff) &
-            CVmix_vars%Tdiff_iface(kw) = nu/(cvmix_one+PP_alpha*RICH(kw)) +   &
-                                         bkgnd_diff
+            Tdiff_out(kw) = nu/(cvmix_one+PP_alpha*RICH(kw)) + bkgnd_diff
         end do
 
       case ('KPP')
@@ -295,18 +402,18 @@
         loc_exp     = CVmix_shear_params%KPP_exp
 
         ! Large, et al
-        do kw=1,CVmix_vars%nlev+1
+        do kw=1,nlev+1
             if (RICH(kw).lt.0) then
-              CVmix_vars%Tdiff_iface(kw) = nu_zero
+              Tdiff_out(kw) = nu_zero
             else if (RICH(kw).lt.KPP_Ri_zero) then
-              CVmix_vars%Tdiff_iface(kw) = nu_zero * (cvmix_one -             &
-                   (RICH(kw)/KPP_Ri_zero)**2)**loc_exp
+              Tdiff_out(kw) = nu_zero * (cvmix_one - (RICH(kw)/KPP_Ri_zero)   &
+                                                     **2)**loc_exp
             else ! Ri_g >= Ri_zero
-              CVmix_vars%Tdiff_iface(kw) = 0
+              Tdiff_out(kw) = 0
             end if
         end do
         ! to do: include global params for prandtl number!
-        CVmix_vars%Mdiff_iface = CVmix_vars%Tdiff_iface
+        Mdiff_out = Tdiff_out
 
       case DEFAULT
         ! Note: this error should be caught in cvmix_init_shear
@@ -317,7 +424,7 @@
 
 !EOC
 
-  end subroutine cvmix_coeffs_shear
+  end subroutine cvmix_coeffs_shear_low
 
 !BOP
 
@@ -345,7 +452,21 @@
 !EOP
 !BOC
 
-    call cvmix_put_shear(varname, real(val,cvmix_r8), CVmix_shear_params_user)
+    type(cvmix_shear_params_type), pointer :: CVmix_shear_params_out
+
+    if (present(CVmix_shear_params_user)) then
+      CVmix_shear_params_out => CVmix_shear_params_user
+    else
+      CVmix_shear_params_out => CVmix_shear_params_saved
+    end if
+
+    select case(trim(varname))
+      case ('old_vals', 'handle_old_vals')
+        CVmix_shear_params_out%handle_old_vals = val
+      case DEFAULT
+      call cvmix_put_shear(varname, real(val,cvmix_r8),                       &
+                           CVmix_shear_params_user)
+    end select
 
 !EOC
 
