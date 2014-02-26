@@ -62,7 +62,7 @@ echo "Looking for grid file ${GRID_FILE}..."
 if [ -e ${DATA_DIR}/${GRID_FILE} ]; then
   echo "Found!"
 else
-  svn export ${DATA_REPO}/${GRID_FILE} ${DATA_DIR}
+  svn export ${DATA_REPO}/${GRID_FILE} ${DATA_DIR}/${GRID_FILE}
   echo "... Downloaded!"
 fi
 
@@ -70,7 +70,7 @@ echo "Looking for physics file ${PHYS_FILE}..."
 if [ -e ${DATA_DIR}/${PHYS_FILE} ]; then
   echo "Found!"
 else
-  svn export ${DATA_REPO}/${PHYS_FILE} ${DATA_DIR}
+  svn export ${DATA_REPO}/${PHYS_FILE} ${DATA_DIR}/${PHYS_FILE}
   echo "... Downloaded!"
 fi
 
@@ -78,7 +78,7 @@ echo "Looking for energy map file ${ENERGY_FILE}..."
 if [ -e ${DATA_DIR}/${ENERGY_FILE} ]; then
   echo "Found!"
 else
-  svn export ${DATA_REPO}/${ENERGY_FILE} ${DATA_DIR}
+  svn export ${DATA_REPO}/${ENERGY_FILE} ${DATA_DIR}/${ENERGY_FILE}
   echo "... Downloaded!"
 fi
 
