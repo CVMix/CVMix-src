@@ -20,7 +20,8 @@ f90pdf                                       \
        $SHARE/cvmix_kpp.F90                  \
        $SHARE/cvmix_convection.F90           \
        $SHARE/cvmix_math.F90                 \
-       $SHARE/cvmix_put_get.F90
+       $SHARE/cvmix_put_get.F90              \
+       $SHARE/cvmix_utils.F90
 
 rm -f output.tex
 mv -f output.pdf protex_documentation.pdf

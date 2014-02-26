@@ -1282,6 +1282,9 @@ contains
                                         CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
+! Compute the nonlocal transport contribution to vertical turbulent fluxes.
+! Note that Large, et al., refer to $\gamma_x$ as the non-local term, while
+! this routine computes $K_x\gamma_x/$[surface forcing]
 !\\
 !\\
 
