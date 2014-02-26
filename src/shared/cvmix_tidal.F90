@@ -18,8 +18,12 @@
                                     cvmix_one,                                &
                                     cvmix_data_type,                          &
                                     cvmix_strlen,                             &
-                                    cvmix_global_params_type
+                                    cvmix_global_params_type,                 &
+                                    CVMIX_OVERWRITE_OLD_VAL,                  &
+                                    CVMIX_SUM_OLD_AND_NEW_VALS,               &
+                                    CVMIX_MAX_OLD_AND_NEW_VALS
   use cvmix_put_get,         only : cvmix_put
+  use cvmix_utils,           only : cvmix_update_wrap
 
 !EOP
 
@@ -38,6 +42,11 @@
   public :: cvmix_get_tidal_real
   public :: cvmix_get_tidal_str
 
+  interface cvmix_coeffs_tidal
+    module procedure cvmix_coeffs_tidal_low
+    module procedure cvmix_coeffs_tidal_wrap
+  end interface cvmix_coeffs_tidal
+
   interface cvmix_put_tidal
     module procedure cvmix_put_tidal_int
     module procedure cvmix_put_tidal_real
@@ -50,20 +59,30 @@
   ! (currently just Simmons)
   type, public :: cvmix_tidal_params_type
     private
-    ! Tidal mixing scheme being used (currently only support Simmons et al)
+      ! Tidal mixing scheme being used (currently only support Simmons et al)
       character(len=cvmix_strlen) :: mix_scheme
+
       ! efficiency is the mixing efficiency (Gamma in Simmons)
       real(cvmix_r8) :: efficiency           ! units: unitless (fraction)
+
       ! local_mixing_frac is the tidal dissipation efficiency (q in Simmons)
       real(cvmix_r8) :: local_mixing_frac    ! units: unitless (fraction)
+
       ! vertical_decay_scale is zeta in the Simmons paper (used to compute the
       ! vertical deposition function)
       real(cvmix_r8) :: vertical_decay_scale ! units: m
+
       ! depth_cutoff is depth of the shallowest column where tidal mixing is
       ! computed (like all depths, positive => below the surface)
       real(cvmix_r8) :: depth_cutoff         ! units: m
+
       ! max_coefficient is the largest acceptable value for diffusivity 
       real(cvmix_r8) :: max_coefficient      ! units: m^2/s
+
+      ! Flag for what to do with old values of CVmix_vars%[MTS]diff
+      integer :: handle_old_vals
+
+      ! Note: need to include some logic to avoid excessive memory use
   end type cvmix_tidal_params_type
 !EOP
 
@@ -78,7 +97,7 @@ contains
 
   subroutine cvmix_init_tidal(CVmix_tidal_params_user, mix_scheme, efficiency,&
                               vertical_decay_scale, max_coefficient,          &
-                              local_mixing_frac, depth_cutoff)
+                              local_mixing_frac, depth_cutoff, old_vals)
 
 ! !DESCRIPTION:
 !  Initialization routine for tidal mixing. There is currently just one
@@ -89,7 +108,7 @@ contains
 !  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
-    character(len=*), optional, intent(in) :: mix_scheme
+    character(len=*), optional, intent(in) :: mix_scheme, old_vals
     real(cvmix_r8),   optional, intent(in) :: efficiency
     real(cvmix_r8),   optional, intent(in) :: vertical_decay_scale
     real(cvmix_r8),   optional, intent(in) :: max_coefficient
@@ -168,17 +187,38 @@ contains
 
     end select
 
+    if (present(old_vals)) then
+      select case (trim(old_vals))
+        case ("overwrite")
+          call cvmix_put_tidal('handle_old_vals', CVMIX_OVERWRITE_OLD_VAL,    &
+                               cvmix_tidal_params_user)
+        case ("sum")
+          call cvmix_put_tidal('handle_old_vals', CVMIX_SUM_OLD_AND_NEW_VALS, &
+                               cvmix_tidal_params_user)
+        case ("max")
+          call cvmix_put_tidal('handle_old_vals', CVMIX_MAX_OLD_AND_NEW_VALS, &
+                               cvmix_tidal_params_user)
+        case DEFAULT
+          print*, "ERROR: ", trim(old_vals), " is not a valid option for ",   &
+                  "handling old values of diff and visc."
+          stop 1
+      end select
+    else
+      call cvmix_put_tidal('handle_old_vals', CVMIX_OVERWRITE_OLD_VAL,        &
+                               cvmix_tidal_params_user)
+    end if
+
 !EOC
 
   end subroutine cvmix_init_tidal
 
 !BOP
 
-! !IROUTINE: cvmix_coeffs_tidal
+! !IROUTINE: cvmix_coeffs_tidal_wrap
 ! !INTERFACE:
 
-  subroutine cvmix_coeffs_tidal(CVmix_vars, CVmix_params, energy_flux,        &
-                                CVmix_tidal_params_user)
+  subroutine cvmix_coeffs_tidal_wrap(CVmix_vars, CVmix_params, energy_flux,   &
+                                     CVmix_tidal_params_user)
 
 ! !DESCRIPTION:
 !  Computes vertical diffusion coefficients for tidal mixing
@@ -202,8 +242,63 @@ contains
 !BOC
 
     ! Local variables
+    real(cvmix_r8), dimension(:), allocatable :: new_Tdiff
+    integer :: nlev
+    type(cvmix_tidal_params_type),  pointer :: CVmix_tidal_params_in
+       
+    CVmix_tidal_params_in => CVmix_tidal_params_saved
+    if (present(CVmix_tidal_params_user)) then
+      CVmix_tidal_params_in => CVmix_tidal_params_user
+    end if
+
+    nlev = CVmix_vars%nlev
+    allocate(new_Tdiff(nlev+1))
+
+    call cvmix_coeffs_tidal(new_Tdiff, CVmix_vars%SqrBuoyancyFreq_iface,      & 
+                            CVmix_vars%zw_iface, CVmix_vars%zt_cntr,          &
+                            CVmix_vars%OceanDepth, CVMix_params,              &
+                            energy_flux, CVmix_tidal_params_user)
+    call cvmix_update_wrap(CVmix_tidal_params_in%handle_old_vals, nlev,       &
+                           Tdiff_out = CVmix_vars%Tdiff_iface,                &
+                           new_Tdiff = new_Tdiff)
+    deallocate(new_Tdiff)
+!EOC
+
+  end subroutine cvmix_coeffs_tidal_wrap
+!BOP
+
+! !IROUTINE: cvmix_coeffs_tidal_low
+! !INTERFACE:
+
+  subroutine cvmix_coeffs_tidal_low(Tdiff_out, Nsqr, zw, zt, OceanDepth,      &
+                                    CVmix_params, energy_flux,                &
+                                    CVmix_tidal_params_user)
+
+! !DESCRIPTION:
+!  Computes vertical diffusion coefficients for tidal mixing
+!  parameterizations.
+!\\
+!\\
+!
+! !USES:
+!  only those used by entire module.
+
+! !INPUT PARAMETERS:
+    type(cvmix_tidal_params_type),  target, optional, intent(in) ::           &
+                                            CVmix_tidal_params_user
+    type(cvmix_global_params_type), intent(in) :: CVmix_params
+    real(cvmix_r8),                 intent(in) :: OceanDepth, energy_flux
+    real(cvmix_r8), dimension(:),   intent(in) :: Nsqr, zw, zt
+
+! !INPUT/OUTPUT PARAMETERS:
+    real(cvmix_r8), dimension(:), intent(inout) :: Tdiff_out
+
+!EOP
+!BOC
+
+    ! Local variables
     integer        :: nlev, k
-    real(cvmix_r8) :: coef, rho, Nsqr, z_cut
+    real(cvmix_r8) :: coef, rho, z_cut
     real(cvmix_r8), allocatable, dimension(:) :: vert_dep
 
     type(cvmix_tidal_params_type), pointer :: CVmix_tidal_params
@@ -214,25 +309,24 @@ contains
       CVmix_tidal_params => CVmix_tidal_params_saved
     end if
 
-    nlev = CVmix_vars%nlev
+    nlev = size(zt)
     rho  = CVmix_params%FreshWaterDensity
 
     select case (trim(CVmix_tidal_params%mix_scheme))
       case ('simmons','Simmons')
         allocate(vert_dep(nlev+1))
-        vert_dep = cvmix_compute_vert_dep(CVmix_vars, CVmix_tidal_params)
+        vert_dep = cvmix_compute_vert_dep(zw, zt, nlev, CVmix_tidal_params)
         coef = CVmix_tidal_params%local_mixing_frac * &
                CVmix_tidal_params%efficiency *        &
                energy_flux
-        call cvmix_put(CVmix_vars, "Tdiff", cvmix_zero)
-        if (CVmix_vars%OceanDepth.ge.CVmix_tidal_params%depth_cutoff) then
+        Tdiff_out = cvmix_zero
+        if (OceanDepth.ge.CVmix_tidal_params%depth_cutoff) then
           do k=1, nlev+1
-            Nsqr = CVmix_vars%SqrBuoyancyFreq_iface(k)
             z_cut = CVmix_tidal_params%depth_cutoff
-            if (Nsqr.gt.cvmix_zero) &
-              CVmix_vars%Tdiff_iface(k) = coef*vert_dep(k)/(rho*Nsqr)
-            if (CVmix_vars%Tdiff_iface(k).gt.CVmix_tidal_params%max_coefficient) &
-              CVmix_vars%Tdiff_iface(k) = CVmix_tidal_params%max_coefficient
+            if (Nsqr(k).gt.cvmix_zero) &
+              Tdiff_out(k) = coef*vert_dep(k)/(rho*Nsqr(k))
+            if (Tdiff_out(k).gt.CVmix_tidal_params%max_coefficient) &
+              Tdiff_out(k) = CVmix_tidal_params%max_coefficient
           end do
         end if
         deallocate(vert_dep)
@@ -246,14 +340,14 @@ contains
 
 !EOC
 
-  end subroutine cvmix_coeffs_tidal
+  end subroutine cvmix_coeffs_tidal_low
 
 !BOP
 
 ! !IROUTINE: cvmix_compute_vert_dep
 ! !INTERFACE:
 
-  function cvmix_compute_vert_dep(CVmix_vars, CVmix_tidal_params)
+  function cvmix_compute_vert_dep(zw, zt, nlev, CVmix_tidal_params)
 
 ! !DESCRIPTION:
 !  Computes the vertical deposition function needed for Simmons et al tidal
@@ -266,26 +360,25 @@ contains
 
 ! !INPUT PARAMETERS:
     type(cvmix_tidal_params_type), intent(in) :: CVmix_tidal_params
-    type(cvmix_data_type),         intent(in) :: CVmix_vars
+    real(cvmix_r8), dimension(:),  intent(in) :: zw, zt
+    integer,                       intent(in) :: nlev
 
 ! !OUTPUT PARAMETERS:
-    real(cvmix_r8), dimension(CVMix_vars%nlev+1) :: cvmix_compute_vert_dep
+    real(cvmix_r8), dimension(nlev+1) :: cvmix_compute_vert_dep
 
 !EOP
 !BOC
 
     ! Local variables
     real(cvmix_r8) :: tot_area, num, thick
-    integer        :: k, nlev
-
-    nlev = CVmix_vars%nlev
+    integer        :: k
 
     ! Compute vertical deposition
     tot_area = cvmix_zero
     cvmix_compute_vert_dep(1) = cvmix_zero
     cvmix_compute_vert_dep(nlev+1) = cvmix_zero
     do k=2,nlev
-      num = -CVmix_vars%zw_iface(k)/CVmix_tidal_params%vertical_decay_scale
+      num = -zw(k)/CVmix_tidal_params%vertical_decay_scale
       ! Simmons vertical deposition
       ! Note that it is getting normalized (divide through by tot_area)
       ! So multiplicative constants that are independent of z are omitted
@@ -293,7 +386,7 @@ contains
 
       ! Compute integral of vert_dep via trapezoid rule
       ! (looks like midpoint rule, but vert_dep = 0 at z=0 and z=-ocn_depth)
-      thick = CVmix_vars%zt_cntr(k-1) - CVmix_vars%zt_cntr(k)
+      thick = zt(k-1) - zt(k)
       tot_area = tot_area + cvmix_compute_vert_dep(k)*thick
     end do
     ! Normalize vert_dep (need integral = 1.0D0)
@@ -329,7 +422,20 @@ contains
 !EOP
 !BOC
 
-    call cvmix_put_tidal(varname, real(val,cvmix_r8), CVmix_tidal_params_user)
+    type(cvmix_tidal_params_type), pointer :: CVmix_tidal_params_out
+
+    CVmix_tidal_params_out => CVmix_tidal_params_saved
+    if (present(CVmix_tidal_params_user)) then
+      CVmix_tidal_params_out => CVmix_tidal_params_user
+    end if
+
+    select case (trim(varname))
+      case ('old_vals', 'handle_old_vals')
+        CVmix_tidal_params_out%handle_old_vals = val
+      case DEFAULT
+        call cvmix_put_tidal(varname, real(val,cvmix_r8),                     &
+                             CVmix_tidal_params_user)
+    end select
 
 !EOC
 
