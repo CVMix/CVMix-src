@@ -17,7 +17,7 @@ module cvmix_io
    use cvmix_kinds_and_types, only : cvmix_data_type, &
                                      cvmix_r8,        &
                                      cvmix_strlen
-   use cvmix_put_get,         only : cvmix_att_name
+   use cvmix_utils,           only : cvmix_att_name
 #ifdef _NETCDF
    use netcdf
 #endif

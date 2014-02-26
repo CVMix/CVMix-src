@@ -57,7 +57,8 @@ MODULES = cvmix_background.F90 \
           cvmix_math.F90 \
           cvmix_put_get.F90 \
           cvmix_shear.F90 \
-          cvmix_tidal.F90
+          cvmix_tidal.F90 \
+          cvmix_utils.F90
 
 # Some compilers produce ALL_UPPER_CASE.mod files
 ifeq ($(UCASE),TRUE)

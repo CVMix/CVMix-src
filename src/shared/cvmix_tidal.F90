@@ -20,6 +20,7 @@
                                     cvmix_strlen,                             &
                                     cvmix_global_params_type
   use cvmix_put_get,         only : cvmix_put
+
 !EOP
 
   implicit none
@@ -470,6 +471,7 @@ contains
       CVmix_tidal_params_in => CVmix_tidal_params_saved
     end if
 
+    cvmix_get_tidal_real = cvmix_zero
     select case (trim(varname))
       case ('efficiency')
         cvmix_get_tidal_real = CVmix_tidal_params_in%efficiency
@@ -484,7 +486,6 @@ contains
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
         stop 1
-      
     end select
 
 !EOC

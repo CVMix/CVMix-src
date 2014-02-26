@@ -113,9 +113,9 @@ contains
 !  Only those used by entire module. 
 
 ! !INPUT PARAMETERS:
-    real(cvmix_r8),                        intent(in) :: bkgnd_diff
-    real(cvmix_r8),                        intent(in) :: bkgnd_visc
-    character(len=cvmix_strlen), optional, intent(in) :: old_vals
+    real(cvmix_r8),             intent(in) :: bkgnd_diff
+    real(cvmix_r8),             intent(in) :: bkgnd_visc
+    character(len=*), optional, intent(in) :: old_vals
 
 ! !OUTPUT PARAMETERS:
     type(cvmix_bkgnd_params_type), optional, target, intent(inout) :: &
