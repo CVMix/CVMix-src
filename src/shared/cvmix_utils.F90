@@ -12,8 +12,12 @@ module cvmix_utils
 
 ! !USES:
 
-   use cvmix_kinds_and_types, only : cvmix_r8,                  &
-                                     cvmix_strlen
+   use cvmix_kinds_and_types, only : cvmix_r8,                                &
+                                     cvmix_strlen,                            &
+                                     CVMIX_SUM_OLD_AND_NEW_VALS,              &
+                                     CVMIX_MAX_OLD_AND_NEW_VALS,              &
+                                     CVMIX_OVERWRITE_OLD_VAL
+
 !EOP
 
   implicit none
@@ -23,11 +27,78 @@ module cvmix_utils
 !BOP
 
 ! !PUBLIC MEMBER FUNCTIONS:
+  public :: cvmix_update_wrap
   public :: cvmix_att_name
 
 !EOP
 
 contains
+
+!BOP
+
+! !IROUTINE: cvmix_update_wrap
+! !INTERFACE:
+
+  subroutine cvmix_update_wrap(old_vals, nlev, Mdiff_out, new_Mdiff,          &
+                               Tdiff_out, new_Tdiff, Sdiff_out, new_Sdiff)
+
+! !DESCRIPTION:
+!  Update diffusivity values based on old_val (either overwrite, sum, or find
+!  the level-by-level max)
+!\\
+!\\
+
+! !USES:
+!  Only those used by entire module. 
+
+! !INPUT PARAMETERS:
+    integer, intent(in) :: old_vals, nlev
+    real(cvmix_r8), dimension(:), optional, intent(in) :: new_Mdiff,          &
+                                                          new_Tdiff,          &
+                                                          new_Sdiff
+
+! !OUTPUT PARAMETERS:
+    real(cvmix_r8), dimension(:), optional, intent(inout) :: Mdiff_out,       &
+                                                             Tdiff_out,       &
+                                                             Sdiff_out
+
+!EOP
+!BOC
+
+    integer :: kw
+
+    select case (old_vals)
+      case (CVMIX_SUM_OLD_AND_NEW_VALS)
+        if ((present(Mdiff_out)).and.(present(new_Mdiff))) &
+          Mdiff_out = Mdiff_out + new_Mdiff
+        if ((present(Tdiff_out)).and.(present(new_Tdiff))) &
+          Tdiff_out = Tdiff_out + new_Tdiff
+        if ((present(Sdiff_out)).and.(present(new_Sdiff))) &
+          Sdiff_out = Sdiff_out + new_Sdiff
+      case (CVMIX_MAX_OLD_AND_NEW_VALS)
+        do kw=1,nlev+1
+          if ((present(Mdiff_out)).and.(present(new_Mdiff))) &
+            Mdiff_out(kw) = max(Mdiff_out(kw), new_Mdiff(kw))
+          if ((present(Tdiff_out)).and.(present(new_Tdiff))) &
+            Tdiff_out(kw) = max(Tdiff_out(kw), new_Tdiff(kw))
+          if ((present(Sdiff_out)).and.(present(new_Sdiff))) &
+            Sdiff_out(kw) = max(Sdiff_out(kw), new_Sdiff(kw))
+        end do
+      case (CVMIX_OVERWRITE_OLD_VAL)
+        if ((present(Mdiff_out)).and.(present(new_Mdiff))) &
+          Mdiff_out = new_Mdiff
+        if ((present(Tdiff_out)).and.(present(new_Tdiff))) &
+          Tdiff_out = new_Tdiff
+        if ((present(Sdiff_out)).and.(present(new_Sdiff))) &
+          Sdiff_out = new_Sdiff
+      case DEFAULT
+        print*, "ERROR: do not know how to handle old values!"
+        stop 1
+    end select
+
+!EOC
+
+  end subroutine cvmix_update_wrap
 
 !BOP
 
