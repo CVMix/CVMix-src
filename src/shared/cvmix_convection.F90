@@ -21,6 +21,7 @@ module cvmix_convection
                                     CVMIX_OVERWRITE_OLD_VAL,                  &
                                     CVMIX_SUM_OLD_AND_NEW_VALS,               &
                                     CVMIX_MAX_OLD_AND_NEW_VALS
+  use cvmix_utils,           only : cvmix_update_wrap
 
 !EOP
 
@@ -179,7 +180,7 @@ contains
 !-----------------------------------------------------------------------
 
     real(cvmix_r8), dimension(:), allocatable :: new_Mdiff, new_Tdiff
-    integer :: nlev, kw
+    integer :: nlev
     type (cvmix_conv_params_type), pointer :: CVmix_conv_params_in
 
     if (present(CVmix_conv_params_user)) then
@@ -199,26 +200,11 @@ contains
                            CVmix_vars%WaterDensity_cntr,                      &
                            CVmix_vars%AdiabWaterDensity_cntr,                 &
                            CVmix_conv_params_user)
-
-    select case (CVmix_conv_params_in%handle_old_vals)
-      case (CVMIX_SUM_OLD_AND_NEW_VALS)
-        call cvmix_put(CVmix_vars,"Mdiff", new_Mdiff + CVmix_vars%Mdiff_iface)
-        call cvmix_put(CVmix_vars,"Tdiff", new_Tdiff + CVmix_vars%Tdiff_iface)
-      case (CVMIX_MAX_OLD_AND_NEW_VALS)
-        do kw=1,nlev+1
-          CVmix_vars%Mdiff_iface(kw) = max(CVmix_vars%Mdiff_iface(kw),        &
-                                           new_Mdiff(kw))
-          CVmix_vars%Tdiff_iface(kw) = max(CVmix_vars%Tdiff_iface(kw),        &
-                                           new_Tdiff(kw))
-        end do
-      case (CVMIX_OVERWRITE_OLD_VAL)
-        call cvmix_put(CVmix_vars,"Mdiff", new_Mdiff)
-        call cvmix_put(CVmix_vars,"Tdiff", new_Tdiff)
-      case DEFAULT
-        print*, "ERROR: do not know how to handle old values!"
-        stop 1
-    end select
-
+    call cvmix_update_wrap(CVmix_conv_params_in%handle_old_vals, nlev,        &
+                           Mdiff_out = CVmix_vars%Mdiff_iface,                &
+                           new_Mdiff = new_Mdiff,                             &
+                           Tdiff_out = CVmix_vars%Tdiff_iface,                &
+                           new_Tdiff = new_Tdiff)
     deallocate(new_Mdiff, new_Tdiff)
 
 !EOC

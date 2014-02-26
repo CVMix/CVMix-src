@@ -517,9 +517,9 @@ contains
       call cvmix_put(CVmix_vars, "Mdiff", cvmix_zero)
     if (.not.associated(CVmix_vars%Tdiff_iface)) &
       call cvmix_put(CVmix_vars, "Tdiff", cvmix_zero)
+
     call cvmix_coeffs_bkgnd(new_Mdiff, new_Tdiff, colid,                      &
                             CVmix_bkgnd_params_user)
-
     call cvmix_update_wrap(CVmix_bkgnd_params_in%handle_old_vals, nlev,       &
                            Mdiff_out = CVmix_vars%Mdiff_iface,                &
                            new_Mdiff = new_Mdiff,                             &

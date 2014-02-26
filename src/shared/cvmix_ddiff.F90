@@ -21,6 +21,8 @@ module cvmix_ddiff
                                     CVMIX_SUM_OLD_AND_NEW_VALS,               &
                                     CVMIX_MAX_OLD_AND_NEW_VALS
   use cvmix_put_get,         only : cvmix_put
+  use cvmix_utils,           only : cvmix_update_wrap
+
 !EOP
 
   implicit none
@@ -298,7 +300,7 @@ module cvmix_ddiff
 !BOC
 
     real(cvmix_r8), dimension(:), allocatable :: new_Tdiff, new_Sdiff
-    integer :: kw, nlev
+    integer :: nlev
     type(cvmix_ddiff_params_type), pointer :: CVmix_ddiff_params_in
 
     if (present(CVmix_ddiff_params_user)) then
@@ -317,26 +319,11 @@ module cvmix_ddiff
     call cvmix_coeffs_ddiff(new_Tdiff, new_Sdiff, CVmix_vars%strat_param_num, &
                             CVmix_vars%strat_param_denom,                     &
                             CVmix_ddiff_params_user)
-
-    select case (CVmix_ddiff_params_in%handle_old_vals)
-      case (CVMIX_SUM_OLD_AND_NEW_VALS)
-        call cvmix_put(CVmix_vars,"Tdiff", new_Tdiff + CVmix_vars%Tdiff_iface)
-        call cvmix_put(CVmix_vars,"Sdiff", new_Sdiff + CVmix_vars%Sdiff_iface)
-      case (CVMIX_MAX_OLD_AND_NEW_VALS)
-        do kw=1,nlev+1
-          CVmix_vars%Tdiff_iface(kw) = max(CVmix_vars%Tdiff_iface(kw),        &
-                                           new_Tdiff(kw))
-          CVmix_vars%Sdiff_iface(kw) = max(CVmix_vars%Sdiff_iface(kw),        &
-                                           new_Sdiff(kw))
-        end do
-      case (CVMIX_OVERWRITE_OLD_VAL)
-        call cvmix_put(CVmix_vars,"Tdiff", new_Tdiff)
-        call cvmix_put(CVmix_vars,"Sdiff", new_Sdiff)
-      case DEFAULT
-        print*, "ERROR: do not know how to handle old values!"
-        stop 1
-    end select
-
+    call cvmix_update_wrap(CVmix_ddiff_params_in%handle_old_vals, nlev,       &
+                           Tdiff_out = CVmix_vars%Tdiff_iface,                &
+                           new_Tdiff = new_Tdiff,                             &
+                           Sdiff_out = CVmix_vars%Sdiff_iface,                &
+                           new_Sdiff = new_Sdiff)
     deallocate(new_Tdiff, new_Sdiff)
 
 !EOC
