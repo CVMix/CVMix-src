@@ -38,7 +38,7 @@ Subroutine cvmix_kpp_driver()
 !EOP
 !BOC
 
-  real(cvmix_r8), parameter :: third = cvmix_one / real(3,cvmix_r8)
+  real(cvmix_r8), parameter :: third = cvmix_one / 3.0_cvmix_r8
 
   ! CVMix datatypes
   type(cvmix_data_type)       :: CVmix_vars1, CVmix_vars4, CVmix_vars5

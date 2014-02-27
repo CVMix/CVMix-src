@@ -36,8 +36,8 @@ module cvmix_kinds_and_types
   ! Global parameters:
   ! The constant 1 is used repeatedly in PP and double-diff mixing.
   ! The value for pi is needed for Bryan-Lewis mixing.
-  real(cvmix_r8), parameter, public :: cvmix_zero = real(0,cvmix_r8),         &
-                                       cvmix_one  = real(1,cvmix_r8)
+  real(cvmix_r8), parameter, public :: cvmix_zero = 0.0_cvmix_r8,             &
+                                       cvmix_one  = 1.0_cvmix_r8
   real(cvmix_r8), parameter, public :: cvmix_PI   = &
                                        3.14159265358979323846_cvmix_r8
 
