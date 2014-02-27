@@ -15,17 +15,21 @@
 
 ! !USES:
 
-  use cvmix_kinds_and_types, only : cvmix_r8,                     &
-                                    cvmix_zero,                   &
-                                    cvmix_one,                    &
-                                    cvmix_data_type
-  use cvmix_put_get, only :         cvmix_put
-  use cvmix_math, only :            CVMIX_MATH_INTERP_LINEAR,      &
-                                    CVMIX_MATH_INTERP_QUAD,        &
-                                    CVMIX_MATH_INTERP_CUBE_SPLINE, &
-                                    cvmix_math_poly_interp,        &
-                                    cvmix_math_cubic_root_find,    &
+  use cvmix_kinds_and_types, only : cvmix_r8,                                 &
+                                    cvmix_zero,                               &
+                                    cvmix_one,                                &
+                                    cvmix_data_type,                          &
+                                    CVMIX_OVERWRITE_OLD_VAL,                  &
+                                    CVMIX_SUM_OLD_AND_NEW_VALS,               &
+                                    CVMIX_MAX_OLD_AND_NEW_VALS
+  use cvmix_math, only :            CVMIX_MATH_INTERP_LINEAR,                 &
+                                    CVMIX_MATH_INTERP_QUAD,                   &
+                                    CVMIX_MATH_INTERP_CUBE_SPLINE,            &
+                                    cvmix_math_poly_interp,                   &
+                                    cvmix_math_cubic_root_find,               &
                                     cvmix_math_evaluate_cubic
+  use cvmix_put_get,         only : cvmix_put
+  use cvmix_utils,           only : cvmix_update_wrap
 
 !EOP
 
@@ -87,55 +91,67 @@
   ! cvmix_kpp_params_type contains the necessary parameters for KPP mixing
   type, public :: cvmix_kpp_params_type
     private
-    real(cvmix_r8) :: Ri_crit        ! Critical Richardson number
-                                     ! (OBL_depth = where bulk Ri = Ri_crit)
-    real(cvmix_r8) :: vonkarman      ! von Karman constant
-    real(cvmix_r8) :: Cstar          ! coefficient for nonlinear transport
-    ! For velocity scale function, _m => momentum and _s => scalar (tracer)
-    real(cvmix_r8) :: zeta_m         ! parameter for computing vel scale func
-    real(cvmix_r8) :: zeta_s         ! parameter for computing vel scale func
-    real(cvmix_r8) :: a_m            ! parameter for computing vel scale func
-    real(cvmix_r8) :: c_m            ! parameter for computing vel scale func
-    real(cvmix_r8) :: a_s            ! parameter for computing vel scale func
-    real(cvmix_r8) :: c_s            ! parameter for computing vel scale func
-    real(cvmix_r8) :: surf_layer_ext ! nondimensional extent of surface layer
-                                     ! (expressed in sigma-coordinates)
-    integer        :: interp_type    ! interpolation type used to interpolate
-                                     ! bulk Richardson number
-    integer        :: interp_type2   ! interpolation type used to interpolate
-                                     ! diff and visc at OBL_depth
-    ! Cv is a parameter used to compute the unresolved shear. By default, the
-    ! formula from Eq. (A3) of Danabasoglu et al. is used, but a single scalar
-    ! value can be set instead.
-    real(cvmix_r8) :: Cv
-    ! MatchTechnique is set by a string of the same name as an argument in
-    ! cvmix_init_kpp. It determines how matching between the boundary layer
-    ! and ocean interior is handled at the interface. Note that this also
-    ! controls whether the shape function used to compute the coefficient in
-    ! front of the nonlocal term is the same as that used to compute the
-    ! gradient term.
-    ! Options (for cvmix_init_kpp) are
-    ! (i) SimpleShapes => Shape functions for both the gradient and nonlocal
-    !                     terms vanish at interface
-    ! (ii) MatchGradient => Shape function for nonlocal term vanishes at
-    !                       interface, but gradient term matches interior
-    !                       values.
-    ! (iii) MatchBoth => Shape functions for both the gradient and nonlocal
-    !                    term match interior values at interface
-    ! (iv) ParabolicNonLocal => Shape function for the nonlocal term is
-    !                           (1-sigma)^2, gradient term is sigma*(1-sigma)^2
-    integer :: MatchTechnique
-    logical        :: lscalar_Cv     ! True => use the scalar Cv value
-    logical        :: lEkman         ! True => compute Ekman depth limit
-    logical        :: lMonOb         ! True => compute Monin-Obukhov limit
-    logical        :: lnoDGat1       ! True => G'(1) = 0 (shape function)
-                                     ! False => compute G'(1) as in LMD94
-    logical        :: lavg_N_or_Nsqr ! True => N (or Nsqr) at cell center is
-                                     !  average of values at interfaces above
-                                     !  and below.
-                                     ! False => N (or Nsqr) at cell center is
-                                     !  set to value at interface below
-                                     ! (only used in compute_unresolved_shear)
+      real(cvmix_r8) :: Ri_crit        ! Critical Richardson number
+                                       ! (OBL_depth = where bulk Ri = Ri_crit)
+
+      real(cvmix_r8) :: vonkarman      ! von Karman constant
+
+      real(cvmix_r8) :: Cstar          ! coefficient for nonlinear transport
+
+      ! For velocity scale function, _m => momentum and _s => scalar (tracer)
+      real(cvmix_r8) :: zeta_m         ! parameter for computing vel scale func
+      real(cvmix_r8) :: zeta_s         ! parameter for computing vel scale func
+      real(cvmix_r8) :: a_m            ! parameter for computing vel scale func
+      real(cvmix_r8) :: c_m            ! parameter for computing vel scale func
+      real(cvmix_r8) :: a_s            ! parameter for computing vel scale func
+      real(cvmix_r8) :: c_s            ! parameter for computing vel scale func
+
+      real(cvmix_r8) :: surf_layer_ext ! nondimensional extent of surface layer
+                                       ! (expressed in sigma-coordinates)
+
+      integer        :: interp_type    ! interpolation type used to interpolate
+                                       ! bulk Richardson number
+      integer        :: interp_type2   ! interpolation type used to interpolate
+                                       ! diff and visc at OBL_depth
+
+      ! Cv is a parameter used to compute the unresolved shear. By default, the
+      ! formula from Eq. (A3) of Danabasoglu et al. is used, but a single
+      ! scalar value can be set instead.
+      real(cvmix_r8) :: Cv
+
+      ! MatchTechnique is set by a string of the same name as an argument in
+      ! cvmix_init_kpp. It determines how matching between the boundary layer
+      ! and ocean interior is handled at the interface. Note that this also
+      ! controls whether the shape function used to compute the coefficient in
+      ! front of the nonlocal term is the same as that used to compute the
+      ! gradient term.
+      ! Options (for cvmix_init_kpp) are
+      ! (i) SimpleShapes => Shape functions for both the gradient and nonlocal
+      !                     terms vanish at interface
+      ! (ii) MatchGradient => Shape function for nonlocal term vanishes at
+      !                       interface, but gradient term matches interior
+      !                       values.
+      ! (iii) MatchBoth => Shape functions for both the gradient and nonlocal
+      !                    term match interior values at interface
+      ! (iv) ParabolicNonLocal => Shape function for the nonlocal term is
+      !                         (1-sigma)^2, gradient term is sigma*(1-sigma)^2
+      integer :: MatchTechnique
+
+      ! Flag for what to do with old values of CVmix_vars%[MTS]diff
+      integer :: handle_old_vals
+
+      ! Logic flags to dictate if / how various terms are computed
+      logical        :: lscalar_Cv     ! True => use the scalar Cv value
+      logical        :: lEkman         ! True => compute Ekman depth limit
+      logical        :: lMonOb         ! True => compute Monin-Obukhov limit
+      logical        :: lnoDGat1       ! True => G'(1) = 0 (shape function)
+                                       ! False => compute G'(1) as in LMD94
+      logical        :: lavg_N_or_Nsqr ! True => N (or Nsqr) at cell center is
+                                       !  average of values at interfaces above
+                                       !  and below.
+                                       ! False => N (or Nsqr) at cell center is
+                                       !  set to value at interface below
+                                       ! (only used in compute_unresolved_shear)
   end type cvmix_kpp_params_type
 
 !EOP
@@ -151,8 +167,8 @@ contains
 
   subroutine cvmix_init_kpp(ri_crit, vonkarman, Cstar, zeta_m, zeta_s,        &
                             surf_layer_ext, Cv, interp_type, interp_type2,    &
-                            MatchTechnique, lEkman, lMonOb, lnoDGat1,         &
-                            lavg_N_or_Nsqr, CVmix_kpp_params_user)
+                            MatchTechnique, old_vals, lEkman, lMonOb,         &
+                            lnoDGat1, lavg_N_or_Nsqr, CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
 !  Initialization routine for KPP mixing.
@@ -163,15 +179,21 @@ contains
 !  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
-    real(cvmix_r8),   optional :: ri_crit, &        ! units: unitless
-                                  vonkarman, &      ! units: unitless
-                                  Cstar, &          ! units: unitless
-                                  zeta_m, &         ! units: unitless
-                                  zeta_s, &         ! units: unitless
-                                  surf_layer_ext, & ! units: unitless
-                                  Cv                ! units: unitless
-    character(len=*), optional :: interp_type, interp_type2, MatchTechnique
-    logical,          optional :: lEkman, lMonOb, lnoDGat1, lavg_N_or_Nsqr
+    real(cvmix_r8),   optional, intent(in) :: ri_crit,                        &
+                                              vonkarman,                      &
+                                              Cstar,                          &
+                                              zeta_m,                         &
+                                              zeta_s,                         &
+                                              surf_layer_ext,                 &
+                                              Cv
+    character(len=*), optional, intent(in) :: interp_type,                    &
+                                              interp_type2,                   &
+                                              MatchTechnique,                 &
+                                              old_vals
+    logical,          optional, intent(in) :: lEkman,                         &
+                                              lMonOb,                         &
+                                              lnoDGat1,                       &
+                                              lavg_N_or_Nsqr
 
 ! !OUTPUT PARAMETERS:
     type(cvmix_kpp_params_type), intent(inout), target, optional ::           &
@@ -338,6 +360,27 @@ contains
                          CVmix_kpp_params_user)
     end if
 
+    if (present(old_vals)) then
+      select case (trim(old_vals))
+        case ("overwrite")
+          call cvmix_put_kpp('handle_old_vals', CVMIX_OVERWRITE_OLD_VAL,      &
+                               cvmix_kpp_params_user)
+        case ("sum")
+          call cvmix_put_kpp('handle_old_vals', CVMIX_SUM_OLD_AND_NEW_VALS,   &
+                               cvmix_kpp_params_user)
+        case ("max")
+          call cvmix_put_kpp('handle_old_vals', CVMIX_MAX_OLD_AND_NEW_VALS,   &
+                               cvmix_kpp_params_user)
+        case DEFAULT
+          print*, "ERROR: ", trim(old_vals), " is not a valid option for ",   &
+                  "handling old values of diff and visc."
+          stop 1
+      end select
+    else
+      call cvmix_put_kpp('handle_old_vals', CVMIX_OVERWRITE_OLD_VAL,          &
+                               cvmix_kpp_params_user)
+    end if
+
     if (present(lEkman)) then
       call cvmix_put_kpp('lEkman', lEkman, CVmix_kpp_params_user)
     else
@@ -393,10 +436,30 @@ contains
 !EOP
 !BOC
 
+    real(cvmix_r8), dimension(:), allocatable :: new_Mdiff, new_Tdiff,        &
+                                                 new_Sdiff
+    integer :: nlev
+    type(cvmix_kpp_params_type),  pointer :: CVmix_kpp_params_in
+       
+    CVmix_kpp_params_in => CVmix_kpp_params_saved
+    if (present(CVmix_kpp_params_user)) then
+      CVmix_kpp_params_in => CVmix_kpp_params_user
+    end if
+
+    nlev = CVmix_vars%nlev
+    allocate(new_Mdiff(nlev+1), new_Tdiff(nlev+1), new_Sdiff(nlev+1))
+    if (.not.associated(CVmix_vars%Mdiff_iface)) &
+      call cvmix_put(CVmix_vars, "Mdiff", cvmix_zero)
+    if (.not.associated(CVmix_vars%Tdiff_iface)) &
+      call cvmix_put(CVmix_vars, "Tdiff", cvmix_zero)
+    if (.not.associated(CVmix_vars%Sdiff_iface)) &
+      call cvmix_put(CVmix_vars, "Sdiff", cvmix_zero)
+
     call cvmix_put(CVmix_vars, 'kpp_transport', cvmix_zero)
-    call cvmix_coeffs_kpp(CVmix_vars%Mdiff_iface, CVmix_vars%Tdiff_iface,     &
-                          CVMix_vars%Sdiff_iface,                             &
+    call cvmix_coeffs_kpp(new_Mdiff, new_Tdiff, new_Sdiff,                    &
                           CVmix_vars%zw_iface, CVmix_vars%zt_cntr,            &
+                          CVmix_vars%Mdiff_iface, CVmix_vars%Tdiff_iface,     &
+                          CVMix_vars%Sdiff_iface,                             &
                           CVmix_vars%BoundaryLayerDepth,                      &
                           CVmix_vars%kOBL_depth,                              &
                           CVmix_vars%kpp_Tnonlocal_iface,                     &
@@ -404,6 +467,14 @@ contains
                           CVmix_vars%SurfaceFriction,                         &
                           CVmix_vars%SurfaceBuoyancyForcing,                  &
                           CVmix_kpp_params_user)
+    call cvmix_update_wrap(CVmix_kpp_params_in%handle_old_vals, nlev,         &
+                           Mdiff_out = CVmix_vars%Mdiff_iface,                &
+                           new_Mdiff = new_Mdiff,                             &
+                           Tdiff_out = CVmix_vars%Tdiff_iface,                &
+                           new_Tdiff = new_Tdiff,                             &
+                           Sdiff_out = CVmix_vars%Sdiff_iface,                &
+                           new_Sdiff = new_Sdiff)
+    deallocate(new_Mdiff, new_Tdiff, new_Sdiff)
 
 !EOC
 
@@ -414,9 +485,10 @@ contains
 ! !IROUTINE: cvmix_coeffs_kpp_low
 ! !INTERFACE:
 
-  subroutine cvmix_coeffs_kpp_low(Mdiff, Tdiff, Sdiff, zw_iface, zt_cntr,     &
-                                  OBL_depth, kOBL_depth, Tnonlocal, Snonlocal,&
-                                  surf_fric, surf_buoy, CVmix_kpp_params_user)
+  subroutine cvmix_coeffs_kpp_low(Mdiff_out, Tdiff_out, Sdiff_out, zw, zt,    &
+                                  old_Mdiff, old_Tdiff, old_Sdiff, OBL_depth, &
+                                  kOBL_depth, Tnonlocal, Snonlocal, surf_fric,&
+                                  surf_buoy, CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
 !  Computes vertical diffusion coefficients for the KPP boundary layer mixing
@@ -430,13 +502,22 @@ contains
 ! !INPUT PARAMETERS:
     type(cvmix_kpp_params_type), intent(in), optional, target ::              &
                                            CVmix_kpp_params_user
-    real(cvmix_r8), dimension(:),   intent(in) :: zw_iface, zt_cntr
-    real(cvmix_r8),                 intent(in) :: OBL_depth, surf_fric,       &
-                                                  surf_buoy, kOBL_depth
+    real(cvmix_r8), dimension(:),   intent(in) :: old_Mdiff,                  &
+                                                  old_Tdiff,                  &
+                                                  old_Sdiff,                  &
+                                                  zw,                         &
+                                                  zt
+    real(cvmix_r8),                 intent(in) :: OBL_depth,                  &
+                                                  surf_fric,                  &
+                                                  surf_buoy,                  &
+                                                  kOBL_depth
 
 ! !INPUT/OUTPUT PARAMETERS:
-    real(cvmix_r8), dimension(:), intent(inout) :: Tnonlocal, Snonlocal
-    real(cvmix_r8), dimension(:),   intent(inout) :: Mdiff, Tdiff, Sdiff
+    real(cvmix_r8), dimension(:), intent(inout) :: Mdiff_out,                 &
+                                                   Tdiff_out,                 &
+                                                   Sdiff_out,                 &
+                                                   Tnonlocal,                 &
+                                                   Snonlocal
 
 !EOP
 !BOC
@@ -493,11 +574,15 @@ contains
     end if
     interp_type2   = CVmix_kpp_params_in%interp_type2
 
+    ! Output values should be set to input values
+    Mdiff_out = old_Mdiff
+    Tdiff_out = old_Tdiff
+    Sdiff_out = old_Sdiff
 
-    nlev_p1 = size(zw_iface)
-    nlev    = size(zt_cntr)
+    nlev_p1 = size(zw)
+    nlev    = size(zt)
     allocate(sigma(nlev_p1), w_m(nlev_p1), w_s(nlev_p1))
-    sigma = -zw_iface/OBL_depth
+    sigma = -zw/OBL_depth
 
     kwup = floor(kOBL_depth)
     ktup = nint(kOBL_depth)-1
@@ -559,34 +644,28 @@ contains
       !     listed as (i), (ii), and (iii). If ws = 0, it applies only to (i)
       !     and (ii). If wm = 0, it applies only to (iii).
       if (kwup.eq.1) then
-        Tdiff_OBL = compute_nu_at_OBL_depth(interp_type2,                     &
-                                       (/zw_iface(kwup), zw_iface(kwup+1)/),  &
-                                       (/Tdiff(kwup), Tdiff(kwup)/),          &
-                                       OBL_depth, dnu_dz=dMdiff_OBL)
-        Sdiff_OBL = compute_nu_at_OBL_depth(interp_type2,                     &
-                                       (/zw_iface(kwup), zw_iface(kwup+1)/),  &
-                                       (/Sdiff(kwup), Sdiff(kwup+1)/),        &
-                                       OBL_depth, dnu_dz=dSdiff_OBL)
-        Mdiff_OBL = compute_nu_at_OBL_depth(interp_type2,                     &
-                                       (/zw_iface(kwup), zw_iface(kwup+1)/),  &
-                                       (/Mdiff(kwup), Mdiff(kwup+1)/),        &
-                                       OBL_depth, dnu_dz=dMdiff_OBL)
+        Mdiff_OBL = compute_nu_at_OBL_depth(interp_type2, zw(kwup:kwup+1),    &
+                                            old_Mdiff(kwup:kwup+1),           &
+                                            OBL_depth, dnu_dz=dMdiff_OBL)
+        Tdiff_OBL = compute_nu_at_OBL_depth(interp_type2, zw(kwup:kwup+1),    &
+                                            old_Tdiff(kwup:kwup+1),           &
+                                            OBL_depth, dnu_dz=dTdiff_OBL)
+        Sdiff_OBL = compute_nu_at_OBL_depth(interp_type2, zw(kwup:kwup+1),    &
+                                            old_Sdiff(kwup:kwup+1),           &
+                                            OBL_depth, dnu_dz=dSdiff_OBL)
       else
-        Tdiff_OBL = compute_nu_at_OBL_depth(interp_type2,                     &
-                                       (/zw_iface(kwup), zw_iface(kwup+1)/),  &
-                                       (/Tdiff(kwup), Tdiff(kwup+1)/),        &
-                                       OBL_depth, zw_iface(kwup-1),           &
-                                       Tdiff(kwup-1), dTdiff_OBL) 
-        Sdiff_OBL = compute_nu_at_OBL_depth(interp_type2,                     &
-                                       (/zw_iface(kwup), zw_iface(kwup+1)/),  &
-                                       (/Sdiff(kwup), Sdiff(kwup)/),          &
-                                       OBL_depth, zw_iface(kwup-1),           &
-                                       Sdiff(kwup-1), dSdiff_OBL) 
-        Mdiff_OBL = compute_nu_at_OBL_depth(interp_type2,                     &
-                                       (/zw_iface(kwup), zw_iface(kwup+1)/),  &
-                                       (/Mdiff(kwup), Mdiff(kwup+1)/),        &
-                                       OBL_depth, zw_iface(kwup-1),           &
-                                       Mdiff(kwup-1), dMdiff_OBL)
+        Mdiff_OBL = compute_nu_at_OBL_depth(interp_type2, zw(kwup:kwup+1),    &
+                                            old_Mdiff(kwup:kwup+1),           &
+                                            OBL_depth, zw(kwup-1),            &
+                                            old_Mdiff(kwup-1), dMdiff_OBL) 
+        Tdiff_OBL = compute_nu_at_OBL_depth(interp_type2, zw(kwup:kwup+1),    &
+                                            old_Tdiff(kwup:kwup+1),           &
+                                            OBL_depth, zw(kwup-1),            &
+                                            old_Tdiff(kwup-1), dTdiff_OBL) 
+        Sdiff_OBL = compute_nu_at_OBL_depth(interp_type2, zw(kwup:kwup+1),    &
+                                            old_Sdiff(kwup:kwup+1),           &
+                                            OBL_depth, zw(kwup-1),            &
+                                            old_Sdiff(kwup-1), dSdiff_OBL) 
       end if
       if (OBL_depth.eq.cvmix_zero) then
         MshapeAt1 = cvmix_zero ! value doesn't really matter, K = 0
@@ -646,12 +725,12 @@ contains
     end if
 
     ! (3) Compute diffusivities and viscosity in ocean boundary layer and at
-    !     the z = zt_cntr(ktup) [z coordinate of last cell center still in the
-    !     OBL]. Also compute the non-local transport terms (see note in
+    !     the z = zt(ktup) [z coordinate of last cell center still in the OBL].
+    !     Also compute the non-local transport terms (see note in
     !     cvmix_kinds_and_types about what is actually stored in "nonlocal")
     Tnonlocal = cvmix_zero
     Snonlocal = cvmix_zero
-    sigma_ktup = -zt_cntr(ktup)/OBL_depth
+    sigma_ktup = -zt(ktup)/OBL_depth
     call cvmix_kpp_compute_turbulent_scales(sigma_ktup, OBL_depth, surf_buoy, &
                                             surf_fric, wm_ktup, ws_ktup,      &
                                             CVmix_kpp_params_user)
@@ -687,18 +766,21 @@ contains
     ! below it?
     if (ktup.eq.nlev) then
       ! OBL_depth between bottom cell center and ocean bottom, assume
-      ! zt_cntr(ktup+1) = ocn_bottom (which is zw_iface(nlev+1)
-      delta = (OBL_depth+zt_cntr(ktup))/(zt_cntr(ktup)-zw_iface(ktup+1))
+      ! zt(ktup+1) = ocn_bottom (which is zw(nlev+1)
+      delta = (OBL_depth+zt(ktup))/(zt(ktup)-zw(ktup+1))
     else
-      delta = (OBL_depth+zt_cntr(ktup))/(zt_cntr(ktup)-zt_cntr(ktup+1))
+      delta = (OBL_depth+zt(ktup))/(zt(ktup)-zt(ktup+1))
     end if
 
     select case (ktup - kwup)
       case (-1)
         ! => ktup = kwup - 1
-        call cvmix_kpp_compute_enhanced_diff(Mdiff_ktup, Tdiff_ktup,          &
-                                             Sdiff_ktup, Mdiff(ktup+1),       &
-                                             Tdiff(ktup+1), Sdiff(ktup+1),    &
+        call cvmix_kpp_compute_enhanced_diff(Mdiff_ktup,                      &
+                                             Tdiff_ktup,                      &
+                                             Sdiff_ktup,                      &
+                                             Mdiff_out(ktup+1),               &
+                                             Tdiff_out(ktup+1),               &
+                                             Sdiff_out(ktup+1),               &
                                              OBL_Mdiff(ktup+1),               &
                                              OBL_Tdiff(ktup+1),               &
                                              OBL_Sdiff(ktup+1),               &
@@ -706,9 +788,12 @@ contains
 
       case (0)
         ! => ktup = kwup
-        call cvmix_kpp_compute_enhanced_diff(Mdiff_ktup, Tdiff_ktup,          &
-                                             Sdiff_ktup, Mdiff(ktup+1),       &
-                                             Tdiff(ktup+1), Sdiff(ktup+1),    &
+        call cvmix_kpp_compute_enhanced_diff(Mdiff_ktup,                      &
+                                             Tdiff_ktup,                      &
+                                             Sdiff_ktup,                      &
+                                             Mdiff_out(ktup+1),               &
+                                             Tdiff_out(ktup+1),               &
+                                             Sdiff_out(ktup+1),               &
                                              OBL_Mdiff(ktup+1),               &
                                              OBL_Tdiff(ktup+1),               &
                                              OBL_Sdiff(ktup+1),               &
@@ -723,9 +808,9 @@ contains
     end select
 
     ! (5) Combine interior and boundary coefficients
-    Mdiff(1:kwup) = OBL_Mdiff
-    Tdiff(1:kwup) = OBL_Tdiff
-    Sdiff(1:kwup) = OBL_Sdiff
+    Mdiff_out(1:kwup) = OBL_Mdiff
+    Tdiff_out(1:kwup) = OBL_Tdiff
+    Sdiff_out(1:kwup) = OBL_Sdiff
 
     ! Clean up memory
     deallocate(sigma, w_m, w_s)
@@ -839,6 +924,8 @@ contains
         CVmix_kpp_params_out%interp_type2 = val
       case ('MatchTechnique')
         CVmix_kpp_params_out%MatchTechnique = val
+      case ('old_vals', 'handle_old_vals')
+        CVmix_kpp_params_out%handle_old_vals = val
       case DEFAULT
         call cvmix_put_kpp(varname, real(val, cvmix_r8), CVmix_kpp_params_out)
     end select
