@@ -41,6 +41,8 @@ ifeq ($(wildcard $(ENV_FILE)),)
 else
   NEED_ENV_FILE = FALSE
   include $(ENV_FILE)
+  SHR_FLAGS = FC=$(FC) FCFLAGS="$(FCFLAGS)" SRC_DIR=$(SRC_SHARED_DIR)         \
+              OBJ_DIR=$(OBJ_DIR) LIB_DIR=$(LIB_DIR) INC_DIR=$(INC_DIR)
 endif
 
 # update FCFLAGS based on compiler
@@ -157,7 +159,8 @@ $(ENV_FILE):
 	@$(BLD_DIR)/cvmix_setup $(ENV_FILE)
 	$(MAKE) -f $(SRC_DIR)/Makefile
 
-.PHONY: exe netcdf depends check lib remove_exe clean libclean distclean
+.PHONY: exe netcdf depends check lib remove_exe clean libclean allclean       \
+        distclean
 
 # Possible executables: with and without netCDF
 exe: check $(ENV_FILE) lib depends
@@ -178,10 +181,8 @@ depends: $(DEP_FILE)
 check:
 	$(if $(REBUILD), rm -f $(addprefix $(OBJ_DIR)/,cvmix_io.o $(DRIVER_OBJS)))
 
-lib:
-ifeq ($(NEED_ENV_FILE),FALSE)
-	cd $(SRC_SHARED_DIR) ; $(MAKE)
-endif
+lib: $(ENV_FILE)
+	$(MAKE) -f $(SRC_SHARED_DIR)/Makefile $(SHR_FLAGS)
 
 # Delete the executable
 remove_exe:
@@ -194,9 +195,11 @@ clean: remove_exe
               $(addprefix $(OBJ_DIR)/,$(MODS) $(OBJS) $(DRIVER_OBJS))
 
 # Delete all object and module files from the shared directory, as well as 
-# libcvmix.a; also deletes object and module files and the executable
-libclean: clean
-	cd $(SRC_SHARED_DIR); $(MAKE) clean 
+# libcvmix.a
+libclean: $(ENV_FILE)
+	$(MAKE) -f $(SRC_SHARED_DIR)/Makefile clean $(SHR_FLAGS)
+
+allclean: libclean clean
 
 # Deletes $(ENV_FILE) in addition to everything else
 distclean: libclean

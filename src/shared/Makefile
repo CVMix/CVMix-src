@@ -1,46 +1,11 @@
 .SUFFIXES: .F90 .o
 extension = .F90
 
-# Need CVMix root directory
-# If using old version of make, pass in CVMIX_ROOT
-ifeq ($(wildcard $(MAKEFILE_LIST)),)
-  CVMIX_ROOT := ../..
-else
-  ThisMakefile=$(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST))
-  ifeq (/,$(findstring /,$(ThisMakefile)))
-    ThisDir=$(shell x=$(ThisMakefile) && echo $${x%/*})/
-  endif
-  CVMIX_ROOT := $(realpath $(ThisDir)../..)
-endif
-
-SETUP_FILE = $(CVMIX_ROOT)/bld/cvmix_setup
-ENV_FILE = $(CVMIX_ROOT)/bld/.CVMix_env
-# Directories used in Makefile
-# Check to see if this is standalone CVMix or not (look for $(SETUP_FILE))
-ifneq ($(wildcard $(SETUP_FILE)),)
-  SRC_DIR = $(CVMIX_ROOT)/src/shared
-  BLD_DIR = $(CVMIX_ROOT)/bld
-  FLAG_FILE = $(BLD_DIR)/CompileFlags.mak
-  OBJ_DIR = $(BLD_DIR)/obj
-  LIB_DIR = $(CVMIX_ROOT)/lib
-  INC_DIR = $(CVMIX_ROOT)/include
-  ifeq ($(wildcard $(ENV_FILE)),)
-    NEED_ENV_FILE = TRUE
-  else
-    # Read in Compiler information
-    include $(ENV_FILE)
-    NEED_ENV_FILE = FALSE
-  endif
-  # Read in FCFLAGS
-  include $(FLAG_FILE)
-else
-  SRC_DIR = .
-  OBJ_DIR = .
-  LIB_DIR = .
-  INC_DIR = .
-  FC = NONE
-  NEED_ENV_FILE = FALSE
-endif
+SRC_DIR = .
+OBJ_DIR = .
+LIB_DIR = .
+INC_DIR = .
+FC = NONE
 
 # Dependency Generation
 MAKE_DEP = $(SRC_DIR)/makedep.py
@@ -113,20 +78,15 @@ depends: $(DEP_FILE)
 
 # Shorthand for making the library (and all .mod files)
 lib: check depends
-ifeq ($(NEED_ENV_FILE),FALSE)
 	$(MAKE) -e -f $(SRC_DIR)/Makefile $(LIB_DIR)/libcvmix.a $(INCS) USE_DEPS=TRUE
-endif
 
-# If this is running in the full CVMix directory, look for $(ENV_FILE) and run
-# cvmix_setup if it doesn't exist. If this is not running in the full CVMix
-# directory (e.g. the shared directory was brought in to an ocean model), make
-# sure a Fortran compiler was specified.
+# Make sure a Fortran compiler was specified (the Makefile for the stand-alone
+# driver passes FC along with FCFLAGS, SRC_DIR, OBJ_DIR, LIB_DIR, and INC_DIR)
 check:
 	@$(if $(NOFC), echo "ERROR: you must specify FC (and it is recommended that \
-     you specify FCFLAGS"; echo "as well)."; exit 1)
-ifeq ($(NEED_ENV_FILE),TRUE)
-	$(SETUP_FILE) $(ENV_FILE); $(MAKE) -e -f $(SRC_DIR)/Makefile
-endif
+     you specify FCFLAGS as"; echo "well)."; echo "NOTE: if you have checked  \
+     out the stand-alone CVMix driver set then you should"; echo "run \"make  \
+     lib\" from the src/ directory to use CVMix compile options."; exit 1)
 
 # Remove library, object files, module files, and dependency file
 clean:
