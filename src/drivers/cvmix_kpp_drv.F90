@@ -54,7 +54,7 @@ Subroutine cvmix_kpp_driver()
   real(cvmix_r8), dimension(:,:), allocatable, target :: hor_vel
   real(cvmix_r8), dimension(2)                        :: ref_vel
   real(cvmix_r8), dimension(4) :: shape_coeffs
-  integer :: fid, kt, kw, nlev1, nlev3, nlev4, nlev5
+  integer :: fid, kt, kw, nlev1, nlev3, nlev4, OBL_levid4, nlev5
   real(cvmix_r8) :: hmix1, hmix5, ri_crit, layer_thick1, layer_thick4,        &
                     layer_thick5, OBL_depth4, OBL_depth5, N, Nsqr
   real(cvmix_r8) :: kOBL_depth, Bslope, Vslope
@@ -96,7 +96,7 @@ Subroutine cvmix_kpp_driver()
 
   ! Defaults for test 4 
   ltest4         = .false.
-  OBL_depth4     = real(14,cvmix_r8)
+  OBL_levid4     = 3
   interp_type_t4 = 'quadratic'
   lnoDGat1       = .true.
 
@@ -269,10 +269,13 @@ Subroutine cvmix_kpp_driver()
   if (ltest4) then
     print*, ""
     print*, "Test 4: Computing Diffusivity in boundary layer"
+    print*, "        (2 cases - boundary layer above and below cell center)"
     print*, "----------"
 
     call cvmix_init_kpp(MatchTechnique='MatchGradient')
     nlev4 = 5
+    if (OBL_levid4.gt.nlev4) &
+      OBL_levid4 = nlev4
     layer_thick4 = real(5,cvmix_r8)
 
     ! Set up vertical levels (centers and interfaces) and compute bulk
@@ -289,10 +292,6 @@ Subroutine cvmix_kpp_driver()
 
     ! Set up diffusivities
     allocate(Mdiff(nlev4+1), Tdiff(nlev4+1), Sdiff(nlev4+1))
-    Tdiff    = cvmix_one
-    Tdiff(2) = real(10,cvmix_r8)
-    Tdiff(3) = real(5,cvmix_r8)
-    Tdiff(4) = cvmix_one
     CVmix_vars4%Mdiff_iface => Mdiff
     CVmix_vars4%Tdiff_iface => Tdiff
     CVmix_vars4%Sdiff_iface => Sdiff
@@ -300,6 +299,18 @@ Subroutine cvmix_kpp_driver()
     ! Set physical properties of column for test 4
     call cvmix_put(CVmix_vars4, 'nlev', nlev4)
     call cvmix_put(CVmix_vars4, 'ocn_depth', layer_thick4*real(nlev4,cvmix_r8))
+    call cvmix_put(CVmix_vars4, 'surf_fric', cvmix_one)
+    call cvmix_put(CVmix_vars4, 'surf_buoy', real(100,cvmix_r8))
+    call cvmix_put(CVmix_vars4, 'Coriolis', 1e-4_cvmix_r8)
+
+    ! Test 4a: Boundary layer below center of level containing it
+    Tdiff    = cvmix_one
+    Tdiff(2) = real(10,cvmix_r8)
+    Tdiff(3) = real(5,cvmix_r8)
+    Tdiff(4) = cvmix_one
+    Mdiff = Tdiff
+    Sdiff = Tdiff
+    OBL_depth4 = abs(zt(OBL_levid4))+layer_thick4/real(4,cvmix_r8)
     call cvmix_put(CVmix_vars4, 'OBL_depth', OBL_depth4)
     call cvmix_put(CVmix_vars4, 'kOBL_depth',                                 &
          cvmix_kpp_compute_kOBL_depth(zw_iface, zt, OBL_depth4))
@@ -308,21 +319,54 @@ Subroutine cvmix_kpp_driver()
     print*, "ocean depth = ", CVmix_vars4%OceanDepth
     print*, "kOBL_depth = ", CVmix_vars4%kOBL_depth
 
-    call cvmix_put(CVmix_vars4, 'surf_fric', cvmix_one)
-    call cvmix_put(CVmix_vars4, 'surf_buoy', real(100,cvmix_r8))
-    call cvmix_put(CVmix_vars4, 'Coriolis', 1e-4_cvmix_r8)
+    call cvmix_init_kpp(ri_crit=ri_crit, vonkarman=0.4_cvmix_r8,              &
+                        interp_type2=interp_type_t4, lnoDGat1=lnoDGat1)
+    call cvmix_coeffs_kpp(CVmix_vars4)
+
+#ifdef _NETCDF
+    call cvmix_io_open(fid, "test4a.nc", "nc")
+#else
+    call cvmix_io_open(fid, "test4a.out", "ascii")
+#endif
+
+    call cvmix_output_write(fid, CVmix_vars4, (/"zt   ", "zw   ", "Mdiff",    &
+                                                "Tdiff", "Sdiff"/)) 
+#ifdef _NETCDF
+    call cvmix_output_write_att(fid, "interp_type2", interp_type_t4)
+    call cvmix_output_write_att(fid, "OBL_depth",                             &
+                                CVmix_vars4%BoundaryLayerDepth)
+#endif
+
+    call cvmix_io_close(fid)
+
+    ! Test 4b: Boundary layer below center of level containing it
+    Tdiff    = cvmix_one
+    Tdiff(2) = real(10,cvmix_r8)
+    Tdiff(3) = real(5,cvmix_r8)
+    Tdiff(4) = cvmix_one
+    Mdiff = Tdiff
+    Sdiff = Tdiff
+    OBL_depth4 = abs(zt(OBL_levid4))-layer_thick4/real(4,cvmix_r8)
+    call cvmix_put(CVmix_vars4, 'OBL_depth', OBL_depth4)
+    call cvmix_put(CVmix_vars4, 'kOBL_depth',                                 &
+         cvmix_kpp_compute_kOBL_depth(zw_iface, zt, OBL_depth4))
+
+    print*, "OBL_depth = ", CVmix_vars4%BoundaryLayerDepth
+    print*, "ocean depth = ", CVmix_vars4%OceanDepth
+    print*, "kOBL_depth = ", CVmix_vars4%kOBL_depth
 
     call cvmix_init_kpp(ri_crit=ri_crit, vonkarman=0.4_cvmix_r8,              &
                         interp_type2=interp_type_t4, lnoDGat1=lnoDGat1)
     call cvmix_coeffs_kpp(CVmix_vars4)
 
 #ifdef _NETCDF
-    call cvmix_io_open(fid, "test4.nc", "nc")
+    call cvmix_io_open(fid, "test4b.nc", "nc")
 #else
-    call cvmix_io_open(fid, "test4.out", "ascii")
+    call cvmix_io_open(fid, "test4b.out", "ascii")
 #endif
 
-    call cvmix_output_write(fid, CVmix_vars4, (/"zt   ", "zw   ", "Tdiff"/)) 
+    call cvmix_output_write(fid, CVmix_vars4, (/"zt   ", "zw   ", "Mdiff",    &
+                                                "Tdiff", "Sdiff"/)) 
 #ifdef _NETCDF
     call cvmix_output_write_att(fid, "interp_type2", interp_type_t4)
     call cvmix_output_write_att(fid, "OBL_depth",                             &

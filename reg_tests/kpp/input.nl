@@ -26,7 +26,7 @@ mix_type = 'kpp'
 &kpp_col4_nml
   ltest4         = .true.
   interp_type_t4 = "quadratic"
-  OBL_depth4     = 14.0d0
+  OBL_levid4     = 3
   lnoDGat1       = .true.
 /
 
