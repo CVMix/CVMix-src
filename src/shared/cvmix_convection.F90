@@ -22,6 +22,7 @@ module cvmix_convection
                                     CVMIX_SUM_OLD_AND_NEW_VALS,               &
                                     CVMIX_MAX_OLD_AND_NEW_VALS
   use cvmix_utils,           only : cvmix_update_wrap
+  use cvmix_put_get,         only : cvmix_put
 
 !EOP
 
