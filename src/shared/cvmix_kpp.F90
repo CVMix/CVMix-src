@@ -752,7 +752,7 @@ contains
       if (.not.lstable) then
         call cvmix_kpp_compute_nonlocal(Tshape2, sigma(kw), Tnonlocal(kw),    &
                                         CVmix_kpp_params_user)
-        call cvmix_kpp_compute_nonlocal(Sshape2, sigma(kw), Tnonlocal(kw),    &
+        call cvmix_kpp_compute_nonlocal(Sshape2, sigma(kw), Snonlocal(kw),    &
                                         CVmix_kpp_params_user)
       end if
     end do
