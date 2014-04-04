@@ -772,40 +772,24 @@ contains
       delta = (OBL_depth+zt(ktup))/(zt(ktup)-zt(ktup+1))
     end if
 
-    select case (ktup - kwup)
-      case (-1)
-        ! => ktup = kwup - 1
-        call cvmix_kpp_compute_enhanced_diff(Mdiff_ktup,                      &
-                                             Tdiff_ktup,                      &
-                                             Sdiff_ktup,                      &
-                                             Mdiff_out(ktup+1),               &
-                                             Tdiff_out(ktup+1),               &
-                                             Sdiff_out(ktup+1),               &
-                                             OBL_Mdiff(ktup+1),               &
-                                             OBL_Tdiff(ktup+1),               &
-                                             OBL_Sdiff(ktup+1),               &
-                                             delta, lkteqkw=.false.)
-
-      case (0)
-        ! => ktup = kwup
-        call cvmix_kpp_compute_enhanced_diff(Mdiff_ktup,                      &
-                                             Tdiff_ktup,                      &
-                                             Sdiff_ktup,                      &
-                                             Mdiff_out(ktup+1),               &
-                                             Tdiff_out(ktup+1),               &
-                                             Sdiff_out(ktup+1),               &
-                                             OBL_Mdiff(ktup+1),               &
-                                             OBL_Tdiff(ktup+1),               &
-                                             OBL_Sdiff(ktup+1),               &
-                                             delta, lkteqkw=.true.)
-
-      case DEFAULT
-        print*, "ERROR: ktup should be either kwup or kwup-1!"
-        print*, "ktup = ", ktup, " and kwup = ", kwup
-        deallocate(sigma, w_m, w_s)
-        deallocate(OBL_Mdiff, OBL_Tdiff, OBL_Sdiff)
-        stop 1
-    end select
+    if ((ktup.eq.kwup).or.(ktup.eq.kwup-1)) then
+      call cvmix_kpp_compute_enhanced_diff(Mdiff_ktup,                        &
+                                           Tdiff_ktup,                        &
+                                           Sdiff_ktup,                        &
+                                           Mdiff_out(ktup+1),                 &
+                                           Tdiff_out(ktup+1),                 &
+                                           Sdiff_out(ktup+1),                 &
+                                           OBL_Mdiff(kwup),                   &
+                                           OBL_Tdiff(kwup),                   &
+                                           OBL_Sdiff(kwup),                   &
+                                           delta, lkteqkw=(ktup.eq.kwup))
+    else
+      print*, "ERROR: ktup should be either kwup or kwup-1!"
+      print*, "ktup = ", ktup, " and kwup = ", kwup
+      deallocate(sigma, w_m, w_s)
+      deallocate(OBL_Mdiff, OBL_Tdiff, OBL_Sdiff)
+      stop 1
+    end if
 
     ! (5) Combine interior and boundary coefficients
     Mdiff_out(1:kwup) = OBL_Mdiff
