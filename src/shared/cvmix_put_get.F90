@@ -4,6 +4,9 @@ module cvmix_put_get
 !\newpage
 ! !MODULE: cvmix_put_get
 !
+! !AUTHOR: 
+!  Michael N. Levy, NCAR (mlevy@ucar.edu)
+!
 ! !DESCRIPTION:
 !  This module contains routines to pack data into the cvmix datatypes
 !  (allocating memory as necessary) and then unpack the data out. If we switch

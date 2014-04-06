@@ -6,6 +6,9 @@
 !\newpage
 ! !MODULE: cvmix_math
 !
+! !AUTHOR: 
+!  Michael N. Levy, NCAR (mlevy@ucar.edu)
+!
 ! !DESCRIPTION:
 !  This module contains routines to compute polynomial interpolations (linear, 
 !  quadratic, or cubic spline), evaluate  third-order polynomials and their

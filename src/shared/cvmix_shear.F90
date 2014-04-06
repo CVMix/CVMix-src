@@ -4,11 +4,22 @@
 !\newpage
 ! !MODULE: cvmix_shear
 !
+! !AUTHOR: 
+!  Michael N. Levy, NCAR (mlevy@ucar.edu)
+!
 ! !DESCRIPTION:
 !  This module contains routines to initialize the derived types needed for
 !  shear mixing, and to set the viscosity and diffusivity coefficients.
-!  Presently this scheme has implemented the shear mixing parameterizations
-!  from Pacanowski \& Philander (1981) and Large, McWilliams, \& Doney (1994).
+!\\
+!\\
+!  References:\\
+!  * RC Pacanowski and SGH Philander.
+!  Parameterizations of Vertical Mixing in Numerical Models of Tropical Oceans.
+!  Journal of Physical Oceanography, 1981.\\
+!  * WG Large, JC McWilliams, and SC Doney.
+!  Oceanic Vertical Mixing: A Review and a Model with a Nonlocal Boundary Layer
+!  Parameterization.
+!  Review of Geophysics, 1994.
 !\\
 !\\
 

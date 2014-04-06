@@ -4,6 +4,9 @@ module cvmix_utils
 !\newpage
 ! !MODULE: cvmix_utils
 !
+! !AUTHOR: 
+!  Michael N. Levy, NCAR (mlevy@ucar.edu)
+!
 ! !DESCRIPTION:
 !  This module contains routines that are called by multiple modules but don't
 !  specifically compute anything mixing related.

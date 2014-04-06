@@ -4,10 +4,27 @@ module cvmix_ddiff
 !\newpage
 ! !MODULE: cvmix_ddiff
 !
+! !AUTHOR: 
+!  Michael N. Levy, NCAR (mlevy@ucar.edu)
+!
 ! !DESCRIPTION:
 !  This module contains routines to initialize the derived types needed for
 !  double diffusion mixing and to set the diffusivity coefficient
 !  accordingly.
+!\\
+!\\
+!  References:\\
+!  * RW Schmitt.
+!  Double Diffusion in Oceanography.
+!  Annual Review of Fluid Mechanics, 1994.\\
+!  * WG Large, JC McWilliams, and SC Doney.
+!  Oceanic Vertical Mixing: A Review and a Model with a Nonlocal Boundary Layer
+!  Parameterization.
+!  Review of Geophysics, 1994.\\
+!  * G Danabasoglu, WG Large, JJ Tribbia, PR Gent, BP Briegleb, and JC
+!  McWilliams.
+!  Diurnal Coupling in the Tropical Oceans of CCSM3.
+!  Journal of Climate, 2006.
 !\\
 !\\
 

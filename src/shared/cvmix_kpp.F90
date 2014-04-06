@@ -6,11 +6,21 @@
 !\newpage
 ! !MODULE: cvmix_kpp
 !
+! !AUTHOR: 
+!  Michael N. Levy, NCAR (mlevy@ucar.edu)
+!
 ! !DESCRIPTION:
 !  This module contains routines to initialize the derived types needed for
 !  KPP mixing and to set the viscosity and diffusivity coefficients
 !  accordingly.
 !\\
+!\\
+!  References:\\
+!  * WG Large, JC McWilliams, and SC Doney.
+!  Oceanic Vertical Mixing: A Review and a Model with a Nonlocal Boundary Layer
+!  Parameterization.
+!  Review of Geophysics, 1994.
+\\
 !\\
 
 ! !USES:

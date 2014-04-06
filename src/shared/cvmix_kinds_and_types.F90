@@ -4,6 +4,9 @@ module cvmix_kinds_and_types
 !\newpage
 ! !MODULE:  cvmix_kinds_and_types
 !
+! !AUTHOR: 
+!  Michael Levy, NCAR (mlevy@ucar.edu)
+!
 ! !DESCRIPTION:
 !  This module contains the declarations for all required vertical mixing
 !  data types. It also contains several global parameters used by the cvmix

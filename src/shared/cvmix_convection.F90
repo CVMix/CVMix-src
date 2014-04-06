@@ -4,11 +4,18 @@ module cvmix_convection
 !\newpage
 ! !MODULE: cvmix_convection
 !
+! !AUTHOR: 
+!  Michael N. Levy, NCAR (mlevy@ucar.edu)
+!
 ! !DESCRIPTION:
 !  This module contains routines to initialize the derived types needed for
 !  specifying mixing coefficients to parameterize vertical convective mixing,
 !  and to set the viscosity and diffusivity in gravitationally unstable
 !  portions of the water column.
+!\\
+!\\
+!  References:\\
+!  * Brunt-Vaisala?
 !\\
 !\\
 

@@ -4,10 +4,19 @@
 !\newpage
 ! !MODULE: cvmix_tidal
 !
+! !AUTHOR: 
+!  Michael N. Levy, NCAR (mlevy@ucar.edu)
+!
 ! !DESCRIPTION:
 !  This module contains routines to initialize the derived types needed for
 !  tidal mixing (currently just the Simmons scheme) and to set the viscosity
 !  and diffusivity coefficients accordingly.
+!\\
+!\\
+!  References:\\
+!  * HL Simmons, SR Jayne, LC St. Laurent, and AJ Weaver.
+!  Tidally Driven Mixing in a Numerical Model of the Ocean General Circulation.
+!  Ocean Modelling, 2004.
 !\\
 !\\
 

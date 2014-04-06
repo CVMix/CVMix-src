@@ -4,12 +4,21 @@ module cvmix_background
 !\newpage
 ! !MODULE: cvmix_background
 !
+! !AUTHOR: 
+!  Michael N. Levy, NCAR (mlevy@ucar.edu)
+!
 ! !DESCRIPTION:
 !  This module contains routines to initialize the derived types needed for
 !  time independent static background mixing coefficients.  It specifies
 !  either a scalar, 1D, or 2D field for viscosity and diffusivity. It also
 !  calculates the background diffusivity using the Bryan-Lewis method.
 !  It then sets the viscosity and diffusivity to the specified value.
+!\\
+!\\
+!  References:\\
+!  * K Bryan and LJ Lewis.
+!  A Water Mass Model of the World Ocean.
+!  Journal of Geophysical Research, 1979.
 !\\
 !\\
 
