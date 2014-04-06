@@ -4,3 +4,4 @@
 #   - Use ascii pseudo-formatting (like "-" notation)
 #   - Make sure there is a blank line after the one-line summary
 #   - No need to include user info or dates, git does that for you
+#   - 79 characters per line max (use as many lines as you'd like)            *
