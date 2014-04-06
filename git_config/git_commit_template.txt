@@ -1,0 +1,6 @@
+# One-line summary: 50 char max                  *
+
+# Detailed explanation of commit. Include rational, issues addressed, etc
+#   - Use ascii pseudo-formatting (like "-" notation)
+#   - Make sure there is a blank line after the one-line summary
+#   - No need to include user info or dates, git does that for you
