@@ -436,7 +436,7 @@ contains
 !EOP
 !BOC
 
-    real(cvmix_r8), dimension(:), allocatable :: new_Mdiff, new_Tdiff,        &
+    real(cvmix_r8), dimension(CVmix_vars%nlev+1) :: new_Mdiff, new_Tdiff,        &
                                                  new_Sdiff
     integer :: nlev
     type(cvmix_kpp_params_type),  pointer :: CVmix_kpp_params_in
@@ -447,7 +447,6 @@ contains
     end if
 
     nlev = CVmix_vars%nlev
-    allocate(new_Mdiff(nlev+1), new_Tdiff(nlev+1), new_Sdiff(nlev+1))
     if (.not.associated(CVmix_vars%Mdiff_iface)) &
       call cvmix_put(CVmix_vars, "Mdiff", cvmix_zero)
     if (.not.associated(CVmix_vars%Tdiff_iface)) &
@@ -474,7 +473,6 @@ contains
                            new_Tdiff = new_Tdiff,                             &
                            Sdiff_out = CVmix_vars%Sdiff_iface,                &
                            new_Sdiff = new_Sdiff)
-    deallocate(new_Mdiff, new_Tdiff, new_Sdiff)
 
 !EOC
 
@@ -526,8 +524,8 @@ contains
     type(cvmix_kpp_params_type), pointer :: CVmix_kpp_params_in
 
     ! OBL_[MTS]diff are the diffusivities in the whole OBL
-    real(cvmix_r8), dimension(:), allocatable :: OBL_Mdiff, OBL_Tdiff,        &
-                                                 OBL_Sdiff
+    real(cvmix_r8), dimension(floor(kOBL_depth)) :: OBL_Mdiff, OBL_Tdiff,        &
+                                                      OBL_Sdiff
 
     ! [MTS]diff_ktup are the enhanced diffusivity and viscosity values at the
     ! deepest cell center above OBL_depth. Other _ktup vars are intermediary
@@ -537,7 +535,7 @@ contains
 
     real(cvmix_r8) :: delta
 
-    real(cvmix_r8), dimension(:), allocatable :: sigma, w_m, w_s
+    real(cvmix_r8), dimension(size(zw)) :: sigma, w_m, w_s
 
     ! [MTS]shape are the coefficients of the shape function in the gradient
     ! term; [TS]shape2 are the coefficients for the nonlocal term
@@ -581,14 +579,11 @@ contains
 
     nlev_p1 = size(zw)
     nlev    = size(zt)
-    allocate(sigma(nlev_p1), w_m(nlev_p1), w_s(nlev_p1))
     sigma = -zw/OBL_depth
 
     kwup = floor(kOBL_depth)
     ktup = nint(kOBL_depth)-1
 
-    ! Allocate OBL_diff and OBL_visc
-    allocate(OBL_Mdiff(kwup), OBL_Tdiff(kwup), OBL_Sdiff(kwup))
     OBL_Mdiff = cvmix_zero
     OBL_Tdiff = cvmix_zero
     OBL_Sdiff = cvmix_zero
@@ -786,19 +781,14 @@ contains
     else
       print*, "ERROR: ktup should be either kwup or kwup-1!"
       print*, "ktup = ", ktup, " and kwup = ", kwup
-      deallocate(sigma, w_m, w_s)
-      deallocate(OBL_Mdiff, OBL_Tdiff, OBL_Sdiff)
       stop 1
     end if
 
     ! (5) Combine interior and boundary coefficients
-    Mdiff_out(1:kwup) = OBL_Mdiff
-    Tdiff_out(1:kwup) = OBL_Tdiff
-    Sdiff_out(1:kwup) = OBL_Sdiff
+    Mdiff_out(1:kwup) = OBL_Mdiff(1:kwup)
+    Tdiff_out(1:kwup) = OBL_Tdiff(1:kwup)
+    Sdiff_out(1:kwup) = OBL_Sdiff(1:kwup)
 
-    ! Clean up memory
-    deallocate(sigma, w_m, w_s)
-    deallocate(OBL_Mdiff, OBL_Tdiff, OBL_Sdiff)
 
 !EOC
   end subroutine cvmix_coeffs_kpp_low
@@ -1489,7 +1479,7 @@ contains
     ! Local variables
     ! * unresolved_shear_cntr_sqr is the square of the unresolved level-center
     !   velocity shear (Vt^2(d) in LMD94, units: m^2/s^2)
-    real(cvmix_r8), allocatable, dimension(:) :: unresolved_shear_cntr_sqr
+    real(cvmix_r8), dimension(size(zt_cntr)) :: unresolved_shear_cntr_sqr
     integer        :: kt
     real(cvmix_r8) :: num, denom
 
@@ -1500,7 +1490,6 @@ contains
               "same size!"
       stop 1
     end if
-    allocate(unresolved_shear_cntr_sqr(size(zt_cntr)))
     if (present(Vt_sqr_cntr)) then
       if (size(Vt_sqr_cntr).eq.size(zt_cntr)) then
         unresolved_shear_cntr_sqr = Vt_sqr_cntr
@@ -1529,7 +1518,6 @@ contains
         cvmix_kpp_compute_bulk_Richardson(kt) = num*1e10_cvmix_r8
       end if
     end do
-    deallocate(unresolved_shear_cntr_sqr)
 
 !EOC
 
@@ -1644,7 +1632,7 @@ contains
     ! Local variables
     integer :: n_sigma, kw
     logical :: compute_wm, compute_ws
-    real(cvmix_r8), allocatable, dimension(:) :: zeta
+    real(cvmix_r8), dimension(size(sigma_coord)) :: zeta
     real(cvmix_r8) :: vonkar, surf_layer_ext
     type(cvmix_kpp_params_type), pointer :: CVmix_kpp_params_in
 
@@ -1661,7 +1649,6 @@ contains
     surf_layer_ext = cvmix_get_kpp_real('surf_layer_ext', CVmix_kpp_params_in)
 
     if (surf_fric_vel.ne.cvmix_zero) then
-      allocate(zeta(n_sigma))
       do kw=1,n_sigma
         ! compute scales at sigma if sigma < surf_layer_ext, otherwise compute
         ! at surf_layer_ext
@@ -1672,7 +1659,6 @@ contains
       if (compute_wm) then
         if (size(w_m).ne.n_sigma) then
           print*, "ERROR: sigma_coord and w_m must be same size!"
-          deallocate(zeta)
           stop 1
         end if
         w_m(1) = compute_phi_inv(zeta(1), CVmix_kpp_params_in, lphi_m=.true.)*&
@@ -1690,7 +1676,6 @@ contains
       if (compute_ws) then
         if (size(w_s).ne.n_sigma) then
           print*, "ERROR: sigma_coord and w_s must be same size!"
-          deallocate(zeta)
           stop 1
         end if
         w_s(1) = compute_phi_inv(zeta(1), CVmix_kpp_params_in, lphi_s=.true.)*&
@@ -1705,7 +1690,6 @@ contains
         end do
       end if
 
-      deallocate(zeta)
 
     else ! surf_fric_vel = 0
       if (compute_wm) then
@@ -1806,7 +1790,7 @@ contains
     real(cvmix_r8) :: Cv, Vtc
     ! N_cntr: buoyancy frequency at cell centers, derived from either N_iface
     !        or Nsqr_iface (units: 1/s)
-    real(cvmix_r8), dimension(:), allocatable :: N_cntr
+    real(cvmix_r8), dimension(size(zt_cntr)) :: N_cntr
     type(cvmix_kpp_params_type), pointer :: CVmix_kpp_params_in
 
     nlev = size(zt_cntr)
@@ -1831,7 +1815,6 @@ contains
         print*, "ERROR: N_iface must have one more element than zt_cntr"
         stop 1
       end if
-      allocate(N_cntr(nlev))
       do kt=1,nlev
         if (CVmix_kpp_params_in%lavg_N_or_Nsqr) then
           N_cntr(kt) = 0.5_cvmix_r8*(N_iface(kt)+N_iface(kt+1))
@@ -1845,7 +1828,6 @@ contains
           print*, "ERROR: Nsqr_iface must have one more element than zt_cntr"
           stop 1
         end if
-        allocate(N_cntr(nlev))
         do kt=1,nlev
           if (CVmix_kpp_params_in%lavg_N_or_Nsqr) then
             N_cntr(kt)=sqrt((max(Nsqr_iface(kt),cvmix_zero) +                 &
@@ -1881,7 +1863,6 @@ contains
                             N_cntr(kt)*ws_cntr(kt)/CVmix_kpp_params_in%Ri_crit
     end do
 
-    deallocate(N_cntr)
 
 !EOC
 
