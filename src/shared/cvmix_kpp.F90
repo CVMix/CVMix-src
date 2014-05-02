@@ -598,7 +598,7 @@ contains
     ktup = nint(kOBL_depth)-1
 
     ! Allocate OBL_diff and OBL_visc
-    allocate(OBL_Mdiff(kwup), OBL_Tdiff(kwup), OBL_Sdiff(kwup))
+    allocate(OBL_Mdiff(kwup+1), OBL_Tdiff(kwup+1), OBL_Sdiff(kwup+1))
     OBL_Mdiff = cvmix_zero
     OBL_Tdiff = cvmix_zero
     OBL_Sdiff = cvmix_zero
@@ -802,9 +802,9 @@ contains
     end if
 
     ! (5) Combine interior and boundary coefficients
-    Mdiff_out(1:kwup) = OBL_Mdiff
-    Tdiff_out(1:kwup) = OBL_Tdiff
-    Sdiff_out(1:kwup) = OBL_Sdiff
+    Mdiff_out(1:kwup) = OBL_Mdiff(1:kwup)
+    Tdiff_out(1:kwup) = OBL_Tdiff(1:kwup)
+    Sdiff_out(1:kwup) = OBL_Sdiff(1:kwup)
 
     ! Clean up memory
     deallocate(sigma, w_m, w_s)
