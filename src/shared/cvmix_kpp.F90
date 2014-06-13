@@ -74,6 +74,7 @@
   public :: cvmix_kpp_compute_kOBL_depth
   public :: cvmix_kpp_compute_enhanced_diff
   public :: cvmix_kpp_compute_nonlocal
+  public :: cvmix_kpp_compute_nu_at_OBL_depth
 
   interface cvmix_coeffs_kpp
     module procedure cvmix_coeffs_kpp_low
@@ -464,6 +465,10 @@ contains
       call cvmix_put(CVmix_vars, "Tdiff", cvmix_zero)
     if (.not.associated(CVmix_vars%Sdiff_iface)) &
       call cvmix_put(CVmix_vars, "Sdiff", cvmix_zero)
+    if (.not.associated(CVmix_vars%kpp_Tnonlocal_iface)) &
+      call cvmix_put(CVmix_vars, "kpp_Tnonlocal_iface", cvmix_zero)
+    if (.not.associated(CVmix_vars%kpp_Snonlocal_iface)) &
+      call cvmix_put(CVmix_vars, "kpp_Snonlocal_iface", cvmix_zero)
 
     call cvmix_put(CVmix_vars, 'kpp_transport', cvmix_zero)
     call cvmix_coeffs_kpp(new_Mdiff, new_Tdiff, new_Sdiff,                    &
@@ -654,28 +659,67 @@ contains
       !     listed as (i), (ii), and (iii). If ws = 0, it applies only to (i)
       !     and (ii). If wm = 0, it applies only to (iii).
       if (kwup.eq.1) then
-        Mdiff_OBL = compute_nu_at_OBL_depth(interp_type2, zw(kwup:kwup+1),    &
-                                            old_Mdiff(kwup:kwup+1),           &
-                                            OBL_depth, dnu_dz=dMdiff_OBL)
-        Tdiff_OBL = compute_nu_at_OBL_depth(interp_type2, zw(kwup:kwup+1),    &
-                                            old_Tdiff(kwup:kwup+1),           &
-                                            OBL_depth, dnu_dz=dTdiff_OBL)
-        Sdiff_OBL = compute_nu_at_OBL_depth(interp_type2, zw(kwup:kwup+1),    &
-                                            old_Sdiff(kwup:kwup+1),           &
-                                            OBL_depth, dnu_dz=dSdiff_OBL)
+        Mdiff_OBL = cvmix_kpp_compute_nu_at_OBL_depth(interp_type2,           &
+                                                      zt(kwup:kwup+1),        &
+                                                      old_Mdiff(kwup:kwup+1), &
+                                                      OBL_depth,              &
+                                                      layer_width=            &
+                                                      (/zw(kwup+1)-zw(kwup),  &
+                                                      zw(kwup+2)-zw(kwup+1)/),&
+                                                      dnu_dz=dMdiff_OBL)
+        Tdiff_OBL = cvmix_kpp_compute_nu_at_OBL_depth(interp_type2,           &
+                                                      zt(kwup:kwup+1),        &
+                                                      old_Tdiff(kwup:kwup+1), &
+                                                      OBL_depth,              &
+                                                      layer_width=            &
+                                                      (/zw(kwup+1)-zw(kwup),  &
+                                                      zw(kwup+2)-zw(kwup+1)/),&
+                                                      dnu_dz=dTdiff_OBL)
+        Sdiff_OBL = cvmix_kpp_compute_nu_at_OBL_depth(interp_type2,           &
+                                                      zt(kwup:kwup+1),        &
+                                                      old_Sdiff(kwup:kwup+1), &
+                                                      OBL_depth,              &
+                                                      layer_width=            &
+                                                      (/zw(kwup+1)-zw(kwup),  &
+                                                      zw(kwup+2)-zw(kwup+1)/),&
+                                                      dnu_dz=dSdiff_OBL)
       else
-        Mdiff_OBL = compute_nu_at_OBL_depth(interp_type2, zw(kwup:kwup+1),    &
-                                            old_Mdiff(kwup:kwup+1),           &
-                                            OBL_depth, zw(kwup-1),            &
-                                            old_Mdiff(kwup-1), dMdiff_OBL) 
-        Tdiff_OBL = compute_nu_at_OBL_depth(interp_type2, zw(kwup:kwup+1),    &
-                                            old_Tdiff(kwup:kwup+1),           &
-                                            OBL_depth, zw(kwup-1),            &
-                                            old_Tdiff(kwup-1), dTdiff_OBL) 
-        Sdiff_OBL = compute_nu_at_OBL_depth(interp_type2, zw(kwup:kwup+1),    &
-                                            old_Sdiff(kwup:kwup+1),           &
-                                            OBL_depth, zw(kwup-1),            &
-                                            old_Sdiff(kwup-1), dSdiff_OBL) 
+        Mdiff_OBL = cvmix_kpp_compute_nu_at_OBL_depth(interp_type2,           &
+                                                      zw(kwup:kwup+1),        &
+                                                      old_Mdiff(kwup:kwup+1), &
+                                                      OBL_depth,              &
+                                                      layer_width=            &
+                                                      (/zw(kwup+1)-zw(kwup),  &
+                                                      zw(kwup+2)-zw(kwup+1)/),&
+                                                      depth_2above=           &
+                                                      zw(kwup-1),             &
+                                                      nu_2above=              &
+                                                      old_Mdiff(kwup-1),      &
+                                                      dnu_dz=dMdiff_OBL) 
+        Tdiff_OBL = cvmix_kpp_compute_nu_at_OBL_depth(interp_type2,           &
+                                                      zw(kwup:kwup+1),        &
+                                                      old_Tdiff(kwup:kwup+1), &
+                                                      OBL_depth,              &
+                                                      layer_width=            &
+                                                      (/zw(kwup+1)-zw(kwup),  &
+                                                      zw(kwup+2)-zw(kwup+1)/),&
+                                                      depth_2above=           &
+                                                      zw(kwup-1),             &
+                                                      nu_2above=              &
+                                                      old_Tdiff(kwup-1),      &
+                                                      dnu_dz=dTdiff_OBL) 
+        Sdiff_OBL = cvmix_kpp_compute_nu_at_OBL_depth(interp_type2,           &
+                                                      zw(kwup:kwup+1),        &
+                                                      old_Sdiff(kwup:kwup+1), &
+                                                      OBL_depth,              &
+                                                      layer_width=            &
+                                                      (/zw(kwup+1)-zw(kwup),  &
+                                                      zw(kwup+2)-zw(kwup+1)/),&
+                                                      depth_2above=           &
+                                                      zw(kwup-1),             &
+                                                      nu_2above=              &
+                                                      old_Sdiff(kwup-1),      &
+                                                      dnu_dz=dSdiff_OBL) 
       end if
       if (OBL_depth.eq.cvmix_zero) then
         MshapeAt1 = cvmix_zero ! value doesn't really matter, K = 0
@@ -2005,8 +2049,10 @@ contains
 ! !IROUTINE: cvmix_compute_nu_at_OBL_depth
 ! !INTERFACE:
 
-  function compute_nu_at_OBL_depth(interp_type2, layer_depth, layer_nu,       &
-                                   OBL_depth, depth_2above, nu_2above, dnu_dz)
+  function cvmix_kpp_compute_nu_at_OBL_depth(interp_type2, layer_depth,       &
+                                             layer_nu, OBL_depth,             &
+                                             layer_width, depth_2above,       &
+                                             nu_2above, dnu_dz)
 
 ! !DESCRIPTION:
 !  Interpolate to find $\nu$ at \verb|OBL_depth| from values at interfaces
@@ -2023,46 +2069,60 @@ contains
     ! layer_nu    = nu at these points
     real(cvmix_r8), dimension(2), intent(in) :: layer_depth, layer_nu
     real(cvmix_r8),               intent(in) :: OBL_depth
+    ! using POP interpolation => knowing cell widths
+    real(cvmix_r8), dimension(2), optional, intent(in) :: layer_width
     ! nu at iface above the iface above OBL_depth (Not needed for linear
     ! interpolation or if OBL_depth is in top level
     real(cvmix_r8), optional,     intent(in) :: depth_2above, nu_2above
 
 ! !OUTPUT PARAMETERS:
     real(cvmix_r8), optional, intent(out) :: dnu_dz
-    real(cvmix_r8)                        :: compute_nu_at_OBL_depth
+    real(cvmix_r8)                        :: cvmix_kpp_compute_nu_at_OBL_depth
 
 !EOP
 !BOC
 
     ! Local variables
     real(cvmix_r8), dimension(4) :: coeffs
-    real(cvmix_r8) :: dnu_dz_above, dnu_dz_below, dnu_dz_local
+    real(cvmix_r8) :: dnu_dz_above, dnu_dz_below, dnu_dz_local, wgt
 
     if (interp_type2.eq.CVMIX_KPP_INTERP_POP) then
-      ! (1) Interpolate derivatives of nu
-      if (present(depth_2above).and.present(nu_2above)) then
-        dnu_dz_above = (layer_nu(1)-nu_2above)/(layer_depth(1)-depth_2above)
-      else
-        dnu_dz_above = cvmix_zero
+      if (not(present(layer_width))) then
+        print*, "ERROR: You must provide layer_width with POP interpolation"
+        stop 1
       end if
-      dnu_dz_below = (layer_nu(2)-layer_nu(1))/(layer_depth(2)-layer_depth(1))
-      call cvmix_math_poly_interp(coeffs, CVMIX_MATH_INTERP_LINEAR,           &
-                                  layer_depth, (/dnu_dz_above, dnu_dz_below/))
-      ! (2) Evaluate at OBL_depth
-      dnu_dz_local = cvmix_math_evaluate_cubic(coeffs, -OBL_depth)
+
+      ! (1) Compute derivatives of nu at layer centers (central difference)
+      if (present(nu_2above)) then
+        dnu_dz_above = (layer_nu(1)-nu_2above)/layer_width(1)
+      else
+        dnu_dz_above = layer_nu(1)/layer_width(1)
+      end if
+      dnu_dz_below = (layer_nu(2)-layer_nu(1))/layer_width(2)
+      ! Stability => require non-negative dnu_dz
+      if (dnu_dz_above.lt.0.0_cvmix_r8) dnu_dz_above = 0.0_cvmix_r8
+      if (dnu_dz_below.lt.0.0_cvmix_r8) dnu_dz_below = 0.0_cvmix_r8
+        
+      ! (2) Compute dnu/dz at OBL_depth by weighted average of values
+      !     computed above (see LMD94, Eq. (D5) for details)
+      wgt = (-layer_depth(1)+0.5_cvmix_r8*layer_width(1)-OBL_depth) /         &
+            layer_width(1)
+      dnu_dz_local = wgt*dnu_dz_above + (cvmix_one-wgt)*dnu_dz_below
+
       ! (3) Linear interpolant: slope = value computed in (2) and the line goes
-      !     through the point (layer_depth(2), layer_nu(2))
+      !     through the point (layer_depth(1), layer_nu(1))
       coeffs = cvmix_zero
-      coeffs(1) = layer_nu(2) - dnu_dz_local*layer_depth(2)
+      coeffs(1) = layer_nu(1) - dnu_dz_local*layer_depth(1)
       coeffs(2) = dnu_dz_local
     else
       call cvmix_math_poly_interp(coeffs, interp_type2, layer_depth, layer_nu,&
            depth_2above, nu_2above)
     end if
-    compute_nu_at_OBL_depth = cvmix_math_evaluate_cubic(coeffs, -OBL_depth,   &
-                                                        dnu_dz)
+    cvmix_kpp_compute_nu_at_OBL_depth = cvmix_math_evaluate_cubic(coeffs,     &
+                                                                  -OBL_depth, &
+                                                                  dnu_dz)
 
-  end function compute_nu_at_OBL_depth
+  end function cvmix_kpp_compute_nu_at_OBL_depth
 
 !EOC
 
