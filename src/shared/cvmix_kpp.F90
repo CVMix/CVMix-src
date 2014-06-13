@@ -2077,6 +2077,7 @@ contains
 
 ! !OUTPUT PARAMETERS:
     real(cvmix_r8), optional, intent(out) :: dnu_dz
+    real(cvmix_r8)                        :: iface_depth
     real(cvmix_r8)                        :: cvmix_kpp_compute_nu_at_OBL_depth
 
 !EOP
@@ -2093,26 +2094,29 @@ contains
       end if
 
       ! (1) Compute derivatives of nu at layer centers (central difference)
+      !     Sign convention: dnu/dz is positive if nu increases as you
+      !                      move up in the column
       if (present(nu_2above)) then
-        dnu_dz_above = (layer_nu(1)-nu_2above)/layer_width(1)
+        dnu_dz_above = (nu_2above-layer_nu(1))/layer_width(1)
       else
-        dnu_dz_above = layer_nu(1)/layer_width(1)
+        ! Assume diffusivity goes to 0 at surface (z=0)
+        dnu_dz_above = -layer_nu(1)/layer_width(1)
       end if
-      dnu_dz_below = (layer_nu(2)-layer_nu(1))/layer_width(2)
+      dnu_dz_below = (layer_nu(1)-layer_nu(2))/layer_width(2)
       ! Stability => require non-negative dnu_dz
       if (dnu_dz_above.lt.0.0_cvmix_r8) dnu_dz_above = 0.0_cvmix_r8
       if (dnu_dz_below.lt.0.0_cvmix_r8) dnu_dz_below = 0.0_cvmix_r8
         
       ! (2) Compute dnu/dz at OBL_depth by weighted average of values
       !     computed above (see LMD94, Eq. (D5) for details)
-      wgt = (-layer_depth(1)+0.5_cvmix_r8*layer_width(1)-OBL_depth) /         &
-            layer_width(1)
+      iface_depth = layer_depth(1) - 0.5_cvmix_r8*layer_width(1)
+      wgt = (-iface_depth-OBL_depth) / layer_width(1)
       dnu_dz_local = wgt*dnu_dz_above + (cvmix_one-wgt)*dnu_dz_below
 
       ! (3) Linear interpolant: slope = value computed in (2) and the line goes
       !     through the point (layer_depth(1), layer_nu(1))
       coeffs = cvmix_zero
-      coeffs(1) = layer_nu(1) - dnu_dz_local*layer_depth(1)
+      coeffs(1) = layer_nu(1) - dnu_dz_local*iface_depth
       coeffs(2) = dnu_dz_local
     else
       call cvmix_math_poly_interp(coeffs, interp_type2, layer_depth, layer_nu,&
