@@ -574,6 +574,9 @@ contains
     real(cvmix_r8) :: dMdiff_OBL, dTdiff_OBL, dSdiff_OBL
     real(cvmix_r8) :: wm_OBL, ws_OBL, second_term
 
+    ! Width of column kw_up and kw_up+1
+    real(cvmix_r8), dimension(2) :: col_widths
+
     ! Constant from params
     integer :: interp_type2
 
@@ -658,65 +661,59 @@ contains
       !   * If OBL_depth = 0, the above note applies to all three situations
       !     listed as (i), (ii), and (iii). If ws = 0, it applies only to (i)
       !     and (ii). If wm = 0, it applies only to (iii).
-#if 0
+      col_widths(1) = zw(kwup) - zw(kwup+1)
+      if (kwup.eq.nlev) then
+        col_widths(2) = 1.0_cvmix_r8 ! Value doesn't matter, will divide into
+                                     ! zero
+      else
+        col_widths(2) = zw(kwup+1) - zw(kwup+2)
+      end if
+
       if (kwup.eq.1) then
-        if (interp_type2.eq.) then
+        if (interp_type2.eq.CVMIX_KPP_INTERP_LMD94) then
           Mdiff_OBL = cvmix_kpp_compute_nu_at_OBL_depth_LMD94(zt(kwup:kwup+1),&
-                                                    zw(kwup:kwup+2),          &
+                                                    col_widths,               &
                                                     old_Mdiff(kwup:kwup+1),   &
                                                     OBL_depth,                &
                                                     dnu_dz=dMdiff_OBL)
-        Tdiff_OBL = cvmix_kpp_compute_nu_at_OBL_depth(interp_type2,           &
-                                                      zt(kwup:kwup+1),        &
-                                                      old_Tdiff(kwup:kwup+1), &
-                                                      OBL_depth,              &
-                                                      layer_width=            &
-                                                      (/zw(kwup+1)-zw(kwup),  &
-                                                      zw(kwup+2)-zw(kwup+1)/),&
-                                                      dnu_dz=dTdiff_OBL)
-        Sdiff_OBL = cvmix_kpp_compute_nu_at_OBL_depth(interp_type2,           &
-                                                      zt(kwup:kwup+1),        &
-                                                      old_Sdiff(kwup:kwup+1), &
-                                                      OBL_depth,              &
-                                                      layer_width=            &
-                                                      (/zw(kwup+1)-zw(kwup),  &
-                                                      zw(kwup+2)-zw(kwup+1)/),&
-                                                      dnu_dz=dSdiff_OBL)
-        else
+          Tdiff_OBL = cvmix_kpp_compute_nu_at_OBL_depth_LMD94(zt(kwup:kwup+1),&
+                                                    col_widths,               &
+                                                    old_Tdiff(kwup:kwup+1),   &
+                                                    OBL_depth,                &
+                                                    dnu_dz=dTdiff_OBL)
+          Sdiff_OBL = cvmix_kpp_compute_nu_at_OBL_depth_LMD94(zt(kwup:kwup+1),&
+                                                    col_widths,               &
+                                                    old_Sdiff(kwup:kwup+1),   &
+                                                    OBL_depth,                &
+                                                    dnu_dz=dSdiff_OBL)
+!        else
         end if
       else
-        Mdiff_OBL = cvmix_kpp_compute_nu_at_OBL_depth(interp_type2,           &
-                                                      zt(kwup:kwup+1),        &
-                                                      old_Mdiff(kwup:kwup+1), &
-                                                      OBL_depth,              &
-                                                      layer_width=            &
-                                                      (/zw(kwup+1)-zw(kwup),  &
-                                                      zw(kwup+2)-zw(kwup+1)/),&
-                                                      nu_2above=              &
-                                                      old_Mdiff(kwup-1),      &
-                                                      dnu_dz=dMdiff_OBL) 
-        Tdiff_OBL = cvmix_kpp_compute_nu_at_OBL_depth(interp_type2,           &
-                                                      zt(kwup:kwup+1),        &
-                                                      old_Tdiff(kwup:kwup+1), &
-                                                      OBL_depth,              &
-                                                      layer_width=            &
-                                                      (/zw(kwup+1)-zw(kwup),  &
-                                                      zw(kwup+2)-zw(kwup+1)/),&
-                                                      nu_2above=              &
-                                                      old_Tdiff(kwup-1),      &
-                                                      dnu_dz=dTdiff_OBL) 
-        Sdiff_OBL = cvmix_kpp_compute_nu_at_OBL_depth(interp_type2,           &
-                                                      zt(kwup:kwup+1),        &
-                                                      old_Sdiff(kwup:kwup+1), &
-                                                      OBL_depth,              &
-                                                      layer_width=            &
-                                                      (/zw(kwup+1)-zw(kwup),  &
-                                                      zw(kwup+2)-zw(kwup+1)/),&
-                                                      nu_2above=              &
-                                                      old_Sdiff(kwup-1),      &
-                                                      dnu_dz=dSdiff_OBL) 
+        if (interp_type2.eq.CVMIX_KPP_INTERP_LMD94) then
+          Mdiff_OBL = cvmix_kpp_compute_nu_at_OBL_depth_LMD94(zt(kwup:kwup+1),&
+                                                    col_widths,               &
+                                                    old_Mdiff(kwup:kwup+1),   &
+                                                    OBL_depth,                &
+                                                    diff_2above=              &
+                                                    old_Mdiff(kwup-1),        &
+                                                    dnu_dz=dMdiff_OBL)
+          Tdiff_OBL = cvmix_kpp_compute_nu_at_OBL_depth_LMD94(zt(kwup:kwup+1),&
+                                                    col_widths,               &
+                                                    old_Tdiff(kwup:kwup+1),   &
+                                                    OBL_depth,                &
+                                                    diff_2above=              &
+                                                    old_Tdiff(kwup-1),        &
+                                                    dnu_dz=dTdiff_OBL)
+          Sdiff_OBL = cvmix_kpp_compute_nu_at_OBL_depth_LMD94(zt(kwup:kwup+1),&
+                                                    col_widths,               &
+                                                    old_Sdiff(kwup:kwup+1),   &
+                                                    OBL_depth,                &
+                                                    diff_2above=              &
+                                                    old_Sdiff(kwup-1),        &
+                                                    dnu_dz=dSdiff_OBL)
+!        else
+        end if
       end if
-#endif
       if (OBL_depth.eq.cvmix_zero) then
         MshapeAt1 = cvmix_zero ! value doesn't really matter, K = 0
         TshapeAt1 = cvmix_zero ! value doesn't really matter, K = 0
@@ -759,6 +756,9 @@ contains
           dSshapeAt1 = dSshapeAt1 + second_term*Sdiff_OBL
           dMshapeAt1 = dMshapeAt1 + second_term*Mdiff_OBL
         end if
+        dTshapeAt1 = min(dTshapeAt1, cvmix_zero) ! non-positive value!
+        dSshapeAt1 = min(dSshapeAt1, cvmix_zero) ! non-positive value!
+        dMshapeAt1 = min(dMshapeAt1, cvmix_zero) ! non-positive value!
       end if
 
       ! (2b) Compute coefficients of shape function
@@ -826,12 +826,14 @@ contains
       call cvmix_kpp_compute_enhanced_diff(Mdiff_ktup,                        &
                                            Tdiff_ktup,                        &
                                            Sdiff_ktup,                        &
-                                           Mdiff_out(ktup+1),                 &
-                                           Tdiff_out(ktup+1),                 &
-                                           Sdiff_out(ktup+1),                 &
-                                           OBL_Mdiff(kwup),                   &
-                                           OBL_Tdiff(kwup),                   &
-                                           OBL_Sdiff(kwup),                   &
+                                           Mdiff_out(ktup),                   &
+                                           Tdiff_out(ktup),                   &
+                                           Sdiff_out(ktup),                   &
+                                           OBL_Mdiff(ktup),                   &
+                                           OBL_Tdiff(ktup),                   &
+                                           OBL_Sdiff(ktup),                   &
+                                           Tnonlocal(ktup),                   &
+                                           Snonlocal(ktup),                   &
                                            delta, lkteqkw=(ktup.eq.kwup))
     else
       print*, "ERROR: ktup should be either kwup or kwup-1!"
@@ -1313,6 +1315,7 @@ contains
   subroutine cvmix_kpp_compute_enhanced_diff(Mdiff_ktup, Tdiff_ktup,          &
                                              Sdiff_ktup, Mdiff, Tdiff, Sdiff, &
                                              OBL_Mdiff, OBL_Tdiff, OBL_Sdiff, &
+                                             Tnonlocal, Snonlocal,            &
                                              delta, lkteqkw)
 
 ! !DESCRIPTION:
@@ -1344,7 +1347,8 @@ contains
     ! Will change either diff & visc or OBL_diff & OBL_visc, depending on value
     ! of lkteqkw
     real(cvmix_r8), intent(inout) :: Mdiff, Tdiff, Sdiff,                     &
-                                     OBL_Mdiff, OBL_Tdiff, OBL_Sdiff
+                                     OBL_Mdiff, OBL_Tdiff, OBL_Sdiff,         &
+                                     Tnonlocal, Snonlocal
 
 !EOP
 !BOC
@@ -1354,10 +1358,14 @@ contains
     ! enh_diff and enh_visc are the enhanced diffusivity and viscosity values
     ! at the interface nearest OBL_depth
     real(cvmix_r8) :: enh_Mdiff, enh_Tdiff, enh_Sdiff
+    ! Need to store original OBL_Tdiff and OBL_Sdiff for updating nonlocal
+    real(cvmix_r8) :: old_Tdiff, old_Sdiff
 
     real(cvmix_r8) :: omd ! one minus delta
 
     omd = cvmix_one - delta
+    old_Tdiff = OBL_Tdiff
+    old_Sdiff = OBL_Sdiff
 
     if (lkteqkw) then
       ! => ktup = kwup
@@ -1373,6 +1381,11 @@ contains
       Mdiff = omd*Mdiff + delta*enh_Mdiff
       Tdiff = omd*Tdiff + delta*enh_Tdiff
       Sdiff = omd*Sdiff + delta*enh_Sdiff
+
+      ! (c) Update OBL_[MTS]diff
+      OBL_Mdiff = Mdiff
+      OBL_Tdiff = Tdiff
+      OBL_Sdiff = Sdiff
     else
       ! => ktup = kwup - 1
       ! Interface kw = ktup+1 is in the OBL
@@ -1388,6 +1401,10 @@ contains
       OBL_Mdiff = omd*Mdiff + delta*enh_Mdiff
       OBL_Tdiff = omd*Tdiff + delta*enh_Tdiff
       OBL_Sdiff = omd*Sdiff + delta*enh_Sdiff
+
+      ! (c) update nonlocal term
+      Tnonlocal = Tnonlocal*OBL_Tdiff/old_Tdiff
+      Snonlocal = Snonlocal*OBL_Sdiff/old_Sdiff
     end if
 
 ! EOC
