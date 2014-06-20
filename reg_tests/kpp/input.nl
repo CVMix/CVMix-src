@@ -25,7 +25,7 @@ mix_type = 'kpp'
 ! Test 4 params
 &kpp_col4_nml
   ltest4         = .true.
-  interp_type_t4 = "quadratic"
+  interp_type_t4 = 'quadratic'
   OBL_levid4     = 3
   lnoDGat1       = .true.
 /

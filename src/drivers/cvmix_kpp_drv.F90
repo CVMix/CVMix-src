@@ -71,7 +71,7 @@ Subroutine cvmix_kpp_driver()
                         ri_crit
   namelist/kpp_col2_nml/ltest2
   namelist/kpp_col3_nml/ltest3, nlev3
-  namelist/kpp_col4_nml/ltest4, interp_type_t4, OBL_depth4, lnoDGat1
+  namelist/kpp_col4_nml/ltest4, interp_type_t4, OBL_levid4, lnoDGat1
   namelist/kpp_col5_nml/ltest5, nlev5, layer_thick5, hmix5, interp_type_t5,   &
                         lavg_N_or_Nsqr
   namelist/kpp_col6_nml/ltest6, vonkarman6, tao, rho0, grav, alpha, Qnonpen,  &
@@ -109,7 +109,7 @@ Subroutine cvmix_kpp_driver()
   lavg_N_or_Nsqr = .true.
 
   ! Defaults for test 6
-  ltest6     = .true.
+  ltest6     = .false.
   vonkarman6 = 0.4_cvmix_r8
   tao        = 0.2_cvmix_r8
   rho0       =  real(1035,cvmix_r8)
