@@ -574,6 +574,9 @@ contains
     real(cvmix_r8) :: dMdiff_OBL, dTdiff_OBL, dSdiff_OBL
     real(cvmix_r8) :: wm_OBL, ws_OBL, second_term
 
+    ! coefficients used for interpolation if interp_type2 is not 'LMD94'
+    real(kind=cvmix_r8), dimension(4) :: coeffs
+
     ! Width of column kw_up and kw_up+1
     real(cvmix_r8), dimension(2) :: col_widths
 
@@ -686,7 +689,18 @@ contains
                                                     old_Sdiff(kwup:kwup+1),   &
                                                     OBL_depth,                &
                                                     dnu_dz=dSdiff_OBL)
-!        else
+        else
+          call cvmix_math_poly_interp(coeffs, interp_type2, zw(kwup:kwup+1),  &
+                                      old_Mdiff(kwup:kwup+1))
+          Mdiff_OBL = cvmix_math_evaluate_cubic(coeffs, -OBL_depth, dMdiff_OBL)
+
+          call cvmix_math_poly_interp(coeffs, interp_type2, zw(kwup:kwup+1),  &
+                                      old_Tdiff(kwup:kwup+1))
+          Tdiff_OBL = cvmix_math_evaluate_cubic(coeffs, -OBL_depth, dTdiff_OBL)
+
+          call cvmix_math_poly_interp(coeffs, interp_type2, zw(kwup:kwup+1),  &
+                                      old_Sdiff(kwup:kwup+1))
+          Sdiff_OBL = cvmix_math_evaluate_cubic(coeffs, -OBL_depth, dSdiff_OBL)
         end if
       else
         if (interp_type2.eq.CVMIX_KPP_INTERP_LMD94) then
@@ -711,7 +725,21 @@ contains
                                                     diff_2above=              &
                                                     old_Sdiff(kwup-1),        &
                                                     dnu_dz=dSdiff_OBL)
-!        else
+        else
+          call cvmix_math_poly_interp(coeffs, interp_type2, zw(kwup:kwup+1),  &
+                                      old_Mdiff(kwup:kwup+1), zw(kwup-1),     &
+                                      old_Mdiff(kwup-1))
+          Mdiff_OBL = cvmix_math_evaluate_cubic(coeffs, -OBL_depth, dMdiff_OBL)
+
+          call cvmix_math_poly_interp(coeffs, interp_type2, zw(kwup:kwup+1),  &
+                                      old_Tdiff(kwup:kwup+1), zw(kwup-1),     &
+                                      old_Tdiff(kwup-1))
+          Tdiff_OBL = cvmix_math_evaluate_cubic(coeffs, -OBL_depth, dTdiff_OBL)
+
+          call cvmix_math_poly_interp(coeffs, interp_type2, zw(kwup:kwup+1),  &
+                                      old_Sdiff(kwup:kwup+1), zw(kwup-1),     &
+                                      old_Sdiff(kwup-1))
+          Sdiff_OBL = cvmix_math_evaluate_cubic(coeffs, -OBL_depth, dSdiff_OBL)
         end if
       end if
       if (OBL_depth.eq.cvmix_zero) then
