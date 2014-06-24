@@ -581,7 +581,7 @@ contains
     real(cvmix_r8), dimension(2) :: col_widths
 
     ! Constant from params
-    integer :: interp_type2
+    integer :: interp_type2, MatchTechnique
 
     integer :: nlev_p1, nlev, kw
     logical :: lstable
@@ -594,6 +594,7 @@ contains
       CVmix_kpp_params_in => CVmix_kpp_params_user
     end if
     interp_type2   = CVmix_kpp_params_in%interp_type2
+    MatchTechnique = CVmix_kpp_params_in%MatchTechnique
 
     ! Output values should be set to input values
     Mdiff_out = old_Mdiff
@@ -638,8 +639,7 @@ contains
     Sshape2   = Sshape
 
     !     'ParabolicNonLocal' => non-local term shape function is (1-sigma)^2
-    if (CVmix_kpp_params_in%MatchTechnique.eq.CVMIX_KPP_PARABOLIC_NONLOCAL)   &
-       then
+    if (MatchTechnique.eq.CVMIX_KPP_PARABOLIC_NONLOCAL) then
       Tshape2(1) =  cvmix_one 
       Tshape2(2) = -real(2,cvmix_r8)
       Tshape2(3) =  cvmix_one
@@ -649,9 +649,8 @@ contains
 
     ! If MatchTechnique = 'SimpleShape' or 'ParabolicNonLocal' then we just use
     ! [MTS]shape that have already been set. Otherwise:
-    if ((CVmix_kpp_params_in%MatchTechnique.ne.CVMIX_KPP_SIMPLE_SHAPES).and.  &
-       (CVmix_kpp_params_in%MatchTechnique.ne.CVMIX_KPP_PARABOLIC_NONLOCAL))  &
-       then
+    if ((MatchTechnique.ne.CVMIX_KPP_SIMPLE_SHAPES).and.                      &
+        (MatchTechnique.ne.CVMIX_KPP_PARABOLIC_NONLOCAL)) then
       ! (2a) Compute G(1) and G'(1) for three cases:
       !      i) temperature diffusivity
       !      ii) other tracers diffusivity
@@ -796,7 +795,7 @@ contains
                                                    Sshape)
       call cvmix_kpp_compute_shape_function_coeffs(MshapeAt1, dMshapeAt1,     &
                                                    Mshape)
-      if (CVmix_kpp_params_in%MatchTechnique.eq.CVMIX_KPP_MATCH_BOTH) then
+      if (MatchTechnique.eq.CVMIX_KPP_MATCH_BOTH) then
         Tshape2 = Tshape
         Sshape2 = Sshape
       end if
@@ -842,33 +841,35 @@ contains
     ! on whether OBL_depth is in layer ktup (=> kwup = ktup) or layer ktup+1
     ! (=> kwup = ktup+1). I.e. is the interface between them in the OBL or
     ! below it?
-    if (ktup.eq.nlev) then
-      ! OBL_depth between bottom cell center and ocean bottom, assume
-      ! zt(ktup+1) = ocn_bottom (which is zw(nlev+1)
-      delta = (OBL_depth+zt(ktup))/(zt(ktup)-zw(ktup+1))
-    else
-      delta = (OBL_depth+zt(ktup))/(zt(ktup)-zt(ktup+1))
-    end if
+    if (MatchTechnique.eq.CVMIX_KPP_MATCH_BOTH) then
+      if (ktup.eq.nlev) then
+        ! OBL_depth between bottom cell center and ocean bottom, assume
+        ! zt(ktup+1) = ocn_bottom (which is zw(nlev+1)
+        delta = (OBL_depth+zt(ktup))/(zt(ktup)-zw(ktup+1))
+      else
+        delta = (OBL_depth+zt(ktup))/(zt(ktup)-zt(ktup+1))
+      end if
 
-    if ((ktup.eq.kwup).or.(ktup.eq.kwup-1)) then
-      call cvmix_kpp_compute_enhanced_diff(Mdiff_ktup,                        &
-                                           Tdiff_ktup,                        &
-                                           Sdiff_ktup,                        &
-                                           Mdiff_out(ktup),                   &
-                                           Tdiff_out(ktup),                   &
-                                           Sdiff_out(ktup),                   &
-                                           OBL_Mdiff(ktup),                   &
-                                           OBL_Tdiff(ktup),                   &
-                                           OBL_Sdiff(ktup),                   &
-                                           Tnonlocal(ktup),                   &
-                                           Snonlocal(ktup),                   &
-                                           delta, lkteqkw=(ktup.eq.kwup))
-    else
-      print*, "ERROR: ktup should be either kwup or kwup-1!"
-      print*, "ktup = ", ktup, " and kwup = ", kwup
-      deallocate(sigma, w_m, w_s)
-      deallocate(OBL_Mdiff, OBL_Tdiff, OBL_Sdiff)
-      stop 1
+      if ((ktup.eq.kwup).or.(ktup.eq.kwup-1)) then
+        call cvmix_kpp_compute_enhanced_diff(Mdiff_ktup,                      &
+                                             Tdiff_ktup,                      &
+                                             Sdiff_ktup,                      &
+                                             Mdiff_out(ktup),                 &
+                                             Tdiff_out(ktup),                 &
+                                             Sdiff_out(ktup),                 &
+                                             OBL_Mdiff(ktup),                 &
+                                             OBL_Tdiff(ktup),                 &
+                                             OBL_Sdiff(ktup),                 &
+                                             Tnonlocal(ktup),                 &
+                                             Snonlocal(ktup),                 &
+                                             delta, lkteqkw=(ktup.eq.kwup))
+      else
+        print*, "ERROR: ktup should be either kwup or kwup-1!"
+        print*, "ktup = ", ktup, " and kwup = ", kwup
+        deallocate(sigma, w_m, w_s)
+        deallocate(OBL_Mdiff, OBL_Tdiff, OBL_Sdiff)
+        stop 1
+      end if
     end if
 
     ! (5) Combine interior and boundary coefficients
@@ -1431,8 +1432,16 @@ contains
       OBL_Sdiff = omd*Sdiff + delta*enh_Sdiff
 
       ! (c) update nonlocal term
-      Tnonlocal = Tnonlocal*OBL_Tdiff/old_Tdiff
-      Snonlocal = Snonlocal*OBL_Sdiff/old_Sdiff
+      if (old_Tdiff.ne.cvmix_zero) then
+        Tnonlocal = Tnonlocal*OBL_Tdiff/old_Tdiff
+      else
+        Tnonlocal = cvmix_zero
+      end if
+      if (old_Sdiff.ne.cvmix_zero) then
+        Snonlocal = Snonlocal*OBL_Sdiff/old_Sdiff
+      else
+        Snonlocal = cvmix_zero
+      end if
     end if
 
 ! EOC
