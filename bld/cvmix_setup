@@ -18,29 +18,46 @@ else:
     readline.parse_and_bind("tab: complete")
   readline.set_completer(complete)
 
+have_compiler = 1
 try:
-  filename = sys.argv[1]
+  compiler = sys.argv[1]
 except:
-  filename = ".CVMix_env"
+  have_compiler = 0
+
+have_netcdf = 1
+try:
+  netcdf_dir = sys.argv[2]
+except:
+  have_netcdf = 0
+
+filename = ".CVMix_env"
 
 # Print standard information about this tool
-print "This utility needs to be run before the included Makefile will"
-print "successfully compile CVMix. It collects information about your compiler"
-print "and associated libraries, and saves it in the .CVMix_env file. Note that"
-print "it only needs to be run once, though you should run it again if anything"
-print "changes.\n"
+if have_compiler + have_netcdf != 2:
+  print "This utility needs to be run before the included Makefile will"
+  print "successfully compile CVMix. It collects information about your compiler"
+  print "and associated libraries, and saves it in the .CVMix_env file. Note that"
+  print "it only needs to be run once, though you should run it again if anything"
+  print "changes.\n"
 
 # For now, just need fortran compiler and netCDF location / flags
-compiler = raw_input('Fortran compiler (mpi not necessary): ')
-netcdf_dir = raw_input('Directory containing netcdf (enter "need_both" to enter netcdf include directory and netcdf lib directory separately): ')
-if netcdf_dir == "need_both":
-  netcdf_inc = raw_input('netCDF/include location: ')
-  netcdf_lib = raw_input('netCDF/lib location: ')
+if have_compiler == 0:
+  compiler = raw_input('Fortran compiler (mpi not necessary): ')
+if have_netcdf == 0:
+  netcdf_dir = raw_input('Directory containing netcdf (enter "need_both" to enter netcdf include directory and netcdf lib directory separately): ')
+  if netcdf_dir == "need_both":
+    netcdf_inc = raw_input('netCDF/include location: ')
+    netcdf_lib = raw_input('netCDF/lib location: ')
+  else:
+    netcdf_inc = netcdf_dir+"/include"
+    netcdf_lib = netcdf_dir+"/lib"
 else:
   netcdf_inc = netcdf_dir+"/include"
   netcdf_lib = netcdf_dir+"/lib"
 
-print "Writing environment settings to " + filename
+if have_compiler + have_netcdf != 2:
+  print "Writing environment settings to " + filename
+
 fid = open(filename, 'w')
 fid.write("FC = " + compiler+"\n")
 fid.write("NETCDF_INC = " + netcdf_inc+"\n")
