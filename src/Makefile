@@ -156,7 +156,7 @@ $(DEP_FILE): $(MAKE_DEP) $(SRC_DIR)/*.F90 $(SRC_DRIVE_DIR)/*.F90
 # CVMix_env. If the file doesn't exist, then the python script "cvmix_setup"
 # is run to generate the file.
 $(ENV_FILE):
-	@$(BLD_DIR)/cvmix_setup $(ENV_FILE)
+	@(cd $(BLD_DIR); ./cvmix_setup)
 	$(MAKE) -f $(SRC_DIR)/Makefile
 
 .PHONY: exe netcdf depends check lib remove_exe clean libclean allclean       \
@@ -182,7 +182,11 @@ check:
 	$(if $(REBUILD), rm -f $(addprefix $(OBJ_DIR)/,cvmix_io.o $(DRIVER_OBJS)))
 
 lib: $(ENV_FILE)
+# For some reason, changing the way $(ENV_FILE) is build made it necessary
+# to only call this when NEED_ENV_FILE is FALSE
+ifeq ($(NEED_ENV_FILE),FALSE)
 	$(MAKE) -f $(SRC_SHARED_DIR)/Makefile $(SHR_FLAGS)
+endif
 
 # Delete the executable
 remove_exe:
