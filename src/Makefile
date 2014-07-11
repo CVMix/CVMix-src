@@ -42,7 +42,8 @@ else
   NEED_ENV_FILE = FALSE
   include $(ENV_FILE)
   SHR_FLAGS = FC=$(FC) FCFLAGS="$(FCFLAGS)" SRC_DIR=$(SRC_SHARED_DIR)         \
-              OBJ_DIR=$(OBJ_DIR) LIB_DIR=$(LIB_DIR) INC_DIR=$(INC_DIR)
+              OBJ_DIR=$(OBJ_DIR) LIB_DIR=$(LIB_DIR) INC_DIR=$(INC_DIR)        \
+              UCASE=$(UCASE)
 endif
 
 # update FCFLAGS based on compiler
