@@ -204,8 +204,11 @@ clean: remove_exe
 libclean: $(ENV_FILE)
 	$(MAKE) -f $(SRC_SHARED_DIR)/Makefile clean $(SHR_FLAGS)
 
-allclean: libclean clean
+allclean:
+	$(MAKE) -f $(SRC_DIR)/Makefile libclean
+	$(MAKE) -f $(SRC_DIR)/Makefile clean
 
 # Deletes $(ENV_FILE) in addition to everything else
-distclean: libclean
+distclean:
+	$(MAKE) -f $(SRC_DIR)/Makefile allclean
 	/bin/rm -rf $(ENV_FILE)
