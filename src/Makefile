@@ -202,8 +202,12 @@ clean: remove_exe
 # Delete all object and module files from the shared directory, as well as 
 # libcvmix.a
 libclean:
-	$(MAKE) -f $(SRC_SHARED_DIR)/Makefile clean UCASE=TRUE
-	$(MAKE) -f $(SRC_SHARED_DIR)/Makefile clean UCASE=FALSE
+	$(MAKE) -f $(SRC_SHARED_DIR)/Makefile clean SRC_DIR=$(SRC_SHARED_DIR)       \
+              OBJ_DIR=$(OBJ_DIR) LIB_DIR=$(LIB_DIR) INC_DIR=$(INC_DIR)        \
+              UCASE=TRUE
+	$(MAKE) -f $(SRC_SHARED_DIR)/Makefile clean SRC_DIR=$(SRC_SHARED_DIR)       \
+              OBJ_DIR=$(OBJ_DIR) LIB_DIR=$(LIB_DIR) INC_DIR=$(INC_DIR)        \
+              UCASE=FALSE
 
 allclean:
 	$(MAKE) -f $(SRC_DIR)/Makefile libclean
