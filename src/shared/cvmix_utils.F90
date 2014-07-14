@@ -56,14 +56,14 @@ contains
 
 ! !INPUT PARAMETERS:
     integer, intent(in) :: old_vals, nlev
-    real(cvmix_r8), dimension(:), optional, intent(in) :: new_Mdiff,          &
-                                                          new_Tdiff,          &
-                                                          new_Sdiff
+    real(cvmix_r8), dimension(nlev+1), optional, intent(in) :: new_Mdiff,     &
+                                                               new_Tdiff,     &
+                                                               new_Sdiff
 
 ! !OUTPUT PARAMETERS:
-    real(cvmix_r8), dimension(:), optional, intent(inout) :: Mdiff_out,       &
-                                                             Tdiff_out,       &
-                                                             Sdiff_out
+    real(cvmix_r8), dimension(nlev+1), optional, intent(inout) :: Mdiff_out,  &
+                                                                  Tdiff_out,  &
+                                                                  Sdiff_out
 
 !EOP
 !BOC

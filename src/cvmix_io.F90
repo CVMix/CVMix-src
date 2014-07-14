@@ -1611,25 +1611,19 @@ contains
 
   end function get_netcdf_varid
 
-#endif
-
 ! Routine to handle errors returned from netcdf
   subroutine netcdf_check(status)
 
     integer, intent(in) :: status
 
-#ifdef _NETCDF
     if (status.ne.nf90_noerr) then
       print*, "netCDF error: ", trim(nf90_strerror(status))
       stop 1
     end if
-#else
-    print*, "ERROR: can not call netcdf_check unless compiling -D_NETCDF"
-    print*, "The status you passed in = ", status
-    stop 1
-#endif
 
   end subroutine netcdf_check
+
+#endif
 
 ! DEBUGGING ROUTINE
   subroutine print_open_files()

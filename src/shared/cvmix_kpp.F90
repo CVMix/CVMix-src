@@ -1595,9 +1595,10 @@ contains
     ! * Nsqr_iface: squared buoyancy frequency at interfaces (units: 1/s^2)
     ! * Vt_sqr_cntr: squared unresolved shear term (units m^2/s^2)
     ! See note in description about what values should be passed in
-    real(cvmix_r8), dimension(:), intent(in), optional :: ws_cntr, N_iface,   &
-                                                          Nsqr_iface,         &
-                                                          Vt_sqr_cntr
+    real(cvmix_r8), dimension(size(zt_cntr)), intent(in), optional ::         &
+                                                 ws_cntr, Vt_sqr_cntr
+    real(cvmix_r8), dimension(size(zt_cntr)+1), intent(in), optional ::       &
+                                                    N_iface, Nsqr_iface
     type(cvmix_kpp_params_type), intent(in), optional, target ::              &
                                            CVmix_kpp_params_user
 
@@ -1757,8 +1758,8 @@ contains
                                            CVmix_kpp_params_user
 
 ! !OUTPUT PARAMETERS:
-    real(cvmix_r8), optional, dimension(:), intent(inout) :: w_m
-    real(cvmix_r8), optional, dimension(:), intent(inout) :: w_s
+    real(cvmix_r8), optional, dimension(size(sigma_coord)), intent(inout) ::  &
+                                                                    w_m, w_s
 
 !EOP
 !BOC
@@ -1791,10 +1792,6 @@ contains
       end do
 
       if (compute_wm) then
-        if (size(w_m).ne.n_sigma) then
-          print*, "ERROR: sigma_coord and w_m must be same size!"
-          stop 1
-        end if
         w_m(1) = compute_phi_inv(zeta(1), CVmix_kpp_params_in, lphi_m=.true.)*&
                  vonkar*surf_fric_vel
         do kw=2,n_sigma
@@ -1808,10 +1805,6 @@ contains
       end if
 
       if (compute_ws) then
-        if (size(w_s).ne.n_sigma) then
-          print*, "ERROR: sigma_coord and w_s must be same size!"
-          stop 1
-        end if
         w_s(1) = compute_phi_inv(zeta(1), CVmix_kpp_params_in, lphi_s=.true.)*&
                  vonkar*surf_fric_vel
         do kw=2,n_sigma
@@ -1825,11 +1818,6 @@ contains
       end if
     else ! surf_fric_vel = 0
       if (compute_wm) then
-        if (size(w_m).ne.n_sigma) then
-          print*, "ERROR: sigma_coord and w_m must be same size!"
-          stop 1
-        end if
-
         if (surf_buoy_force.ge.cvmix_zero) then
           ! Stable regime with surf_fric_vel = 0 => w_m = 0
           w_m = cvmix_zero
@@ -1849,11 +1837,6 @@ contains
       end if ! compute_wm
 
       if (compute_ws) then
-        if (size(w_s).ne.n_sigma) then
-          print*, "ERROR: sigma_coord and w_s must be same size!"
-          stop 1
-        end if
-
         if (surf_buoy_force.ge.cvmix_zero) then
           ! Stable regime with surf_fric_vel = 0 => w_s = 0
           w_s = cvmix_zero
@@ -1905,8 +1888,8 @@ contains
                                            CVmix_kpp_params_user
 
 ! !OUTPUT PARAMETERS:
-    real(cvmix_r8), optional, dimension(:), intent(inout) :: w_m
-    real(cvmix_r8), optional, dimension(:), intent(inout) :: w_s
+    real(cvmix_r8), optional, dimension(size(surf_buoy_force)), intent(inout) &
+                                                                :: w_m, w_s
 
 !EOP
 !BOC
@@ -1939,10 +1922,6 @@ contains
       end do
 
       if (compute_wm) then
-        if (size(w_m).ne.n_sigma) then
-          print*, "ERROR: sigma_coord and w_m must be same size!"
-          stop 1
-        end if
         w_m(1) = compute_phi_inv(zeta(1), CVmix_kpp_params_in, lphi_m=.true.)*&
                  vonkar*surf_fric_vel
         do kw=2,n_sigma
@@ -1956,10 +1935,6 @@ contains
       end if
 
       if (compute_ws) then
-        if (size(w_s).ne.n_sigma) then
-          print*, "ERROR: sigma_coord and w_s must be same size!"
-          stop 1
-        end if
         w_s(1) = compute_phi_inv(zeta(1), CVmix_kpp_params_in, lphi_s=.true.)*&
                  vonkar*surf_fric_vel
         do kw=2,n_sigma
@@ -1975,11 +1950,6 @@ contains
 
     else ! surf_fric_vel = 0
       if (compute_wm) then
-        if (size(w_m).ne.n_sigma) then
-          print*, "ERROR: sigma_coord and w_m must be same size!"
-          stop 1
-        end if
-
         ! Unstable forcing, Eqs. (13) and (B1c) reduce to following
         do kw=1,n_sigma
           if(surf_buoy_force(kw) .ge. cvmix_zero) then
@@ -1998,11 +1968,6 @@ contains
       end if ! compute_wm
 
       if (compute_ws) then
-        if (size(w_s).ne.n_sigma) then
-          print*, "ERROR: sigma_coord and w_s must be same size!"
-          stop 1
-        end if
-
           ! Unstable forcing, Eqs. (13) and (B1e) reduce to following
         do kw=1,n_sigma
           if (surf_buoy_force(kw) .ge. cvmix_zero) then
@@ -2056,7 +2021,8 @@ contains
     ! N_iface: buoyancy frequency at cell interfaces (units: 1/s)
     ! Nsqr_iface: squared buoyancy frequency at cell interfaces (units: 1/s^2)
     ! note that you must provide exactly one of these two inputs!
-    real(cvmix_r8), dimension(:), intent(in), optional :: N_iface, Nsqr_iface
+    real(cvmix_r8), dimension(size(zt_cntr)+1), intent(in), optional ::       &
+                                                    N_iface, Nsqr_iface
     type(cvmix_kpp_params_type),  intent(in), optional, target ::             &
                                            CVmix_kpp_params_user
 
