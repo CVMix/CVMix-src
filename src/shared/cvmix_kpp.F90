@@ -1928,8 +1928,8 @@ contains
           if (zeta(kw).eq.zeta(kw-1)) then
             w_m(kw) = w_m(kw-1)
           else
-            w_m(kw) = vonkar*surf_fric_vel*compute_phi_inv(zeta(kw),          &
-                                           CVmix_kpp_params_in, lphi_m=.true.)
+            w_m(kw) = compute_phi_inv(zeta(kw), CVmix_kpp_params_in, lphi_m=.true.)*&
+                      vonkar*surf_fric_vel
           end if
         end do
       end if
@@ -1941,8 +1941,8 @@ contains
           if (zeta(kw).eq.zeta(kw-1)) then
             w_s(kw) = w_s(kw-1)
           else
-            w_s(kw) = vonkar*surf_fric_vel*compute_phi_inv(zeta(kw),          &
-                                           CVmix_kpp_params_in, lphi_s=.true.)
+            w_s(kw) = compute_phi_inv(zeta(kw), CVmix_kpp_params_in, lphi_s=.true.)*&
+                      vonkar*surf_fric_vel
           end if
         end do
       end if
