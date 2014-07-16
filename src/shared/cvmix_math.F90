@@ -79,8 +79,8 @@
     ! Local variables
     real(cvmix_r8) :: det
     integer        :: k, k2
-    real(kind=cvmix_r8), dimension(:,:), allocatable :: Minv
-    real(kind=cvmix_r8), dimension(:),   allocatable :: rhs
+    real(kind=cvmix_r8), dimension(4,4) :: Minv
+    real(kind=cvmix_r8), dimension(4)   :: rhs
 
     ! All interpolation assumes form of
     ! y = dx^3 + cx^2 + bx + a
@@ -102,8 +102,7 @@
         !      ^^^
         !       M
         det = -((x(2)-x(1))**2)
-        allocate(Minv(3,3))
-        allocate(rhs(3))
+        ! only using 3x3 block of Minv and first 3 elements of rhs
         rhs(1) = y(2)
         rhs(2) = y(1)
         if (present(x0).and.present(y0)) then
@@ -130,8 +129,6 @@
             coeffs(k2) = coeffs(k2)+Minv(4-k2,k)*rhs(k)
           end do
         end do
-        deallocate(rhs)
-        deallocate(Minv)
       case (CVMIX_MATH_INTERP_CUBE_SPLINE)
         ! Match y(1), y(2), y'(1), and y'(2)
 !        print*, "Cubic spline interpolation"
@@ -142,8 +139,6 @@
         !      ^^^
         !       M
         det = -((x(2)-x(1))**3)
-        allocate(Minv(4,4))
-        allocate(rhs(4))
         rhs(1) = y(2)
         rhs(2) = y(1)
         if (present(x0).and.present(y0)) then
@@ -178,8 +173,6 @@
             coeffs(k2) = coeffs(k2)+Minv(5-k2,k)*rhs(k)
           end do
         end do
-        deallocate(rhs)
-        deallocate(Minv)
     end select
 
 !EOC
