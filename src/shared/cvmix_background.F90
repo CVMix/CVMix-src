@@ -413,7 +413,7 @@ contains
     type(cvmix_global_params_type), intent(in) :: CVmix_params_in
 
 ! !OUTPUT PARAMETERS:
-    type(cvmix_bkgnd_params_type),  target, optional, intent(inout) :: &
+    type(cvmix_bkgnd_params_type),  target, optional, intent(inout) ::        &
                                                CVmix_bkgnd_params_user
 !EOP
 !BOC
@@ -425,7 +425,7 @@ contains
     integer :: nlev  ! max number of levels
 
     ! Local copies to make code easier to read
-    real(cvmix_r8), dimension(:), allocatable :: visc, diff, zw
+    real(cvmix_r8), dimension(CVmix_params_in%max_nlev+1) :: visc, diff, zw
 
     CVmix_bkgnd_params_out => CVmix_bkgnd_params_saved
     if (present(CVmix_bkgnd_params_user)) then
@@ -433,9 +433,6 @@ contains
     end if
 
     nlev = CVmix_params_in%max_nlev
-    allocate(zw(nlev+1))
-    allocate(visc(nlev+1))
-    allocate(diff(nlev+1))
     
     ! Clean up memory in bkgnd_params_type (will be re-allocated in put call)
     if (allocated(CVmix_bkgnd_params_out%static_visc))                        &
@@ -473,7 +470,6 @@ contains
       call cvmix_put_bkgnd('handle_old_vals', CVMIX_OVERWRITE_OLD_VAL,        &
                                cvmix_bkgnd_params_user)
     end if
-    deallocate(zw, visc, diff)
 
 !EOC
 
@@ -511,7 +507,7 @@ contains
 !EOP
 !BOC
 
-    real(cvmix_r8), dimension(:), allocatable :: new_Mdiff, new_Tdiff
+    real(cvmix_r8), dimension(CVmix_vars%nlev+1) :: new_Mdiff, new_Tdiff
     integer :: nlev
     type(cvmix_bkgnd_params_type),  pointer :: CVmix_bkgnd_params_in
        
@@ -521,7 +517,6 @@ contains
     end if
 
     nlev = CVmix_vars%nlev
-    allocate(new_Mdiff(nlev+1), new_Tdiff(nlev+1))
     if (.not.associated(CVmix_vars%Mdiff_iface)) &
       call cvmix_put(CVmix_vars, "Mdiff", cvmix_zero)
     if (.not.associated(CVmix_vars%Tdiff_iface)) &
@@ -534,7 +529,6 @@ contains
                            new_Mdiff = new_Mdiff,                             &
                            Tdiff_out = CVmix_vars%Tdiff_iface,                &
                            new_Tdiff = new_Tdiff)
-    deallocate(new_Mdiff, new_Tdiff)
 
 !EOC
 

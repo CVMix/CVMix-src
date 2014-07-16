@@ -61,8 +61,10 @@ if [ -z ${NO_BUILD} ]; then
     exit 2
   fi
 else
-  if [ "`cat ../../bld/.netcdf_info`" == "YES" ]; then
-    USE_NETCDF=netcdf
+  if [ -e ../../bld/.netcdf_info ]; then
+    if [ "`cat ../../bld/.netcdf_info`" == "YES" ]; then
+      USE_NETCDF=netcdf
+    fi
   fi  
 fi
 
