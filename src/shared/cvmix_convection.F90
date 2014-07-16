@@ -187,8 +187,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    real(cvmix_r8), dimension(:), allocatable :: new_Mdiff, new_Tdiff
-    integer :: nlev
+    real(cvmix_r8), dimension(CVmix_vars%nlev+1) :: new_Mdiff, new_Tdiff
     type (cvmix_conv_params_type), pointer :: CVmix_conv_params_in
 
     if (present(CVmix_conv_params_user)) then
@@ -196,8 +195,6 @@ contains
     else
       CVmix_conv_params_in => CVmix_conv_params_saved
     end if
-    nlev = CVmix_vars%nlev
-    allocate(new_Mdiff(nlev+1), new_Tdiff(nlev+1))
     if (.not.associated(CVmix_vars%Mdiff_iface)) &
       call cvmix_put(CVmix_vars, "Mdiff", cvmix_zero)
     if (.not.associated(CVmix_vars%Tdiff_iface)) &
@@ -208,12 +205,12 @@ contains
                            CVmix_vars%WaterDensity_cntr,                      &
                            CVmix_vars%AdiabWaterDensity_cntr,                 &
                            CVmix_conv_params_user)
-    call cvmix_update_wrap(CVmix_conv_params_in%handle_old_vals, nlev,        &
+    call cvmix_update_wrap(CVmix_conv_params_in%handle_old_vals,              &
+                           CVmix_vars%nlev,                                   &
                            Mdiff_out = CVmix_vars%Mdiff_iface,                &
                            new_Mdiff = new_Mdiff,                             &
                            Tdiff_out = CVmix_vars%Tdiff_iface,                &
                            new_Tdiff = new_Tdiff)
-    deallocate(new_Mdiff, new_Tdiff)
 
 !EOC
 
