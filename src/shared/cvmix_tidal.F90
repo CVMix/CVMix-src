@@ -251,8 +251,7 @@ contains
 !BOC
 
     ! Local variables
-    real(cvmix_r8), dimension(:), allocatable :: new_Tdiff
-    integer :: nlev
+    real(cvmix_r8), dimension(CVmix_vars%nlev+1) :: new_Tdiff
     type(cvmix_tidal_params_type),  pointer :: CVmix_tidal_params_in
        
     CVmix_tidal_params_in => CVmix_tidal_params_saved
@@ -260,17 +259,14 @@ contains
       CVmix_tidal_params_in => CVmix_tidal_params_user
     end if
 
-    nlev = CVmix_vars%nlev
-    allocate(new_Tdiff(nlev+1))
-
     call cvmix_coeffs_tidal(new_Tdiff, CVmix_vars%SqrBuoyancyFreq_iface,      & 
                             CVmix_vars%zw_iface, CVmix_vars%zt_cntr,          &
                             CVmix_vars%OceanDepth, CVMix_params,              &
                             energy_flux, CVmix_tidal_params_user)
-    call cvmix_update_wrap(CVmix_tidal_params_in%handle_old_vals, nlev,       &
+    call cvmix_update_wrap(CVmix_tidal_params_in%handle_old_vals,             &
+                           CVmix_vars%nlev,                                   &
                            Tdiff_out = CVmix_vars%Tdiff_iface,                &
                            new_Tdiff = new_Tdiff)
-    deallocate(new_Tdiff)
 !EOC
 
   end subroutine cvmix_coeffs_tidal_wrap
@@ -308,7 +304,7 @@ contains
     ! Local variables
     integer        :: nlev, k
     real(cvmix_r8) :: coef, rho, z_cut
-    real(cvmix_r8), allocatable, dimension(:) :: vert_dep
+    real(cvmix_r8), dimension(size(zw)) :: vert_dep
 
     type(cvmix_tidal_params_type), pointer :: CVmix_tidal_params
 
@@ -323,7 +319,6 @@ contains
 
     select case (trim(CVmix_tidal_params%mix_scheme))
       case ('simmons','Simmons')
-        allocate(vert_dep(nlev+1))
         vert_dep = cvmix_compute_vert_dep(zw, zt, nlev, CVmix_tidal_params)
         coef = CVmix_tidal_params%local_mixing_frac * &
                CVmix_tidal_params%efficiency *        &
@@ -338,7 +333,6 @@ contains
               Tdiff_out(k) = CVmix_tidal_params%max_coefficient
           end do
         end if
-        deallocate(vert_dep)
 
       case DEFAULT
         ! Note: this error should be caught in cvmix_init_tidal
