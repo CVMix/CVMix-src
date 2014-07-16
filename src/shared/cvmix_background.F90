@@ -508,7 +508,6 @@ contains
 !BOC
 
     real(cvmix_r8), dimension(CVmix_vars%nlev+1) :: new_Mdiff, new_Tdiff
-    integer :: nlev
     type(cvmix_bkgnd_params_type),  pointer :: CVmix_bkgnd_params_in
        
     CVmix_bkgnd_params_in => CVmix_bkgnd_params_saved
@@ -516,7 +515,6 @@ contains
       CVmix_bkgnd_params_in => CVmix_bkgnd_params_user
     end if
 
-    nlev = CVmix_vars%nlev
     if (.not.associated(CVmix_vars%Mdiff_iface)) &
       call cvmix_put(CVmix_vars, "Mdiff", cvmix_zero)
     if (.not.associated(CVmix_vars%Tdiff_iface)) &
@@ -524,7 +522,8 @@ contains
 
     call cvmix_coeffs_bkgnd(new_Mdiff, new_Tdiff, colid,                      &
                             CVmix_bkgnd_params_user)
-    call cvmix_update_wrap(CVmix_bkgnd_params_in%handle_old_vals, nlev,       &
+    call cvmix_update_wrap(CVmix_bkgnd_params_in%handle_old_vals,             &
+                           CVmix_vars%nlev,                                   &
                            Mdiff_out = CVmix_vars%Mdiff_iface,                &
                            new_Mdiff = new_Mdiff,                             &
                            Tdiff_out = CVmix_vars%Tdiff_iface,                &

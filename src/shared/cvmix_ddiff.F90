@@ -316,8 +316,7 @@ module cvmix_ddiff
 !EOP
 !BOC
 
-    real(cvmix_r8), dimension(:), allocatable :: new_Tdiff, new_Sdiff
-    integer :: nlev
+    real(cvmix_r8), dimension(CVmix_vars%nlev+1) :: new_Tdiff, new_Sdiff
     type(cvmix_ddiff_params_type), pointer :: CVmix_ddiff_params_in
 
     if (present(CVmix_ddiff_params_user)) then
@@ -326,8 +325,6 @@ module cvmix_ddiff
       CVmix_ddiff_params_in => CVmix_ddiff_params_saved
     end if
 
-    nlev = CVmix_vars%nlev
-    allocate(new_Tdiff(nlev+1), new_Sdiff(nlev+1))
     if (.not.associated(CVmix_vars%Tdiff_iface)) &
       call cvmix_put(CVmix_vars, "Tdiff", cvmix_zero)
     if (.not.associated(CVmix_vars%Sdiff_iface)) &
@@ -336,12 +333,12 @@ module cvmix_ddiff
     call cvmix_coeffs_ddiff(new_Tdiff, new_Sdiff, CVmix_vars%strat_param_num, &
                             CVmix_vars%strat_param_denom,                     &
                             CVmix_ddiff_params_user)
-    call cvmix_update_wrap(CVmix_ddiff_params_in%handle_old_vals, nlev,       &
+    call cvmix_update_wrap(CVmix_ddiff_params_in%handle_old_vals,             &
+                           CVmix_vars%nlev,                                   &
                            Tdiff_out = CVmix_vars%Tdiff_iface,                &
                            new_Tdiff = new_Tdiff,                             &
                            Sdiff_out = CVmix_vars%Sdiff_iface,                &
                            new_Sdiff = new_Sdiff)
-    deallocate(new_Tdiff, new_Sdiff)
 
 !EOC
 
