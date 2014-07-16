@@ -288,8 +288,7 @@ contains
 !EOP
 !BOC
 
-    real(cvmix_r8), dimension(:), allocatable :: new_Mdiff, new_Tdiff
-    integer :: nlev
+    real(cvmix_r8), dimension(CVmix_vars%nlev+1) :: new_Mdiff, new_Tdiff
     type(cvmix_shear_params_type), pointer :: CVmix_shear_params_in
 
     if (present(CVmix_shear_params_user)) then
@@ -298,8 +297,6 @@ contains
       CVmix_shear_params_in => CVmix_shear_params_saved
     end if
 
-    nlev = CVmix_vars%nlev
-    allocate(new_Mdiff(nlev+1), new_Tdiff(nlev+1))
     if (.not.associated(CVmix_vars%Mdiff_iface)) &
       call cvmix_put(CVmix_vars, "Mdiff", cvmix_zero)
     if (.not.associated(CVmix_vars%Tdiff_iface)) &
@@ -307,14 +304,14 @@ contains
 
     call cvmix_coeffs_shear(new_Mdiff, new_Tdiff,                             &
                             CVmix_vars%ShearRichardson_iface,                 &
-                            nlev, CVmix_bkgnd_params, colid, no_diff,         &
-                            CVmix_shear_params_user)
-    call cvmix_update_wrap(CVmix_shear_params_in%handle_old_vals, nlev,       &
+                            CVmix_vars%nlev, CVmix_bkgnd_params, colid,       &
+                            no_diff, CVmix_shear_params_user)
+    call cvmix_update_wrap(CVmix_shear_params_in%handle_old_vals,             &
+                           CVmix_vars%nlev,                                   &
                            Mdiff_out = CVmix_vars%Mdiff_iface,                &
                            new_Mdiff = new_Mdiff,                             &
                            Tdiff_out = CVmix_vars%Tdiff_iface,                &
                            new_Tdiff = new_Tdiff)
-    deallocate(new_Mdiff, new_Tdiff)
 
 !EOC
 
