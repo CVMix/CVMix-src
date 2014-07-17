@@ -2,15 +2,7 @@
 
 run () {
 
-  if [ $ThisScript == "BL_test.sh" ]; then
-    if [ "$DRIVER" == "mem_copy" ]; then
-      $CVMix/bin/cvmix < input_memcopy.nl
-    else
-      $CVMix/bin/cvmix < input_pointer.nl
-    fi
-  else
-    $CVMix/bin/cvmix < input.nl
-  fi
+  $CVMix/bin/cvmix < $NAMELIST
 
   if [ $? != 0 ]; then
     echo "Error in execution!"

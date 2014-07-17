@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # (1) Load required routines
+NAMELIST=input_pointer.nl
 . ../common/environ.sh
 . ../common/usage.sh
 . ../common/parse_inputs.sh

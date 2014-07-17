@@ -22,6 +22,16 @@ ENERGY_FILE=tidal_energy_gx1v6_20130512.nc
 # Input Data repository (currently using "svn export")
 check_inputdata $GRID_FILE $PHYS_FILE $ENERGY_FILE
 
+# If different inputdata directory specified, update namelist
+if [ "$INPUTDATA_DIR" != "$CVMix/inputdata" ]; then
+  rm -f input2.nl
+  NAMELIST=input2.nl
+  sed s+grid_file.\*+"grid_file = \'$INPUTDATA_DIR/$GRID_FILE\'"+ ./input.nl      |\
+  sed s+physics_file.\*+"physics_file = \'$INPUTDATA_DIR/$PHYS_FILE\'"+           |\
+  sed s+energy_flux_file.\*+"energy_flux_file = \'$INPUTDATA_DIR/$ENERGY_FILE\'"+  \
+      > input2.nl
+fi
+
 build
 run
 
