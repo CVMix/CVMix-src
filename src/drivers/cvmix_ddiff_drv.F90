@@ -34,24 +34,24 @@ Subroutine cvmix_ddiff_driver(nlev)
 !EOP
 !BOC
 
+  integer, parameter :: ncol = 2
   ! CVMix datatypes
-  type(cvmix_data_type),         dimension(2) :: CVmix_vars
+  type(cvmix_data_type), dimension(ncol) :: CVmix_vars
 
   real(cvmix_r8), dimension(:,:), allocatable, target :: Tdiff, Sdiff
-  real(cvmix_r8), dimension(:,:),   allocatable, target :: Rrho_num, Rrho_denom
+  real(cvmix_r8), dimension(:,:), allocatable, target :: Rrho_num, Rrho_denom
 
   ! column / file indices
-  integer :: k, fid, ncol, ic
+  integer :: k, fid, ic
 
   ! Namelist variables
-  real(cvmix_r8) :: ddiff_exp1, strat_param_max, kappa_ddiff_t
+  real(cvmix_r8) :: ddiff_exp1, strat_param_max
 
   ! Namelists that may be read in, depending on desired mixing scheme
-  namelist/ddiff_nml/ddiff_exp1, strat_param_max, kappa_ddiff_t
+  namelist/ddiff_nml/ddiff_exp1, strat_param_max
 
   ! Allocate memory to store diffusivity values
   ! Also store numerator / denominator for stratification parameter
-  ncol = 2
   allocate(Tdiff(nlev+1,ncol), Sdiff(nlev+1,ncol))
   allocate(Rrho_num(nlev,ncol), Rrho_denom(nlev,ncol))
   do k=1,nlev
@@ -77,14 +77,14 @@ Subroutine cvmix_ddiff_driver(nlev)
   ! Read / set double diffusion parameters
   read(*, nml=ddiff_nml)
   call cvmix_init_ddiff(ddiff_exp1=ddiff_exp1,                                &
-                        strat_param_max=strat_param_max,                      &
-                        kappa_ddiff_t=kappa_ddiff_t)
+                        strat_param_max=strat_param_max)
                         
 
   call cvmix_coeffs_ddiff(CVmix_vars(1))
   call cvmix_coeffs_ddiff(CVmix_vars(2))
   ! For continuity of plot, set diffusivity when Rrho = 1
-  Tdiff(1,1) = kappa_ddiff_t
+  Sdiff(1,1) = 1e-4_cvmix_r8
+  Tdiff(1,1) = 0.7_cvmix_r8*Sdiff(1,1)
   Tdiff(1,2) = cvmix_get_ddiff_real('mol_diff')*                              &
                cvmix_get_ddiff_real('kappa_ddiff_param1')*                    &
                exp(cvmix_get_ddiff_real('kappa_ddiff_param2'))
@@ -97,14 +97,17 @@ Subroutine cvmix_ddiff_driver(nlev)
   call cvmix_io_open(fid, "data.out", "ascii")
 #endif
 
-  call cvmix_output_write(fid, CVmix_vars, (/"Rrho ", "Tdiff"/))
+  call cvmix_output_write(fid, CVmix_vars, (/"Rrho ", "Tdiff", "Sdiff"/))
 #ifdef _NETCDF
   call cvmix_output_write_att(fid, "long_name", "double diffusion " //        &
                               "stratification parameter", var_name="Rrho")
   call cvmix_output_write_att(fid, "units", "unitless", var_name="Rrho")
-  call cvmix_output_write_att(fid, "long_name", "tracer diffusivity",         &
+  call cvmix_output_write_att(fid, "long_name", "temperature diffusivity",    &
                               var_name="Tdiff")
+  call cvmix_output_write_att(fid, "long_name", "salinity diffusivity",       &
+                              var_name="Sdiff")
   call cvmix_output_write_att(fid, "units", "m^2/s", var_name="Tdiff")
+  call cvmix_output_write_att(fid, "units", "m^2/s", var_name="Sdiff")
 #endif
   call cvmix_io_close(fid)
 

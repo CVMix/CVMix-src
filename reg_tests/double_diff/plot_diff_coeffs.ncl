@@ -22,16 +22,19 @@ begin
     print((/"Reading netCDF data"/))
     f = addfile("data.nc", "r")
     x1 = f->Rrho
-    y1 = f->Tdiff(0:nlev-1,:)
+    ys = f->Sdiff(0:nlev-1,0)
+    yt = f->Tdiff(0:nlev-1,1)
   else
     if (isfilepresent("data.out")) then
       print((/"Reading ascii data"/))
       x1 = new((/nlev,2/), "double")
-      y1 = new((/nlev,2/), "double")
+      ys = new((/nlev  /), "double")
+      yt = new((/nlev  /), "double")
 
-      data = asciiread("data.out", (/nlev+1,4/), "double")
+      data = asciiread("data.out", (/nlev+1,6/), "double")
       x1 = data(0:nlev-1,0:1)
-      y1 = data(0:nlev-1,2:3)
+      yt = data(0:nlev-1,  3)
+      ys = data(0:nlev-1,  4)
       else
         print((/"ERROR: can not find output (looking for data.out or data.nc)"/))
         exit
@@ -85,7 +88,7 @@ begin
   res@tiXAxisString = "R:B::F8:r:E:"
   res@tiYAxisString = ":F8:k/k:F10::B:0:E:"
 
-  plot = gsn_csm_xy(wks, x1(:,0), 1e3*y1(:,0), res)
+  plot = gsn_csm_xy(wks, x1(:,0), ys(:)/ys(0), res)
 
   draw(plot)
   frame(wks)
@@ -119,7 +122,7 @@ begin
   res@tiXAxisString = "1/R:B::F8:r:E:"
   res@tiYAxisString = ":F8:k/n:F10::B:mol:E:"
 
-  plot = gsn_csm_xy(wks, 1.d/x1(:,1), y1(:,1)/1.5e-6, res)
+  plot = gsn_csm_xy(wks, 1.d/x1(:,1), yt(:)/1.5e-6, res)
 
   draw(plot)
   frame(wks)

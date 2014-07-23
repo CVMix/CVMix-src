@@ -79,10 +79,6 @@ module cvmix_ddiff
       ! diffusion (nu_f in LMD94, kappa_0 in Gokhan's paper)
       real(cvmix_r8) :: kappa_ddiff_s      ! units: m^2/s
 
-      ! leading coefficient in formula for salt-fingering regime for
-      ! temperature diffusion (0.7*nu_f in LMD94)
-      real(cvmix_r8) :: kappa_ddiff_t      ! units: m^2/s
-
       ! interior exponent in salt-fingering regime formula (2 in LMD94, 1 in
       ! Gokhan's paper)
       real(cvmix_r8) :: ddiff_exp1         ! units: unitless
@@ -121,9 +117,9 @@ module cvmix_ddiff
 ! !INTERFACE:
 
   subroutine cvmix_init_ddiff(CVmix_ddiff_params_user, strat_param_max,        &
-                              kappa_ddiff_t, kappa_ddiff_s, ddiff_exp1,        &
-                              ddiff_exp2, mol_diff, kappa_ddiff_param1,        &
-                              kappa_ddiff_param2, kappa_ddiff_param3, old_vals)
+                              kappa_ddiff_s, ddiff_exp1, ddiff_exp2, mol_diff, &
+                              kappa_ddiff_param1, kappa_ddiff_param2,          &
+                              kappa_ddiff_param3, old_vals)
 
 ! !DESCRIPTION:
 !  Initialization routine for double diffusion mixing. This mixing technique
@@ -146,7 +142,7 @@ module cvmix_ddiff
 !  \begin{eqnarray*}
 !  \kappa^0 = \left\{ \begin{array}{r l}
 !             7 \cdot 10^{-5}\ \textrm{m}^2\textrm{/s} & \textrm{for temperature}
-!             \ (\verb|kappa_ddiff_t|\ \textrm{in this routine})\\
+!             \ (0.7 \cdot \verb|kappa_ddiff_s|\ \textrm{in this routine})\\
 !             10^{-4}\ \textrm{m}^2\textrm{/s} & \textrm{for salinity and other tracers}
 !             \ (\verb|kappa_ddiff_s|\ \textrm{in this routine}).
 !                     \end{array} \right.
@@ -180,7 +176,6 @@ module cvmix_ddiff
 
 ! !INPUT PARAMETERS:
     real(cvmix_r8),   optional, intent(in) :: strat_param_max,                &
-                                              kappa_ddiff_t,                  &
                                               kappa_ddiff_s,                  &
                                               ddiff_exp1,                     &
                                               ddiff_exp2,                     &
@@ -242,14 +237,6 @@ module cvmix_ddiff
     end if
 
     ! Parameters with physical units
-    if (present(kappa_ddiff_t)) then
-      call cvmix_put_ddiff("kappa_ddiff_t", kappa_ddiff_t,                    &
-                           CVmix_ddiff_params_user)
-    else
-      call cvmix_put_ddiff("kappa_ddiff_t", 7e-5_cvmix_r8,                    &
-                           CVmix_ddiff_params_user)
-    end if
-
     if (present(kappa_ddiff_s)) then
       call cvmix_put_ddiff("kappa_ddiff_s", kappa_ddiff_s,                    &
                            CVmix_ddiff_params_user)
@@ -398,9 +385,9 @@ module cvmix_ddiff
           ddiff = (cvmix_one - ((Rrho-cvmix_one)/                             &
                   (CVmix_ddiff_params_in%strat_param_max-cvmix_one))**        &
             CVmix_ddiff_params_in%ddiff_exp1)**CVmix_ddiff_params_in%ddiff_exp2
-          Tdiff_out(k) = CVmix_ddiff_params_in%kappa_ddiff_t*ddiff
           Sdiff_out(k) = CVmix_ddiff_params_in%kappa_ddiff_s*ddiff
         end if
+        Tdiff_out = Sdiff_out*0.7_cvmix_r8
       end if
       if ((strat_param_num(k).gt.strat_param_denom(k)).and.                   &
           (strat_param_num(k).lt.0)) then
@@ -472,8 +459,6 @@ module cvmix_ddiff
         CVmix_ddiff_params_out%kappa_ddiff_param2 = val
       case ('kappa_ddiff_param3')
         CVmix_ddiff_params_out%kappa_ddiff_param3 = val
-      case ('kappa_ddiff_t')
-        CVmix_ddiff_params_out%kappa_ddiff_t = val
       case ('kappa_ddiff_s')
         CVmix_ddiff_params_out%kappa_ddiff_s = val
       case ('mol_diff')
@@ -583,8 +568,6 @@ module cvmix_ddiff
         cvmix_get_ddiff_real = CVmix_ddiff_params_get%kappa_ddiff_param2
       case ('kappa_ddiff_param3')
         cvmix_get_ddiff_real = CVmix_ddiff_params_get%kappa_ddiff_param3
-      case ('kappa_ddiff_t')
-        cvmix_get_ddiff_real = CVmix_ddiff_params_get%kappa_ddiff_t
       case ('kappa_ddiff_s')
         cvmix_get_ddiff_real = CVmix_ddiff_params_get%kappa_ddiff_s
       case ('mol_diff')

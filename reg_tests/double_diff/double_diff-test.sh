@@ -13,7 +13,7 @@ run
 
 # (2) Look at output
 if [ "${USE_NETCDF}" == "netcdf" ]; then
-  ncdump -v Tdiff data.nc
+  ncdump -v Tdiff,Sdiff data.nc
 else
   cat data.out
 fi
