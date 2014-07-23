@@ -36,7 +36,7 @@ begin
     end if
   end if
 
-  wks = gsn_open_wks(out_type, "shear_CVMix")
+  wks = gsn_open_wks(out_type, "shear-instability")
   gsn_define_colormap(wks, my_color_map)
 
   ; Basic Graphics set up (don't draw / advance frame to add legend!)

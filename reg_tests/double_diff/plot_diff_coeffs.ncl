@@ -41,7 +41,7 @@ begin
     end if
   end if
 
-  wks = gsn_open_wks(out_type, "ddiff-salt_CVMix")
+  wks = gsn_open_wks(out_type, "ddiff-salt")
   gsn_define_colormap(wks, my_color_map)
 
   ; Basic Graphics set up (don't draw / advance frame to add legend!)
@@ -95,7 +95,7 @@ begin
 
   delete(wks)
 
-  wks = gsn_open_wks(out_type, "ddiff-diffuse_CVMix")
+  wks = gsn_open_wks(out_type, "ddiff-diffuse")
   gsn_define_colormap(wks, my_color_map)
 
   ; line & marker styles / axes ranges

@@ -99,7 +99,7 @@ Subroutine cvmix_shear_driver(nlev)
                               var_name="ShearRichardson")
   call cvmix_output_write_att(fid, "units", "unitless",                       &
                               var_name="ShearRichardson")
-  call cvmix_output_write_att(fid, "long_name", "tracer diffusivity",         &
+  call cvmix_output_write_att(fid, "long_name", "temperature diffusivity",    &
                               var_name="Tdiff")
   call cvmix_output_write_att(fid, "units", "m^2/s", var_name="Tdiff")
 #endif

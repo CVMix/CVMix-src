@@ -23,7 +23,7 @@ begin
     exit
   end if
 
-  wks = gsn_open_wks(out_type, "Simmons_CVMix")
+  wks = gsn_open_wks(out_type, "Simmons-single_col")
   gsn_define_colormap(wks, my_color_map)
 
   ; Basic Graphics set up (don't draw / advance frame to add legend!)
