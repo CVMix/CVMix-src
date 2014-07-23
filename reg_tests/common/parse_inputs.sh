@@ -35,14 +35,6 @@ while [ $# -gt 0 ]; do
       fi
       NO_BUILD=1
     ;;
-    -mc|--memcopy)
-      if [ "$ThisScript" == "BL_test.sh" ]; then
-        DRIVER=mem_copy
-        NAMELIST=input_memcopy.nl
-      else
-        bad_input $1
-      fi
-    ;;
     -inputdata|--inputdata)
       if [ "$ThisScript" == "Simmons-test.sh" ]; then
         INPUTDATA_DIR=$2

@@ -1,5 +1,5 @@
 &cvmix_nml
-mix_type  = 'BryanLewis_memcopy'
+mix_type  = 'BryanLewis'
 nlev      = 30
 ocn_depth = 5250.0d0
 /

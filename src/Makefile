@@ -116,11 +116,10 @@ endif
 # Note that these are separated 
 OBJS = cvmix_driver.o \
        cvmix_io.o
-DRIVER_OBJS = cvmix_bgrnd_BL_pointer.o \
-              cvmix_bgrnd_BL_memcopy.o \
-              cvmix_shear_KPP.o        \
-              cvmix_tidal_Simmons.o    \
-              cvmix_ddiff_drv.o        \
+DRIVER_OBJS = cvmix_bgrnd_BL.o      \
+              cvmix_shear_KPP.o     \
+              cvmix_tidal_Simmons.o \
+              cvmix_ddiff_drv.o     \
               cvmix_kpp_drv.o
 ifeq ($(UCASE),TRUE)
   MODS_TMP = $(shell echo $(OBJS) | tr '[a-z]' '[A-Z]')

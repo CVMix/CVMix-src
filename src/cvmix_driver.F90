@@ -40,10 +40,8 @@ Program cvmix_driver
   read(*, nml=cvmix_nml)
 
   select case (trim(mix_type))
-    case ('BryanLewis_pointer')
-      call cvmix_BL_pointer_driver(nlev, ocn_depth)
-    case ('BryanLewis_memcopy')
-      call cvmix_BL_memcopy_driver(nlev, ocn_depth)
+    case ('BryanLewis')
+      call cvmix_BL_driver(nlev, ocn_depth)
     case ('shear')
       call cvmix_shear_driver(nlev)
     case ('tidal')
