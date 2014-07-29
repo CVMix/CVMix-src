@@ -15,7 +15,8 @@ ifeq ($(FC),NONE)
   NOFC = TRUE
 endif
 
-MODULES = cvmix_background.F90 \
+MODULES = cvmix_kinds_and_types.F90 \
+          cvmix_background.F90 \
           cvmix_convection.F90 \
           cvmix_ddiff.F90 \
           cvmix_kpp.F90 \
@@ -27,11 +28,9 @@ MODULES = cvmix_background.F90 \
 
 # Some compilers produce ALL_UPPER_CASE.mod files
 ifeq ($(UCASE),TRUE)
-  MODS_TMP = CVMIX_KINDS_AND_TYPES.F90 \
-             $(shell echo $(MODULES) | tr '[a-z]' '[A-Z]')
+  MODS_TMP = $(shell echo $(MODULES) | tr '[a-z]' '[A-Z]')
 else
-  MODS_TMP = cvmix_kinds_and_types.F90 \
-             $(MODULES)
+  MODS_TMP = $(MODULES)
 endif
 ifneq ($(OBJ_DIR),$(INC_DIR))
   INCS = $(addprefix $(INC_DIR)/,${MODS_TMP:.F90=.mod})
@@ -39,10 +38,6 @@ endif
 MODS = $(addprefix $(OBJ_DIR)/,${MODS_TMP:.F90=.mod}) \
        $(INCS)
 OBJS = $(addprefix $(OBJ_DIR)/,${MODULES:.F90=.o})
-KINDS_OBJ = $(OBJ_DIR)/cvmix_kinds_and_types.o
-ifeq ($(FC),$(filter $(FC),pgf90 ftn))
-  OBJS += $(KINDS_OBJ)
-endif
 
 ifeq ($(USE_DEPS),TRUE)
   include $(DEP_FILE)
@@ -64,7 +59,7 @@ ifneq ($(INC_DIR),$(OBJ_DIR))
 endif
 
 ### Combine into library
-$(LIB_DIR)/libcvmix.a: $(KINDS_OBJ) $(OBJS)
+$(LIB_DIR)/libcvmix.a: $(OBJS)
 	ar -ru $(LIB_DIR)/libcvmix.a $(OBJS)
 
 $(DEP_FILE): $(MAKE_DEP) $(SRC_DIR)/*.F90
@@ -90,5 +85,5 @@ check:
 
 # Remove library, object files, module files, and dependency file
 clean:
-	/bin/rm -f $(LIB_DIR)/libcvmix.a $(OBJS) $(KINDS_OBJ) $(MODS) $(DEP_FILE)
+	/bin/rm -f $(LIB_DIR)/libcvmix.a $(OBJS) $(MODS) $(DEP_FILE)
 
