@@ -617,19 +617,6 @@ contains
               call netcdf_check(nf90_def_var(file_id, "Rrho", NF90_DOUBLE,    &
                                              (/nt_id/), var_id(var)))
             case ("buoyancy_cntr")
-              if (.not.present(buoyancy_cntr)) then
-                print*, "ERROR: to write buoyancy at cell center in ",        &
-                        "cvmix_io, you need to provide the optional ",        &
-                        "buoyancy_cntr argument!"
-                stop
-              else
-                if (size(buoyancy_cntr).ne.CVmix_vars%nlev) then
-                  print*, "ERROR: to write buoyancy at cell center in ",      &
-                          "cvmix_io, buoyancy_cntr must be array of ",        &
-                          "dimension CVmix_vars%nlev"
-                  stop
-                end if
-              end if
               call netcdf_check(nf90_def_var(file_id, "buoyancy", NF90_DOUBLE,&
                                              (/nt_id/), var_id(var)))
             case ("SqrBuoyancyFreq_iface")
@@ -676,8 +663,22 @@ contains
                                              CVmix_vars%strat_param_num(:)/   &
                                              CVmix_vars%strat_param_denom(:)))
             case ("buoyancy_cntr")
-              call netcdf_check(nf90_put_var(file_id, var_id(var),            &
-                                             buoyancy_cntr(:)))
+              if (present(buoyancy_cntr)) then
+                if (size(buoyancy_cntr).eq.CVmix_vars%nlev) then
+                  call netcdf_check(nf90_put_var(file_id, var_id(var),        &
+                                                 buoyancy_cntr(:)))
+                else
+                  print*, "ERROR: to write buoyancy at cell center in ",      &
+                          "cvmix_io, buoyancy_cntr must be array of ",        &
+                          "dimension CVmix_vars%nlev"
+                  stop
+                end if
+              else
+                print*, "ERROR: to write buoyancy at cell center in ",        &
+                        "cvmix_io, you need to provide the optional ",        &
+                        "buoyancy_cntr argument!"
+                stop
+              end if
             case ("SqrBuoyancyFreq_iface")
               call netcdf_check(nf90_put_var(file_id, var_id(var),            &
                                          CVmix_vars%SqrBuoyancyFreq_iface(:)))
@@ -735,24 +736,26 @@ contains
                   write(file_id,"(E24.17E2)",advance='no') 0.0
                 end if
               case ("buoyancy_cntr")
-                if (.not.present(buoyancy_cntr)) then
-                  print*, "ERROR: to write buoyancy at cell center in ",      &
-                          "cvmix_io, you need to provide the optional ",      &
-                          "buoyancy_cntr argument!"
-                  stop
-                else
-                  if (size(buoyancy_cntr).ne.CVmix_vars%nlev) then
+                if (present(buoyancy_cntr)) then
+                  if (size(buoyancy_cntr).eq.CVmix_vars%nlev) then
+                    if (kw.gt.1) then
+                      write(file_id,"(E24.17E2)",advance='no')                &
+                            buoyancy_cntr(kw-1)
+                    else
+                      write(file_id,"(A)",advance='no')                       &
+                            "--- Cell Center Vals ---"
+                    end if
+                  else
                     print*, "ERROR: to write buoyancy at cell center in ",    &
                             "cvmix_io, buoyancy_cntr must be array of ",      &
                             "dimension CVmix_vars%nlev"
                     stop
                   end if
-                end if
-                if (kw.gt.1) then
-                  write(file_id,"(E24.17E2)",advance='no')                    &
-                        buoyancy_cntr(kw-1)
                 else
-                  write(file_id,"(A)",advance='no') "--- Cell Center Vals ---"
+                  print*, "ERROR: to write buoyancy at cell center in ",      &
+                          "cvmix_io, you need to provide the optional ",      &
+                          "buoyancy_cntr argument!"
+                  stop
                 end if
               case ("SqrBuoyancyFreq_iface")
                 write(file_id,"(E24.17E2)",advance='no')                      &
