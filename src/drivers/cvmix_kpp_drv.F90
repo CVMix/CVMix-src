@@ -477,7 +477,6 @@ Subroutine cvmix_kpp_driver()
     CVmix_vars5%BoundaryLayerDepth  =  OBL_depth5
     CVmix_vars5%zt_cntr             => zt
     CVmix_vars5%BulkRichardson_cntr => Ri_bulk
-    CVmix_vars5%buoyancy_cntr       => buoyancy
     CVmix_vars5%Vx_cntr             => hor_vel(:,1)
 #ifdef _NETCDF
     call cvmix_io_open(fid, "test5.nc", "nc")
@@ -487,7 +486,7 @@ Subroutine cvmix_kpp_driver()
     call cvmix_output_write(fid, CVmix_vars5, (/"zt      ",                   &
                                                 "Ri_bulk ",                   &
                                                 "Vx      ",                   &
-                                                "buoyancy"/))
+                                                "buoyancy"/), buoyancy)
 #ifdef _NETCDF
     call cvmix_output_write_att(fid, "OBL_depth",                             &
                                 CVmix_vars5%BoundaryLayerDepth)

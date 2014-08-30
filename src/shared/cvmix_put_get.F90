@@ -384,11 +384,6 @@ contains
           allocate(CVmix_vars%strat_param_denom(nlev))
         end if
         CVmix_vars%strat_param_denom(:) = val
-      case ("buoyancy_cntr")
-        if (.not.associated(CVmix_vars%buoyancy_cntr)) then
-          allocate(CVmix_vars%buoyancy_cntr(nlev))
-        end if
-        CVmix_vars%buoyancy_cntr(:) = val
       case ("Vx_cntr")
         if (.not.associated(CVmix_vars%Vx_cntr)) then
           allocate(CVmix_vars%Vx_cntr(nlev))

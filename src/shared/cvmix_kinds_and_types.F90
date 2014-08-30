@@ -155,10 +155,7 @@ module cvmix_kinds_and_types
     real(cvmix_r8), dimension(:), pointer :: strat_param_denom => NULL()
                                            ! units: unitless
 
-    ! For KPP we need buoyancy (as opposed to buoyancy frequency) and velocity
-    ! (in both x direction and y direction)
-    real(cvmix_r8), dimension(:), pointer :: buoyancy_cntr => NULL()
-                                           ! units: m s^-2
+    ! For KPP we need velocity (in both x direction and y direction)
     real(cvmix_r8), dimension(:), pointer :: Vx_cntr => NULL()
     real(cvmix_r8), dimension(:), pointer :: Vy_cntr => NULL()
                                            ! units: m/s
