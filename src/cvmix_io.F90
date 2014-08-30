@@ -566,10 +566,11 @@ contains
 !  Only those used by entire module. 
 
 ! !INPUT PARAMETERS:
-    integer,                                intent(in) :: file_id
-    type(cvmix_data_type),                  intent(in) :: CVmix_vars
-    character(len=*),         dimension(:), intent(in) :: var_names
-    real(cvmix_r8), optional, dimension(:), intent(in) :: buoyancy_cntr
+    integer,                                    intent(in) :: file_id
+    type(cvmix_data_type)    ,                  intent(in) :: CVmix_vars
+    character(len=*),             dimension(:), intent(in) :: var_names
+    real(cvmix_r8), optional,                                                 &
+                    dimension(CVmix_vars%nlev), intent(in) :: buoyancy_cntr
 
 ! !LOCAL VARIABLES:
     integer :: kw, var
@@ -664,15 +665,8 @@ contains
                                              CVmix_vars%strat_param_denom(:)))
             case ("buoyancy_cntr")
               if (present(buoyancy_cntr)) then
-                if (size(buoyancy_cntr).eq.CVmix_vars%nlev) then
-                  call netcdf_check(nf90_put_var(file_id, var_id(var),        &
-                                                 buoyancy_cntr(:)))
-                else
-                  print*, "ERROR: to write buoyancy at cell center in ",      &
-                          "cvmix_io, buoyancy_cntr must be array of ",        &
-                          "dimension CVmix_vars%nlev"
-                  stop
-                end if
+                call netcdf_check(nf90_put_var(file_id, var_id(var),          &
+                                               buoyancy_cntr(:)))
               else
                 print*, "ERROR: to write buoyancy at cell center in ",        &
                         "cvmix_io, you need to provide the optional ",        &
@@ -737,19 +731,12 @@ contains
                 end if
               case ("buoyancy_cntr")
                 if (present(buoyancy_cntr)) then
-                  if (size(buoyancy_cntr).eq.CVmix_vars%nlev) then
-                    if (kw.gt.1) then
-                      write(file_id,"(E24.17E2)",advance='no')                &
-                            buoyancy_cntr(kw-1)
-                    else
-                      write(file_id,"(A)",advance='no')                       &
-                            "--- Cell Center Vals ---"
-                    end if
+                  if (kw.gt.1) then
+                    write(file_id,"(E24.17E2)",advance='no')                  &
+                          buoyancy_cntr(kw-1)
                   else
-                    print*, "ERROR: to write buoyancy at cell center in ",    &
-                            "cvmix_io, buoyancy_cntr must be array of ",      &
-                            "dimension CVmix_vars%nlev"
-                    stop
+                    write(file_id,"(A)",advance='no')                         &
+                          "--- Cell Center Vals ---"
                   end if
                 else
                   print*, "ERROR: to write buoyancy at cell center in ",      &
