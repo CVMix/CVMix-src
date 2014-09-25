@@ -596,10 +596,13 @@ contains
     interp_type2   = CVmix_kpp_params_in%interp_type2
     MatchTechnique = CVmix_kpp_params_in%MatchTechnique
 
+    nlev_p1 = size(Mdiff_out)
+    nlev    = nlev_p1 - 1
+
     ! Output values should be set to input values
-    Mdiff_out = old_Mdiff
-    Tdiff_out = old_Tdiff
-    Sdiff_out = old_Sdiff
+    Mdiff_out = old_Mdiff(1:nlev_p1)
+    Tdiff_out = old_Tdiff(1:nlev_p1)
+    Sdiff_out = old_Sdiff(1:nlev_p1)
 
     ! (1) Column-specific parameters
     !     
@@ -608,9 +611,6 @@ contains
 
     kwup = floor(kOBL_depth)
     ktup = nint(kOBL_depth)-1
-
-    nlev_p1 = size(zw)
-    nlev    = size(zt)
 
     if (ktup.eq.nlev) then
       ! OBL_depth between bottom cell center and ocean bottom, assume
