@@ -448,8 +448,9 @@ contains
 !EOP
 !BOC
 
-    real(cvmix_r8), dimension(CVmix_vars%nlev+1) :: new_Mdiff, new_Tdiff,     &
-                                                    new_Sdiff
+    real(cvmix_r8), dimension(size(CVmix_vars%zw_iface)) :: new_Mdiff,        &
+                                                            new_Tdiff,        &
+                                                            new_Sdiff
     integer :: nlev
     type(cvmix_kpp_params_type),  pointer :: CVmix_kpp_params_in
        
@@ -459,6 +460,7 @@ contains
     end if
 
     nlev = CVmix_vars%nlev
+    CVmix_vars%nlev = size(CVmix_vars%zw_iface)-1
     if (.not.associated(CVmix_vars%Mdiff_iface)) &
       call cvmix_put(CVmix_vars, "Mdiff", cvmix_zero)
     if (.not.associated(CVmix_vars%Tdiff_iface)) &
@@ -469,6 +471,7 @@ contains
       call cvmix_put(CVmix_vars, "kpp_Tnonlocal_iface", cvmix_zero)
     if (.not.associated(CVmix_vars%kpp_Snonlocal_iface)) &
       call cvmix_put(CVmix_vars, "kpp_Snonlocal_iface", cvmix_zero)
+    CVmix_vars%nlev = nlev
 
     call cvmix_put(CVmix_vars, 'kpp_transport', cvmix_zero)
     call cvmix_coeffs_kpp(new_Mdiff, new_Tdiff, new_Sdiff,                    &
@@ -481,8 +484,9 @@ contains
                           CVmix_vars%kpp_Snonlocal_iface,                     &
                           CVmix_vars%SurfaceFriction,                         &
                           CVmix_vars%SurfaceBuoyancyForcing,                  &
-                          CVmix_kpp_params_user)
-    call cvmix_update_wrap(CVmix_kpp_params_in%handle_old_vals, nlev,         &
+                          nlev, CVmix_kpp_params_user)
+    call cvmix_update_wrap(CVmix_kpp_params_in%handle_old_vals,               &
+                           size(CVmix_vars%zw_iface)-1,                       &
                            Mdiff_out = CVmix_vars%Mdiff_iface,                &
                            new_Mdiff = new_Mdiff,                             &
                            Tdiff_out = CVmix_vars%Tdiff_iface,                &
@@ -502,7 +506,7 @@ contains
   subroutine cvmix_coeffs_kpp_low(Mdiff_out, Tdiff_out, Sdiff_out, zw, zt,    &
                                   old_Mdiff, old_Tdiff, old_Sdiff, OBL_depth, &
                                   kOBL_depth, Tnonlocal, Snonlocal, surf_fric,&
-                                  surf_buoy, CVmix_kpp_params_user)
+                                  surf_buoy, nlev, CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
 !  Computes vertical diffusion coefficients for the KPP boundary layer mixing
@@ -514,17 +518,19 @@ contains
 !  only those used by entire module.
 
 ! !INPUT PARAMETERS:
-    type(cvmix_kpp_params_type), intent(in), optional, target ::              &
-                                           CVmix_kpp_params_user
-    real(cvmix_r8), dimension(:),   intent(in) :: old_Mdiff,                  &
-                                                  old_Tdiff,                  &
-                                                  old_Sdiff,                  &
-                                                  zw,                         &
-                                                  zt
-    real(cvmix_r8),                 intent(in) :: OBL_depth,                  &
-                                                  surf_fric,                  &
-                                                  surf_buoy,                  &
-                                                  kOBL_depth
+    type(cvmix_kpp_params_type),  intent(in), optional, target ::             &
+                                            CVmix_kpp_params_user
+    real(cvmix_r8), dimension(:), intent(in) :: old_Mdiff,                    &
+                                                old_Tdiff,                    &
+                                                old_Sdiff,                    &
+                                                zw,                           &
+                                                zt
+    real(cvmix_r8),               intent(in) :: OBL_depth,                    &
+                                                surf_fric,                    &
+                                                surf_buoy,                    &
+                                                kOBL_depth
+
+    integer,                      intent(in) :: nlev
 
 ! !INPUT/OUTPUT PARAMETERS:
     real(cvmix_r8), dimension(:), intent(inout) :: Mdiff_out,                 &
@@ -583,7 +589,7 @@ contains
     ! Constant from params
     integer :: interp_type2, MatchTechnique
 
-    integer :: nlev_p1, nlev, kw
+    integer :: kw
     logical :: lstable
     integer :: ktup, & ! kt index of cell center above OBL_depth
                kwup    ! kw index of iface above OBL_depth (= kt index of
@@ -596,13 +602,10 @@ contains
     interp_type2   = CVmix_kpp_params_in%interp_type2
     MatchTechnique = CVmix_kpp_params_in%MatchTechnique
 
-    nlev_p1 = size(Mdiff_out)
-    nlev    = nlev_p1 - 1
-
     ! Output values should be set to input values
-    Mdiff_out = old_Mdiff(1:nlev_p1)
-    Tdiff_out = old_Tdiff(1:nlev_p1)
-    Sdiff_out = old_Sdiff(1:nlev_p1)
+    Mdiff_out = old_Mdiff
+    Tdiff_out = old_Tdiff
+    Sdiff_out = old_Sdiff
 
     ! (1) Column-specific parameters
     !     
