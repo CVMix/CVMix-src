@@ -187,26 +187,31 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    real(cvmix_r8), dimension(CVmix_vars%nlev+1) :: new_Mdiff, new_Tdiff
+    real(cvmix_r8), dimension(size(CVmix_vars%zw_iface)) :: new_Mdiff,        &
+                                                            new_Tdiff
     type (cvmix_conv_params_type), pointer :: CVmix_conv_params_in
+    integer :: nlev, max_nlev
 
     if (present(CVmix_conv_params_user)) then
       CVmix_conv_params_in => CVmix_conv_params_user
     else
       CVmix_conv_params_in => CVmix_conv_params_saved
     end if
+
+    nlev = CVmix_vars%nlev
+    max_nlev = size(CVmix_vars%zw_iface)-1
+
     if (.not.associated(CVmix_vars%Mdiff_iface)) &
-      call cvmix_put(CVmix_vars, "Mdiff", cvmix_zero)
+      call cvmix_put(CVmix_vars, "Mdiff", cvmix_zero, max_nlev)
     if (.not.associated(CVmix_vars%Tdiff_iface)) &
-      call cvmix_put(CVmix_vars, "Tdiff", cvmix_zero)
+      call cvmix_put(CVmix_vars, "Tdiff", cvmix_zero, max_nlev)
 
     call cvmix_coeffs_conv(new_Mdiff, new_Tdiff,                              &
                            CVmix_vars%SqrBuoyancyFreq_iface,                  &
                            CVmix_vars%WaterDensity_cntr,                      &
                            CVmix_vars%AdiabWaterDensity_cntr,                 &
-                           CVmix_conv_params_user)
-    call cvmix_update_wrap(CVmix_conv_params_in%handle_old_vals,              &
-                           CVmix_vars%nlev,                                   &
+                           nlev, max_nlev, CVmix_conv_params_user)
+    call cvmix_update_wrap(CVmix_conv_params_in%handle_old_vals, max_nlev,    &
                            Mdiff_out = CVmix_vars%Mdiff_iface,                &
                            new_Mdiff = new_Mdiff,                             &
                            Tdiff_out = CVmix_vars%Tdiff_iface,                &
@@ -215,13 +220,14 @@ contains
 !EOC
 
   end subroutine cvmix_coeffs_conv_wrap
+
 !BOP
 
 ! !IROUTINE: cvmix_coeffs_conv_low
 ! !INTERFACE:
 
-  subroutine cvmix_coeffs_conv_low(Mdiff_out, Tdiff_out, Nsqr, dens,          &
-                                   dens_lwr, CVmix_conv_params_user)
+  subroutine cvmix_coeffs_conv_low(Mdiff_out, Tdiff_out, Nsqr, dens, dens_lwr,&
+                                   nlev, max_nlev, CVmix_conv_params_user)
 
 ! !DESCRIPTION:
 !  Computes vertical diffusion coefficients for convective mixing.
@@ -233,16 +239,18 @@ contains
 
 ! !INPUT PARAMETERS:
 
-    ! nlev+1
-    real(cvmix_r8), dimension(:), intent(in) :: Nsqr
-    ! nlev
-    real(cvmix_r8), dimension(:), intent(in) :: dens, dens_lwr
+    integer,                               intent(in) :: nlev, max_nlev
+    ! max_nlev+1
+    real(cvmix_r8), dimension(max_nlev+1), intent(in) :: Nsqr
+    ! max_nlev
+    real(cvmix_r8), dimension(max_nlev),   intent(in) :: dens, dens_lwr
     type (cvmix_conv_params_type), optional, target, intent(in)  ::           &
                                              CVmix_conv_params_user
 
 ! !INPUT/OUTPUT PARAMETERS:
     ! nlev+1
-    real(cvmix_r8), dimension(:), intent(inout) :: Mdiff_out, Tdiff_out
+    real(cvmix_r8), dimension(max_nlev+1), intent(inout) :: Mdiff_out,        &
+                                                            Tdiff_out
 
 !EOP
 !BOC
@@ -254,7 +262,7 @@ contains
 !-----------------------------------------------------------------------
 
     real(cvmix_r8) :: vvconv, wgt
-    integer        :: nlev, kw
+    integer        :: kw
     type (cvmix_conv_params_type), pointer :: CVmix_conv_params_in
 
     if (present(CVmix_conv_params_user)) then
@@ -262,7 +270,6 @@ contains
     else
       CVmix_conv_params_in => CVmix_conv_params_saved
     end if
-    nlev = size(dens)
 
 !-----------------------------------------------------------------------
 !

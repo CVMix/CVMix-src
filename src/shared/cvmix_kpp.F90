@@ -518,24 +518,24 @@ contains
     type(cvmix_kpp_params_type),  intent(in), optional, target ::             &
                                             CVmix_kpp_params_user
 
-    integer,                             intent(in) :: nlev, max_nlev
-    real(cvmix_r8), dimension(max_nlev), intent(in) :: old_Mdiff,             &
-                                                       old_Tdiff,             &
-                                                       old_Sdiff,             &
-                                                       zw,                    &
-                                                       zt
-    real(cvmix_r8),                      intent(in) :: OBL_depth,             &
-                                                       surf_fric,             &
-                                                       surf_buoy,             &
-                                                       kOBL_depth
+    integer,                               intent(in) :: nlev, max_nlev
+    real(cvmix_r8), dimension(max_nlev+1), intent(in) :: old_Mdiff,           &
+                                                         old_Tdiff,           &
+                                                         old_Sdiff,           &
+                                                         zw,                  &
+                                                         zt
+    real(cvmix_r8),                        intent(in) :: OBL_depth,           &
+                                                         surf_fric,           &
+                                                         surf_buoy,           &
+                                                         kOBL_depth
 
 
 ! !INPUT/OUTPUT PARAMETERS:
-    real(cvmix_r8), dimension(:), intent(inout) :: Mdiff_out,                 &
-                                                   Tdiff_out,                 &
-                                                   Sdiff_out,                 &
-                                                   Tnonlocal,                 &
-                                                   Snonlocal
+    real(cvmix_r8), dimension(max_nlev+1), intent(inout) :: Mdiff_out,        &
+                                                            Tdiff_out,        &
+                                                            Sdiff_out,        &
+                                                            Tnonlocal,        &
+                                                            Snonlocal
 
 !EOP
 !BOC
