@@ -4,10 +4,19 @@ module cvmix_MODULE
 !\newpage
 ! !MODULE: cvmix_MODULE
 !
+! !AUTHOR: 
+!  [your name], [your affiliation] ([your email address])
+!
 ! !DESCRIPTION:
 !  This module contains routines to initialize the derived types needed for
-!  MODULE_MIX_TYPE mixing and to set the diffusivity coefficient
+!  MODULE_MIX_TYPE mixing and to set the diffusivity coefficients
 !  accordingly.
+!\\
+!\\
+!  References:\\
+!  * [authors].
+!  [title].
+!  [journal], [publication year].
 !\\
 !\\
 
