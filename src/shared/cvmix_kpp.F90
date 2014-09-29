@@ -522,8 +522,8 @@ contains
     real(cvmix_r8), dimension(max_nlev+1), intent(in) :: old_Mdiff,           &
                                                          old_Tdiff,           &
                                                          old_Sdiff,           &
-                                                         zw,                  &
-                                                         zt
+                                                         zw
+    real(cvmix_r8), dimension(max_nlev),   intent(in) :: zt
     real(cvmix_r8),                        intent(in) :: OBL_depth,           &
                                                          surf_fric,           &
                                                          surf_buoy,           &
