@@ -288,7 +288,9 @@ contains
 !EOP
 !BOC
 
-    real(cvmix_r8), dimension(CVmix_vars%nlev+1) :: new_Mdiff, new_Tdiff
+    real(cvmix_r8), dimension(size(CVmix_vars%zw_iface)) :: new_Mdiff,        &
+                                                            new_Tdiff
+    integer :: nlev, max_nlev
     type(cvmix_shear_params_type), pointer :: CVmix_shear_params_in
 
     if (present(CVmix_shear_params_user)) then
@@ -296,18 +298,19 @@ contains
     else
       CVmix_shear_params_in => CVmix_shear_params_saved
     end if
+    nlev = CVmix_vars%nlev
+    max_nlev = size(CVmix_vars%zw_iface)-1
 
     if (.not.associated(CVmix_vars%Mdiff_iface)) &
-      call cvmix_put(CVmix_vars, "Mdiff", cvmix_zero)
+      call cvmix_put(CVmix_vars, "Mdiff", cvmix_zero, max_nlev)
     if (.not.associated(CVmix_vars%Tdiff_iface)) &
-      call cvmix_put(CVmix_vars, "Tdiff", cvmix_zero)
+      call cvmix_put(CVmix_vars, "Tdiff", cvmix_zero, max_nlev)
 
     call cvmix_coeffs_shear(new_Mdiff, new_Tdiff,                             &
-                            CVmix_vars%ShearRichardson_iface,                 &
-                            CVmix_vars%nlev, CVmix_bkgnd_params, colid,       &
-                            no_diff, CVmix_shear_params_user)
-    call cvmix_update_wrap(CVmix_shear_params_in%handle_old_vals,             &
-                           CVmix_vars%nlev,                                   &
+                            CVmix_vars%ShearRichardson_iface, nlev, max_nlev, &
+                            CVmix_bkgnd_params, colid, no_diff,               &
+                            CVmix_shear_params_user)
+    call cvmix_update_wrap(CVmix_shear_params_in%handle_old_vals, max_nlev,   &
                            Mdiff_out = CVmix_vars%Mdiff_iface,                &
                            new_Mdiff = new_Mdiff,                             &
                            Tdiff_out = CVmix_vars%Tdiff_iface,                &
@@ -322,8 +325,8 @@ contains
 ! !INTERFACE:
 
   subroutine cvmix_coeffs_shear_low(Mdiff_out, Tdiff_out, RICH, nlev,         &
-                                    CVmix_bkgnd_params_user, colid, no_diff,  &
-                                    CVmix_shear_params_user)
+                                    max_nlev, CVmix_bkgnd_params_user, colid, &
+                                    no_diff, CVmix_shear_params_user)
 
 ! !DESCRIPTION:
 !  Computes vertical tracer and velocity mixing coefficients for
@@ -338,8 +341,8 @@ contains
 ! !INPUT PARAMETERS:
     type(cvmix_shear_params_type), target, optional, intent(in) ::            &
                                            CVmix_shear_params_user
-    real(cvmix_r8), dimension(:), intent(in) :: RICH
-    integer, intent(in) :: nlev
+    integer, intent(in) :: nlev, max_nlev
+    real(cvmix_r8), dimension(max_nlev+1), intent(in) :: RICH
     ! PP mixing requires CVmix_bkgnd_params
     type(cvmix_bkgnd_params_type), optional, intent(in) ::                    &
                                    CVmix_bkgnd_params_user
@@ -348,7 +351,8 @@ contains
     logical,                       optional, intent(in) :: no_diff
 
 ! !INPUT/OUTPUT PARAMETERS:
-    real(cvmix_r8), dimension(:), intent(inout) :: Mdiff_out, Tdiff_out
+    real(cvmix_r8), dimension(max_nlev+1), intent(inout) :: Mdiff_out,        &
+                                                            Tdiff_out
 
 !EOP
 !BOC
