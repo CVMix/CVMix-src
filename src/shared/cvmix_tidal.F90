@@ -251,20 +251,23 @@ contains
 !BOC
 
     ! Local variables
-    real(cvmix_r8), dimension(CVmix_vars%nlev+1) :: new_Tdiff
+    real(cvmix_r8), dimension(size(CVmix_vars%zw_iface)) :: new_Tdiff
     type(cvmix_tidal_params_type),  pointer :: CVmix_tidal_params_in
+    integer :: nlev, max_nlev
        
     CVmix_tidal_params_in => CVmix_tidal_params_saved
     if (present(CVmix_tidal_params_user)) then
       CVmix_tidal_params_in => CVmix_tidal_params_user
     end if
+    nlev = CVmix_vars%nlev
+    max_nlev = size(CVmix_vars%zw_iface)-1
 
     call cvmix_coeffs_tidal(new_Tdiff, CVmix_vars%SqrBuoyancyFreq_iface,      & 
                             CVmix_vars%zw_iface, CVmix_vars%zt_cntr,          &
                             CVmix_vars%OceanDepth, CVMix_params,              &
-                            energy_flux, CVmix_tidal_params_user)
-    call cvmix_update_wrap(CVmix_tidal_params_in%handle_old_vals,             &
-                           CVmix_vars%nlev,                                   &
+                            energy_flux, nlev, max_nlev,                      &
+                            CVmix_tidal_params_user)
+    call cvmix_update_wrap(CVmix_tidal_params_in%handle_old_vals, max_nlev,   &
                            Tdiff_out = CVmix_vars%Tdiff_iface,                &
                            new_Tdiff = new_Tdiff)
 !EOC
@@ -276,8 +279,8 @@ contains
 ! !INTERFACE:
 
   subroutine cvmix_coeffs_tidal_low(Tdiff_out, Nsqr, zw, zt, OceanDepth,      &
-                                    CVmix_params, energy_flux,                &
-                                    CVmix_tidal_params_user)
+                                    CVmix_params, energy_flux, nlev,          &
+                                    max_nlev, CVmix_tidal_params_user)
 
 ! !DESCRIPTION:
 !  Computes vertical diffusion coefficients for tidal mixing
@@ -291,18 +294,21 @@ contains
 ! !INPUT PARAMETERS:
     type(cvmix_tidal_params_type),  target, optional, intent(in) ::           &
                                             CVmix_tidal_params_user
-    type(cvmix_global_params_type), intent(in) :: CVmix_params
-    real(cvmix_r8),                 intent(in) :: OceanDepth, energy_flux
-    real(cvmix_r8), dimension(:),   intent(in) :: Nsqr, zw, zt
+    integer,                               intent(in) :: nlev, max_nlev
+    type(cvmix_global_params_type),        intent(in) :: CVmix_params
+    real(cvmix_r8),                        intent(in) :: OceanDepth,          &
+                                                         energy_flux
+    real(cvmix_r8), dimension(max_nlev+1), intent(in) :: Nsqr, zw
+    real(cvmix_r8), dimension(max_nlev),   intent(in) :: zt
 
 ! !INPUT/OUTPUT PARAMETERS:
-    real(cvmix_r8), dimension(:), intent(inout) :: Tdiff_out
+    real(cvmix_r8), dimension(max_nlev+1), intent(inout) :: Tdiff_out
 
 !EOP
 !BOC
 
     ! Local variables
-    integer        :: nlev, k
+    integer        :: k
     real(cvmix_r8) :: coef, rho, z_cut
     real(cvmix_r8), dimension(size(zw)) :: vert_dep
 
@@ -314,7 +320,6 @@ contains
       CVmix_tidal_params => CVmix_tidal_params_saved
     end if
 
-    nlev = size(zt)
     rho  = CVmix_params%FreshWaterDensity
 
     select case (trim(CVmix_tidal_params%mix_scheme))
