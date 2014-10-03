@@ -251,7 +251,7 @@ contains
 !BOC
 
     ! Local variables
-    real(cvmix_r8), dimension(size(CVmix_vars%zw_iface)) :: new_Tdiff
+    real(cvmix_r8), dimension(CVmix_vars%max_nlev+1) :: new_Tdiff
     type(cvmix_tidal_params_type),  pointer :: CVmix_tidal_params_in
     integer :: nlev, max_nlev
        
@@ -260,12 +260,12 @@ contains
       CVmix_tidal_params_in => CVmix_tidal_params_user
     end if
     nlev = CVmix_vars%nlev
-    max_nlev = size(CVmix_vars%zw_iface)-1
+    max_nlev = CVmix_vars%max_nlev
 
     call cvmix_coeffs_tidal(new_Tdiff, CVmix_vars%SqrBuoyancyFreq_iface,      & 
                             CVmix_vars%zw_iface, CVmix_vars%zt_cntr,          &
-                            CVmix_vars%OceanDepth, CVMix_params,              &
-                            energy_flux, nlev, max_nlev,                      &
+                            CVmix_vars%OceanDepth, CVMix_params, energy_flux, &
+                            CVmix_vars%nlev, CVmix_vars%max_nlev,             &
                             CVmix_tidal_params_user)
     call cvmix_update_wrap(CVmix_tidal_params_in%handle_old_vals, max_nlev,   &
                            Tdiff_out = CVmix_vars%Tdiff_iface,                &
@@ -310,7 +310,7 @@ contains
     ! Local variables
     integer        :: k
     real(cvmix_r8) :: coef, rho, z_cut
-    real(cvmix_r8), dimension(size(zw)) :: vert_dep
+    real(cvmix_r8), dimension(nlev+1) :: vert_dep
 
     type(cvmix_tidal_params_type), pointer :: CVmix_tidal_params
 
@@ -324,7 +324,8 @@ contains
 
     select case (trim(CVmix_tidal_params%mix_scheme))
       case ('simmons','Simmons')
-        vert_dep = cvmix_compute_vert_dep(zw, zt, nlev, CVmix_tidal_params)
+        vert_dep = cvmix_compute_vert_dep(zw(1:nlev+1), zt(1:nlev), nlev,     &
+                                          CVmix_tidal_params)
         coef = CVmix_tidal_params%local_mixing_frac * &
                CVmix_tidal_params%efficiency *        &
                energy_flux
@@ -367,9 +368,10 @@ contains
 !  only those used by entire module.
 
 ! !INPUT PARAMETERS:
-    type(cvmix_tidal_params_type), intent(in) :: CVmix_tidal_params
-    real(cvmix_r8), dimension(:),  intent(in) :: zw, zt
-    integer,                       intent(in) :: nlev
+    type(cvmix_tidal_params_type),       intent(in) :: CVmix_tidal_params
+    real(cvmix_r8), dimension(nlev+1),  intent(in) :: zw
+    real(cvmix_r8), dimension(nlev),    intent(in) :: zt
+    integer,                            intent(in) :: nlev
 
 ! !OUTPUT PARAMETERS:
     real(cvmix_r8), dimension(nlev+1) :: cvmix_compute_vert_dep

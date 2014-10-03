@@ -77,7 +77,7 @@ contains
     if (present(nlev_in)) then
       nlev = nlev_in
     else
-      nlev = CVmix_vars%nlev
+      nlev = CVmix_vars%max_nlev
     end if
 
     if ((trim(varname).ne.'nlev').and.(nlev.eq.-1)) then
@@ -90,6 +90,14 @@ contains
     select case (trim(cvmix_att_name(varname)))
       case ('nlev')
         CVmix_vars%nlev = val
+        if (CVmix_vars%max_nlev.eq.-1) then
+          CVmix_vars%max_nlev= val
+        end if
+      case ('max_nlev')
+        CVmix_vars%max_nlev = val
+        if (CVmix_vars%nlev.eq.-1) then
+          CVmix_vars%nlev= val
+        end if
       case default
         ! All other scalars are real(cvmix_r8)
         call cvmix_put_real(CVmix_vars, varname, real(val,cvmix_r8), nlev_in)
@@ -129,7 +137,7 @@ contains
     if (present(nlev_in)) then
       nlev = nlev_in
     else
-      nlev = CVmix_vars%nlev
+      nlev = CVmix_vars%max_nlev
     end if
 
     if (nlev.eq.-1) then
@@ -298,7 +306,7 @@ contains
     if (present(nlev_in)) then
       nlev = nlev_in
     else
-      nlev = CVmix_vars%nlev
+      nlev = CVmix_vars%max_nlev
     end if
 
     if (nlev.eq.-1) then

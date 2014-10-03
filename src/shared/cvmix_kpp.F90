@@ -448,9 +448,8 @@ contains
 !EOP
 !BOC
 
-    real(cvmix_r8), dimension(size(CVmix_vars%zw_iface)) :: new_Mdiff,        &
-                                                            new_Tdiff,        &
-                                                            new_Sdiff
+    real(cvmix_r8), dimension(CVmix_vars%max_nlev+1) :: new_Mdiff, new_Tdiff, &
+                                                        new_Sdiff
     integer :: nlev, max_nlev
     type(cvmix_kpp_params_type),  pointer :: CVmix_kpp_params_in
 
@@ -460,7 +459,7 @@ contains
     end if
 
     nlev = CVmix_vars%nlev
-    max_nlev = size(CVmix_vars%zw_iface)-1
+    max_nlev = CVmix_vars%max_nlev
 
     if (.not.associated(CVmix_vars%Mdiff_iface)) &
       call cvmix_put(CVmix_vars, "Mdiff", cvmix_zero, max_nlev)
@@ -555,7 +554,7 @@ contains
 
     real(cvmix_r8) :: delta
 
-    real(cvmix_r8), dimension(size(zw)) :: sigma, w_m, w_s
+    real(cvmix_r8), dimension(nlev+1) :: sigma, w_m, w_s
 
     ! [MTS]shape are the coefficients of the shape function in the gradient
     ! term; [TS]shape2 are the coefficients for the nonlocal term
@@ -834,7 +833,7 @@ contains
     OBL_Mdiff = cvmix_zero
     OBL_Tdiff = cvmix_zero
     OBL_Sdiff = cvmix_zero
-    sigma = -zw/OBL_depth
+    sigma = -zw(1:nlev+1)/OBL_depth
     !     (3a) Compute turbulent scales throghout column
     call cvmix_kpp_compute_turbulent_scales(sigma, OBL_depth, surf_buoy,      &
                                             surf_fric, w_m, w_s,              &
