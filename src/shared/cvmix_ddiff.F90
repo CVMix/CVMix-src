@@ -303,8 +303,7 @@ module cvmix_ddiff
 !EOP
 !BOC
 
-    real(cvmix_r8), dimension(size(CVmix_vars%zw_iface)) :: new_Tdiff,        &
-                                                            new_Sdiff
+    real(cvmix_r8), dimension(CVmix_vars%max_nlev+1) :: new_Tdiff, new_Sdiff
     integer :: nlev, max_nlev
     type(cvmix_ddiff_params_type), pointer :: CVmix_ddiff_params_in
 
@@ -314,7 +313,7 @@ module cvmix_ddiff
       CVmix_ddiff_params_in => CVmix_ddiff_params_saved
     end if
     nlev = CVmix_vars%nlev
-    max_nlev = size(CVmix_vars%zw_iface)-1
+    max_nlev = CVmix_vars%max_nlev
 
     if (.not.associated(CVmix_vars%Tdiff_iface)) &
       call cvmix_put(CVmix_vars, "Tdiff", cvmix_zero, max_nlev)

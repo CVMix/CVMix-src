@@ -288,8 +288,7 @@ contains
 !EOP
 !BOC
 
-    real(cvmix_r8), dimension(size(CVmix_vars%zw_iface)) :: new_Mdiff,        &
-                                                            new_Tdiff
+    real(cvmix_r8), dimension(CVmix_vars%max_nlev+1) :: new_Mdiff, new_Tdiff
     integer :: nlev, max_nlev
     type(cvmix_shear_params_type), pointer :: CVmix_shear_params_in
 
@@ -299,7 +298,7 @@ contains
       CVmix_shear_params_in => CVmix_shear_params_saved
     end if
     nlev = CVmix_vars%nlev
-    max_nlev = size(CVmix_vars%zw_iface)-1
+    max_nlev = CVmix_vars%max_nlev
 
     if (.not.associated(CVmix_vars%Mdiff_iface)) &
       call cvmix_put(CVmix_vars, "Mdiff", cvmix_zero, max_nlev)
