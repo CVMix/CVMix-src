@@ -78,8 +78,6 @@ Subroutine cvmix_shear_driver(nlev)
   CVmix_vars%Mdiff_iface => Mdiff
   CVmix_vars%Tdiff_iface => Tdiff
   CVmix_vars%ShearRichardson_iface => Ri_g
-  ! Allocate memory for zw_iface
-  allocate(CVmix_Vars%zw_iface(nlev+1))
 
   ! Read / set KPP parameters
   read(*, nml=KPP_nml)

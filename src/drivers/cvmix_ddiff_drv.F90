@@ -72,11 +72,6 @@ Subroutine cvmix_ddiff_driver(nlev)
     CVmix_vars(ic)%Sdiff_iface => Sdiff(:,ic)
     CVmix_vars(ic)%strat_param_num => Rrho_num(:,ic)
     CVmix_vars(ic)%strat_param_denom => Rrho_denom(:,ic)
-
-    ! We use the size of zw_iface to determine max_nlev in the wrapper
-    ! interface for cvmix_coeffs_ddiff, so it must be allocated
-    allocate(CVmix_vars(ic)%zw_iface(nlev+1))
-    CVmix_vars(ic)%zw_iface = 0._cvmix_r8
   end do
 
   ! Read / set double diffusion parameters
