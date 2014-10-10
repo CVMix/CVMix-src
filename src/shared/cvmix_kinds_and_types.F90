@@ -51,8 +51,9 @@ module cvmix_kinds_and_types
   ! cvmix_global_params_type and *-mixing specific parameters should be
   ! stored in cvmix_*_params_type (found in the cvmix_* module).
   type, public :: cvmix_data_type
-    integer        :: nlev = -1  ! Number of levels in column
-                                 ! Setting default to -1 might be F95...
+    integer        :: nlev = -1      ! Number of active levels in column
+    integer        :: max_nlev = -1  ! Number of levels in column
+                                     ! Setting defaults to -1 might be F95...
 
     ! Scalar quantities
     ! -----------------

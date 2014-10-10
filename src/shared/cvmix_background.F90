@@ -507,23 +507,26 @@ contains
 !EOP
 !BOC
 
-    real(cvmix_r8), dimension(CVmix_vars%nlev+1) :: new_Mdiff, new_Tdiff
-    type(cvmix_bkgnd_params_type),  pointer :: CVmix_bkgnd_params_in
+    real(cvmix_r8), dimension(CVmix_vars%max_nlev+1) :: new_Mdiff, new_Tdiff
+    type(cvmix_bkgnd_params_type), pointer :: CVmix_bkgnd_params_in
+    integer :: nlev, max_nlev
        
     CVmix_bkgnd_params_in => CVmix_bkgnd_params_saved
     if (present(CVmix_bkgnd_params_user)) then
       CVmix_bkgnd_params_in => CVmix_bkgnd_params_user
     end if
 
-    if (.not.associated(CVmix_vars%Mdiff_iface)) &
-      call cvmix_put(CVmix_vars, "Mdiff", cvmix_zero)
-    if (.not.associated(CVmix_vars%Tdiff_iface)) &
-      call cvmix_put(CVmix_vars, "Tdiff", cvmix_zero)
+    nlev = CVmix_vars%nlev
+    max_nlev = CVmix_vars%max_nlev
 
-    call cvmix_coeffs_bkgnd(new_Mdiff, new_Tdiff, colid,                      &
+    if (.not.associated(CVmix_vars%Mdiff_iface)) &
+      call cvmix_put(CVmix_vars, "Mdiff", cvmix_zero, max_nlev)
+    if (.not.associated(CVmix_vars%Tdiff_iface)) &
+      call cvmix_put(CVmix_vars, "Tdiff", cvmix_zero, max_nlev)
+
+    call cvmix_coeffs_bkgnd(new_Mdiff, new_Tdiff, nlev, max_nlev, colid,      &
                             CVmix_bkgnd_params_user)
-    call cvmix_update_wrap(CVmix_bkgnd_params_in%handle_old_vals,             &
-                           CVmix_vars%nlev,                                   &
+    call cvmix_update_wrap(CVmix_bkgnd_params_in%handle_old_vals, max_nlev,   &
                            Mdiff_out = CVmix_vars%Mdiff_iface,                &
                            new_Mdiff = new_Mdiff,                             &
                            Tdiff_out = CVmix_vars%Tdiff_iface,                &
@@ -538,8 +541,8 @@ contains
 ! !IROUTINE: cvmix_coeffs_bkgnd_low
 ! !INTERFACE:
 
-  subroutine cvmix_coeffs_bkgnd_low(Mdiff_out, Tdiff_out, colid,              &
-                                    CVmix_bkgnd_params_user)
+  subroutine cvmix_coeffs_bkgnd_low(Mdiff_out, Tdiff_out, nlev, max_nlev,     &
+                                    colid, CVmix_bkgnd_params_user)
 
 ! !DESCRIPTION:
 !  Computes vertical tracer and velocity mixing coefficients for static
@@ -554,13 +557,16 @@ contains
 ! !INPUT PARAMETERS:
 
     ! Need to know column for pulling data from static_visc and _diff
+    integer,                                         intent(in) :: nlev,      &
+                                                                   max_nlev
     integer,                               optional, intent(in) :: colid
     type(cvmix_bkgnd_params_type), target, optional, intent(in) ::            &
                                            CVmix_bkgnd_params_user
 
 ! !OUTPUT PARAMETERS:
     ! Using intent(inout) because memory should already be allocated
-    real(cvmix_r8), dimension(:), intent(inout) :: Mdiff_out, Tdiff_out
+    real(cvmix_r8), dimension(max_nlev+1), intent(inout) :: Mdiff_out,        &
+                                                            Tdiff_out
 
 !EOP
 !BOC
@@ -571,14 +577,12 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    integer :: nlev
     type(cvmix_bkgnd_params_type),  pointer :: CVmix_bkgnd_params_in
        
     CVmix_bkgnd_params_in => CVmix_bkgnd_params_saved
     if (present(CVmix_bkgnd_params_user)) then
       CVmix_bkgnd_params_in => CVmix_bkgnd_params_user
     end if
-    nlev = size(Mdiff_out)-1
 
     if (CVmix_bkgnd_params_in%lvary_horizontal.and.(.not.present(colid))) then
       print*, "ERROR: background parameters vary in horizontal so you must ", &
@@ -588,19 +592,19 @@ contains
 
     if (CVmix_bkgnd_params_in%lvary_horizontal) then
       if (CVmix_bkgnd_params_in%lvary_vertical) then
-        Mdiff_out = CVmix_bkgnd_params_in%static_visc(colid,1:nlev+1)
-        Tdiff_out = CVmix_bkgnd_params_in%static_diff(colid,1:nlev+1)
+        Mdiff_out(1:nlev+1) = CVmix_bkgnd_params_in%static_visc(colid,1:nlev+1)
+        Tdiff_out(1:nlev+1) = CVmix_bkgnd_params_in%static_diff(colid,1:nlev+1)
       else
-        Mdiff_out = CVmix_bkgnd_params_in%static_visc(colid,1)
-        Tdiff_out = CVmix_bkgnd_params_in%static_diff(colid,1)
+        Mdiff_out(1:nlev+1) = CVmix_bkgnd_params_in%static_visc(colid,1)
+        Tdiff_out(1:nlev+1) = CVmix_bkgnd_params_in%static_diff(colid,1)
       end if
     else
       if (CVmix_bkgnd_params_in%lvary_vertical) then
-        Mdiff_out = CVmix_bkgnd_params_in%static_visc(1,1:nlev+1)
-        Tdiff_out = CVmix_bkgnd_params_in%static_diff(1,1:nlev+1)
+        Mdiff_out(1:nlev+1) = CVmix_bkgnd_params_in%static_visc(1,1:nlev+1)
+        Tdiff_out(1:nlev+1) = CVmix_bkgnd_params_in%static_diff(1,1:nlev+1)
       else
-        Mdiff_out = CVmix_bkgnd_params_in%static_visc(1,1)
-        Tdiff_out = CVmix_bkgnd_params_in%static_diff(1,1)
+        Mdiff_out(1:nlev+1) = CVmix_bkgnd_params_in%static_visc(1,1)
+        Tdiff_out(1:nlev+1) = CVmix_bkgnd_params_in%static_diff(1,1)
       end if
     end if
 

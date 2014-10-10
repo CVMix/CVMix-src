@@ -303,7 +303,8 @@ module cvmix_ddiff
 !EOP
 !BOC
 
-    real(cvmix_r8), dimension(CVmix_vars%nlev+1) :: new_Tdiff, new_Sdiff
+    real(cvmix_r8), dimension(CVmix_vars%max_nlev+1) :: new_Tdiff, new_Sdiff
+    integer :: nlev, max_nlev
     type(cvmix_ddiff_params_type), pointer :: CVmix_ddiff_params_in
 
     if (present(CVmix_ddiff_params_user)) then
@@ -311,17 +312,18 @@ module cvmix_ddiff
     else
       CVmix_ddiff_params_in => CVmix_ddiff_params_saved
     end if
+    nlev = CVmix_vars%nlev
+    max_nlev = CVmix_vars%max_nlev
 
     if (.not.associated(CVmix_vars%Tdiff_iface)) &
-      call cvmix_put(CVmix_vars, "Tdiff", cvmix_zero)
+      call cvmix_put(CVmix_vars, "Tdiff", cvmix_zero, max_nlev)
     if (.not.associated(CVmix_vars%Sdiff_iface)) &
-      call cvmix_put(CVmix_vars, "Sdiff", cvmix_zero)
+      call cvmix_put(CVmix_vars, "Sdiff", cvmix_zero, max_nlev)
 
     call cvmix_coeffs_ddiff(new_Tdiff, new_Sdiff, CVmix_vars%strat_param_num, &
-                            CVmix_vars%strat_param_denom,                     &
+                            CVmix_vars%strat_param_denom, nlev, max_nlev,     &
                             CVmix_ddiff_params_user)
-    call cvmix_update_wrap(CVmix_ddiff_params_in%handle_old_vals,             &
-                           CVmix_vars%nlev,                                   &
+    call cvmix_update_wrap(CVmix_ddiff_params_in%handle_old_vals, max_nlev,   &
                            Tdiff_out = CVmix_vars%Tdiff_iface,                &
                            new_Tdiff = new_Tdiff,                             &
                            Sdiff_out = CVmix_vars%Sdiff_iface,                &
@@ -337,7 +339,8 @@ module cvmix_ddiff
 ! !INTERFACE:
 
   subroutine cvmix_coeffs_ddiff_low(Tdiff_out, Sdiff_out, strat_param_num,    &
-                                    strat_param_denom, CVmix_ddiff_params_user)
+                                    strat_param_denom, nlev, max_nlev,        &
+                                    CVmix_ddiff_params_user)
 
 ! !DESCRIPTION:
 !  Computes vertical diffusion coefficients for the double diffusion mixing
@@ -351,14 +354,16 @@ module cvmix_ddiff
 ! !INPUT PARAMETERS:
     type(cvmix_ddiff_params_type), optional, target, intent(in) ::            &
                                            CVmix_ddiff_params_user
-    real(cvmix_r8), dimension(:), intent(in) :: strat_param_num,              &
-                                                strat_param_denom
+    integer,                             intent(in) :: nlev, max_nlev
+    real(cvmix_r8), dimension(max_nlev), intent(in) :: strat_param_num,       &
+                                                       strat_param_denom
 
 ! !INPUT/OUTPUT PARAMETERS:
-    real(cvmix_r8), dimension(:), intent(inout) :: Tdiff_out, Sdiff_out
+    real(cvmix_r8), dimension(max_nlev+1), intent(inout) :: Tdiff_out,        &
+                                                            Sdiff_out
 
 ! !LOCAL VARIABLES:
-    integer :: k, nlev
+    integer :: k
     real(cvmix_r8) :: ddiff, Rrho
 
 !EOP
@@ -371,7 +376,6 @@ module cvmix_ddiff
     else
       CVmix_ddiff_params_in => CVmix_ddiff_params_saved
     end if
-    nlev = size(strat_param_num)
 
     ! Determine coefficients
     Tdiff_out=cvmix_zero

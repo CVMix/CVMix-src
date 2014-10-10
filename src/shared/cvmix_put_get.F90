@@ -50,7 +50,7 @@ contains
 ! !IROUTINE: cvmix_put_int
 ! !INTERFACE:
 
-  subroutine cvmix_put_int(CVmix_vars, varname, val)
+  subroutine cvmix_put_int(CVmix_vars, varname, val, nlev_in)
 
 ! !DESCRIPTION:
 !  Write an integer value into a cvmix\_data\_type variable.
@@ -61,8 +61,9 @@ contains
 !  Only those used by entire module. 
 
 ! !INPUT PARAMETERS:
-    character(len=*), intent(in) :: varname
-    integer,          intent(in) :: val
+    character(len=*),           intent(in) :: varname
+    integer,                    intent(in) :: val
+    integer,          optional, intent(in) :: nlev_in
 
 ! !OUTPUT PARAMETERS:
     type(cvmix_data_type), intent(inout) :: CVmix_vars
@@ -73,7 +74,11 @@ contains
     ! Local variables
     integer :: nlev
   
-    nlev = CVmix_vars%nlev
+    if (present(nlev_in)) then
+      nlev = nlev_in
+    else
+      nlev = CVmix_vars%max_nlev
+    end if
 
     if ((trim(varname).ne.'nlev').and.(nlev.eq.-1)) then
       print*, "ERROR: you must specify the number of levels before ", &
@@ -85,9 +90,17 @@ contains
     select case (trim(cvmix_att_name(varname)))
       case ('nlev')
         CVmix_vars%nlev = val
+        if (CVmix_vars%max_nlev.eq.-1) then
+          CVmix_vars%max_nlev= val
+        end if
+      case ('max_nlev')
+        CVmix_vars%max_nlev = val
+        if (CVmix_vars%nlev.eq.-1) then
+          CVmix_vars%nlev= val
+        end if
       case default
         ! All other scalars are real(cvmix_r8)
-        call cvmix_put_real(CVmix_vars, varname, real(val,cvmix_r8))
+        call cvmix_put_real(CVmix_vars, varname, real(val,cvmix_r8), nlev_in)
     end select
 !EOC
 
@@ -98,7 +111,7 @@ contains
 ! !IROUTINE: cvmix_put_real
 ! !INTERFACE:
 
-  subroutine cvmix_put_real(CVmix_vars, varname, val)
+  subroutine cvmix_put_real(CVmix_vars, varname, val, nlev_in)
 
 ! !DESCRIPTION:
 !  Write a real value into a cvmix\_data\_type variable.
@@ -111,6 +124,7 @@ contains
 ! !INPUT PARAMETERS:
     character(len=*),           intent(in) :: varname
     real(cvmix_r8),             intent(in) :: val
+    integer,          optional, intent(in) :: nlev_in
 
 ! !OUTPUT PARAMETERS:
     type(cvmix_data_type), intent(inout) :: CVmix_vars
@@ -120,7 +134,11 @@ contains
     ! Local variables
     integer :: nlev
   
-    nlev = CVmix_vars%nlev
+    if (present(nlev_in)) then
+      nlev = nlev_in
+    else
+      nlev = CVmix_vars%max_nlev
+    end if
 
     if (nlev.eq.-1) then
       print*, "ERROR: you must specify the number of levels before ", &
@@ -262,7 +280,7 @@ contains
 ! !IROUTINE: cvmix_put_real_1D
 ! !INTERFACE:
 
-  subroutine cvmix_put_real_1D(CVmix_vars, varname, val)
+  subroutine cvmix_put_real_1D(CVmix_vars, varname, val, nlev_in)
 
 ! !DESCRIPTION:
 !  Write an array of real values into a cvmix\_data\_type variable.
@@ -275,6 +293,7 @@ contains
 ! !INPUT PARAMETERS:
     character(len=*),             intent(in) :: varname
     real(cvmix_r8), dimension(:), intent(in) :: val
+    integer,        optional,     intent(in) :: nlev_in
 
 ! !OUTPUT PARAMETERS:
     type(cvmix_data_type), intent(inout) :: CVmix_vars
@@ -284,7 +303,11 @@ contains
     ! Local variables
     integer :: nlev
   
-    nlev = CVmix_vars%nlev
+    if (present(nlev_in)) then
+      nlev = nlev_in
+    else
+      nlev = CVmix_vars%max_nlev
+    end if
 
     if (nlev.eq.-1) then
       print*, "ERROR: you must specify the number of levels before ", &
