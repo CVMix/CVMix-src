@@ -8,7 +8,7 @@
 
 ! !INTERFACE:
 
-Subroutine cvmix_ddiff_driver(nlev)
+Subroutine cvmix_ddiff_driver(nlev, max_nlev)
 
 ! !USES:
 
@@ -29,12 +29,14 @@ Subroutine cvmix_ddiff_driver(nlev)
   Implicit None
 
 ! !INPUT PARAMETERS:
-  integer, intent(in) :: nlev
+  integer, intent(in) :: nlev,               &! number of levels for column
+                         max_nlev             ! number of columns in memory
 
 !EOP
 !BOC
 
   integer, parameter :: ncol = 2
+
   ! CVMix datatypes
   type(cvmix_data_type), dimension(ncol) :: CVmix_vars
 
@@ -50,11 +52,14 @@ Subroutine cvmix_ddiff_driver(nlev)
   ! Namelists that may be read in, depending on desired mixing scheme
   namelist/ddiff_nml/ddiff_exp1, strat_param_max
 
+  print*, "Active levels: ", nlev
+  print*, "Levels allocated in memory: ", max_nlev
+
   ! Allocate memory to store diffusivity values
   ! Also store numerator / denominator for stratification parameter
-  allocate(Tdiff(nlev+1,ncol), Sdiff(nlev+1,ncol))
-  allocate(Rrho_num(nlev,ncol), Rrho_denom(nlev,ncol))
-  do k=1,nlev
+  allocate(Tdiff(max_nlev+1,ncol), Sdiff(max_nlev+1,ncol))
+  allocate(Rrho_num(max_nlev,ncol), Rrho_denom(max_nlev,ncol))
+  do k=1,max_nlev
     ! For first column, Rrho varies from 1 to 2
     Rrho_num(k,1) = real(k-1,cvmix_r8)/real(nlev-1,cvmix_r8)+cvmix_one
     Rrho_denom(k,1) = cvmix_one
@@ -68,6 +73,7 @@ Subroutine cvmix_ddiff_driver(nlev)
   ! Point CVmix_vars values to memory allocated above
   do ic=1,ncol
     call cvmix_put(CVmix_vars(ic), 'nlev', nlev)
+    call cvmix_put(CVmix_vars(ic), 'max_nlev', nlev)
     CVmix_vars(ic)%Tdiff_iface => Tdiff(:,ic)
     CVmix_vars(ic)%Sdiff_iface => Sdiff(:,ic)
     CVmix_vars(ic)%strat_param_num => Rrho_num(:,ic)

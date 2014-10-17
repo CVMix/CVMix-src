@@ -1,6 +1,7 @@
 &cvmix_nml
 mix_type = 'ddiff'
-nlev    = 61
+nlev     = 61
+max_nlev = 75
 /
 ! Double diffusion mixing parameters
 &ddiff_nml

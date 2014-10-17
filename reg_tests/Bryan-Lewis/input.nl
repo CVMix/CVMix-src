@@ -1,6 +1,7 @@
 &cvmix_nml
 mix_type  = 'BryanLewis'
 nlev      = 30
+max_nlev  = 60
 ocn_depth = 5250.0d0
 /
 ! BL Parameters --

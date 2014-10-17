@@ -28,26 +28,30 @@ Program cvmix_driver
 
 !EOP
 !BOC
-  integer :: nlev
+  integer :: nlev, max_nlev
   real(kind=cvmix_r8) :: ocn_depth 
   character(len=cvmix_strlen) :: mix_type
 
-  namelist/cvmix_nml/mix_type, nlev, ocn_depth
+  namelist/cvmix_nml/mix_type, nlev, max_nlev, ocn_depth
 
   mix_type = 'unset'
   nlev = 0
+  max_nlev = 0
   ocn_depth = 0.0_cvmix_r8
   read(*, nml=cvmix_nml)
+  if (max_nlev.eq.0) then
+    max_nlev = nlev
+  end if
 
   select case (trim(mix_type))
     case ('BryanLewis')
-      call cvmix_BL_driver(nlev, ocn_depth)
+      call cvmix_BL_driver(nlev, max_nlev, ocn_depth)
     case ('shear')
-      call cvmix_shear_driver(nlev)
+      call cvmix_shear_driver(nlev, max_nlev)
     case ('tidal')
       call cvmix_tidal_driver()
     case ('ddiff')
-      call cvmix_ddiff_driver(nlev)
+      call cvmix_ddiff_driver(nlev, max_nlev)
     case ('kpp')
       call cvmix_kpp_driver()
     case DEFAULT

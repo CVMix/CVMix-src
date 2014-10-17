@@ -1,6 +1,7 @@
 &cvmix_nml
 mix_type = 'shear'
-nlev    = 30
+nlev     = 30
+max_nlev = 60
 /
 ! Shear mixing parameters from KPP paper
 &KPP_nml

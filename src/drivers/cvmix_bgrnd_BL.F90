@@ -12,7 +12,7 @@
 
 ! !INTERFACE:
 
-Subroutine cvmix_BL_driver(nlev, ocn_depth)
+Subroutine cvmix_BL_driver(nlev, max_nlev, ocn_depth)
 
 ! !USES:
 
@@ -34,7 +34,8 @@ Subroutine cvmix_BL_driver(nlev, ocn_depth)
   Implicit None
 
 ! !INPUT PARAMETERS:
-  integer, intent(in)        :: nlev        ! number of levels for column
+  integer, intent(in)        :: nlev,        &! number of levels for column
+                                max_nlev      ! number of columns in memory
   real(cvmix_r8), intent(in) :: ocn_depth   ! Depth of ocn
 
 !EOP
@@ -42,7 +43,6 @@ Subroutine cvmix_BL_driver(nlev, ocn_depth)
 
   ! Global parameter
   integer, parameter :: ncol = 2
-  integer            :: max_nlev            ! size of column in memory
 
   ! CVMix datatypes
   type(cvmix_data_type)         , dimension(ncol) :: CVmix_vars_pointer,      &
@@ -75,8 +75,8 @@ Subroutine cvmix_BL_driver(nlev, ocn_depth)
   namelist/BryanLewis1_nml/col1_vdc1, col1_vdc2, col1_linv, col1_dpth
   namelist/BryanLewis2_nml/col2_vdc1, col2_vdc2, col2_linv, col2_dpth
 
-  ! Set column sizes
-  max_nlev = max(60, nlev)
+  print*, "Active levels: ", nlev
+  print*, "Levels allocated in memory: ", max_nlev
 
   ! Calculate depth of cell interfaces based on number of levels and ocean
   ! depth (also allocate memory for diffusivity and viscosity)
@@ -92,7 +92,7 @@ Subroutine cvmix_BL_driver(nlev, ocn_depth)
   allocate(Mdiff(2,max_nlev+1), Tdiff(2,max_nlev+1)) 
 
   ! Initialization for CVMix data types
-  call cvmix_put(CVmix_params,  'max_nlev', nlev)
+  call cvmix_put(CVmix_params,  'max_nlev', max_nlev)
   call cvmix_put(CVmix_params,  'prandtl',  0.0_cvmix_r8)
   do icol=1,2
     CVmix_vars_pointer(icol)%nlev=nlev
