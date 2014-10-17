@@ -42,6 +42,7 @@ Subroutine cvmix_BL_driver(nlev, ocn_depth)
 
   ! Global parameter
   integer, parameter :: ncol = 2
+  integer            :: max_nlev            ! size of column in memory
 
   ! CVMix datatypes
   type(cvmix_data_type)         , dimension(ncol) :: CVmix_vars_pointer,      &
@@ -74,30 +75,36 @@ Subroutine cvmix_BL_driver(nlev, ocn_depth)
   namelist/BryanLewis1_nml/col1_vdc1, col1_vdc2, col1_linv, col1_dpth
   namelist/BryanLewis2_nml/col2_vdc1, col2_vdc2, col2_linv, col2_dpth
 
+  ! Set column sizes
+  max_nlev = max(60, nlev)
+
   ! Calculate depth of cell interfaces based on number of levels and ocean
   ! depth (also allocate memory for diffusivity and viscosity)
-  allocate(iface_depth(nlev+1))
+  allocate(iface_depth(max_nlev+1))
   iface_depth(1) = 0.0_cvmix_r8
   
   ! Depth is 0 at sea level and negative at ocean bottom in CVMix
-  do kw = 2,nlev+1
+  do kw = 2,max_nlev+1
     iface_depth(kw) = iface_depth(kw-1) - ocn_depth/real(nlev,cvmix_r8)
   end do
 
   ! Allocate memory to store viscosity and diffusivity values (for pointer)
-  allocate(Mdiff(2,nlev+1), Tdiff(2,nlev+1)) 
+  allocate(Mdiff(2,max_nlev+1), Tdiff(2,max_nlev+1)) 
 
   ! Initialization for CVMix data types
   call cvmix_put(CVmix_params,  'max_nlev', nlev)
   call cvmix_put(CVmix_params,  'prandtl',  0.0_cvmix_r8)
   do icol=1,2
-    call cvmix_put(CVmix_vars_pointer(icol), 'nlev',     nlev)
+    CVmix_vars_pointer(icol)%nlev=nlev
+    CVmix_vars_pointer(icol)%max_nlev=max_nlev
     ! Point CVmix_vars_pointer values to memory allocated above
     CVmix_vars_pointer(icol)%Mdiff_iface => Mdiff(icol,:)
     CVmix_vars_pointer(icol)%Tdiff_iface => Tdiff(icol,:)
     CVmix_vars_pointer(icol)%zw_iface    => iface_depth
-    ! Copy vakyes into CVmix_vars_memcopy
+
+    ! Copy values into CVmix_vars_memcopy
     call cvmix_put(CVmix_vars_memcopy(icol), 'nlev',     nlev)
+    call cvmix_put(CVmix_vars_memcopy(icol), 'max_nlev', max_nlev)
     call cvmix_put(CVmix_vars_memcopy(icol), 'Mdiff',    0.0_cvmix_r8)
     call cvmix_put(CVmix_vars_memcopy(icol), 'Tdiff',    0.0_cvmix_r8)
     call cvmix_put(CVmix_vars_memcopy(icol), 'zw_iface', iface_depth)

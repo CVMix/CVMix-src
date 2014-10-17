@@ -132,6 +132,8 @@ contains
       ! Scalars
       case ("nlev", "NumberLevels", "NumberOfLevels")
         cvmix_att_name = "nlev"
+      case ("max_nlev", "MaxNumberLevels", "MaxNumberOfLevels")
+        cvmix_att_name = "max_nlev"
       case ("depth", "ocn_depth", "OceanDepth", "DepthOfOcean")
         cvmix_att_name = "OceanDepth"
       case ('BoundaryLayerDepth','OBL_depth')

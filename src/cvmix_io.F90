@@ -573,7 +573,7 @@ contains
                     dimension(CVmix_vars%nlev), intent(in) :: buoyancy_cntr
 
 ! !LOCAL VARIABLES:
-    integer :: kw, var
+    integer :: kw, var, nlev
 #ifdef _NETCDF
     integer                            :: nt, nt_id, nw, nw_id
     integer, dimension(:), allocatable :: var_id
@@ -581,11 +581,12 @@ contains
 !EOP
 !BOC
 
+    nlev = CVmix_vars%nlev
     select case (get_file_type(file_id))
 #ifdef _NETCDF
       case (NETCDF_FILE_TYPE)
-        nt = CVmix_vars%nlev
-        nw = CVmix_vars%nlev+1
+        nt = nlev
+        nw = nlev+1
         call netcdf_check(nf90_def_dim(file_id, "nt", nt, nt_id))
         call netcdf_check(nf90_def_dim(file_id, "nw", nw, nw_id))
         allocate(var_id(size(var_names)))
@@ -640,33 +641,33 @@ contains
           select case(trim(cvmix_att_name(var_names(var))))
             case ("zt_cntr")
               call netcdf_check(nf90_put_var(file_id, var_id(var),            &
-                                             CVmix_vars%zt_cntr(:)))
+                                             CVmix_vars%zt_cntr(1:nlev)))
             case ("zw_iface")
               call netcdf_check(nf90_put_var(file_id, var_id(var),            &
-                                             CVmix_vars%zw_iface(:)))
+                                             CVmix_vars%zw_iface(1:nlev+1)))
             case ("ShearRichardson_iface")
               call netcdf_check(nf90_put_var(file_id, var_id(var),            &
-                                         CVmix_vars%ShearRichardson_iface(:)))
+                                  CVmix_vars%ShearRichardson_iface(1:nlev+1)))
             case ("BulkRichardson_cntr")
               call netcdf_check(nf90_put_var(file_id, var_id(var),            &
-                                           CVmix_vars%BulkRichardson_cntr(:)))
+                                      CVmix_vars%BulkRichardson_cntr(1:nlev)))
             case ("Mdiff_iface")
               call netcdf_check(nf90_put_var(file_id, var_id(var),            &
-                                             CVmix_vars%Mdiff_iface(:)))
+                                            CVmix_vars%Mdiff_iface(1:nlev+1)))
             case ("Tdiff_iface")
               call netcdf_check(nf90_put_var(file_id, var_id(var),            &
-                                             CVmix_vars%Tdiff_iface(:)))
+                                            CVmix_vars%Tdiff_iface(1:nlev+1)))
             case ("Sdiff_iface")
               call netcdf_check(nf90_put_var(file_id, var_id(var),            &
-                                             CVmix_vars%Sdiff_iface(:)))
+                                            CVmix_vars%Sdiff_iface(1:nlev+1)))
             case ("strat_param")
               call netcdf_check(nf90_put_var(file_id, var_id(var),            &
-                                             CVmix_vars%strat_param_num(:)/   &
-                                             CVmix_vars%strat_param_denom(:)))
+                                        CVmix_vars%strat_param_num(1:nlev) /  &
+                                        CVmix_vars%strat_param_denom(1:nlev)))
             case ("buoyancy_cntr")
               if (present(buoyancy_cntr)) then
                 call netcdf_check(nf90_put_var(file_id, var_id(var),          &
-                                               buoyancy_cntr(:)))
+                                               buoyancy_cntr(1:nlev)))
               else
                 print*, "ERROR: to write buoyancy at cell center in ",        &
                         "cvmix_io, you need to provide the optional ",        &
@@ -675,13 +676,13 @@ contains
               end if
             case ("SqrBuoyancyFreq_iface")
               call netcdf_check(nf90_put_var(file_id, var_id(var),            &
-                                         CVmix_vars%SqrBuoyancyFreq_iface(:)))
+                                  CVmix_vars%SqrBuoyancyFreq_iface(1:nlev+1)))
             case ("Vx_cntr")
               call netcdf_check(nf90_put_var(file_id, var_id(var),            &
-                                             CVmix_vars%Vx_cntr(:)))
+                                             CVmix_vars%Vx_cntr(1:nlev)))
             case ("Vy_cntr")
               call netcdf_check(nf90_put_var(file_id, var_id(var),            &
-                                             CVmix_vars%Vy_cntr(:)))
+                                             CVmix_vars%Vy_cntr(1:nlev)))
             case DEFAULT
               print*, "ERROR: unable to write variable ", var_names(var)
               stop 1
@@ -689,7 +690,7 @@ contains
         end do
 #endif
       case (ASCII_FILE_TYPE)
-        do kw=1,CVmix_vars%nlev+1
+        do kw=1,nlev+1
           do var=1,size(var_names)
             select case(trim(cvmix_att_name(var_names(var))))
               case ("zt_cntr")
@@ -722,7 +723,7 @@ contains
                 write(file_id,"(E24.17E2)",advance='no')                      &
                       CVmix_vars%Sdiff_iface(kw)
               case ("strat_param")
-                if (kw.lt.CVmix_vars%nlev+1) then
+                if (kw.lt.nlev+1) then
                   write(file_id,"(E24.17E2)",advance='no')                    &
                         CVmix_vars%strat_param_num(kw) /                      &
                         CVmix_vars%strat_param_denom(kw)
@@ -801,7 +802,7 @@ contains
     character(len=*),      dimension(:), intent(in) :: var_names
 
 ! !LOCAL VARIABLES:
-    integer :: ncol, nw, icol, kw, var
+    integer :: nlev, ncol, nw, icol, kw, var
     logical :: z_err
 #ifdef _NETCDF
     integer :: nt, nt_id, nw_id, ncol_id
@@ -814,7 +815,8 @@ contains
 
     z_err = .false.
     ncol = size(CVmix_vars)
-    nw = CVmix_vars(1)%nlev+1
+    nlev = CVmix_vars(1)%nlev
+    nw   = nlev+1
     ! Make sure all levels are the same
     do icol=2,ncol
       if (CVmix_vars(icol)%nlev+1.ne.nw) then
@@ -859,26 +861,26 @@ contains
           if (trim(var_names(var)).eq."Mdiff") then
             allocate(lcl_Mdiff(ncol,nw))
             do icol=1,ncol
-              lcl_Mdiff(icol,:) = CVmix_vars(icol)%Mdiff_iface
+              lcl_Mdiff(icol,:) = CVmix_vars(icol)%Mdiff_iface(1:nlev+1)
             end do
           endif
           if (trim(var_names(var)).eq."Tdiff") then
             allocate(lcl_Tdiff(ncol,nw))
             do icol=1,ncol
-              lcl_Tdiff(icol,:) = CVmix_vars(icol)%Tdiff_iface
+              lcl_Tdiff(icol,:) = CVmix_vars(icol)%Tdiff_iface(1:nlev+1)
             end do
           endif
           if (trim(var_names(var)).eq."Sdiff") then
             allocate(lcl_Sdiff(ncol,nw))
             do icol=1,ncol
-              lcl_Sdiff(icol,:) = CVmix_vars(icol)%Sdiff_iface
+              lcl_Sdiff(icol,:) = CVmix_vars(icol)%Sdiff_iface(1:nlev+1)
             end do
           endif
           if (trim(var_names(var)).eq."Rrho") then
             allocate(lcl_Rrho(ncol,nt))
             do icol=1,ncol
-              lcl_Rrho(icol,:) = CVmix_vars(icol)%strat_param_num(:) /        &
-                                 CVmix_vars(icol)%strat_param_denom(:)
+              lcl_Rrho(icol,:) = CVmix_vars(icol)%strat_param_num(1:nt) /     &
+                                 CVmix_vars(icol)%strat_param_denom(1:nt)
             end do
           endif
         end do
@@ -887,10 +889,10 @@ contains
           select case(trim(cvmix_att_name(var_names(var))))
             case ("zw_iface")
               call netcdf_check(nf90_put_var(file_id, var_id(var),            &
-                                CVmix_vars(1)%zw_iface(:)))
+                                CVmix_vars(1)%zw_iface(1:nlev+1)))
             case ("ShearRichardson_iface")
               call netcdf_check(nf90_put_var(file_id, var_id(var),            &
-                                CVmix_vars(1)%ShearRichardson_iface(:)))
+                               CVmix_vars(1)%ShearRichardson_iface(1:nlev+1)))
             case("Mdiff_iface")
               call netcdf_check(nf90_put_var(file_id, var_id(var),            &
                                 lcl_Mdiff))
