@@ -326,7 +326,7 @@ Subroutine cvmix_kpp_driver()
 
     print*, "Height and Diffusivity throughout column: "
     do kw=1,nlev4+1
-      write(*,"(1X, F6.2, 1X, F7.5)") zw_iface(kw), Mdiff(kw)
+      write(*,"(1X, F6.2, 1X, F8.5)") zw_iface(kw), Mdiff(kw)
     end do
     print*, ""
 
@@ -368,7 +368,7 @@ Subroutine cvmix_kpp_driver()
 
     print*, "Height and Diffusivity throughout column: "
     do kw=1,nlev4+1
-      write(*,"(1X, F6.2, 1X, F7.5)") zw_iface(kw), Mdiff(kw)
+      write(*,"(1X, F6.2, 1X, F8.5)") zw_iface(kw), Mdiff(kw)
     end do
 
 #ifdef _NETCDF
