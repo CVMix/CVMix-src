@@ -24,14 +24,12 @@
 
   use cvmix_kinds_and_types, only : cvmix_r8,                                 &
                                     cvmix_zero,                               &
-                                    cvmix_one,                                &
                                     cvmix_data_type,                          &
                                     cvmix_strlen,                             &
                                     cvmix_global_params_type,                 &
                                     CVMIX_OVERWRITE_OLD_VAL,                  &
                                     CVMIX_SUM_OLD_AND_NEW_VALS,               &
                                     CVMIX_MAX_OLD_AND_NEW_VALS
-  use cvmix_put_get,         only : cvmix_put
   use cvmix_utils,           only : cvmix_update_wrap
 
 !EOP
@@ -265,14 +263,14 @@ contains
     call cvmix_coeffs_tidal(new_Tdiff, CVmix_vars%SqrBuoyancyFreq_iface,      & 
                             CVmix_vars%zw_iface, CVmix_vars%zt_cntr,          &
                             CVmix_vars%OceanDepth, CVMix_params, energy_flux, &
-                            CVmix_vars%nlev, CVmix_vars%max_nlev,             &
-                            CVmix_tidal_params_user)
+                            nlev, max_nlev, CVmix_tidal_params_user)
     call cvmix_update_wrap(CVmix_tidal_params_in%handle_old_vals, max_nlev,   &
                            Tdiff_out = CVmix_vars%Tdiff_iface,                &
                            new_Tdiff = new_Tdiff)
 !EOC
 
   end subroutine cvmix_coeffs_tidal_wrap
+
 !BOP
 
 ! !IROUTINE: cvmix_coeffs_tidal_low
@@ -309,7 +307,7 @@ contains
 
     ! Local variables
     integer        :: k
-    real(cvmix_r8) :: coef, rho, z_cut
+    real(cvmix_r8) :: coef, rho
     real(cvmix_r8), dimension(nlev+1) :: vert_dep
 
     type(cvmix_tidal_params_type), pointer :: CVmix_tidal_params
@@ -332,7 +330,6 @@ contains
         Tdiff_out = cvmix_zero
         if (OceanDepth.ge.CVmix_tidal_params%depth_cutoff) then
           do k=1, nlev+1
-            z_cut = CVmix_tidal_params%depth_cutoff
             if (Nsqr(k).gt.cvmix_zero) &
               Tdiff_out(k) = coef*vert_dep(k)/(rho*Nsqr(k))
             if (Tdiff_out(k).gt.CVmix_tidal_params%max_coefficient) &
@@ -368,10 +365,10 @@ contains
 !  only those used by entire module.
 
 ! !INPUT PARAMETERS:
-    type(cvmix_tidal_params_type),       intent(in) :: CVmix_tidal_params
-    real(cvmix_r8), dimension(nlev+1),  intent(in) :: zw
-    real(cvmix_r8), dimension(nlev),    intent(in) :: zt
-    integer,                            intent(in) :: nlev
+    type(cvmix_tidal_params_type),     intent(in) :: CVmix_tidal_params
+    integer,                           intent(in) :: nlev
+    real(cvmix_r8), dimension(nlev+1), intent(in) :: zw
+    real(cvmix_r8), dimension(nlev),   intent(in) :: zt
 
 ! !OUTPUT PARAMETERS:
     real(cvmix_r8), dimension(nlev+1) :: cvmix_compute_vert_dep

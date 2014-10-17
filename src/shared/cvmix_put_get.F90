@@ -18,7 +18,6 @@ module cvmix_put_get
 ! !USES:
 
    use cvmix_kinds_and_types, only : cvmix_r8,                  &
-                                     cvmix_strlen,              &
                                      cvmix_data_type,           &
                                      cvmix_global_params_type
    use cvmix_utils,           only : cvmix_att_name
