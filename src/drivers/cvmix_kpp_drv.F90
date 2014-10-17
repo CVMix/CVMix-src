@@ -18,7 +18,6 @@ Subroutine cvmix_kpp_driver()
                                     cvmix_strlen,             &
                                     cvmix_data_type
   use cvmix_kpp,             only : cvmix_init_kpp,                           &
-                                    cvmix_put_kpp,                            &
                                     cvmix_get_kpp_real,                       &
                                     cvmix_kpp_compute_OBL_depth,              &
                                     cvmix_kpp_compute_kOBL_depth,             &
@@ -30,7 +29,9 @@ Subroutine cvmix_kpp_driver()
   use cvmix_put_get,         only : cvmix_put
   use cvmix_io,              only : cvmix_io_open,            &
                                     cvmix_output_write,       &
+#ifdef _NETCDF
                                     cvmix_output_write_att,   &
+#endif
                                     cvmix_io_close
 
   Implicit None
@@ -325,7 +326,7 @@ Subroutine cvmix_kpp_driver()
 
     print*, "Height and Diffusivity throughout column: "
     do kw=1,nlev4+1
-      write(*,"(X,F6.2, X, F7.5)") CVmix_vars4%zw_iface(kw), CVmix_vars4%Mdiff_iface(kw)
+      write(*,"(1X, F6.2, 1X, F7.5)") zw_iface(kw), Mdiff(kw)
     end do
     print*, ""
 
@@ -367,7 +368,7 @@ Subroutine cvmix_kpp_driver()
 
     print*, "Height and Diffusivity throughout column: "
     do kw=1,nlev4+1
-      write(*,"(X,F6.2, X, F9.7)") CVmix_vars4%zw_iface(kw), CVmix_vars4%Mdiff_iface(kw)
+      write(*,"(1X, F6.2, 1X, F7.5)") zw_iface(kw), Mdiff(kw)
     end do
 
 #ifdef _NETCDF
