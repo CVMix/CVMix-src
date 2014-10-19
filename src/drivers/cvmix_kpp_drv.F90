@@ -55,7 +55,7 @@ Subroutine cvmix_kpp_driver()
   real(cvmix_r8), dimension(:,:), allocatable, target :: hor_vel
   real(cvmix_r8), dimension(2)                        :: ref_vel
   real(cvmix_r8), dimension(4) :: shape_coeffs
-  integer :: fid, kt, kw, nlev1, nlev3, nlev4, OBL_levid4, nlev5
+  integer :: fid, kt, kw, nlev1, nlev3, nlev4, max_nlev4, OBL_levid4, nlev5
   real(cvmix_r8) :: hmix1, hmix5, ri_crit, layer_thick1, layer_thick4,        &
                     layer_thick5, OBL_depth4, OBL_depth5, N, Nsqr
   real(cvmix_r8) :: kOBL_depth, Bslope, Vslope
@@ -275,13 +275,16 @@ Subroutine cvmix_kpp_driver()
 
     call cvmix_init_kpp(MatchTechnique='MatchGradient')
     nlev4 = 5
+    max_nlev4 = 10
     if (OBL_levid4.gt.nlev4) &
       OBL_levid4 = nlev4
     layer_thick4 = real(5,cvmix_r8)
 
     ! Set up vertical levels (centers and interfaces) and compute bulk
     ! Richardson number
-    allocate(zt(nlev4), zw_iface(nlev4+1))
+    allocate(zt(max_nlev4), zw_iface(max_nlev4+1))
+    zt = cvmix_zero
+    zw_iface = cvmix_zero
     do kw=1,nlev4+1
       zw_iface(kw) = -layer_thick4*real(kw-1, cvmix_r8)
     end do
@@ -292,13 +295,14 @@ Subroutine cvmix_kpp_driver()
     CVmix_vars4%zw_iface => zw_iface(:)
 
     ! Set up diffusivities
-    allocate(Mdiff(nlev4+1), Tdiff(nlev4+1), Sdiff(nlev4+1))
+    allocate(Mdiff(max_nlev4+1), Tdiff(max_nlev4+1), Sdiff(max_nlev4+1))
     CVmix_vars4%Mdiff_iface => Mdiff
     CVmix_vars4%Tdiff_iface => Tdiff
     CVmix_vars4%Sdiff_iface => Sdiff
 
     ! Set physical properties of column for test 4
     call cvmix_put(CVmix_vars4, 'nlev', nlev4)
+    call cvmix_put(CVmix_vars4, 'max_nlev', max_nlev4)
     call cvmix_put(CVmix_vars4, 'ocn_depth', layer_thick4*real(nlev4,cvmix_r8))
     call cvmix_put(CVmix_vars4, 'surf_fric', cvmix_one)
     call cvmix_put(CVmix_vars4, 'surf_buoy', real(100,cvmix_r8))
