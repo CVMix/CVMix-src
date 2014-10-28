@@ -262,7 +262,7 @@ contains
 ! !INTERFACE:
 
   subroutine cvmix_coeffs_shear_wrap(CVmix_vars, CVmix_bkgnd_params, colid,   &
-                                     no_diff, CVmix_shear_params_user)
+                                     CVmix_shear_params_user)
 
 ! !DESCRIPTION:
 !  Computes vertical tracer and velocity mixing coefficients for
@@ -281,7 +281,6 @@ contains
     type(cvmix_bkgnd_params_type), optional, intent(in) :: CVmix_bkgnd_params
     ! colid is only needed if CVmix_bkgnd_params%lvary_horizontal is true
     integer,                       optional, intent(in) :: colid
-    logical,                       optional, intent(in) :: no_diff
 
 ! !INPUT/OUTPUT PARAMETERS:
     type(cvmix_data_type), intent(inout) :: CVmix_vars
@@ -307,8 +306,7 @@ contains
 
     call cvmix_coeffs_shear(new_Mdiff, new_Tdiff,                             &
                             CVmix_vars%ShearRichardson_iface, nlev, max_nlev, &
-                            CVmix_bkgnd_params, colid, no_diff,               &
-                            CVmix_shear_params_user)
+                            CVmix_bkgnd_params, colid, CVmix_shear_params_user)
     call cvmix_update_wrap(CVmix_shear_params_in%handle_old_vals, max_nlev,   &
                            Mdiff_out = CVmix_vars%Mdiff_iface,                &
                            new_Mdiff = new_Mdiff,                             &
@@ -325,7 +323,7 @@ contains
 
   subroutine cvmix_coeffs_shear_low(Mdiff_out, Tdiff_out, RICH, nlev,         &
                                     max_nlev, CVmix_bkgnd_params_user, colid, &
-                                    no_diff, CVmix_shear_params_user)
+                                    CVmix_shear_params_user)
 
 ! !DESCRIPTION:
 !  Computes vertical tracer and velocity mixing coefficients for
@@ -347,7 +345,6 @@ contains
                                    CVmix_bkgnd_params_user
     ! colid is only needed if CVmix_bkgnd_params_user%lvary_horizontal is true
     integer,                       optional, intent(in) :: colid
-    logical,                       optional, intent(in) :: no_diff
 
 ! !INPUT/OUTPUT PARAMETERS:
     real(cvmix_r8), dimension(max_nlev+1), intent(inout) :: Mdiff_out,        &
@@ -357,8 +354,7 @@ contains
 !BOC
 
     integer                   :: kw ! vertical cell index
-    logical                   :: calc_diff
-    real(cvmix_r8)            :: nu
+    real(cvmix_r8)            :: denom
     real(cvmix_r8)            :: nu_zero, PP_alpha, KPP_Ri_zero, loc_exp
     real(cvmix_r8)            :: bkgnd_diff, bkgnd_visc
     type(cvmix_shear_params_type), pointer :: CVmix_shear_params
@@ -367,12 +363,6 @@ contains
       CVmix_shear_params => CVmix_shear_params_user
     else
       CVmix_shear_params => CVmix_shear_params_saved
-    end if
-
-    if (.not.present(no_diff)) then
-      calc_diff = .true.
-    else
-      calc_diff = .not.no_diff
     end if
 
     select case (trim(CVmix_shear_params%mix_scheme))
@@ -400,10 +390,14 @@ contains
                                                colid)
           bkgnd_visc = cvmix_bkgnd_static_visc(CVmix_bkgnd_params_user, kw,   &
                                                colid)
-          nu = nu_zero/((cvmix_one+PP_alpha*RICH(kw))**loc_exp)+bkgnd_visc
-          Mdiff_out(kw) = nu
-          if (calc_diff) &
-            Tdiff_out(kw) = nu/(cvmix_one+PP_alpha*RICH(kw)) + bkgnd_diff
+          if (RICH(kw).gt.cvmix_zero) then
+            denom = cvmix_one + PP_alpha * RICH(kw) 
+          else
+            ! Treat non-negative Richardson number as Ri = 0
+            denom = cvmix_one
+          end if
+          Mdiff_out(kw) = nu_zero / (denom**loc_exp) + bkgnd_visc
+          Tdiff_out(kw) = Mdiff_out(kw) / denom + bkgnd_diff
         end do
 
       case ('KPP')
@@ -414,13 +408,13 @@ contains
 
         ! Large, et al
         do kw=1,nlev+1
-            if (RICH(kw).lt.0) then
+            if (RICH(kw).lt.cvmix_zero) then
               Tdiff_out(kw) = nu_zero
             else if (RICH(kw).lt.KPP_Ri_zero) then
               Tdiff_out(kw) = nu_zero * (cvmix_one - (RICH(kw)/KPP_Ri_zero)   &
                                                      **2)**loc_exp
             else ! Ri_g >= Ri_zero
-              Tdiff_out(kw) = 0
+              Tdiff_out(kw) = cvmix_zero
             end if
         end do
         ! to do: include global params for prandtl number!
