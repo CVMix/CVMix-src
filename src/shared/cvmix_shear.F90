@@ -33,10 +33,6 @@
                                     CVMIX_OVERWRITE_OLD_VAL,                  &
                                     CVMIX_SUM_OLD_AND_NEW_VALS,               &
                                     CVMIX_MAX_OLD_AND_NEW_VALS
-  use cvmix_background,      only : cvmix_bkgnd_params_type,                  &
-                                    cvmix_bkgnd_lvary_horizontal,             &
-                                    cvmix_bkgnd_static_diff,                  &
-                                    cvmix_bkgnd_static_visc
   use cvmix_put_get,         only : cvmix_put
   use cvmix_utils,           only : cvmix_update_wrap
 !EOP
@@ -75,25 +71,34 @@
       ! Type of shear mixing to run (PP => Pacanowski-Philander, KPP => LMD94)
       character(len=cvmix_strlen) :: mix_scheme
 
-      ! numerator in viscosity term in PP81
-      ! See Eqs. (1) and (2)
+      ! Pacanowski - Philander parameters
+      ! See Eqs. (1) and (2) in 1981 paper
+
+      ! numerator in viscosity term (O(5e-3) in PP81; default here is 0.01)
       real(cvmix_r8) :: PP_nu_zero  ! units: m^2/s
 
-      ! coefficient of Richardson number in denominator of diff / visc terms
+      ! coefficient of Richardson number in denominator of visc / diff terms
+      ! (5 in PP81)
       real(cvmix_r8) :: PP_alpha    ! units: unitless
 
-      ! exponent of denominator in viscosity term
+      ! exponent of denominator in viscosity term (2 in PP81)
       real(cvmix_r8) :: PP_exp      ! units: unitless
 
-      ! leading coefficient of LMD94 shear mixing formula (max diff / visc)
-      ! see Eq. (28b)
+      ! background coefficients for visc / diff terms
+      ! (1e-4 and 1e-5, respectively, in PP81; default here is 0 for both)
+      real(cvmix_r8) :: PP_nu_b     ! units: m^2/s
+      real(cvmix_r8) :: PP_kappa_b  ! units: m^2/s
+
+      ! Large et al parameters
+      ! See Eq. (28b) in 1994 paper
+
+      ! leading coefficient of shear mixing formula (5e-3 in LMD94)
       real(cvmix_r8) :: KPP_nu_zero ! units: m^2/s
 
-      ! critical Richardson number value (larger values result in 0 diffusivity
-      ! and viscosity)
+      ! critical Richardson number value (0.7 in LMD94)
       real(cvmix_r8) :: KPP_Ri_zero ! units: unitless
 
-      ! Exponent of unitless factor of diff / visc
+      ! Exponent of unitless factor of diffusities (3 in LMD94)
       real(cvmix_r8) :: KPP_exp     ! units: unitless
 
       ! Flag for what to do with old values of CVmix_vars%[MTS]diff
@@ -111,8 +116,9 @@ contains
 ! !INTERFACE:
 
   subroutine cvmix_init_shear(CVmix_shear_params_user, mix_scheme,            &
-                              PP_nu_zero, PP_alpha, PP_exp, KPP_nu_zero,      &
-                              KPP_Ri_zero, KPP_exp, old_vals)
+                              PP_nu_zero, PP_alpha, PP_exp, PP_nu_b,          &
+                              PP_kappa_b, KPP_nu_zero, KPP_Ri_zero, KPP_exp,  &
+                              old_vals)
 
 ! !DESCRIPTION:
 !  Initialization routine for shear (Richardson number-based) mixing. There are
@@ -127,8 +133,8 @@ contains
 !  \nu_{PP} & = & \frac{\nu_0}{(1+\alpha \textrm{Ri})^n} + \nu_b \\
 !  \kappa_{PP} & = & \frac{\nu}{1+\alpha \textrm{Ri}} + \kappa_b
 !  \end{eqnarray*}
-!  Note that $\nu_b$ and $\kappa_b$ are set in \verb|cvmix_init_bkgnd()|, which
-!  needs to be called separately from this routine.
+!  Note that $\nu_b$ and $\kappa_b$ are 0 by default, with the assumption that
+!  background diffusivities are computed in the \verb|cvmix_background| module
 ! \\
 ! \\
 ! KPP requires setting $\nu^0$ (\verb|KPP_nu_zero|, $\textrm{Ri}_0 
@@ -153,6 +159,8 @@ contains
     real(cvmix_r8),   optional, intent(in) :: PP_nu_zero,                     &
                                               PP_alpha,                       &
                                               PP_exp,                         &
+                                              PP_nu_b,                        &
+                                              PP_kappa_b,                     &
                                               KPP_nu_zero,                    &
                                               KPP_Ri_zero,                    &
                                               KPP_exp
@@ -199,6 +207,18 @@ contains
           call cvmix_put_shear("PP_exp", PP_exp, CVmix_shear_params_user)
         else
           call cvmix_put_shear("PP_exp", 2, CVmix_shear_params_user)
+        end if
+
+        if (present(PP_nu_b)) then
+          call cvmix_put_shear("PP_nu_b", PP_nu_b, CVmix_shear_params_user)
+        else
+          call cvmix_put_shear("PP_nu_b", cvmix_zero, CVmix_shear_params_user)
+        end if
+
+        if (present(PP_kappa_b)) then
+          call cvmix_put_shear("PP_kappa_b", PP_kappa_b, CVmix_shear_params_user)
+        else
+          call cvmix_put_shear("PP_kappa_b", cvmix_zero, CVmix_shear_params_user)
         end if
 
       case ('KPP')
@@ -261,8 +281,7 @@ contains
 ! !IROUTINE: cvmix_coeffs_shear_wrap
 ! !INTERFACE:
 
-  subroutine cvmix_coeffs_shear_wrap(CVmix_vars, CVmix_bkgnd_params, colid,   &
-                                     CVmix_shear_params_user)
+  subroutine cvmix_coeffs_shear_wrap(CVmix_vars, CVmix_shear_params_user)
 
 ! !DESCRIPTION:
 !  Computes vertical tracer and velocity mixing coefficients for
@@ -277,10 +296,6 @@ contains
 ! !INPUT PARAMETERS:
     type(cvmix_shear_params_type), target, optional, intent(in) ::            &
                                            CVmix_shear_params_user
-    ! PP mixing requires CVmix_bkgnd_params
-    type(cvmix_bkgnd_params_type), optional, intent(in) :: CVmix_bkgnd_params
-    ! colid is only needed if CVmix_bkgnd_params%lvary_horizontal is true
-    integer,                       optional, intent(in) :: colid
 
 ! !INPUT/OUTPUT PARAMETERS:
     type(cvmix_data_type), intent(inout) :: CVmix_vars
@@ -306,7 +321,7 @@ contains
 
     call cvmix_coeffs_shear(new_Mdiff, new_Tdiff,                             &
                             CVmix_vars%ShearRichardson_iface, nlev, max_nlev, &
-                            CVmix_bkgnd_params, colid, CVmix_shear_params_user)
+                            CVmix_shear_params_user)
     call cvmix_update_wrap(CVmix_shear_params_in%handle_old_vals, max_nlev,   &
                            Mdiff_out = CVmix_vars%Mdiff_iface,                &
                            new_Mdiff = new_Mdiff,                             &
@@ -322,8 +337,7 @@ contains
 ! !INTERFACE:
 
   subroutine cvmix_coeffs_shear_low(Mdiff_out, Tdiff_out, RICH, nlev,         &
-                                    max_nlev, CVmix_bkgnd_params_user, colid, &
-                                    CVmix_shear_params_user)
+                                    max_nlev, CVmix_shear_params_user)
 
 ! !DESCRIPTION:
 !  Computes vertical tracer and velocity mixing coefficients for
@@ -340,11 +354,6 @@ contains
                                            CVmix_shear_params_user
     integer, intent(in) :: nlev, max_nlev
     real(cvmix_r8), dimension(max_nlev+1), intent(in) :: RICH
-    ! PP mixing requires CVmix_bkgnd_params
-    type(cvmix_bkgnd_params_type), optional, intent(in) ::                    &
-                                   CVmix_bkgnd_params_user
-    ! colid is only needed if CVmix_bkgnd_params_user%lvary_horizontal is true
-    integer,                       optional, intent(in) :: colid
 
 ! !INPUT/OUTPUT PARAMETERS:
     real(cvmix_r8), dimension(max_nlev+1), intent(inout) :: Mdiff_out,        &
@@ -354,9 +363,12 @@ contains
 !BOC
 
     integer                   :: kw ! vertical cell index
-    real(cvmix_r8)            :: denom
-    real(cvmix_r8)            :: nu_zero, PP_alpha, KPP_Ri_zero, loc_exp
-    real(cvmix_r8)            :: bkgnd_diff, bkgnd_visc
+    ! Parameters used in both PP81 and LMD94
+    real(cvmix_r8)            :: nu_zero, loc_exp
+    ! Parameters only used in PP81
+    real(cvmix_r8)            :: PP_alpha, PP_nu_b, PP_kappa_b, denom
+    ! Parameters only used in LMD94
+    real(cvmix_r8)            :: KPP_Ri_zero
     type(cvmix_shear_params_type), pointer :: CVmix_shear_params
 
     if (present(CVmix_shear_params_user)) then
@@ -367,37 +379,23 @@ contains
 
     select case (trim(CVmix_shear_params%mix_scheme))
       case ('PP')
-        ! Error checks
-        if (.not.present(CVmix_bkgnd_params_user)) then
-          print*, "ERROR: can not run PP mixing without background mixing."
-          stop 1
-        end if
-        if (cvmix_bkgnd_lvary_horizontal(CVmix_bkgnd_params_user).and.        &
-            (.not.present(colid))) then
-          print*, "ERROR: background visc and diff vary in horizontal so you",&
-                  "must pass column index to cvmix_coeffs_shear"
-          stop 1
-        end if
-
         ! Copy parameters to make the code more legible
-        nu_zero  = CVmix_shear_params%PP_nu_zero
-        PP_alpha = CVmix_shear_params%PP_alpha
-        loc_exp  = CVmix_shear_params%PP_exp
+        nu_zero    = CVmix_shear_params%PP_nu_zero
+        PP_alpha   = CVmix_shear_params%PP_alpha
+        loc_exp    = CVmix_shear_params%PP_exp
+        PP_nu_b    = CVmix_shear_params%PP_nu_b
+        PP_kappa_b = CVmix_shear_params%PP_nu_b
 
         ! Pacanowski-Philander
         do kw=1,nlev+1
-          bkgnd_diff = cvmix_bkgnd_static_diff(CVmix_bkgnd_params_user, kw,   &
-                                               colid)
-          bkgnd_visc = cvmix_bkgnd_static_visc(CVmix_bkgnd_params_user, kw,   &
-                                               colid)
           if (RICH(kw).gt.cvmix_zero) then
             denom = cvmix_one + PP_alpha * RICH(kw) 
           else
             ! Treat non-negative Richardson number as Ri = 0
             denom = cvmix_one
           end if
-          Mdiff_out(kw) = nu_zero / (denom**loc_exp) + bkgnd_visc
-          Tdiff_out(kw) = Mdiff_out(kw) / denom + bkgnd_diff
+          Mdiff_out(kw) = nu_zero / (denom**loc_exp) + PP_nu_b
+          Tdiff_out(kw) = Mdiff_out(kw) / denom + PP_kappa_b
         end do
 
       case ('KPP')
@@ -518,6 +516,10 @@ contains
         CVmix_shear_params_out%PP_alpha = val
       case ('PP_exp')
         CVmix_shear_params_out%PP_exp = val
+      case ('PP_nu_b')
+        CVmix_shear_params_out%PP_nu_b = val
+      case ('PP_kappa_b')
+        CVmix_shear_params_out%PP_kappa_b = val
       case ('KPP_nu_zero')
         CVmix_shear_params_out%KPP_nu_zero = val
       case ('KPP_Ri_zero')
