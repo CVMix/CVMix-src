@@ -859,9 +859,9 @@ contains
             case("Tdiff_iface")
               call netcdf_check(nf90_def_var(file_id, "Tdiff", NF90_DOUBLE,   &
                                              (/ncol_id,nw_id/), var_id(var)))
-!            else
-!              call netcdf_check(nf90_def_var(file_id, var_name, NF90_DOUBLE,  &
-!                                             (/ncol_id,nw_id/), var_id(var)))
+            case("Sdiff_iface")
+              call netcdf_check(nf90_def_var(file_id, "Sdiff", NF90_DOUBLE,   &
+                                             (/ncol_id,nw_id/), var_id(var)))
           end select
 
           ! Before writing netcdf file, we gather data from all the columns
