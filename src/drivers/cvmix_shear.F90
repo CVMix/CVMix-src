@@ -52,11 +52,12 @@ Subroutine cvmix_shear_driver(nlev, max_nlev)
   real(cvmix_r8), dimension(:), allocatable, target :: Ri_g
 
   ! LMD test is single column, PP test is multi-column
-  real(cvmix_r8), dimension(:),   allocatable, target :: LMD_Mdiff, LMD_Tdiff
-  real(cvmix_r8), dimension(:,:), allocatable, target :: PP_Mdiff,  PP_Tdiff
+  real(cvmix_r8), dimension(:),   allocatable, target :: Mdiff_1D, Tdiff_1D
+  real(cvmix_r8), dimension(:,:), allocatable, target :: Mdiff_2D, Tdiff_2D
 
-  ! Hard-code in parameters for each case
-  real(cvmix_r8), dimension(ncol) :: PP_nu_zero, PP_n, PP_alpha
+  ! Hard-code in parameters for each c in Table 1
+  real(cvmix_r8), dimension(ncol) :: PP_nu_zero_2D, PP_exp_2D, PP_alpha_2D
+!  real(cvmix_r8)                  :: PP_nu_zero, PP_exp, PP_alpha
 
   integer :: icol, kw, fid
 
@@ -78,23 +79,23 @@ Subroutine cvmix_shear_driver(nlev, max_nlev)
   end do
 
   ! Allocate memory to store viscosity and diffusivity values
-  allocate(LMD_Mdiff(max_nlev+1), LMD_Tdiff(max_nlev+1))
-  allocate(PP_Mdiff(ncol,max_nlev+1), PP_Tdiff(ncol,max_nlev+1))
+  allocate(Mdiff_1D(max_nlev+1), Tdiff_1D(max_nlev+1))
+  allocate(Mdiff_2D(ncol,max_nlev+1), Tdiff_2D(ncol,max_nlev+1))
 
   ! Set Pacanowski-Philander coefficients
   ! (See Table 1 from paper, converted from cm^2/s to m^2/s)
-  PP_nu_zero  = real((/0.02, 0.05, 0.1, 0.1, 0.15, 0.15/), cvmix_r8)
-  PP_n(:)     = real(2.0,cvmix_r8)
-  PP_alpha(:) = real(5.0,cvmix_r8)
-  PP_n(4)     = real(1.0,cvmix_r8)
-  PP_alpha(5) = real(10.0,cvmix_r8)
+  PP_nu_zero_2D  = real((/0.02, 0.05, 0.1, 0.1, 0.15, 0.15/), cvmix_r8)
+  PP_exp_2D(:)   = real(2.0,cvmix_r8)
+  PP_alpha_2D(:) = real(5.0,cvmix_r8)
+  PP_exp_2D(4)   = real(1.0,cvmix_r8)
+  PP_alpha_2D(5) = real(10.0,cvmix_r8)
 
   ! Initialization for CVMix data type
   call cvmix_put(CVmix_vars_LMD, 'nlev',     nlev)
   call cvmix_put(CVmix_vars_LMD, 'max_nlev', max_nlev)
   ! Point CVmix_vars values to memory allocated above
-  CVmix_vars_LMD%Mdiff_iface           => LMD_Mdiff
-  CVmix_vars_LMD%Tdiff_iface           => LMD_Tdiff
+  CVmix_vars_LMD%Mdiff_iface           => Mdiff_1D
+  CVmix_vars_LMD%Tdiff_iface           => Tdiff_1D
   CVmix_vars_LMD%ShearRichardson_iface => Ri_g
 
   ! Read / set KPP parameters
@@ -105,11 +106,11 @@ Subroutine cvmix_shear_driver(nlev, max_nlev)
   do icol=1,ncol
       call cvmix_put(CVmix_vars_PP(icol), 'nlev',     nlev)
       call cvmix_put(CVmix_vars_PP(icol), 'max_nlev', max_nlev)
-      CVmix_vars_PP(icol)%Mdiff_iface           => PP_Mdiff(icol,:)
-      CVmix_vars_PP(icol)%Tdiff_iface           => PP_Tdiff(icol,:)
+      CVmix_vars_PP(icol)%Mdiff_iface           => Mdiff_2D(icol,:)
+      CVmix_vars_PP(icol)%Tdiff_iface           => Tdiff_2D(icol,:)
       CVmix_vars_PP(icol)%ShearRichardson_iface => Ri_g
-      call cvmix_init_shear(mix_scheme='PP', PP_nu_zero=PP_nu_zero(icol),     &
-                            PP_alpha=PP_alpha(icol), PP_exp=PP_n(icol))
+      call cvmix_init_shear(mix_scheme='PP', PP_nu_zero=PP_nu_zero_2D(icol),  &
+                            PP_alpha=PP_alpha_2D(icol), PP_exp=PP_exp_2D(icol))
       call cvmix_coeffs_shear(CVmix_vars_PP(icol))
   end do
 
