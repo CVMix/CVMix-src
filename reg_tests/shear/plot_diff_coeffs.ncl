@@ -14,20 +14,21 @@ begin
   ; Create Color Table
   my_color_map = (/"White", "Black"/)
 
-  if (isfilepresent("data.nc")) then
+  ; Read data for LMD94 plot
+  if (isfilepresent("data_LMD.nc")) then
     print((/"Reading netCDF data"/))
-    f = addfile("data.nc", "r")
+    f = addfile("data_LMD.nc", "r")
     x = f->ShearRichardson
     y = f->Tdiff
   else
-    if (isfilepresent("data.out")) then
+    if (isfilepresent("data_LMD.out")) then
       print((/"Reading ascii data"/))
       nml  = asciiread("input.nl", -1, "integer")
       nlev = nml(0)
       x = new(nlev+1, "double")
       y = new(nlev+1, "double")
 
-      data = asciiread("data.out", (/nlev+1,2/), "double")
+      data = asciiread("data_LMD.out", (/nlev+1,2/), "double")
       x = data(:,0)
       y = data(:,1)
       else
@@ -36,7 +37,7 @@ begin
     end if
   end if
 
-  wks = gsn_open_wks(out_type, "shear-instability")
+  wks = gsn_open_wks(out_type, "LMD_shear-instability")
   gsn_define_colormap(wks, my_color_map)
 
   ; Basic Graphics set up (don't draw / advance frame to add legend!)
