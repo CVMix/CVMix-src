@@ -802,10 +802,11 @@ contains
     character(len=*),      dimension(:), intent(in) :: var_names
 
 ! !LOCAL VARIABLES:
-    integer :: nlev, ncol, nw, icol, kw, var
+    integer :: nlev, ncol, icol, kw, var
     logical :: z_err
 #ifdef _NETCDF
-    integer :: nt, nt_id, nw_id, ncol_id
+    integer                     :: nt_id, nw_id, ncol_id
+    character(len=cvmix_strlen) :: var_name
     integer,             dimension(:),   allocatable :: var_id
     real(kind=cvmix_r8), dimension(:,:), allocatable :: lcl_Mdiff, lcl_Tdiff, &
                                                         lcl_Sdiff, lcl_Rrho
@@ -816,10 +817,9 @@ contains
     z_err = .false.
     ncol = size(CVmix_vars)
     nlev = CVmix_vars(1)%nlev
-    nw   = nlev+1
     ! Make sure all levels are the same
     do icol=2,ncol
-      if (CVmix_vars(icol)%nlev+1.ne.nw) then
+      if (CVmix_vars(icol)%nlev+1.ne.nlev+1) then
         z_err = .true.
       else
         ! Make sure z_iface lines up for Bryan-Lewis case
@@ -839,52 +839,63 @@ contains
     select case (get_file_type(file_id))
 #ifdef _NETCDF
       case (NETCDF_FILE_TYPE)
-        nt = CVmix_vars(1)%nlev
-        call netcdf_check(nf90_def_dim(file_id, "nt",   nt,   nt_id))
-        call netcdf_check(nf90_def_dim(file_id, "nw",   nw,   nw_id))
-        call netcdf_check(nf90_def_dim(file_id, "ncol", ncol, ncol_id))
+        call netcdf_check(nf90_def_dim(file_id, "nt",   nlev,   nt_id))
+        call netcdf_check(nf90_def_dim(file_id, "nw",   nlev+1, nw_id))
+        call netcdf_check(nf90_def_dim(file_id, "ncol", ncol,   ncol_id))
         allocate(var_id(size(var_names)))
         do var=1,size(var_names)
-          if ((trim(var_names(var)).eq."zw").or.                             &
-              (trim(var_names(var)).eq."zw_iface")) then
-            call netcdf_check(nf90_def_var(file_id, var_names(var),          &
-                                NF90_DOUBLE, (/nw_id/), var_id(var)))
-          else
-            if (trim(var_names(var)).eq."Rrho") then
-              call netcdf_check(nf90_def_var(file_id, var_names(var),        &
-                                  NF90_DOUBLE, (/ncol_id,nt_id/), var_id(var)))
-            else
-              call netcdf_check(nf90_def_var(file_id, var_names(var),        &
-                                  NF90_DOUBLE, (/ncol_id,nw_id/), var_id(var)))
-            end if
-          end if
-          if (trim(var_names(var)).eq."Mdiff") then
-            allocate(lcl_Mdiff(ncol,nw))
+          var_name = cvmix_att_name(var_names(var))
+          select case(var_name)
+            case("zw_iface")
+              call netcdf_check(nf90_def_var(file_id, "zw", NF90_DOUBLE,      &
+                                             (/nw_id/), var_id(var)))
+            case("ShearRichardson_iface")
+              call netcdf_check(nf90_def_var(file_id, "ShearRichardson",      &
+                                              NF90_DOUBLE, (/nw_id/),         &
+                                              var_id(var)))
+            case("strat_param")
+              call netcdf_check(nf90_def_var(file_id, "Rrho", NF90_DOUBLE,    &
+                                             (/ncol_id,nt_id/), var_id(var)))
+            case("Tdiff_iface")
+              call netcdf_check(nf90_def_var(file_id, "Tdiff", NF90_DOUBLE,   &
+                                             (/ncol_id,nw_id/), var_id(var)))
+!            else
+!              call netcdf_check(nf90_def_var(file_id, var_name, NF90_DOUBLE,  &
+!                                             (/ncol_id,nw_id/), var_id(var)))
+          end select
+
+          ! Before writing netcdf file, we gather data from all the columns
+          ! into a local array
+          if (trim(var_name).eq."Mdiff_iface") then
+            allocate(lcl_Mdiff(ncol,nlev+1))
             do icol=1,ncol
               lcl_Mdiff(icol,:) = CVmix_vars(icol)%Mdiff_iface(1:nlev+1)
             end do
           endif
-          if (trim(var_names(var)).eq."Tdiff") then
-            allocate(lcl_Tdiff(ncol,nw))
+          if (trim(var_name).eq."Tdiff_iface") then
+            allocate(lcl_Tdiff(ncol,nlev+1))
             do icol=1,ncol
               lcl_Tdiff(icol,:) = CVmix_vars(icol)%Tdiff_iface(1:nlev+1)
             end do
           endif
-          if (trim(var_names(var)).eq."Sdiff") then
-            allocate(lcl_Sdiff(ncol,nw))
+          if (trim(var_name).eq."Sdiff_iface") then
+            allocate(lcl_Sdiff(ncol,nlev+1))
             do icol=1,ncol
               lcl_Sdiff(icol,:) = CVmix_vars(icol)%Sdiff_iface(1:nlev+1)
             end do
           endif
-          if (trim(var_names(var)).eq."Rrho") then
-            allocate(lcl_Rrho(ncol,nt))
+          if (trim(var_name).eq."strat_param") then
+            allocate(lcl_Rrho(ncol,nlev))
             do icol=1,ncol
-              lcl_Rrho(icol,:) = CVmix_vars(icol)%strat_param_num(1:nt) /     &
-                                 CVmix_vars(icol)%strat_param_denom(1:nt)
+              lcl_Rrho(icol,:) = CVmix_vars(icol)%strat_param_num(1:nlev) /   &
+                                 CVmix_vars(icol)%strat_param_denom(1:nlev)
             end do
           endif
+
         end do
         call netcdf_check(nf90_enddef(file_id))
+
+        ! Write data to netCDF file
         do var=1,size(var_names)
           select case(trim(cvmix_att_name(var_names(var))))
             case ("zw_iface")
@@ -916,7 +927,7 @@ contains
         end do
 #endif
       case (ASCII_FILE_TYPE)
-        do kw=1,nw
+        do kw=1,nlev+1
           do var=1,size(var_names)
             select case(trim(cvmix_att_name(var_names(var))))
               case ("zw_iface")
@@ -945,7 +956,7 @@ contains
                 end do
               case ("strat_param")
                 do icol=1,ncol
-                  if (kw.ne.nw) then
+                  if (kw.ne.nlev+1) then
                     write(file_id,"(E24.17E2)",advance='no')     &
                           CVmix_vars(icol)%strat_param_num(kw) / &
                           CVmix_vars(icol)%strat_param_denom(kw)

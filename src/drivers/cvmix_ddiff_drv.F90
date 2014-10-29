@@ -96,7 +96,6 @@ Subroutine cvmix_ddiff_driver(nlev, max_nlev)
                exp(cvmix_get_ddiff_real('kappa_ddiff_param2'))
 
   ! Output
-  ! data will have diffusivity from both columns (needed for NCL script)
 #ifdef _NETCDF
   call cvmix_io_open(fid, "data.nc", "nc")
 #else

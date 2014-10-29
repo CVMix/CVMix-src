@@ -11,27 +11,40 @@ begin
 ; Create Color Table
   my_color_map = (/"White", "Black"/)
 
-  if (isfilepresent("data.nc")) then
-    print((/"Reading netCDF data"/))
-    f = addfile("data.nc", "r")
-    x = transpose(f->Tdiff)
-    y = f->zw_iface
-  else
-    if (isfilepresent("data.out")) then
-      print((/"Reading ascii data"/))
-      nml  = asciiread("input_pointer.nl", -1, "integer")
-      nlev = nml(0)
-      x = new((/2, nlev+1/), "double")
-      y = new(nlev+1, "double")
+  ; Check for memcopy output first
+  file_names = "data_"+(/"memcopy", "pointer"/)
+  filefound = False
+  count = 0
+  do while ((.not.filefound).and.(count.lt.2))
 
-      data = asciiread("data.out", (/nlev+1,3/), "double")
-      x(0,:) = data(:,1)
-      x(1,:) = data(:,2)
-      y = data(:,0)
-      else
-        print((/"ERROR: can not find output (looking for data.out or data.nc)"/))
-        exit
+    if (isfilepresent(file_names(count)+".nc")) then
+      print((/"Reading netCDF data from "+file_names(count)/))
+      f = addfile(file_names(count)+".nc", "r")
+      filefound = True
+      x = transpose(f->Tdiff)
+      y = f->zw
+    else
+      if (isfilepresent(file_names(count)+".out")) then
+        print((/"Reading ascii data from "+file_names(count)/))
+        nml  = asciiread("input.nl", -1, "integer")
+        nlev = nml(0)
+        x = new((/2, nlev+1/), "double")
+        y = new(nlev+1, "double")
+
+        data = asciiread(file_names(count)+".out", (/nlev+1,3/), "double")
+        filefound = True
+        x(0,:) = data(:,1)
+        x(1,:) = data(:,2)
+        y = data(:,0)
+      end if
     end if
+    count = count+1
+  end do
+  if (.not.filefound)
+    print((/"ERROR: can not find output; looking for any of following:"/))
+    print((/file_names+".nc"/))
+    print((/file_names+".out"/))
+    exit
   end if
 
   wks = gsn_open_wks(out_type, "Bryan-Lewis_CVMix")

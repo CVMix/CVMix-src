@@ -89,12 +89,12 @@ Subroutine cvmix_BL_driver(nlev, max_nlev, ocn_depth)
   end do
 
   ! Allocate memory to store viscosity and diffusivity values (for pointer)
-  allocate(Mdiff(2,max_nlev+1), Tdiff(2,max_nlev+1)) 
+  allocate(Mdiff(ncol,max_nlev+1), Tdiff(ncol,max_nlev+1)) 
 
   ! Initialization for CVMix data types
   call cvmix_put(CVmix_params,  'max_nlev', max_nlev)
   call cvmix_put(CVmix_params,  'prandtl',  0.0_cvmix_r8)
-  do icol=1,2
+  do icol=1,ncol
     CVmix_vars_pointer(icol)%nlev=nlev
     CVmix_vars_pointer(icol)%max_nlev=max_nlev
     ! Point CVmix_vars_pointer values to memory allocated above
@@ -158,9 +158,9 @@ Subroutine cvmix_BL_driver(nlev, max_nlev, ocn_depth)
                                 var_name="Tdiff")
     call cvmix_output_write_att(fid(i), "units", "m^2/s", var_name="Tdiff")
     call cvmix_output_write_att(fid(i), "long_name", "depth to interface",    &
-                                var_name="zw_iface")
-    call cvmix_output_write_att(fid(i), "positive", "up", var_name="zw_iface")
-    call cvmix_output_write_att(fid(i), "units", "m", var_name="zw_iface")
+                                var_name="zw")
+    call cvmix_output_write_att(fid(i), "positive", "up", var_name="zw")
+    call cvmix_output_write_att(fid(i), "units", "m", var_name="zw")
     call cvmix_io_close(fid(i))
   end do
 #else
