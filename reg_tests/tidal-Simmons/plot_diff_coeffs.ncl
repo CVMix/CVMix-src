@@ -50,7 +50,7 @@ begin
 
   ; Title / axes labels
   res@tiMainString  = "Vertical tracer diffusivity due to tidal energy"
-  res@gsnCenterString = "Location: ("+f@column_lon+", "+f@column_lat+")"
+  res@gsnCenterString = "Location is ("+f@column_lon+", "+f@column_lat+")"
   res@tiXAxisString = "Diffusivity (1e-4 m:S:2:N:/sec)"
   res@tiYAxisString = "Depth (m)"
 

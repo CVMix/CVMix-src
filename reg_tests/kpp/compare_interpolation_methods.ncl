@@ -1,5 +1,6 @@
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_code.ncl"
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_csm.ncl"
+load "../common/plot_settings.ncl"
 
 begin
 
@@ -337,8 +338,9 @@ begin
   end do
 ;  print((/"Total iterations: "+total_its/))
 
+  ; Compare to Danabasoglu et al (2006) Figure A1
   wks = gsn_open_wks(out_type, "bldepth")
-  res = True
+  res = CVMix_res(10., 30., 8., 32.)
   res@gsnMaximize = True
   ; Given gsnMaximize = True, HeightF and WidthF just set aspect ratio
   res@vpHeightF = 24
@@ -347,7 +349,7 @@ begin
   res@tiXAxisString = "HMIX (m)"
   res@tiYAxisString = "HBL (m)"
   res@xyLineThicknesses = (/0.5, 2., 1., 2./)
-  res@xyDashPatterns    = (/  0,  0,  1,  1/)
+  res@xyDashPatterns    = (/  0,  0,  1,  3/)
   res@tmXBMode = "Explicit"
   res@tmYLMode = "Explicit"
 
@@ -357,10 +359,6 @@ begin
     linear = abs(linear)
     quad = abs(quad)
     cubic = abs(cubic)
-    res@trXMinF = 10.
-    res@trXMaxF = 30.
-    res@trYMinF = 8.
-    res@trYMaxF = 32.
     res@tmXBValues = (/10, 15, 20, 25, 30/)
     res@tmXBLabels = (/10, 15, 20, 25, 30/)
     res@tmXBMinorValues = ispan(10, 30, 1)
@@ -381,6 +379,9 @@ begin
   end if
 
   plot = gsn_csm_xy(wks, hmix, (/cont, linear, quad, cubic/), res)
+  draw(plot)
+  frame(wks)
+
   delete(wks)
   delete(res@tmYLValues)
   delete(res@tmYLLabels)
@@ -406,14 +407,14 @@ begin
   end if
   
   plot = gsn_csm_xy(wks, hmix, (/cont-cont, cont-linear, cont-quad, cont-cubic/), res)
+  draw(plot)
+  frame(wks)
   delete(wks)
   delete(res)
 
   if (make_last_plot) then
     wks = gsn_open_wks(out_type, "single_col"+abs(plot_at))
-    res = True
-    res@gsnDraw = False
-    res@gsnFrame = False
+    res = CVMix_res(0., plot_Rib_mid(Ncells-1), min(v_depth), max(v_depth))
 
     res@tiMainString = "Bulk Richardson number"
     fmt="%6.2f"
@@ -426,10 +427,8 @@ begin
                           " m"
     res@tiXAxisString = "Ri_b"
     res@tiYAxisString = "depth (m)"
-    res@trXMinF = 0.
-    res@trXMaxF = plot_Rib_mid(Ncells-1)
     res@xyLineThicknesses = (/0.5, 0.5, 2., 1., 2./)
-    res@xyDashPatterns    = (/  2,   2,  0,  1,  1/)
+    res@xyDashPatterns    = (/  2,   2,  0,  1,  3/)
     res@gsnMaximize = True
   
     plot  = gsn_csm_xy(wks, (/Ri_crit, exact, lin_col, quad_col, cubic_col/), v_depth, res)

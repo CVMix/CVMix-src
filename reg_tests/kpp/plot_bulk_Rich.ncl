@@ -73,6 +73,7 @@ begin
   ; 2: U on x-axis (min: 0, max: 0.12)
   ; 3: Ri_bulk on x-axis (min: 0, max: 3)
 
+  ; Should be identical to LMD94 Figure C1
   wks = gsn_open_wks(out_type, "KPP-bulk_Rich")
   gsn_define_colormap(wks, my_color_map)
 
@@ -160,7 +161,7 @@ begin
   rres@tiMainString  = "bulk Richardson"
   rres@vpWidthF      = 0.3
   rres@trXMinF       = 0.d
-  rres@trXMaxF       = 3.d ; Note: 2.7d looks like paper plot...
+  rres@trXMaxF       = 3.d
   rres@tmXBValues    = (/0.d, 1.d, 2.d/) 
   rres@tmXTValues    = (/0.d, 0.3d, 1.d, 2.d/) 
   rres@tmXBLabels    = (/  "",              "",  ""/)

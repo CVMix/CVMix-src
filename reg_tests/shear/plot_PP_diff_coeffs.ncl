@@ -60,20 +60,19 @@ begin
   res@xyLineThicknessF   = 2.
 
   ; Plot / font size, tick marks
-  res@vpHeightF               = 0.55
-  res@vpWidthF                = 0.55
-  res@tiMainFontHeightF       = 0.02
-  res@tiXAxisFontHeightF      = 0.015
-  res@tiYAxisFontHeightF      = 0.015
-  res@tmXBLabelFontHeightF    = 0.015
-  res@tmYLLabelFontHeightF    = 0.015
-  res@tmXBMinorOn             = False
-  res@tmYLMinorOn             = False
-  res@tmXBMode = "Manual"
-  res@tmXBTickStartF = 0.0
-  res@tmXBTickEndF = 1.0
-  res@tmXBTickSpacingF = 0.1
-  res@tmXBLabelStride = 1
+  res@vpHeightF            = 0.55
+  res@vpWidthF             = 0.55
+  res@tiMainFontHeightF    = 0.02
+  res@tiXAxisFontHeightF   = 0.015
+  res@tiYAxisFontHeightF   = 0.015
+  res@tmXBLabelFontHeightF = 0.015
+  res@tmYLLabelFontHeightF = 0.015
+  res@tmXBMinorOn          = False
+  res@tmYLMinorOn          = False
+  res@tmXBMode             = "Explicit"
+  res@tmXBValues           = 0.1*ispan(1,10,1)
+  res@tmXBLabels           = (/".1", ".2", ".3", ".4", ".5", ".6", ".7",      \
+                               ".8", ".9", "1.0"/)
   res@tmYLMode = "Manual"
   res@tmYLTickStartF = 0.0
   res@tmYLTickEndF   = 100.

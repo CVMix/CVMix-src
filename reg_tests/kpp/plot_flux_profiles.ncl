@@ -45,6 +45,7 @@ begin
   print((/"For positive sigma values, phi_m and phi_s should be identical."/))
   print((/"Max difference: "+max(abs(phi_m(pos_sigma)-phi_s(pos_sigma)))/))
 
+  ; Compare to LMD94 Figure B1
   wks = gsn_open_wks(out_type, "KPP-flux_profile")
   gsn_define_colormap(wks, my_color_map)
 
