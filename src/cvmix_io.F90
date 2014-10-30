@@ -1304,7 +1304,7 @@ contains
         if (var_found) then
           call netcdf_check(nf90_redef(file_id))
           call netcdf_check(nf90_put_att(file_id, varid, trim(att_name), &
-                            trim(att_val)))
+                            trim(adjustl(att_val))))
           call netcdf_check(nf90_enddef(file_id))
         end if
 #endif

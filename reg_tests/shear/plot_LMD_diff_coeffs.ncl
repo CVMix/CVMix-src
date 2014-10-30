@@ -1,5 +1,6 @@
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_code.ncl"
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_csm.ncl"
+load "../common/plot_settings.ncl"
 
 ; This script reads in output from the CVMix stand-alone driver using the shear
 ; mixing technique from Large, et al., 1992. This script takes the output from
@@ -41,12 +42,7 @@ begin
   gsn_define_colormap(wks, my_color_map)
 
   ; Basic Graphics set up (don't draw / advance frame to add legend!)
-  res          = True
-  res@tiMainFuncCode = ":"
-  res@tiXAxisFuncCode = res@tiMainFuncCode
-  res@tiYAxisFuncCode = res@tiMainFuncCode
-  res@gsnDraw  = False
-  res@gsnFrame = False
+  res = CVMix_res(0, 0.8, 0, 1)
 
   ; line & marker styles / axes ranges (y decreases to bottom)
   res@xyMonoMarkLineMode = True

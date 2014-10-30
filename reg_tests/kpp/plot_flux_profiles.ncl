@@ -1,6 +1,7 @@
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_code.ncl"
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_csm.ncl"
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/contributed.ncl"
+load "../common/plot_settings.ncl"
 
 begin
 
@@ -47,17 +48,13 @@ begin
   wks = gsn_open_wks(out_type, "KPP-flux_profile")
   gsn_define_colormap(wks, my_color_map)
 
-  ; Basic Graphics set up (don't advance frame to add labels)
-  res             = True
-  res@gsnDraw     = False
-  res@gsnFrame    = False
+  ; x-axis range will be set before each of two panels is drawn
+  res = CVMix_res(0.,0.,0,2)
 
   ; line & marker styles / axes ranges (y decreases to bottom)
   res@xyMonoMarkLineMode = True
   res@xyMarkLineMode     = "Lines"
   res@xyDashPatterns     = (/0,2/)
-  res@trYMinF            = 0
-  res@trYMaxF            = 2
 
   ; Plot / font size, tick marks
   res@tiMainFontHeightF       = 0.02

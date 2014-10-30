@@ -1,6 +1,7 @@
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_code.ncl"
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_csm.ncl"
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/contributed.ncl"
+load "../common/plot_settings.ncl"
 
 begin
 
@@ -51,19 +52,13 @@ begin
   gsn_define_colormap(wks, my_color_map)
 
   ; Basic Graphics set up (don't draw / advance frame to add legend!)
-  res          = True
-  res@gsnDraw  = False
-  res@gsnFrame = False
+  res = CVMix_res(0, 1.4, -5500, 0)
 
   ; line & marker styles / axes ranges (y decreases to bottom)
   res@xyMonoMarkLineMode = True
   res@xyMarkLineMode     = "MarkLines"
   res@xyMarkers          = (/0,4/)
   res@xyDashPatterns     = (/0,0/)
-  res@trXMinF            = 0
-  res@trXMaxF            = 1.4
-  res@trYMinF            = -5500
-  res@trYMaxF            = 0
 
   ; Plot / font size, tick marks
   res@vpHeightF               = 0.55

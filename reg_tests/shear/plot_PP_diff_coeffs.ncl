@@ -1,6 +1,7 @@
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_code.ncl"
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_csm.ncl"
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/contributed.ncl"
+load "../common/plot_settings.ncl"
 
 ; This script reads in output from the CVMix stand-alone driver using the shear
 ; mixing technique from Large, et al., 1992. This script takes the output from
@@ -44,12 +45,7 @@ begin
   gsn_define_colormap(wks, my_color_map)
 
   ; Basic Graphics set up (don't draw / advance frame to add legend!)
-  res          = True
-  res@tiMainFuncCode = ":"
-  res@tiXAxisFuncCode = res@tiMainFuncCode
-  res@tiYAxisFuncCode = res@tiMainFuncCode
-  res@gsnDraw  = False
-  res@gsnFrame = False
+  res = CVMix_res(0,1,0,100)
 
   ; line & marker styles / axes ranges (y decreases to bottom)
   B = 3
@@ -62,14 +58,10 @@ begin
   res@xyMarkLineMode     = "Lines"
   res@xyDashPatterns     = (/B,C,D,E,F,G/)
   res@xyLineThicknessF   = 2.
-  res@trXMinF            = 0
-  res@trXMaxF            = 1
-  res@trYMinF            = 0
-  res@trYMaxF            = 100
 
   ; Plot / font size, tick marks
   res@vpHeightF               = 0.55
-  res@vpWidthF                = 0.77
+  res@vpWidthF                = 0.55
   res@tiMainFontHeightF       = 0.02
   res@tiXAxisFontHeightF      = 0.015
   res@tiYAxisFontHeightF      = 0.015
@@ -96,9 +88,7 @@ begin
   plot = gsn_csm_xy(wks, x, y*10000.d, res)
 
   ; Add text labels
-  txres = True
-  txres@txFontHeightF = 0.015
-  txres@txFuncCode    = res@tiMainFuncCode
+  txres = CVMix_txres(0.015)
 
   label1 = gsn_add_text(wks, plot, "B", 0.09, 13, txres)
   label1 = gsn_add_text(wks, plot, "C", 0.08, 31, txres)

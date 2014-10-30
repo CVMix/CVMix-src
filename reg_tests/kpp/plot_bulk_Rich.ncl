@@ -1,6 +1,7 @@
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_code.ncl"
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_csm.ncl"
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/contributed.ncl"
+load "../common/plot_settings.ncl"
 
 begin
 
@@ -75,19 +76,14 @@ begin
   wks = gsn_open_wks(out_type, "KPP-bulk_Rich")
   gsn_define_colormap(wks, my_color_map)
 
-  ; Basic Graphics set up
-  ; (1) Don't draw / advance frame to make panels
-  res          = True
-  res@gsnDraw  = False
-  res@gsnFrame = False
+  ; x-axis range will be set before each of three panels is drawn
+  res = CVMix_res(0.d,0.d,-50.d,0.d)
 
-  ; (2) y-axis is same in all plots, no label on x-axis
-  res@trYMinF            = -50.d
-  res@trYMaxF            = 0.d
+  ; no label on x-axis
   res@tiXAxisString = ""
   res@tiYAxisString = ""
 
-  ; (3) Plot / font size, tick marks
+  ; Plot / font size, tick marks
   res@tiMainFontHeightF       = 0.02
   res@tiXAxisFontHeightF      = 0.015
   res@tiYAxisFontHeightF      = 0.015

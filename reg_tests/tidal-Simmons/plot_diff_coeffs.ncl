@@ -1,6 +1,7 @@
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_code.ncl"
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_csm.ncl"
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/contributed.ncl"
+load "../common/plot_settings.ncl"
 
 begin
 
@@ -27,16 +28,12 @@ begin
   gsn_define_colormap(wks, my_color_map)
 
   ; Basic Graphics set up (don't draw / advance frame to add legend!)
-  res          = True
+  res = CVMix_res(0,1e4*max(x)*1.05,min(y),0)
   res@gsnDraw  = False
   res@gsnFrame = False
 
   ; line & marker styles / axes ranges (y decreases to bottom)
   res@xyLineThicknessF   = 2
-  res@trXMinF            = 0
-  res@trXMaxF            = 1e4*max(x)*1.05
-  res@trYMinF            = min(y)
-  res@trYMaxF            = 0
 
   ; Plot / font size, tick marks
   res@vpHeightF               = 0.55
@@ -53,7 +50,7 @@ begin
 
   ; Title / axes labels
   res@tiMainString  = "Vertical tracer diffusivity due to tidal energy"
-  res@gsnCenterString = "Location:: "+f@column_lon+", "+f@column_lat
+  res@gsnCenterString = "Location: ("+f@column_lon+", "+f@column_lat+")"
   res@tiXAxisString = "Diffusivity (1e-4 m:S:2:N:/sec)"
   res@tiYAxisString = "Depth (m)"
 
