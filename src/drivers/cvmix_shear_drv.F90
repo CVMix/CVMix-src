@@ -112,11 +112,11 @@ Subroutine cvmix_shear_driver(nlev, max_nlev)
 
   ! Set Pacanowski-Philander coefficients
   ! (See Table 1 from paper, converted from cm^2/s to m^2/s)
-  PP_nu_zero_2D  = real((/0.02, 0.05, 0.1, 0.1, 0.15, 0.15/), cvmix_r8)
+  PP_nu_zero_2D  = real((/0.002, 0.005, 0.01, 0.01, 0.015, 0.015/), cvmix_r8)
   PP_exp_2D(:)   = real(2.0,cvmix_r8)
   PP_alpha_2D(:) = real(5.0,cvmix_r8)
   PP_exp_2D(4)   = real(1.0,cvmix_r8)
-  PP_alpha_2D(5) = real(10.0,cvmix_r8)
+  PP_alpha_2D(6) = real(10.0,cvmix_r8)
 
   ! Initialization for LMD test
   call cvmix_put(CVmix_vars_LMD_1D, 'nlev',     nlev)
@@ -187,15 +187,15 @@ Subroutine cvmix_shear_driver(nlev, max_nlev)
   call cvmix_io_open(fid, "data_PP1d.out", "ascii")
 #endif
 
-  call cvmix_output_write(fid, CVmix_vars_PP_1D, (/"Ri   ", "Tdiff"/))
+  call cvmix_output_write(fid, CVmix_vars_PP_1D, (/"Ri   ", "Mdiff"/))
 #ifdef _NETCDF
   call cvmix_output_write_att(fid, "long_name", "Richardson number",          &
                               var_name="ShearRichardson")
   call cvmix_output_write_att(fid, "units", "unitless",                       &
                               var_name="ShearRichardson")
-  call cvmix_output_write_att(fid, "long_name", "temperature diffusivity",    &
-                              var_name="Tdiff")
-  call cvmix_output_write_att(fid, "units", "m^2/s", var_name="Tdiff")
+  call cvmix_output_write_att(fid, "long_name", "momentum diffusivity",       &
+                              var_name="Mdiff")
+  call cvmix_output_write_att(fid, "units", "m^2/s", var_name="Mdiff")
 #endif
   call cvmix_io_close(fid)
 
@@ -205,15 +205,15 @@ Subroutine cvmix_shear_driver(nlev, max_nlev)
 #else
   call cvmix_io_open(fid, "data_PP2d.out", "ascii")
 #endif
-  call cvmix_output_write(fid, CVmix_vars_PP_2D, (/"Ri   ", "Tdiff"/))
+  call cvmix_output_write(fid, CVmix_vars_PP_2D, (/"Ri   ", "Mdiff"/))
 #ifdef _NETCDF
   call cvmix_output_write_att(fid, "long_name", "Richardson number",          &
                               var_name="ShearRichardson")
   call cvmix_output_write_att(fid, "units", "unitless",                       &
                               var_name="ShearRichardson")
-  call cvmix_output_write_att(fid, "long_name", "temperature diffusivity",    &
-                              var_name="Tdiff")
-  call cvmix_output_write_att(fid, "units", "m^2/s", var_name="Tdiff")
+  call cvmix_output_write_att(fid, "long_name", "momentum diffusivity",       &
+                              var_name="Mdiff")
+  call cvmix_output_write_att(fid, "units", "m^2/s", var_name="Mdiff")
 #endif
   call cvmix_io_close(fid)
 

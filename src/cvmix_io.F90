@@ -856,6 +856,9 @@ contains
             case("strat_param")
               call netcdf_check(nf90_def_var(file_id, "Rrho", NF90_DOUBLE,    &
                                              (/ncol_id,nt_id/), var_id(var)))
+            case("Mdiff_iface")
+              call netcdf_check(nf90_def_var(file_id, "Mdiff", NF90_DOUBLE,   &
+                                             (/ncol_id,nw_id/), var_id(var)))
             case("Tdiff_iface")
               call netcdf_check(nf90_def_var(file_id, "Tdiff", NF90_DOUBLE,   &
                                              (/ncol_id,nw_id/), var_id(var)))
