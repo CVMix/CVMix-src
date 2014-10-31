@@ -85,7 +85,7 @@ Subroutine cvmix_kpp_driver()
   nlev1          = 4
   layer_thick1   =  real(10,  cvmix_r8)
   hmix1          = -real(15,  cvmix_r8)
-  ri_crit        =  real(0.3, cvmix_r8)
+  ri_crit        =  0.3_cvmix_r8
   interp_type_t1 = 'quadratic'
 
   ! Defaults for test 2 
@@ -111,14 +111,14 @@ Subroutine cvmix_kpp_driver()
 
   ! Defaults for test 6
   ltest6     = .false.
-  vonkarman6 = real(0.4,    cvmix_r8)
-  tao        = real(0.2,    cvmix_r8)
-  rho0       = real(1035,   cvmix_r8)
-  grav       = real(9.8,    cvmix_r8)
-  alpha      = real(2.5e-4, cvmix_r8)
-  Qnonpen    = -real(100,   cvmix_r8)
-  Cp0        =  real(3992,  cvmix_r8)
-  OBL_depth6 =  real(6000,  cvmix_r8)
+  vonkarman6 = 0.4_cvmix_r8
+  tao        = 0.2_cvmix_r8
+  grav       = 9.8_cvmix_r8
+  alpha      = 2.5e-4_cvmix_r8
+  rho0       =  real(1035, cvmix_r8)
+  Qnonpen    = -real(100,  cvmix_r8)
+  Cp0        =  real(3992, cvmix_r8)
+  OBL_depth6 =  real(6000, cvmix_r8)
 
   read(*, nml=kpp_col1_nml)
   read(*, nml=kpp_col2_nml)
@@ -154,17 +154,17 @@ Subroutine cvmix_kpp_driver()
       zw_iface(kw) = -layer_thick1*real(kw-1, cvmix_r8)
     end do
     do kt=1,nlev1
-      zt(kt) = real(0.5,cvmix_r8)*(zw_iface(kt)+zw_iface(kt+1))
+      zt(kt) = 0.5_cvmix_r8*(zw_iface(kt)+zw_iface(kt+1))
       if (zw_iface(kt+1).gt.hmix1) then
         Ri_bulk(kt) = cvmix_zero
       else
         if (Ri_bulk(kt-1).eq.0) then
           ! Exact integration for average value over first cell with non-zero
           ! Ri_bulk
-          Ri_bulk(kt) = real(0.25,cvmix_r8) * ri_crit *                       &
+          Ri_bulk(kt) = 0.25_cvmix_r8 * ri_crit *                             &
                         (zw_iface(kt+1)-hmix1)**2 / layer_thick1
         else
-          Ri_bulk(kt) = real(0.5,cvmix_r8)*ri_crit*(hmix1-zt(kt))
+          Ri_bulk(kt) = 0.5_cvmix_r8*ri_crit*(hmix1-zt(kt))
         end if
       end if
     end do
@@ -236,7 +236,7 @@ Subroutine cvmix_kpp_driver()
     !       zeta > 0 => stable flow
     zeta(1) = -real(2,cvmix_r8)
     do kw=2, nlev3+1
-      zeta(kw) = zeta(kw-1) + real(2.2,cvmix_r8)/real(nlev3,cvmix_r8)
+      zeta(kw) = zeta(kw-1) + 2.2_cvmix_r8/real(nlev3,cvmix_r8)
     end do
     ! Typically the first argument of compute_turbulent_scales is sigma, and then
     ! the routine calculates zeta based on the next three parameters. Setting
@@ -289,7 +289,7 @@ Subroutine cvmix_kpp_driver()
       zw_iface(kw) = -layer_thick4*real(kw-1, cvmix_r8)
     end do
     do kt=1,nlev4
-      zt(kt) = real(0.5,cvmix_r8)*(zw_iface(kt)+zw_iface(kt+1))
+      zt(kt) = 0.5_cvmix_r8*(zw_iface(kt)+zw_iface(kt+1))
     end do
     CVmix_vars4%zt_cntr  => zt(:)
     CVmix_vars4%zw_iface => zw_iface(:)
@@ -305,8 +305,8 @@ Subroutine cvmix_kpp_driver()
     call cvmix_put(CVmix_vars4, 'max_nlev',  max_nlev4)
     call cvmix_put(CVmix_vars4, 'ocn_depth', layer_thick4*real(nlev4,cvmix_r8))
     call cvmix_put(CVmix_vars4, 'surf_fric', cvmix_one)
-    call cvmix_put(CVmix_vars4, 'surf_buoy', real(100,  cvmix_r8))
-    call cvmix_put(CVmix_vars4, 'Coriolis',  real(1e-4, cvmix_r8))
+    call cvmix_put(CVmix_vars4, 'surf_buoy', real(100, cvmix_r8))
+    call cvmix_put(CVmix_vars4, 'Coriolis',  1e-4_cvmix_r8)
 
     ! Test 4a: Boundary layer above center of level containing it
     Tdiff    = cvmix_zero
@@ -324,7 +324,7 @@ Subroutine cvmix_kpp_driver()
     print*, "OBL_depth = ", CVmix_vars4%BoundaryLayerDepth
     print*, "kOBL_depth = ", CVmix_vars4%kOBL_depth
 
-    call cvmix_init_kpp(ri_crit=ri_crit, vonkarman=real(0.4,cvmix_r8),        &
+    call cvmix_init_kpp(ri_crit=ri_crit, vonkarman=0.4_cvmix_r8,              &
                         interp_type2=interp_type_t4, lnoDGat1=lnoDGat1)
     call cvmix_coeffs_kpp(CVmix_vars4)
 
@@ -366,7 +366,7 @@ Subroutine cvmix_kpp_driver()
     print*, "OBL_depth = ", CVmix_vars4%BoundaryLayerDepth
     print*, "kOBL_depth = ", CVmix_vars4%kOBL_depth
 
-    call cvmix_init_kpp(ri_crit=ri_crit, vonkarman=real(0.4,cvmix_r8),        &
+    call cvmix_init_kpp(ri_crit=ri_crit, vonkarman=0.4_cvmix_r8,              &
                         interp_type2=interp_type_t4, lnoDGat1=lnoDGat1)
     call cvmix_coeffs_kpp(CVmix_vars4)
 
@@ -403,7 +403,7 @@ Subroutine cvmix_kpp_driver()
 
     ! using linear interpolation, averaging Nsqr, and setting Cv = 1.5  to
     ! match LMD result
-    call cvmix_init_kpp(Cv = real(1.5,cvmix_r8), interp_type=interp_type_t5,  &
+    call cvmix_init_kpp(Cv = 1.5_cvmix_r8, interp_type=interp_type_t5,        &
                         lavg_N_or_Nsqr = lavg_N_or_Nsqr)
 
     ! Set up vertical levels (centers and interfaces) and compute bulk
@@ -413,7 +413,7 @@ Subroutine cvmix_kpp_driver()
       zw_iface(kw) = -layer_thick5*real(kw-1, cvmix_r8)
     end do
     do kt=1,nlev5
-      zt(kt) = real(0.5,cvmix_r8) * (zw_iface(kt)+zw_iface(kt+1))
+      zt(kt) = 0.5_cvmix_r8 * (zw_iface(kt)+zw_iface(kt+1))
     end do
 
     ! Compute Br-B(d), |Vr-V(d)|^2, and Vt^2
@@ -421,16 +421,16 @@ Subroutine cvmix_kpp_driver()
              shear_sqr(nlev5), w_s(nlev5), Ri_bulk(nlev5), Ri_bulk2(nlev5),   &
              buoy_freq_iface(nlev5+1))
 
-    ref_vel(1) = real(0.1, cvmix_r8)
+    ref_vel(1) = 0.1_cvmix_r8
     ref_vel(2) = cvmix_zero
-    N          = real(0.01,cvmix_r8)
+    N          = 0.01_cvmix_r8
     Nsqr       = N*N
     Bslope     = -Nsqr
-    Vslope     = -real(0.1,cvmix_r8)/(real(nlev5,cvmix_r8)*layer_thick5-hmix5)
+    Vslope     = -0.1_cvmix_r8 / (real(nlev5,cvmix_r8)*layer_thick5-hmix5)
     do kt=1,nlev5
       if ((zt(kt).ge.-hmix5).or.(kt.eq.1)) then
         buoyancy(kt)  = Nsqr
-        hor_vel(kt,1) = real(0.1,cvmix_r8)
+        hor_vel(kt,1) = 0.1_cvmix_r8
         buoy_freq_iface(kt) = cvmix_zero
       else
         if (zw_iface(kt).ge.-hmix5) then
@@ -440,10 +440,10 @@ Subroutine cvmix_kpp_driver()
           buoyancy(kt)  = Bslope*(-zw_iface(kt+1)-real(hmix5,cvmix_r8))**2 /  &
                           (real(2,cvmix_r8)*layer_thick5) + Nsqr
           hor_vel(kt,1) = Vslope*(-zw_iface(kt+1)-real(hmix5,cvmix_r8))**2 /  &
-                          (real(2,cvmix_r8)*layer_thick5) + real(0.1,cvmix_r8)
+                          (real(2,cvmix_r8)*layer_thick5) + 0.1_cvmix_r8
         else
           buoyancy(kt)  = Nsqr+Bslope*(-zt(kt)-real(hmix5,cvmix_r8))
-          hor_vel(kt,1) = real(0.1,cvmix_r8) +Vslope *                        &
+          hor_vel(kt,1) = 0.1_cvmix_r8 + Vslope *                             &
                           (-zt(kt)-real(hmix5,cvmix_r8))
         end if
         buoy_freq_iface(kt) = sqrt(-(buoyancy(kt)-buoyancy(kt-1)) /           &
@@ -452,8 +452,8 @@ Subroutine cvmix_kpp_driver()
       ! Compute w_s with zeta=0 per LMD page 393
       ! => w_s = von Karman * surf_fric_vel = 0.4*0.01 = 4e-3
       call cvmix_kpp_compute_turbulent_scales(cvmix_zero, -zt(kt),            &
-                                              buoyancy(1),                    &
-                                              real(0.01,cvmix_r8), w_s=w_s(kt))
+                                              buoyancy(1), 0.01_cvmix_r8,     &
+                                              w_s=w_s(kt))
       hor_vel(kt,2) = cvmix_zero
       delta_vel_sqr(kt) = (ref_vel(1)-hor_vel(kt,1))**2 +                     &
                           (ref_vel(2)-hor_vel(kt,2))**2
@@ -474,7 +474,7 @@ Subroutine cvmix_kpp_driver()
     call cvmix_kpp_compute_OBL_depth(Ri_bulk, zw_iface, OBL_depth5,           &
                                      kOBL_depth, zt)
     do kt=1,nlev5
-      if (abs(Ri_bulk(kt)-Ri_bulk2(kt)).gt.real(1e-12,cvmix_r8)) then
+      if (abs(Ri_bulk(kt)-Ri_bulk2(kt)).gt.1e-12_cvmix_r8) then
         print*, "WARNING: two Ri_bulk computations did not match!"
         print*, zt(kt), Ri_bulk(kt), Ri_bulk2(kt)
       else
@@ -531,7 +531,7 @@ Subroutine cvmix_kpp_driver()
     print*, "----------"
     
     call cvmix_init_kpp(vonkarman=vonkarman6)
-    sigma6 = real(0.1,cvmix_r8)
+    sigma6 = 0.1_cvmix_r8
 
     surf_buoy_force6 = cvmix_zero
     surf_fric_vel6   = sqrt(tao/rho0)

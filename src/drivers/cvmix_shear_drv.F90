@@ -73,13 +73,13 @@ Subroutine cvmix_shear_driver(nlev, max_nlev)
   print*, "Levels allocated in memory: ", max_nlev
 
   ! Namelist (set defaults then read from file)
-  LMD_nu_zero = real(5e-3, cvmix_r8)
-  LMD_Ri_zero = real(0.7,  cvmix_r8)
-  LMD_exp     = real(3.0,  cvmix_r8)
+  LMD_nu_zero = 5e-3_cvmix_r8
+  LMD_Ri_zero = 0.7_cvmix_r8
+  LMD_exp     = real(3,  cvmix_r8)
 
-  PP_nu_zero = real(5e-3, cvmix_r8)
-  PP_alpha   = real(5.0,  cvmix_r8)
-  PP_exp     = real(2.0,  cvmix_r8)
+  PP_nu_zero = 5e-3_cvmix_r8
+  PP_alpha   = real(5, cvmix_r8)
+  PP_exp     = real(2, cvmix_r8)
 
   read(*, nml=LMD_nml)
   read(*, nml=PP_nml)
@@ -112,11 +112,11 @@ Subroutine cvmix_shear_driver(nlev, max_nlev)
 
   ! Set Pacanowski-Philander coefficients
   ! (See Table 1 from paper, converted from cm^2/s to m^2/s)
-  PP_nu_zero_2D  = real((/0.002, 0.005, 0.01, 0.01, 0.015, 0.015/), cvmix_r8)
-  PP_exp_2D(:)   = real(2.0,cvmix_r8)
-  PP_alpha_2D(:) = real(5.0,cvmix_r8)
-  PP_exp_2D(4)   = real(1.0,cvmix_r8)
-  PP_alpha_2D(6) = real(10.0,cvmix_r8)
+  PP_nu_zero_2D  = 0.001_cvmix_r8 * real((/2, 5, 10, 10, 15, 15/), cvmix_r8)
+  PP_exp_2D(:)   = real(2,cvmix_r8)
+  PP_alpha_2D(:) = real(5,cvmix_r8)
+  PP_exp_2D(4)   = real(1,cvmix_r8)
+  PP_alpha_2D(6) = real(10,cvmix_r8)
 
   ! Initialization for LMD test
   call cvmix_put(CVmix_vars_LMD_1D, 'nlev',     nlev)
