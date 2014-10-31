@@ -809,7 +809,7 @@ contains
     character(len=cvmix_strlen) :: var_name
     integer,             dimension(:),   allocatable :: var_id
     real(kind=cvmix_r8), dimension(:,:), allocatable :: lcl_Mdiff, lcl_Tdiff, &
-                                                        lcl_Sdiff, lcl_Rrho
+                                                        lcl_Sdiff
 #endif
 !EOP
 !BOC
@@ -849,13 +849,13 @@ contains
             case("zw_iface")
               call netcdf_check(nf90_def_var(file_id, "zw", NF90_DOUBLE,      &
                                              (/nw_id/), var_id(var)))
+            case("strat_param")
+              call netcdf_check(nf90_def_var(file_id, "Rrho", NF90_DOUBLE,    &
+                                             (/nt_id/), var_id(var)))
             case("ShearRichardson_iface")
               call netcdf_check(nf90_def_var(file_id, "ShearRichardson",      &
                                               NF90_DOUBLE, (/nw_id/),         &
                                               var_id(var)))
-            case("strat_param")
-              call netcdf_check(nf90_def_var(file_id, "Rrho", NF90_DOUBLE,    &
-                                             (/ncol_id,nt_id/), var_id(var)))
             case("Mdiff_iface")
               call netcdf_check(nf90_def_var(file_id, "Mdiff", NF90_DOUBLE,   &
                                              (/ncol_id,nw_id/), var_id(var)))
@@ -887,13 +887,6 @@ contains
               lcl_Sdiff(icol,:) = CVmix_vars(icol)%Sdiff_iface(1:nlev+1)
             end do
           endif
-          if (trim(var_name).eq."strat_param") then
-            allocate(lcl_Rrho(ncol,nlev))
-            do icol=1,ncol
-              lcl_Rrho(icol,:) = CVmix_vars(icol)%strat_param_num(1:nlev) /   &
-                                 CVmix_vars(icol)%strat_param_denom(1:nlev)
-            end do
-          endif
 
         end do
         call netcdf_check(nf90_enddef(file_id))
@@ -904,6 +897,10 @@ contains
             case ("zw_iface")
               call netcdf_check(nf90_put_var(file_id, var_id(var),            &
                                 CVmix_vars(1)%zw_iface(1:nlev+1)))
+            case("strat_param")
+              call netcdf_check(nf90_put_var(file_id, var_id(var),            &
+                                CVmix_vars(1)%strat_param_num(1:nlev) /       &
+                                CVmix_vars(1)%strat_param_denom(1:nlev)))
             case ("ShearRichardson_iface")
               call netcdf_check(nf90_put_var(file_id, var_id(var),            &
                                CVmix_vars(1)%ShearRichardson_iface(1:nlev+1)))
@@ -919,10 +916,6 @@ contains
               call netcdf_check(nf90_put_var(file_id, var_id(var),            &
                                 lcl_Sdiff))
               deallocate(lcl_Sdiff)
-            case("strat_param")
-              call netcdf_check(nf90_put_var(file_id, var_id(var),            &
-                                lcl_Rrho))
-              deallocate(lcl_Rrho)
             case DEFAULT
               print*, "ERROR: unable to write variable ", var_names(var)
               stop 1
@@ -936,6 +929,14 @@ contains
               case ("zw_iface")
                 write(file_id,"(E24.17E2)",advance='no') &
                       CVmix_vars(1)%zw_iface(kw)
+              case ("strat_param")
+                if (kw.ne.nlev+1) then
+                  write(file_id,"(E24.17E2)",advance='no')                    &
+                        CVmix_vars(1)%strat_param_num(kw) /                   &
+                        CVmix_vars(1)%strat_param_denom(kw)
+                else
+                  write(file_id,"(E24.17E2)",advance='no') 0.0
+                end if
               case ("ShearRichardson_iface")
                 write(file_id,"(E24.17E2)",advance='no') &
                       CVmix_vars(1)%ShearRichardson_iface(kw)
@@ -955,17 +956,6 @@ contains
                 do icol=1,ncol
                   write(file_id,"(E24.17E2)",advance='no') &
                         CVmix_vars(icol)%Sdiff_iface(kw)
-                  if (icol.ne.ncol) write(file_id, "(1X)", advance='no')
-                end do
-              case ("strat_param")
-                do icol=1,ncol
-                  if (kw.ne.nlev+1) then
-                    write(file_id,"(E24.17E2)",advance='no')     &
-                          CVmix_vars(icol)%strat_param_num(kw) / &
-                          CVmix_vars(icol)%strat_param_denom(kw)
-                  else
-                    write(file_id,"(E24.17E2)",advance='no') 0.0
-                  end if
                   if (icol.ne.ncol) write(file_id, "(1X)", advance='no')
                 end do
               case DEFAULT

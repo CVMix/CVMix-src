@@ -31,6 +31,7 @@ module cvmix_ddiff
 ! !USES:
 
   use cvmix_kinds_and_types, only : cvmix_r8,                                 &
+                                    cvmix_strlen,                             &
                                     cvmix_zero,                               &
                                     cvmix_one,                                &
                                     cvmix_data_type,                          &
@@ -61,6 +62,7 @@ module cvmix_ddiff
   end interface cvmix_coeffs_ddiff
 
   interface cvmix_put_ddiff
+    module procedure cvmix_put_ddiff_str
     module procedure cvmix_put_ddiff_real
     module procedure cvmix_put_ddiff_int 
   end interface cvmix_put_ddiff
@@ -74,6 +76,11 @@ module cvmix_ddiff
       ! Max value of the stratification parameter (diffusivity = 0 for values
       ! that exceed this constant). R_p^0 in LMD94.
       real(cvmix_r8) :: strat_param_max    ! units: unitless
+
+      ! Type of diffusive convection to use
+      ! Options are Marmorino and Caldwell 1976 ("MC76"; default)
+      ! and Kelley 1988, 1990 ("K90")
+      character(len=cvmix_strlen) :: diff_conv_type
 
       ! leading coefficient in formula for salt-fingering regime for salinity
       ! diffusion (nu_f in LMD94, kappa_0 in Gokhan's paper)
@@ -119,7 +126,7 @@ module cvmix_ddiff
   subroutine cvmix_init_ddiff(CVmix_ddiff_params_user, strat_param_max,        &
                               kappa_ddiff_s, ddiff_exp1, ddiff_exp2, mol_diff, &
                               kappa_ddiff_param1, kappa_ddiff_param2,          &
-                              kappa_ddiff_param3, old_vals)
+                              kappa_ddiff_param3, diff_conv_type, old_vals)
 
 ! !DESCRIPTION:
 !  Initialization routine for double diffusion mixing. This mixing technique
@@ -183,7 +190,7 @@ module cvmix_ddiff
                                               kappa_ddiff_param1,             &
                                               kappa_ddiff_param2,             &
                                               kappa_ddiff_param3
-    character(len=*), optional, intent(in) :: old_vals
+    character(len=*), optional, intent(in) :: diff_conv_type, old_vals
 
 ! !OUTPUT PARAMETERS:
     type(cvmix_ddiff_params_type), optional, target, intent(inout) ::         &
@@ -198,6 +205,13 @@ module cvmix_ddiff
     else
       call cvmix_put_ddiff("strat_param_max", 2.55_cvmix_r8,                   &
                            CVmix_ddiff_params_user)
+    end if
+
+    if (present(diff_conv_type)) then
+      call cvmix_put_ddiff("diff_conv_type", diff_conv_type,                  &
+                            CVmix_ddiff_params_user)
+    else
+      call cvmix_put_ddiff("diff_conv_type", "MC76", CVmix_ddiff_params_user)
     end if
 
     if (present(ddiff_exp1)) then
@@ -381,7 +395,7 @@ module cvmix_ddiff
     Tdiff_out=cvmix_zero
     Sdiff_out=cvmix_zero
     do k = 1, nlev
-      if ((strat_param_num(k).gt.strat_param_denom(k)).and.                   &
+      if ((strat_param_num(k).ge.strat_param_denom(k)).and.                   &
           (strat_param_denom(k).gt.cvmix_zero)) then
         ! Rrho > 1 and dS/dz < 0 => Salt fingering
         Rrho = strat_param_num(k) / strat_param_denom(k)
@@ -393,15 +407,25 @@ module cvmix_ddiff
         end if
         Tdiff_out = Sdiff_out*0.7_cvmix_r8
       end if
-      if ((strat_param_num(k).gt.strat_param_denom(k)).and.                   &
-          (strat_param_num(k).lt.0)) then
+      if ((strat_param_num(k).ge.strat_param_denom(k)).and.                   &
+          (strat_param_num(k).lt.cvmix_zero)) then
         ! Rrho < 1 and dT/dz > 0 => Diffusive convection
         Rrho = strat_param_num(k) / strat_param_denom(k)
-        ddiff = CVmix_ddiff_params_in%mol_diff *                              &
-                CVmix_ddiff_params_in%kappa_ddiff_param1*&
-                exp(CVmix_ddiff_params_in%kappa_ddiff_param2*exp(             &
+        select case (trim(CVmix_ddiff_params_in%diff_conv_type))
+          case ("MC76")
+            ddiff = CVmix_ddiff_params_in%mol_diff *                          &
+                    CVmix_ddiff_params_in%kappa_ddiff_param1 *                &
+                    exp(CVmix_ddiff_params_in%kappa_ddiff_param2*exp(         &
                         CVmix_ddiff_params_in%kappa_ddiff_param3*             &
                         (cvmix_one/Rrho-cvmix_one)))
+          case ("K88")
+            ddiff = CVmix_ddiff_params_in%mol_diff * real(8.7,cvmix_r8) *     &
+                    (Rrho**real(1.1,cvmix_r8))
+          case DEFAULT
+            print*, "ERROR: ", trim(CVmix_ddiff_params_in%diff_conv_type),    &
+                    " is not a valid value for diff_conv_type"
+            stop 1
+        end select
         Tdiff_out(k) = ddiff
         if (Rrho.lt.0.5_cvmix_r8) then
           Sdiff_out(k) = 0.15_cvmix_r8*Rrho*ddiff
@@ -416,6 +440,61 @@ module cvmix_ddiff
 !EOC
 
   end subroutine cvmix_coeffs_ddiff_low
+
+!BOP
+
+! !IROUTINE: cvmix_put_ddiff_str
+! !INTERFACE:
+
+  subroutine cvmix_put_ddiff_str(varname, val, CVmix_ddiff_params_user)
+
+! !DESCRIPTION:
+!  Write a string value into a cvmix\_ddiff\_params\_type variable.
+!\\
+!\\
+
+! !USES:
+!  Only those used by entire module. 
+
+! !INPUT PARAMETERS:
+    character(len=*), intent(in) :: varname, val
+
+! !OUTPUT PARAMETERS:
+    type(cvmix_ddiff_params_type), optional, target, intent(inout) ::         &
+                                              CVmix_ddiff_params_user
+!EOP
+!BOC
+
+    type(cvmix_ddiff_params_type), pointer :: CVmix_ddiff_params_out
+
+    if (present(CVmix_ddiff_params_user)) then
+      CVmix_ddiff_params_out => CVmix_ddiff_params_user
+    else
+      CVmix_ddiff_params_out => CVmix_ddiff_params_saved
+    end if
+
+    select case (trim(varname))
+      case ('diff_conv_type')
+        select case (trim(val))
+          case ('MC76')
+            CVmix_ddiff_params_out%diff_conv_type = 'MC76'
+          case ('K88')
+            CVmix_ddiff_params_out%diff_conv_type = 'K88'
+          case DEFAULT
+            print*, "ERROR: ", trim(val),                                     &
+                    " is not a valid value for diff_conv_type"
+            stop 1
+        end select
+
+      case DEFAULT
+        print*, "ERROR: ", trim(varname), " not a valid choice!"
+        stop 1
+
+    end select
+
+!EOC
+
+  end subroutine cvmix_put_ddiff_str
 
 !BOP
 

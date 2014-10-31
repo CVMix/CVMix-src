@@ -25,7 +25,7 @@ begin
       x = transpose(f->Tdiff)
       y = f->zw
     else
-      if (isfilepresent(file_names(count)+".out")) then
+      if (fileexists(file_names(count)+".out")) then
         print((/"Reading ascii data from "+file_names(count)/))
         nml  = asciiread("input.nl", -1, "integer")
         nlev = nml(0)

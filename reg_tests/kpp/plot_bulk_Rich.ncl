@@ -21,7 +21,7 @@ begin
     Ri_bulk = f->BulkRichardson
     hd      = -f@OBL_depth
   else
-    if (isfilepresent("test5.out")) then
+    if (fileexists("test5.out")) then
       print((/"Reading ascii data"/))
       nlev = 10
       zt      = new((/nlev/), "double")

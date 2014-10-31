@@ -19,7 +19,7 @@ begin
     phi_m   = f->data(1,:)
     phi_s   = f->data(2,:)
   else
-    if (isfilepresent("test3.out")) then
+    if (fileexists("test3.out")) then
       print((/"Reading ascii data"/))
       nlev = 220
       sigma = new((/nlev+1/), "double")

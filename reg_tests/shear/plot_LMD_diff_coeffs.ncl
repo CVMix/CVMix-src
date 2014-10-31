@@ -22,7 +22,7 @@ begin
     x = f->ShearRichardson
     y = f->Tdiff
   else
-    if (isfilepresent("data_LMD.out")) then
+    if (fileexists("data_LMD.out")) then
       print((/"Reading ascii data"/))
       nml  = asciiread("input.nl", -1, "integer")
       nlev = nml(0)

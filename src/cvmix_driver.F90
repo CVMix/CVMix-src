@@ -51,7 +51,7 @@ Program cvmix_driver
     case ('tidal')
       call cvmix_tidal_driver()
     case ('ddiff')
-      call cvmix_ddiff_driver(nlev, max_nlev)
+      call cvmix_ddiff_driver(2*nlev, 2*max_nlev)
     case ('kpp')
       call cvmix_kpp_driver()
     case DEFAULT

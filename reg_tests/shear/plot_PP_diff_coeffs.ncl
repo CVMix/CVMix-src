@@ -23,7 +23,7 @@ begin
     x = f->ShearRichardson
     y = transpose(f->Mdiff)
   else
-    if (isfilepresent("data_PP2d.out")) then
+    if (fileexists("data_PP2d.out")) then
       print((/"Reading ascii data"/))
       nml  = asciiread("input.nl", -1, "integer")
       nlev = nml(0)

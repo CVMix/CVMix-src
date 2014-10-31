@@ -41,7 +41,7 @@ Subroutine cvmix_ddiff_driver(nlev, max_nlev)
   type(cvmix_data_type), dimension(ncol) :: CVmix_vars
 
   real(cvmix_r8), dimension(:,:), allocatable, target :: Tdiff, Sdiff
-  real(cvmix_r8), dimension(:,:), allocatable, target :: Rrho_num, Rrho_denom
+  real(cvmix_r8), dimension(:),   allocatable, target :: Rrho_num, Rrho_denom
 
   ! column / file indices
   integer :: k, fid, ic
@@ -58,16 +58,16 @@ Subroutine cvmix_ddiff_driver(nlev, max_nlev)
   ! Allocate memory to store diffusivity values
   ! Also store numerator / denominator for stratification parameter
   allocate(Tdiff(max_nlev+1,ncol), Sdiff(max_nlev+1,ncol))
-  allocate(Rrho_num(max_nlev,ncol), Rrho_denom(max_nlev,ncol))
-  do k=1,max_nlev
+  allocate(Rrho_num(max_nlev), Rrho_denom(max_nlev))
+  do k=1,nlev/2
     ! For first column, Rrho varies from 1 to 2
-    Rrho_num(k,1) = real(k-1,cvmix_r8)/real(nlev-1,cvmix_r8)+cvmix_one
-    Rrho_denom(k,1) = cvmix_one
+    Rrho_num(k) = real(k-1,cvmix_r8)/real(nlev/2-1,cvmix_r8)+cvmix_one
+    Rrho_denom(k) = cvmix_one
     ! For second column, 1/Rrho varies from 1 to 10
     ! (Note: last column has diff=0, hence only using nlev instead of nlev+1)
-    Rrho_num(k,2) = -cvmix_one/                                               &
-                    (real(9.0*(k-1),cvmix_r8)/real(nlev-1,cvmix_r8)+cvmix_one)
-    Rrho_denom(k,2) = -cvmix_one
+    Rrho_num(k+nlev/2)   = -cvmix_one
+    Rrho_denom(k+nlev/2) = -real(9*(k-1),cvmix_r8)/real(nlev/2-1,cvmix_r8) -  &
+                            cvmix_one
   end do
 
   ! Point CVmix_vars values to memory allocated above
@@ -76,24 +76,19 @@ Subroutine cvmix_ddiff_driver(nlev, max_nlev)
     call cvmix_put(CVmix_vars(ic), 'max_nlev', nlev)
     CVmix_vars(ic)%Tdiff_iface => Tdiff(:,ic)
     CVmix_vars(ic)%Sdiff_iface => Sdiff(:,ic)
-    CVmix_vars(ic)%strat_param_num => Rrho_num(:,ic)
-    CVmix_vars(ic)%strat_param_denom => Rrho_denom(:,ic)
+    CVmix_vars(ic)%strat_param_num => Rrho_num(:)
+    CVmix_vars(ic)%strat_param_denom => Rrho_denom(:)
   end do
 
   ! Read / set double diffusion parameters
   read(*, nml=ddiff_nml)
-  call cvmix_init_ddiff(ddiff_exp1=ddiff_exp1,                                &
+  call cvmix_init_ddiff(ddiff_exp1=ddiff_exp1, diff_conv_type="MC76",         &
                         strat_param_max=strat_param_max)
-                        
-
   call cvmix_coeffs_ddiff(CVmix_vars(1))
+
+  call cvmix_init_ddiff(ddiff_exp1=ddiff_exp1, diff_conv_type="K88",          &
+                        strat_param_max=strat_param_max)
   call cvmix_coeffs_ddiff(CVmix_vars(2))
-  ! For continuity of plot, set diffusivity when Rrho = 1
-  Sdiff(1,1) = 1e-4_cvmix_r8
-  Tdiff(1,1) = 0.7_cvmix_r8*Sdiff(1,1)
-  Tdiff(1,2) = cvmix_get_ddiff_real('mol_diff')*                              &
-               cvmix_get_ddiff_real('kappa_ddiff_param1')*                    &
-               exp(cvmix_get_ddiff_real('kappa_ddiff_param2'))
 
   ! Output
 #ifdef _NETCDF
