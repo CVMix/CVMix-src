@@ -13,6 +13,7 @@ Subroutine cvmix_tidal_driver()
 ! !USES:
 
   use cvmix_kinds_and_types, only : cvmix_r8,                                 &
+                                    cvmix_zero,                               &
                                     cvmix_strlen,                             &
                                     cvmix_data_type,                          &
                                     cvmix_global_params_type
@@ -114,12 +115,12 @@ Subroutine cvmix_tidal_driver()
   allocate(zt(max_nlev), zw_iface(max_nlev+1))
   ! Set buoyancy frequency = 0 at top interface (POP doesn't store these
   ! zeroes and the input data set is coming from POP output)
-  buoy(:,:,1) = 0.0_cvmix_r8
+  buoy(:,:,1) = cvmix_zero
 
   ! Allocate memory to store diffusivity values
   allocate(Tdiff(nlon, nlat, max_nlev+1))
   ! Set diffusivity to _FillValue
-  FillVal     = 100000.0_cvmix_r8
+  FillVal     = real(1e5,cvmix_r8)
   Tdiff = FillVal
 
   ! Read in global data from grid file, physics file, and energy flux file
@@ -139,13 +140,13 @@ Subroutine cvmix_tidal_driver()
 
   ! Compute center of each layer (maybe this should be stored in grid file?)
   do k=1, max_nlev
-    zt(k) = 0.5_cvmix_r8*(zw_iface(k)+zw_iface(k+1))
+    zt(k) = real(0.5,cvmix_r8)*(zw_iface(k)+zw_iface(k+1))
   end do
 
   ! Initialize tidal mixing parameters
   call cvmix_init_tidal(CVMix_tidal_params_user=CVmix_Simmons_params,         &
-                        local_mixing_frac=0.33_cvmix_r8,                      &
-                        max_coefficient=0.01_cvmix_r8)
+                        local_mixing_frac=real(0.33,cvmix_r8),                &
+                        max_coefficient=real(0.01,cvmix_r8))
 
   ! Print parameter values to screen
   print*, "Namelist variables"
@@ -172,7 +173,7 @@ Subroutine cvmix_tidal_driver()
       ! Initialization for CVMix data types
       call cvmix_put(CVmix_vars(i,j), 'nlev', nlev)
       if (nlev.gt.0) then
-        call cvmix_put(CVmix_vars(i,j),  'surf_hgt',       0.0_cvmix_r8)
+        call cvmix_put(CVmix_vars(i,j),  'surf_hgt',         cvmix_zero)
         call cvmix_put(CVmix_vars(i,j),        'zw', zw_iface(1:nlev+1))
         call cvmix_put(CVmix_vars(i,j),        'zt',         zt(1:nlev))
         call cvmix_put(CVmix_vars(i,j),      'buoy', buoy(i,j,1:nlev+1))
@@ -181,7 +182,7 @@ Subroutine cvmix_tidal_driver()
         call cvmix_put(CVmix_vars(i,j),       'lon',           lon(i,j))
 
         call cvmix_put(CVmix_params, 'max_nlev',        max_nlev)
-        call cvmix_put(CVmix_params,   'fw_rho', 1000.0_cvmix_r8)
+        call cvmix_put(CVmix_params,   'fw_rho', real(1e3,cvmix_r8))
         ! Point CVmix_vars values to memory allocated above
         CVmix_vars(i,j)%Tdiff_iface => Tdiff(i,j,1:nlev+1)
 
@@ -195,11 +196,11 @@ Subroutine cvmix_tidal_driver()
   if (CVmix_vars(lon_out, lat_out)%nlev.gt.0) then
     this_lon = CVmix_vars(lon_out, lat_out)%lon
     ! Need this_lon between -180 and 180
-    do while(this_lon.lt.-180.0_cvmix_r8)
-      this_lon = this_lon + 360.0_cvmix_r8
+    do while(this_lon.lt.real(-180,cvmix_r8))
+      this_lon = this_lon + real(360,cvmix_r8)
     end do
-    do while(this_lon.gt.180.0_cvmix_r8)
-      this_lon = this_lon - 360.0_cvmix_r8
+    do while(this_lon.gt.real(180,cvmix_r8))
+      this_lon = this_lon - real(360,cvmix_r8)
     end do
     this_lat = CVmix_vars(lon_out, lat_out)%lat
     call cvmix_io_open(fid, "single_col.nc", "nc")

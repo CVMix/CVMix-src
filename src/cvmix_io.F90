@@ -14,8 +14,9 @@ module cvmix_io
 
 ! !USES:
 
-   use cvmix_kinds_and_types, only : cvmix_data_type, &
-                                     cvmix_r8,        &
+   use cvmix_kinds_and_types, only : cvmix_data_type,                         &
+                                     cvmix_r8,                                &
+                                     cvmix_zero,                              &
                                      cvmix_strlen
    use cvmix_utils,           only : cvmix_att_name
 #ifdef _NETCDF
@@ -396,7 +397,7 @@ contains
 !EOP
 !BOC
 
-  local_copy = 0.0_cvmix_r8
+  local_copy = cvmix_zero
   lerr_in_read = .false.
     select case (get_file_type(file_id))
 #ifdef _NETCDF
@@ -487,7 +488,7 @@ contains
 !EOP
 !BOC
 
-  local_copy = 0.0_cvmix_r8
+  local_copy = cvmix_zero
   lerr_in_read = .false.
     select case (get_file_type(file_id))
 #ifdef _NETCDF

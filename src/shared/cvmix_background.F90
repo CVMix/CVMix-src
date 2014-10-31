@@ -49,8 +49,8 @@ module cvmix_background
   public :: cvmix_init_bkgnd
   public :: cvmix_coeffs_bkgnd
   public :: cvmix_bkgnd_lvary_horizontal
-  public :: cvmix_bkgnd_static_diff
-  public :: cvmix_bkgnd_static_visc
+  public :: cvmix_bkgnd_static_Mdiff
+  public :: cvmix_bkgnd_static_Tdiff
   public :: cvmix_put_bkgnd
   public :: cvmix_get_bkgnd_real_2D
 
@@ -82,18 +82,18 @@ module cvmix_background
     private
       ! 3D viscosity field (horizontal dimensions are collapsed into first
       ! dimension, vertical is second dimension)
-      real(cvmix_r8), allocatable :: static_visc(:,:) ! ncol, nlev+1
-                                                      ! units: m^2/s
+      real(cvmix_r8), allocatable :: static_Mdiff(:,:) ! ncol, max_nlev+1
+                                                       ! units: m^2/s
       ! 3D diffusivity field (horizontal dimensions are collapsed into first
       ! dimension, vertical is second dimension)
-      real(cvmix_r8), allocatable :: static_diff(:,:) ! ncol, nlev+1
-                                                      ! units: m^2/s
+      real(cvmix_r8), allocatable :: static_Tdiff(:,:) ! ncol, max_nlev+1
+                                                       ! units: m^2/s
 
       ! Flag for what to do with old values of CVmix_vars%[MTS]diff
       integer :: handle_old_vals
 
       ! Note: need to include some logic to avoid excessive memory use
-      !       when static_visc and static_diff are constant or 1-D
+      !       when static_[MT]diff are constant or 1-D
       logical :: lvary_vertical   ! True => multiple levels
       logical :: lvary_horizontal ! True => multiple columns
   end type cvmix_bkgnd_params_type
@@ -109,7 +109,7 @@ contains
 ! !IROUTINE: cvmix_init_bkgnd_scalar
 ! !INTERFACE:
 
-  subroutine cvmix_init_bkgnd_scalar(bkgnd_diff, bkgnd_visc, old_vals,        &
+  subroutine cvmix_init_bkgnd_scalar(bkgnd_Tdiff, bkgnd_Mdiff, old_vals,      &
                                      CVmix_bkgnd_params_user)
 
 ! !DESCRIPTION:
@@ -123,8 +123,8 @@ contains
 !  Only those used by entire module. 
 
 ! !INPUT PARAMETERS:
-    real(cvmix_r8),             intent(in) :: bkgnd_diff
-    real(cvmix_r8),             intent(in) :: bkgnd_visc
+    real(cvmix_r8),             intent(in) :: bkgnd_Tdiff
+    real(cvmix_r8),             intent(in) :: bkgnd_Mdiff
     character(len=*), optional, intent(in) :: old_vals
 
 ! !OUTPUT PARAMETERS:
@@ -142,14 +142,14 @@ contains
     end if
 
     ! Clean up memory in bkgnd_params_type (will be re-allocated in put call)
-    if (allocated(CVmix_bkgnd_params_out%static_visc))                        &
-      deallocate(CVmix_bkgnd_params_out%static_visc)
-    if (allocated(CVmix_bkgnd_params_out%static_diff))                        &
-      deallocate(CVmix_bkgnd_params_out%static_diff)
+    if (allocated(CVmix_bkgnd_params_out%static_Mdiff))                       &
+      deallocate(CVmix_bkgnd_params_out%static_Mdiff)
+    if (allocated(CVmix_bkgnd_params_out%static_Tdiff))                       &
+      deallocate(CVmix_bkgnd_params_out%static_Tdiff)
 
-    ! Set static_visc and static_diff in background_input_type
-    call cvmix_put_bkgnd('static_visc', bkgnd_visc, CVmix_bkgnd_params_user)
-    call cvmix_put_bkgnd('static_diff', bkgnd_diff, CVmix_bkgnd_params_user)
+    ! Set static_Mdiff and static_Tdiff in background_input_type
+    call cvmix_put_bkgnd('static_Mdiff', bkgnd_Mdiff, CVmix_bkgnd_params_user)
+    call cvmix_put_bkgnd('static_Tdiff', bkgnd_Tdiff, CVmix_bkgnd_params_user)
 
     if (present(old_vals)) then
       select case (trim(old_vals))
@@ -181,7 +181,7 @@ contains
 ! !IROUTINE: cvmix_init_bkgnd_1D
 ! !INTERFACE:
 
-  subroutine cvmix_init_bkgnd_1D(bkgnd_diff, bkgnd_visc, ncol, old_vals,      &
+  subroutine cvmix_init_bkgnd_1D(bkgnd_Tdiff, bkgnd_Mdiff, ncol, old_vals,    &
                                  CVmix_params_user, CVmix_bkgnd_params_user)
 
 ! !DESCRIPTION:
@@ -195,8 +195,8 @@ contains
 !  Only those used by entire module. 
 
 ! !INPUT PARAMETERS:
-    real(cvmix_r8), dimension(:),          intent(in) :: bkgnd_diff
-    real(cvmix_r8), dimension(:),          intent(in) :: bkgnd_visc
+    real(cvmix_r8), dimension(:),          intent(in) :: bkgnd_Tdiff
+    real(cvmix_r8), dimension(:),          intent(in) :: bkgnd_Mdiff
     integer,                     optional, intent(in) :: ncol
     character(len=cvmix_strlen), optional, intent(in) :: old_vals
     type(cvmix_global_params_type), optional, target, intent(in) :: &
@@ -230,25 +230,24 @@ contains
       CVmix_bkgnd_params_out => CVmix_bkgnd_params_user
     end if
 
-    ! NOTE: need to verify that bkgnd_visc and bkgnd_diff are ncol x 1 or
-    !       1 x nlev+1
+    ! NOTE: need to verify that bkgnd_[MT]diff are ncol x 1 or 1 x nlev+1
 
     ! Clean up memory in bkgnd_params_type (will be re-allocated in put call)
-    if (allocated(CVmix_bkgnd_params_out%static_visc))                        &
-      deallocate(CVmix_bkgnd_params_out%static_visc)
-    if (allocated(CVmix_bkgnd_params_out%static_diff))                        &
-      deallocate(CVmix_bkgnd_params_out%static_diff)
+    if (allocated(CVmix_bkgnd_params_out%static_Mdiff))                       &
+      deallocate(CVmix_bkgnd_params_out%static_Mdiff)
+    if (allocated(CVmix_bkgnd_params_out%static_Tdiff))                       &
+      deallocate(CVmix_bkgnd_params_out%static_Tdiff)
 
-    ! Set static_visc and static_diff in background_input_type
+    ! Set static_[MT]diff in background_input_type
     if (present(ncol)) then
-      call cvmix_put_bkgnd('static_visc', bkgnd_visc,                         &
+      call cvmix_put_bkgnd('static_Mdiff', bkgnd_Mdiff,                       &
                            CVmix_bkgnd_params_user, ncol=ncol)
-      call cvmix_put_bkgnd('static_diff', bkgnd_diff,                         &
+      call cvmix_put_bkgnd('static_Tdiff', bkgnd_Tdiff,                       &
                            CVmix_bkgnd_params_user, ncol=ncol)
     else
-      call cvmix_put_bkgnd('static_visc', bkgnd_visc,                         &
+      call cvmix_put_bkgnd('static_Mdiff', bkgnd_Mdiff,                       &
                            CVmix_bkgnd_params_user, nlev=nlev)
-      call cvmix_put_bkgnd('static_diff', bkgnd_diff,                         &
+      call cvmix_put_bkgnd('static_Tdiff', bkgnd_Tdiff,                       &
                            CVmix_bkgnd_params_user, nlev=nlev)
     end if
 
@@ -282,7 +281,7 @@ contains
 ! !IROUTINE: cvmix_init_bkgnd_2D
 ! !INTERFACE:
 
-  subroutine cvmix_init_bkgnd_2D(bkgnd_diff, bkgnd_visc, ncol,                &
+  subroutine cvmix_init_bkgnd_2D(bkgnd_Tdiff, bkgnd_Mdiff, ncol,              &
                                  CVmix_params_in, old_vals,                   &
                                  CVmix_bkgnd_params_user)
 
@@ -297,8 +296,8 @@ contains
 !  Only those used by entire module. 
 
 ! !INPUT PARAMETERS:
-    real(cvmix_r8), dimension(:,:),        intent(in) :: bkgnd_diff
-    real(cvmix_r8), dimension(:,:),        intent(in) :: bkgnd_visc
+    real(cvmix_r8), dimension(:,:),        intent(in) :: bkgnd_Tdiff
+    real(cvmix_r8), dimension(:,:),        intent(in) :: bkgnd_Mdiff
     integer,                               intent(in) :: ncol
     character(len=cvmix_strlen), optional, intent(in) :: old_vals
     type(cvmix_global_params_type),        intent(in) :: CVmix_params_in
@@ -318,20 +317,20 @@ contains
       CVmix_bkgnd_params_out => CVmix_bkgnd_params_user
     end if
 
-    ! NOTE: need to verify that bkgnd_visc and bkgnd_diff are ncol x nlev+1
+    ! NOTE: need to verify that bkgnd_[MT]diff are ncol x nlev+1
 
     nlev = CVmix_params_in%max_nlev
 
     ! Clean up memory in bkgnd_params_type (will be re-allocated in put call)
-    if (allocated(CVmix_bkgnd_params_out%static_visc))                        &
-      deallocate(CVmix_bkgnd_params_out%static_visc)
-    if (allocated(CVmix_bkgnd_params_out%static_diff))                        &
-      deallocate(CVmix_bkgnd_params_out%static_diff)
+    if (allocated(CVmix_bkgnd_params_out%static_Mdiff))                       &
+      deallocate(CVmix_bkgnd_params_out%static_Mdiff)
+    if (allocated(CVmix_bkgnd_params_out%static_Tdiff))                       &
+      deallocate(CVmix_bkgnd_params_out%static_Tdiff)
 
-    ! Set static_visc and static_diff in background_input_type
-    call cvmix_put_bkgnd("static_visc", bkgnd_visc, ncol, nlev,              &
+    ! Set static_[MT]diff in background_input_type
+    call cvmix_put_bkgnd("static_Mdiff", bkgnd_Mdiff, ncol, nlev,             &
                          CVmix_bkgnd_params_user)
-    call cvmix_put_bkgnd("static_diff", bkgnd_diff, ncol, nlev,              &
+    call cvmix_put_bkgnd("static_Tdiff", bkgnd_Tdiff, ncol, nlev,             &
                          CVmix_bkgnd_params_user)
  
     if (present(old_vals)) then
@@ -425,7 +424,7 @@ contains
     integer :: nlev  ! max number of levels
 
     ! Local copies to make code easier to read
-    real(cvmix_r8), dimension(CVmix_params_in%max_nlev+1) :: visc, diff, zw
+    real(cvmix_r8), dimension(CVmix_params_in%max_nlev+1) :: Mdiff, Tdiff, zw
 
     CVmix_bkgnd_params_out => CVmix_bkgnd_params_saved
     if (present(CVmix_bkgnd_params_user)) then
@@ -435,19 +434,19 @@ contains
     nlev = CVmix_params_in%max_nlev
     
     ! Clean up memory in bkgnd_params_type (will be re-allocated in put call)
-    if (allocated(CVmix_bkgnd_params_out%static_visc))                        &
-      deallocate(CVmix_bkgnd_params_out%static_visc)
-    if (allocated(CVmix_bkgnd_params_out%static_diff))                        &
-      deallocate(CVmix_bkgnd_params_out%static_diff)
+    if (allocated(CVmix_bkgnd_params_out%static_Mdiff))                       &
+      deallocate(CVmix_bkgnd_params_out%static_Mdiff)
+    if (allocated(CVmix_bkgnd_params_out%static_Tdiff))                       &
+      deallocate(CVmix_bkgnd_params_out%static_Tdiff)
 
-    ! Set static_visc and static_diff in background_input_type
+    ! Set static_[MT]diff in background_input_type
     zw   = -CVmix_vars%zw_iface
-    diff = bl1 + (bl2/cvmix_PI)*atan(bl3*(zw-bl4))
-    visc = CVmix_params_in%prandtl*diff
+    Tdiff = bl1 + (bl2/cvmix_PI)*atan(bl3*(zw-bl4))
+    Mdiff = CVmix_params_in%prandtl*Tdiff
 
-    call cvmix_put_bkgnd("static_diff", diff, CVmix_bkgnd_params_user,        &
+    call cvmix_put_bkgnd("static_Mdiff", Mdiff, CVmix_bkgnd_params_user,      &
                          nlev=nlev)
-    call cvmix_put_bkgnd("static_visc", visc, CVmix_bkgnd_params_user,        &
+    call cvmix_put_bkgnd("static_Tdiff", Tdiff, CVmix_bkgnd_params_user,      &
                          nlev=nlev)
 
     if (present(old_vals)) then
@@ -495,7 +494,7 @@ contains
 
 ! !INPUT PARAMETERS:
 
-    ! Need to know column for pulling data from static_visc and _diff
+    ! Need to know column for pulling data from static_[MT]diff
     integer,                               optional, intent(in) :: colid
     type(cvmix_bkgnd_params_type), target, optional, intent(in) ::            &
                                            CVmix_bkgnd_params_user
@@ -556,7 +555,7 @@ contains
 
 ! !INPUT PARAMETERS:
 
-    ! Need to know column for pulling data from static_visc and _diff
+    ! Need to know column for pulling data from static_[MT]diff
     integer,                                         intent(in) :: nlev,      &
                                                                    max_nlev
     integer,                               optional, intent(in) :: colid
@@ -577,36 +576,14 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    type(cvmix_bkgnd_params_type),  pointer :: CVmix_bkgnd_params_in
+    integer :: kw
        
-    CVmix_bkgnd_params_in => CVmix_bkgnd_params_saved
-    if (present(CVmix_bkgnd_params_user)) then
-      CVmix_bkgnd_params_in => CVmix_bkgnd_params_user
-    end if
-
-    if (CVmix_bkgnd_params_in%lvary_horizontal.and.(.not.present(colid))) then
-      print*, "ERROR: background parameters vary in horizontal so you must ", &
-              "provide colid to cvmix_coeffs_bkgnd!"
-      stop 1
-    end if
-
-    if (CVmix_bkgnd_params_in%lvary_horizontal) then
-      if (CVmix_bkgnd_params_in%lvary_vertical) then
-        Mdiff_out(1:nlev+1) = CVmix_bkgnd_params_in%static_visc(colid,1:nlev+1)
-        Tdiff_out(1:nlev+1) = CVmix_bkgnd_params_in%static_diff(colid,1:nlev+1)
-      else
-        Mdiff_out(1:nlev+1) = CVmix_bkgnd_params_in%static_visc(colid,1)
-        Tdiff_out(1:nlev+1) = CVmix_bkgnd_params_in%static_diff(colid,1)
-      end if
-    else
-      if (CVmix_bkgnd_params_in%lvary_vertical) then
-        Mdiff_out(1:nlev+1) = CVmix_bkgnd_params_in%static_visc(1,1:nlev+1)
-        Tdiff_out(1:nlev+1) = CVmix_bkgnd_params_in%static_diff(1,1:nlev+1)
-      else
-        Mdiff_out(1:nlev+1) = CVmix_bkgnd_params_in%static_visc(1,1)
-        Tdiff_out(1:nlev+1) = CVmix_bkgnd_params_in%static_diff(1,1)
-      end if
-    end if
+    do kw=1,nlev+1
+      Mdiff_out(kw) = cvmix_bkgnd_static_Mdiff(CVmix_bkgnd_params_user, kw,   &
+                                               colid)
+      Tdiff_out(kw) = cvmix_bkgnd_static_Tdiff(CVmix_bkgnd_params_user, kw,   &
+                                               colid)
+    end do
 
 !EOC
 
@@ -644,10 +621,10 @@ contains
 
 !BOP
 
-! !IROUTINE: cvmix_bkgnd_static_diff
+! !IROUTINE: cvmix_bkgnd_static_Mdiff
 ! !INTERFACE:
 
-  function cvmix_bkgnd_static_diff(CVmix_bkgnd_params_user,kw,colid)
+  function cvmix_bkgnd_static_Mdiff(CVmix_bkgnd_params_user,kw,colid)
 
 ! !DESCRIPTION:
 !  Obtain the background diffusivity value at a position in a water column.
@@ -658,58 +635,63 @@ contains
 !  Only those used by entire module. 
 
 ! !INPUT PARAMETERS:
-    type(cvmix_bkgnd_params_type), intent(in) :: CVmix_bkgnd_params_user
+    type(cvmix_bkgnd_params_type), target, optional, intent(in) ::            &
+                                           CVmix_bkgnd_params_user
     integer, optional, intent(in) :: kw, colid
 
 ! !OUTPUT PARAMETERS:
-    real(cvmix_r8) :: cvmix_bkgnd_static_diff
+    real(cvmix_r8) :: cvmix_bkgnd_static_Mdiff
 !EOP
 !BOC
 
-    ! Error checks
-    if (CVmix_bkgnd_params_user%lvary_horizontal) then
-      if (.not.present(colid)) then
-        print*, "ERROR: need to pass colid when static_diff varies across", &
+    type(cvmix_bkgnd_params_type),  pointer :: CVmix_bkgnd_params_in
+    integer :: cid, kid
+
+    ! Error check
+    CVmix_bkgnd_params_in => CVmix_bkgnd_params_saved
+    if (present(CVmix_bkgnd_params_user)) then
+      CVmix_bkgnd_params_in => CVmix_bkgnd_params_user
+    end if
+
+    if (CVmix_bkgnd_params_in%lvary_horizontal) then
+      if (present(colid)) then
+        cid = colid
+      else
+        print*, "ERROR: need to pass colid when static_Mdiff varies across",  &
                 " columns."
         stop 1
       end if
+    else
+      cid = 1
     end if
 
-    if (CVmix_bkgnd_params_user%lvary_vertical) then
-      if (.not.present(kw)) then
-        print*, "ERROR: need to pass kw (level id) when static_diff varies", &
+    if (CVmix_bkgnd_params_in%lvary_vertical) then
+      if (present(kw)) then
+        kid = kw
+      else
+        print*, "ERROR: need to pass kw (level id) when static_Mdiff varies", &
                 "across levels columns."
         stop 1
       end if
+    else
+      kid = 1
     end if
 
-    if (CVmix_bkgnd_params_user%lvary_horizontal) then
-      if (CVmix_bkgnd_params_user%lvary_vertical) then
-        cvmix_bkgnd_static_diff = CVmix_bkgnd_params_user%static_diff(colid, kw)
-      else
-        cvmix_bkgnd_static_diff = CVmix_bkgnd_params_user%static_diff(colid, 1)
-      end if
-    else
-      if (CVmix_bkgnd_params_user%lvary_vertical) then
-        cvmix_bkgnd_static_diff = CVmix_bkgnd_params_user%static_diff(1, kw)
-      else
-        cvmix_bkgnd_static_diff = CVmix_bkgnd_params_user%static_diff(1, 1)
-      end if
-    end if
+    cvmix_bkgnd_static_Mdiff = CVmix_bkgnd_params_in%static_Mdiff(cid, kid)
 
 !EOC
 
-  end function cvmix_bkgnd_static_diff
+  end function cvmix_bkgnd_static_Mdiff
 
 !BOP
 
-! !IROUTINE: cvmix_bkgnd_static_visc
+! !IROUTINE: cvmix_bkgnd_static_Tdiff
 ! !INTERFACE:
 
-  function cvmix_bkgnd_static_visc(CVmix_bkgnd_params_user,kw,colid)
+  function cvmix_bkgnd_static_Tdiff(CVmix_bkgnd_params_user,kw,colid)
 
 ! !DESCRIPTION:
-!  Obtain the background viscosity value at a position in a water column.
+!  Obtain the background diffusivity value at a position in a water column.
 !\\
 !\\
 
@@ -717,48 +699,53 @@ contains
 !  Only those used by entire module. 
 
 ! !INPUT PARAMETERS:
-    type(cvmix_bkgnd_params_type), intent(in) :: CVmix_bkgnd_params_user
+    type(cvmix_bkgnd_params_type), target, optional, intent(in) ::            &
+                                           CVmix_bkgnd_params_user
     integer, optional, intent(in) :: kw, colid
 
 ! !OUTPUT PARAMETERS:
-    real(cvmix_r8) :: cvmix_bkgnd_static_visc
+    real(cvmix_r8) :: cvmix_bkgnd_static_Tdiff
 !EOP
 !BOC
 
-    ! Error checks
-    if (CVmix_bkgnd_params_user%lvary_horizontal) then
-      if (.not.present(colid)) then
-        print*, "ERROR: need to pass colid when static_visc varies across", &
+    type(cvmix_bkgnd_params_type),  pointer :: CVmix_bkgnd_params_in
+    integer :: cid, kid
+
+    ! Error che
+    CVmix_bkgnd_params_in => CVmix_bkgnd_params_saved
+    if (present(CVmix_bkgnd_params_user)) then
+      CVmix_bkgnd_params_in => CVmix_bkgnd_params_user
+    end if
+
+    if (CVmix_bkgnd_params_in%lvary_horizontal) then
+      if (present(colid)) then
+        cid = colid
+      else
+        print*, "ERROR: need to pass colid when static_Tdiff varies across",  &
                 " columns."
         stop 1
       end if
+    else
+      cid = 1
     end if
 
-    if (CVmix_bkgnd_params_user%lvary_vertical) then
-      if (.not.present(kw)) then
-        print*, "ERROR: need to pass kw (level id) when static_visc varies", &
+    if (CVmix_bkgnd_params_in%lvary_vertical) then
+      if (present(kw)) then
+        kid = kw
+      else
+        print*, "ERROR: need to pass kw (level id) when static_Tdiff varies",  &
                 "across levels columns."
         stop 1
       end if
+    else
+      kid = 1
     end if
 
-    if (CVmix_bkgnd_params_user%lvary_horizontal) then
-      if (CVmix_bkgnd_params_user%lvary_vertical) then
-        cvmix_bkgnd_static_visc = CVmix_bkgnd_params_user%static_visc(colid, kw)
-      else
-        cvmix_bkgnd_static_visc = CVmix_bkgnd_params_user%static_visc(colid, 1)
-      end if
-    else
-      if (CVmix_bkgnd_params_user%lvary_vertical) then
-        cvmix_bkgnd_static_visc = CVmix_bkgnd_params_user%static_visc(1, kw)
-      else
-        cvmix_bkgnd_static_visc = CVmix_bkgnd_params_user%static_visc(1, 1)
-      end if
-    end if
+    cvmix_bkgnd_static_Tdiff = CVmix_bkgnd_params_in%static_Tdiff(cid, kid)
 
 !EOC
 
-  end function cvmix_bkgnd_static_visc
+  end function cvmix_bkgnd_static_Tdiff
 
 !BOP
 
@@ -839,25 +826,25 @@ contains
     end if
 
     select case (trim(varname))
-      case ('static_visc')
-        if (.not.allocated(CVmix_bkgnd_params_out%static_visc)) then
-          allocate(CVmix_bkgnd_params_out%static_visc(1,1))
+      case ('static_Mdiff')
+        if (.not.allocated(CVmix_bkgnd_params_out%static_Mdiff)) then
+          allocate(CVmix_bkgnd_params_out%static_Mdiff(1,1))
           CVmix_bkgnd_params_out%lvary_horizontal=.false.
           CVmix_bkgnd_params_out%lvary_vertical=.false.
         else
-          print*, "WARNING: overwriting static_visc in cvmix_bkgnd_params_type."
+          print*, "WARNING: overwriting static_Mdiff!"
         end if
-        CVmix_bkgnd_params_out%static_visc(:,:) = val
+        CVmix_bkgnd_params_out%static_Mdiff(:,:) = val
 
-      case ('static_diff')
-        if (.not.allocated(CVmix_bkgnd_params_out%static_diff)) then
-          allocate(CVmix_bkgnd_params_out%static_diff(1,1))
+      case ('static_Tdiff')
+        if (.not.allocated(CVmix_bkgnd_params_out%static_Tdiff)) then
+          allocate(CVmix_bkgnd_params_out%static_Tdiff(1,1))
           CVmix_bkgnd_params_out%lvary_horizontal=.false.
           CVmix_bkgnd_params_out%lvary_vertical=.false.
         else
-          print*, "WARNING: overwriting static_diff in cvmix_bkgnd_params_type."
+          print*, "WARNING: overwriting static_Tdiff!"
         end if
-        CVmix_bkgnd_params_out%static_diff(:,:) = val
+        CVmix_bkgnd_params_out%static_Tdiff(:,:) = val
 
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
@@ -944,46 +931,46 @@ contains
     end if
 
     select case (trim(varname))
-      case ('static_visc')
-        if (.not.allocated(CVmix_bkgnd_params_out%static_visc)) then
-          allocate(CVmix_bkgnd_params_out%static_visc(dims(1),dims(2)))
+      case ('static_Mdiff')
+        if (.not.allocated(CVmix_bkgnd_params_out%static_Mdiff)) then
+          allocate(CVmix_bkgnd_params_out%static_Mdiff(dims(1),dims(2)))
           CVmix_bkgnd_params_out%lvary_horizontal = lvary_horizontal
           CVmix_bkgnd_params_out%lvary_vertical = .not.lvary_horizontal
         else
-          print*, "WARNING: overwriting static_visc in cvmix_bkgnd_params_type."
+          print*, "WARNING: overwriting static_Mdiff!"
         end if
-        if (any(shape(CVmix_bkgnd_params_out%static_visc).ne.dims)) then
-          print*, "ERROR: dimensions of static_visc do not match what was ", &
+        if (any(shape(CVmix_bkgnd_params_out%static_Mdiff).ne.dims)) then
+          print*, "ERROR: dimensions of static_Mdiff do not match what was ", &
                   "sent to cvmix_put"
           stop 1
         end if
         if (lvary_horizontal) then
-          CVmix_bkgnd_params_out%static_visc(:,1)           = 0_cvmix_r8
-          CVmix_bkgnd_params_out%static_visc(1:data_dims,1) = val
+          CVmix_bkgnd_params_out%static_Mdiff(:,1)           = cvmix_zero
+          CVmix_bkgnd_params_out%static_Mdiff(1:data_dims,1) = val
         else
-          CVmix_bkgnd_params_out%static_visc(1,:)           = 0_cvmix_r8
-          CVmix_bkgnd_params_out%static_visc(1,1:data_dims) = val
+          CVmix_bkgnd_params_out%static_Mdiff(1,:)           = cvmix_zero
+          CVmix_bkgnd_params_out%static_Mdiff(1,1:data_dims) = val
         end if
 
-      case ('static_diff')
-        if (.not.allocated(CVmix_bkgnd_params_out%static_diff)) then
-          allocate(CVmix_bkgnd_params_out%static_diff(dims(1),dims(2)))
+      case ('static_Tdiff')
+        if (.not.allocated(CVmix_bkgnd_params_out%static_Tdiff)) then
+          allocate(CVmix_bkgnd_params_out%static_Tdiff(dims(1),dims(2)))
           CVmix_bkgnd_params_out%lvary_horizontal = lvary_horizontal
           CVmix_bkgnd_params_out%lvary_vertical = .not.lvary_horizontal
         else
-          print*, "WARNING: overwriting static_diff in cvmix_bkgnd_params_type."
+          print*, "WARNING: overwriting static_Tdiff!"
         end if
-        if (any(shape(CVmix_bkgnd_params_out%static_diff).ne.dims)) then
-          print*, "ERROR: dimensions of static_diff do not match what was ", &
+        if (any(shape(CVmix_bkgnd_params_out%static_Tdiff).ne.dims)) then
+          print*, "ERROR: dimensions of static_Tdiff do not match what was ", &
                   "sent to cvmix_put"
           stop 1
         end if
         if (lvary_horizontal) then
-          CVmix_bkgnd_params_out%static_diff(:,1)           = 0_cvmix_r8
-          CVmix_bkgnd_params_out%static_diff(1:data_dims,1) = val
+          CVmix_bkgnd_params_out%static_Tdiff(:,1)           = cvmix_zero
+          CVmix_bkgnd_params_out%static_Tdiff(1:data_dims,1) = val
         else
-          CVmix_bkgnd_params_out%static_diff(1,:)           = 0_cvmix_r8
-          CVmix_bkgnd_params_out%static_diff(1,1:data_dims) = val
+          CVmix_bkgnd_params_out%static_Tdiff(1,:)           = cvmix_zero
+          CVmix_bkgnd_params_out%static_Tdiff(1,1:data_dims) = val
         end if
 
       case DEFAULT
@@ -1043,37 +1030,37 @@ contains
     end if
 
     select case (trim(varname))
-      case ('static_visc')
-        if (.not.allocated(CVmix_bkgnd_params_out%static_visc)) then
-          allocate(CVmix_bkgnd_params_out%static_visc(dims(1),dims(2)))
+      case ('static_Mdiff')
+        if (.not.allocated(CVmix_bkgnd_params_out%static_Mdiff)) then
+          allocate(CVmix_bkgnd_params_out%static_Mdiff(dims(1),dims(2)))
           CVmix_bkgnd_params_out%lvary_horizontal=.true.
           CVmix_bkgnd_params_out%lvary_vertical=.true.
         else
-          print*, "WARNING: overwriting static_visc in cvmix_bkgnd_params_type."
+          print*, "WARNING: overwriting static_Mdiff!"
         end if
-        if (any(shape(CVmix_bkgnd_params_out%static_visc).ne.dims)) then
-          print*, "ERROR: dimensions of static_visc do not match what was ", &
+        if (any(shape(CVmix_bkgnd_params_out%static_Mdiff).ne.dims)) then
+          print*, "ERROR: dimensions of static_Mdiff do not match what was ", &
                   "sent to cvmix_put"
           stop 1
         end if
-        CVmix_bkgnd_params_out%static_visc = 0.0_cvmix_r8
-        CVmix_bkgnd_params_out%static_visc(1:data_dims(1), 1:data_dims(2)) = val
+        CVmix_bkgnd_params_out%static_Mdiff = cvmix_zero
+        CVmix_bkgnd_params_out%static_Mdiff(1:data_dims(1),1:data_dims(2))= val
 
-      case ('static_diff')
-        if (.not.allocated(CVmix_bkgnd_params_out%static_diff)) then
-          allocate(CVmix_bkgnd_params_out%static_diff(dims(1),dims(2)))
+      case ('static_Tdiff')
+        if (.not.allocated(CVmix_bkgnd_params_out%static_Tdiff)) then
+          allocate(CVmix_bkgnd_params_out%static_Tdiff(dims(1),dims(2)))
           CVmix_bkgnd_params_out%lvary_horizontal=.true.
           CVmix_bkgnd_params_out%lvary_vertical=.true.
         else
-          print*, "WARNING: overwriting static_diff in cvmix_bkgnd_params_type."
+          print*, "WARNING: overwriting static_Tdiff!"
         end if
-        if (any(shape(CVmix_bkgnd_params_out%static_diff).ne.dims)) then
-          print*, "ERROR: dimensions of static_diff do not match what was ", &
+        if (any(shape(CVmix_bkgnd_params_out%static_Tdiff).ne.dims)) then
+          print*, "ERROR: dimensions of static_Tdiff do not match what was ", &
                   "sent to cvmix_put"
           stop 1
         end if
-        CVmix_bkgnd_params_out%static_diff = 0.0_cvmix_r8
-        CVmix_bkgnd_params_out%static_diff(1:data_dims(1), 1:data_dims(2)) = val
+        CVmix_bkgnd_params_out%static_Tdiff = cvmix_zero
+        CVmix_bkgnd_params_out%static_Tdiff(1:data_dims(1),1:data_dims(2))= val
 
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
@@ -1118,15 +1105,15 @@ contains
     if (present(CVmix_bkgnd_params_user)) then
       CVmix_bkgnd_params_get => CVmix_bkgnd_params_user
     end if
-    dim1 = size(CVmix_bkgnd_params_get%static_visc,1)
-    dim2 = size(CVmix_bkgnd_params_get%static_visc,2)
+    dim1 = size(CVmix_bkgnd_params_get%static_Mdiff,1)
+    dim2 = size(CVmix_bkgnd_params_get%static_Mdiff,2)
     allocate(cvmix_get_bkgnd_real_2D(dim1, dim2))
 
     select case (trim(varname))
-      case ('static_visc')
-        cvmix_get_bkgnd_real_2D = CVmix_bkgnd_params_get%static_visc(:,:)
-      case ('static_diff')
-        cvmix_get_bkgnd_real_2D = CVmix_bkgnd_params_get%static_diff(:,:)
+      case ('static_Mdiff')
+        cvmix_get_bkgnd_real_2D = CVmix_bkgnd_params_get%static_Mdiff(:,:)
+      case ('static_Tdiff')
+        cvmix_get_bkgnd_real_2D = CVmix_bkgnd_params_get%static_Tdiff(:,:)
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
         stop 1

@@ -23,7 +23,8 @@ Program cvmix_driver
 
 ! !USES:
 
-  use cvmix_kinds_and_types, only : cvmix_r8, &
+  use cvmix_kinds_and_types, only : cvmix_r8,                                 &
+                                    cvmix_zero,                               &
                                     cvmix_strlen
 
 !EOP
@@ -37,7 +38,7 @@ Program cvmix_driver
   mix_type = 'unset'
   nlev = 0
   max_nlev = 0
-  ocn_depth = 0.0_cvmix_r8
+  ocn_depth = cvmix_zero
   read(*, nml=cvmix_nml)
   if (max_nlev.eq.0) then
     max_nlev = nlev

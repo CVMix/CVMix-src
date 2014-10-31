@@ -17,6 +17,7 @@ Subroutine cvmix_BL_driver(nlev, max_nlev, ocn_depth)
 ! !USES:
 
   use cvmix_kinds_and_types, only : cvmix_r8,                 &
+                                    cvmix_zero,               &
                                     cvmix_data_type,          &
                                     cvmix_global_params_type
   use cvmix_background,      only : cvmix_init_bkgnd,         &
@@ -81,7 +82,7 @@ Subroutine cvmix_BL_driver(nlev, max_nlev, ocn_depth)
   ! Calculate depth of cell interfaces based on number of levels and ocean
   ! depth (also allocate memory for diffusivity and viscosity)
   allocate(iface_depth(max_nlev+1))
-  iface_depth(1) = 0.0_cvmix_r8
+  iface_depth(1) = cvmix_zero
   
   ! Depth is 0 at sea level and negative at ocean bottom in CVMix
   do kw = 2,max_nlev+1
@@ -93,7 +94,7 @@ Subroutine cvmix_BL_driver(nlev, max_nlev, ocn_depth)
 
   ! Initialization for CVMix data types
   call cvmix_put(CVmix_params,  'max_nlev', max_nlev)
-  call cvmix_put(CVmix_params,  'prandtl',  0.0_cvmix_r8)
+  call cvmix_put(CVmix_params,  'prandtl',  cvmix_zero)
   do icol=1,ncol
     CVmix_vars_pointer(icol)%nlev=nlev
     CVmix_vars_pointer(icol)%max_nlev=max_nlev
@@ -105,8 +106,8 @@ Subroutine cvmix_BL_driver(nlev, max_nlev, ocn_depth)
     ! Copy values into CVmix_vars_memcopy
     call cvmix_put(CVmix_vars_memcopy(icol), 'nlev',     nlev)
     call cvmix_put(CVmix_vars_memcopy(icol), 'max_nlev', max_nlev)
-    call cvmix_put(CVmix_vars_memcopy(icol), 'Mdiff',    0.0_cvmix_r8)
-    call cvmix_put(CVmix_vars_memcopy(icol), 'Tdiff',    0.0_cvmix_r8)
+    call cvmix_put(CVmix_vars_memcopy(icol), 'Mdiff',    cvmix_zero)
+    call cvmix_put(CVmix_vars_memcopy(icol), 'Tdiff',    cvmix_zero)
     call cvmix_put(CVmix_vars_memcopy(icol), 'zw_iface', iface_depth)
   end do
 
@@ -136,9 +137,9 @@ Subroutine cvmix_BL_driver(nlev, max_nlev, ocn_depth)
                         col2_linv, col2_dpth, CVMix_params,                   &
                         CVmix_bkgnd_params_user=CVmix_BL_params)
   CVmix_vars_memcopy(1)%Mdiff_iface = reshape(                                &
-                            cvmix_get_bkgnd_real_2D('static_visc'),(/nlev+1/))
+                            cvmix_get_bkgnd_real_2D('static_Mdiff'),(/nlev+1/))
   CVmix_vars_memcopy(1)%Tdiff_iface = reshape(                                &
-                            cvmix_get_bkgnd_real_2D('static_diff'),(/nlev+1/))
+                            cvmix_get_bkgnd_real_2D('static_Tdiff'),(/nlev+1/))
   call cvmix_coeffs_bkgnd(CVmix_vars_memcopy(2),                              &
                           CVmix_bkgnd_params_user=CVmix_BL_params)
   
