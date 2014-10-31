@@ -2,6 +2,7 @@ load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_code.ncl"
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_csm.ncl"
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/contributed.ncl"
 load "../common/plot_settings.ncl"
+load "../common/version_consistency.ncl"
 
 begin
 
@@ -12,7 +13,7 @@ begin
 ; Create Color Table
   my_color_map = (/"White", "Black"/)
 
-  if (isfilepresent("test5.nc")) then
+  if (check_for_file("test5.nc")) then
     print((/"Reading netCDF data"/))
     f = addfile("test5.nc", "r")
     zt      = f->zt
@@ -21,7 +22,7 @@ begin
     Ri_bulk = f->BulkRichardson
     hd      = -f@OBL_depth
   else
-    if (fileexists("test5.out")) then
+    if (check_for_file("test5.out")) then
       print((/"Reading ascii data"/))
       nlev = 10
       zt      = new((/nlev/), "double")

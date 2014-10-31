@@ -2,6 +2,7 @@ load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_code.ncl"
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_csm.ncl"
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/contributed.ncl"
 load "../common/plot_settings.ncl"
+load "../common/version_consistency.ncl"
 
 begin
 
@@ -18,14 +19,14 @@ begin
   count = 0
   do while ((.not.filefound).and.(count.lt.2))
 
-    if (isfilepresent(file_names(count)+".nc")) then
+    if (check_for_file(file_names(count)+".nc")) then
       print((/"Reading netCDF data from "+file_names(count)/))
       f = addfile(file_names(count)+".nc", "r")
       filefound = True
       x = transpose(f->Tdiff)
       y = f->zw
     else
-      if (fileexists(file_names(count)+".out")) then
+      if (check_for_file(file_names(count)+".out")) then
         print((/"Reading ascii data from "+file_names(count)/))
         nml  = asciiread("input.nl", -1, "integer")
         nlev = nml(0)

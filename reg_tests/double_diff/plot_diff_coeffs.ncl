@@ -2,6 +2,7 @@ load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_code.ncl"
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_csm.ncl"
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/contributed.ncl"
 load "../common/plot_settings.ncl"
+load "../common/version_consistency.ncl"
 
 ; This script reads in output from the CVMix stand-alone driver using double
 ; diffusion mixing from Large, et al., 1992. This script takes the output from
@@ -20,7 +21,7 @@ begin
   nml  = asciiread("input.nl", -1, "integer")
   nlev = 2*nml(0)
   yt   = new((/2, nlev/), "double")
-  if (isfilepresent("data.nc")) then
+  if (check_for_file("data.nc")) then
     print((/"Reading netCDF data"/))
     f = addfile("data.nc", "r")
 
@@ -29,7 +30,7 @@ begin
     yt(0,:) = f->Tdiff(0:nlev-1,0)
     yt(1,:) = f->Tdiff(0:nlev-1,1)
   else
-    if (fileexists("data.out")) then
+    if (check_for_file("data.out")) then
       print((/"Reading ascii data"/))
       x1 = new((/nlev  /), "double")
       ys = new((/nlev  /), "double")

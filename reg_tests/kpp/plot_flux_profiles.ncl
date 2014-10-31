@@ -2,6 +2,7 @@ load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_code.ncl"
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_csm.ncl"
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/contributed.ncl"
 load "../common/plot_settings.ncl"
+load "../common/version_consistency.ncl"
 
 begin
 
@@ -12,14 +13,14 @@ begin
 ; Create Color Table
   my_color_map = (/"White", "Black"/)
 
-  if (isfilepresent("test3.nc")) then
+  if (check_for_file("test3.nc")) then
     print((/"Reading netCDF data"/))
     f = addfile("test3.nc", "r")
     sigma = f->data(0,:)
     phi_m   = f->data(1,:)
     phi_s   = f->data(2,:)
   else
-    if (fileexists("test3.out")) then
+    if (check_for_file("test3.out")) then
       print((/"Reading ascii data"/))
       nlev = 220
       sigma = new((/nlev+1/), "double")

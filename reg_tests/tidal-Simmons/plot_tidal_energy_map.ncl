@@ -1,5 +1,6 @@
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_code.ncl"
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_csm.ncl"
+load "../common/version_consistency.ncl"
 
 begin
 
@@ -8,7 +9,7 @@ begin
   ; out_type = "X11"
 
   in_file = "../../inputdata/tidal_energy_gx1v6_20130512.nc"
-  if (isfilepresent(in_file)) then
+  if (check_for_file(in_file)) then
     print((/"Reading netCDF data"/))
     f = addfile(in_file, "r")
     tmplat = f->lat

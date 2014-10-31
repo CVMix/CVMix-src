@@ -2,6 +2,7 @@ load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_code.ncl"
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_csm.ncl"
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/contributed.ncl"
 load "../common/plot_settings.ncl"
+load "../common/version_consistency.ncl"
 
 begin
 
@@ -13,7 +14,7 @@ begin
   my_color_map = (/"White", "Black"/)
 
   in_file = "single_col.nc"
-  if (isfilepresent(in_file)) then
+  if (check_for_file(in_file)) then
     print((/"Reading netCDF data"/))
     f = addfile(in_file, "r")
     x = f->Tdiff

@@ -1,6 +1,7 @@
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_code.ncl"
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_csm.ncl"
 load "../common/plot_settings.ncl"
+load "../common/version_consistency.ncl"
 
 ; This script reads in output from the CVMix stand-alone driver using the shear
 ; mixing technique from Large, et al., 1992. This script takes the output from
@@ -16,13 +17,13 @@ begin
   my_color_map = (/"White", "Black"/)
 
   ; Read data for LMD94 plot
-  if (isfilepresent("data_LMD.nc")) then
+  if (check_for_file("data_LMD.nc")) then
     print((/"Reading netCDF data"/))
     f = addfile("data_LMD.nc", "r")
     x = f->ShearRichardson
     y = f->Tdiff
   else
-    if (fileexists("data_LMD.out")) then
+    if (check_for_file("data_LMD.out")) then
       print((/"Reading ascii data"/))
       nml  = asciiread("input.nl", -1, "integer")
       nlev = nml(0)
