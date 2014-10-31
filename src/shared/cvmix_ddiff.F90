@@ -419,8 +419,8 @@ module cvmix_ddiff
                         CVmix_ddiff_params_in%kappa_ddiff_param3*             &
                         (cvmix_one/Rrho-cvmix_one)))
           case ("K88")
-            ddiff = CVmix_ddiff_params_in%mol_diff * real(8.7,cvmix_r8) *     &
-                    (Rrho**real(1.1,cvmix_r8))
+            ddiff = CVmix_ddiff_params_in%mol_diff * 8.7_cvmix_r8 *           &
+                    (Rrho**1.1_cvmix_r8)
           case DEFAULT
             print*, "ERROR: ", trim(CVmix_ddiff_params_in%diff_conv_type),    &
                     " is not a valid value for diff_conv_type"

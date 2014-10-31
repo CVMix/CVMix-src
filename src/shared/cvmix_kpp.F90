@@ -1512,7 +1512,7 @@ contains
     GatS = cvmix_math_evaluate_cubic(shape_fun, sigma)
 
     nonlocal = GatS*(Cstar*vonkar*(vonkar*surf_layer_ext*c_s)**               &
-               (real(1,cvmix_r8)/real(3,cvmix_r8)))
+               (cvmix_one/real(3,cvmix_r8)))
 ! EOC
 
   end subroutine cvmix_kpp_compute_nonlocal
@@ -1831,7 +1831,7 @@ contains
                       vonkar * surf_buoy_force
             ! w_m = vonkar * u* / phi_m
             !     = vonkar * ((u*/phi_m)^3)^1/3
-            w_m(kw) = vonkar*(w_m(kw)**(real(1,cvmix_r8)/real(3,cvmix_r8)))
+            w_m(kw) = vonkar*(w_m(kw)**(cvmix_one/real(3,cvmix_r8)))
           end do
         end if ! surf_buoy_force >= 0
       end if ! compute_wm
@@ -1850,7 +1850,7 @@ contains
                       vonkar * surf_buoy_force
             ! w_s = vonkar * u* / phi_s
             !     = vonkar * ((u*/phi_s)^3)^1/3
-            w_s(kw) = vonkar*(w_s(kw)**(real(1,cvmix_r8)/real(3,cvmix_r8)))
+            w_s(kw) = vonkar*(w_s(kw)**(cvmix_one/real(3,cvmix_r8)))
           end do
         end if ! surf_buoy_force >= 0
       end if ! compute_ws
@@ -1962,7 +1962,7 @@ contains
                       vonkar * surf_buoy_force(kw)
             ! w_m = vonkar * u* / phi_m
             !     = vonkar * ((u*/phi_m)^3)^1/3
-            w_m(kw) = vonkar*(w_m(kw)**(real(1,cvmix_r8)/real(3,cvmix_r8)))
+            w_m(kw) = vonkar*(w_m(kw)**(cvmix_one/real(3,cvmix_r8)))
         endif
         end do
       end if ! compute_wm
@@ -1982,7 +1982,7 @@ contains
                       vonkar * surf_buoy_force(kw)
             ! w_s = vonkar * u* / phi_s
             !     = vonkar * ((u*/phi_s)^3)^1/3
-            w_s(kw) = vonkar*(w_s(kw)**(real(1,cvmix_r8)/real(3,cvmix_r8)))
+            w_s(kw) = vonkar*(w_s(kw)**(cvmix_one/real(3,cvmix_r8)))
           end if ! surf_buoy_force >= 0
         end do
       end if ! compute_ws

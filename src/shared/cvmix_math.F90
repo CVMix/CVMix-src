@@ -22,7 +22,8 @@
 
 ! !USES:
 
-  use cvmix_kinds_and_types, only : cvmix_r8
+  use cvmix_kinds_and_types, only : cvmix_r8,                                 &
+                                    cvmix_one
 
 !EOP
 
@@ -111,9 +112,9 @@
           rhs(3) = 0.0_cvmix_r8
         end if
 
-        Minv(1,1) = -real(1, cvmix_r8)/det
-        Minv(1,2) = real(1, cvmix_r8)/det
-        Minv(1,3) = -real(1, cvmix_r8)/(x(2)-x(1))
+        Minv(1,1) = -cvmix_one/det
+        Minv(1,2) = cvmix_one/det
+        Minv(1,3) = -cvmix_one/(x(2)-x(1))
         Minv(2,1) = real(2, cvmix_r8)*x(1)/det
         Minv(2,2) = -real(2, cvmix_r8)*x(1)/det
         Minv(2,3) = (x(2)+x(1))/(x(2)-x(1))

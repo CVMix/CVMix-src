@@ -65,13 +65,16 @@ module cvmix_convection
     private
       ! Convective diff
       ! diffusivity coefficient used in convective regime
-        real(cvmix_r8) :: convect_diff ! units: m^2/s
+      real(cvmix_r8) :: convect_diff ! units: m^2/s
+
       ! viscosity coefficient used in convective regime
       real(cvmix_r8) :: convect_visc ! units: m^2/s
       logical        :: lBruntVaisala
+
       ! Threshold for squared buoyancy frequency needed to trigger
       ! Brunt-Vaisala parameterization
       real(cvmix_r8) :: BVsqr_convect ! units: s^-2
+
       ! Flag for what to do with old values of CVmix_vars%[MTS]diff
       integer :: handle_old_vals
   end type cvmix_conv_params_type
