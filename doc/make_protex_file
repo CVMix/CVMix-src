@@ -4,14 +4,6 @@ SRC=../src
 DRIVE=$SRC/drivers
 SHARE=$SRC/shared
 f90pdf                                       \
-       $SRC/cvmix_driver.F90                 \
-       $DRIVE/cvmix_bgrnd_BL_pointer.F90     \
-       $DRIVE/cvmix_bgrnd_BL_memcopy.F90     \
-       $DRIVE/cvmix_shear_KPP.F90            \
-       $DRIVE/cvmix_tidal_Simmons.F90        \
-       $DRIVE/cvmix_ddiff_drv.F90            \
-       $DRIVE/cvmix_kpp_drv.F90              \
-       $SRC/cvmix_io.F90                     \
        $SHARE/cvmix_kinds_and_types.F90      \
        $SHARE/cvmix_background.F90           \
        $SHARE/cvmix_shear.F90                \
@@ -21,7 +13,14 @@ f90pdf                                       \
        $SHARE/cvmix_convection.F90           \
        $SHARE/cvmix_math.F90                 \
        $SHARE/cvmix_put_get.F90              \
-       $SHARE/cvmix_utils.F90
+       $SHARE/cvmix_utils.F90                \
+       $SRC/cvmix_driver.F90                 \
+       $DRIVE/cvmix_bgrnd_BL.F90             \
+       $DRIVE/cvmix_shear_drv.F90            \
+       $DRIVE/cvmix_tidal_Simmons.F90        \
+       $DRIVE/cvmix_ddiff_drv.F90            \
+       $DRIVE/cvmix_kpp_drv.F90              \
+       $SRC/cvmix_io.F90
 
 rm -f output.tex
 mv -f output.pdf protex_documentation.pdf

@@ -1,13 +1,7 @@
-!BOI
-
-! !TITLE: In-code documentation for CVMix
-! !AUTHORS: Many contributors from GFDL, LANL, and NCAR
-! !AFFILIATION: GFDL, LANL, and NCAR
-! !DATE: \today
-
-!EOI
 !BOP
 
+! \newpage
+! !MODULE: Main Program (Stand-Alone)
 ! !ROUTINE: cvmix_driver
 
 ! !DESCRIPTION: The stand-alone driver for the CVMix package. This driver
