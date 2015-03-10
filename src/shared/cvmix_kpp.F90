@@ -456,7 +456,7 @@ contains
       call cvmix_put_kpp('lavg_N_or_Nsqr', lavg_N_or_Nsqr,                    &
                          CVmix_kpp_params_user)
     else
-      call cvmix_put_kpp('lavg_N_or_Nsqr', .false., CVmix_kpp_params_user)
+      call cvmix_put_kpp('lavg_N_or_Nsqr', .true., CVmix_kpp_params_user)
     end if
 
 !EOC
@@ -2136,9 +2136,8 @@ contains
         end if
         do kt=1,nlev
           if (CVmix_kpp_params_in%lavg_N_or_Nsqr) then
-            N_cntr(kt)=sqrt((max(Nsqr_iface(kt),cvmix_zero) +                 &
-                             max(Nsqr_iface(kt+1),cvmix_zero)) *              &
-                             0.5_cvmix_r8)
+            N_cntr(kt)=0.5_cvmix_r8*(sqrt(max(Nsqr_iface(kt),cvmix_zero)) +   &
+                                     sqrt(max(Nsqr_iface(kt+1),cvmix_zero)))
           else
             N_cntr(kt)=sqrt(max(Nsqr_iface(kt+1),cvmix_zero))
           end if
