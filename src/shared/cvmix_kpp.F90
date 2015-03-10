@@ -110,6 +110,8 @@
                                        ! (Default is 0 m => no minimum)
       real(cvmix_r8) :: maxOBLdepth    ! Maximum allowable OBL depth
                                        ! (Default is 0 m => no maximum)
+      real(cvmix_r8) :: minVtsqr       ! Minimum allowable unresolved shear
+                                       ! (Default is 1e-10 m^2/s^2)
 
       real(cvmix_r8) :: vonkarman      ! von Karman constant
 
@@ -182,9 +184,9 @@ contains
 ! !IROUTINE: cvmix_init_kpp
 ! !INTERFACE:
 
-  subroutine cvmix_init_kpp(ri_crit, minOBLdepth, maxOBLdepth, vonkarman,     &
-                            Cstar, zeta_m, zeta_s, surf_layer_ext, Cv,        &
-                            interp_type, interp_type2, MatchTechnique,        &
+  subroutine cvmix_init_kpp(ri_crit, minOBLdepth, maxOBLdepth, minVtsqr,      &
+                            vonkarman, Cstar, zeta_m, zeta_s, surf_layer_ext, &
+                            Cv, interp_type, interp_type2, MatchTechnique,    &
                             old_vals, lEkman, lMonOb, lnoDGat1,               &
                             lavg_N_or_Nsqr, CVmix_kpp_params_user)
 
@@ -200,6 +202,7 @@ contains
     real(cvmix_r8),   optional, intent(in) :: ri_crit,                        &
                                               minOBLdepth,                    &
                                               maxOBLdepth,                    &
+                                              minVtsqr,                       &
                                               vonkarman,                      &
                                               Cstar,                          &
                                               zeta_m,                         &
@@ -252,6 +255,16 @@ contains
       call cvmix_put_kpp('maxOBLdepth', maxOBLdepth, CVmix_kpp_params_user)
     else
       call cvmix_put_kpp('maxOBLdepth', 0, CVmix_kpp_params_user)
+    end if
+
+    if (present(minVtsqr)) then
+      if (minVtsqr.lt.cvmix_zero) then
+        print*, "ERROR: minVtsqr can not be negative."
+        stop 1
+      end if
+      call cvmix_put_kpp('minVtsqr', minVtsqr, CVmix_kpp_params_user)
+    else
+      call cvmix_put_kpp('minVtsqr', 1e-10_cvmix_r8, CVmix_kpp_params_user)
     end if
 
     if (present(vonkarman)) then
@@ -970,6 +983,8 @@ contains
         CVmix_kpp_params_out%minOBLdepth = val
       case ('maxOBLdepth')
         CVmix_kpp_params_out%maxOBLdepth = val
+      case ('minVtsqr')
+        CVmix_kpp_params_out%minVtsqr = val
       case ('vonkarman')
         CVmix_kpp_params_out%vonkarman = val
       case ('Cstar')
@@ -2152,6 +2167,10 @@ contains
 
       cvmix_kpp_compute_unresolved_shear(kt) = -Cv*Vtc*zt_cntr(kt)*           &
                             N_cntr(kt)*ws_cntr(kt)/CVmix_kpp_params_in%Ri_crit
+      if (cvmix_kpp_compute_unresolved_shear(kt).lt.                          &
+          CVmix_kpp_params_in%minVtsqr) then
+        cvmix_kpp_compute_unresolved_shear(kt) = CVmix_kpp_params_in%minVtsqr
+      end if
     end do
 
 !EOC
