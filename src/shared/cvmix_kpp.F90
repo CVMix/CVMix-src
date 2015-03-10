@@ -1649,7 +1649,13 @@ contains
     !   velocity shear (Vt^2(d) in LMD94, units: m^2/s^2)
     real(cvmix_r8), dimension(size(zt_cntr)) :: unresolved_shear_cntr_sqr
     integer        :: kt
-    real(cvmix_r8) :: num, denom
+    real(cvmix_r8) :: scaling, num, denom
+    type(cvmix_kpp_params_type),  pointer :: CVmix_kpp_params_in
+
+    CVmix_kpp_params_in => CVmix_kpp_params_saved
+    if (present(CVmix_kpp_params_user)) then
+      CVmix_kpp_params_in => CVmix_kpp_params_user
+    end if
 
     ! Make sure all arguments are same size
     if (any((/size(delta_buoy_cntr), size(delta_Vsqr_cntr)/).ne.              &
@@ -1675,9 +1681,11 @@ contains
                                       CVmix_kpp_params_user)
     end if
 
+    ! scaling because we want (d-dr) = (d-0.5*eps*d) = (1-0.5*eps)*d
+    scaling = cvmix_one - 0.5_cvmix_r8*CVmix_kpp_params_in%surf_layer_ext
     do kt=1,size(zt_cntr)
       ! Negative sign because we use positive-up for height
-      num   = -zt_cntr(kt)*delta_buoy_cntr(kt)
+      num   = -scaling*zt_cntr(kt)*delta_buoy_cntr(kt)
       denom = delta_Vsqr_cntr(kt) + unresolved_shear_cntr_sqr(kt)
       if (denom.ne.cvmix_zero) then
         cvmix_kpp_compute_bulk_Richardson(kt) = num/denom
