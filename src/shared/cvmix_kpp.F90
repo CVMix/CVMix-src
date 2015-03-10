@@ -106,6 +106,11 @@
       real(cvmix_r8) :: Ri_crit        ! Critical Richardson number
                                        ! (OBL_depth = where bulk Ri = Ri_crit)
 
+      real(cvmix_r8) :: minOBLdepth    ! Minimum allowable OBL depth
+                                       ! (Default is 0 m => no minimum)
+      real(cvmix_r8) :: maxOBLdepth    ! Maximum allowable OBL depth
+                                       ! (Default is 0 m => no maximum)
+
       real(cvmix_r8) :: vonkarman      ! von Karman constant
 
       real(cvmix_r8) :: Cstar          ! coefficient for nonlinear transport
@@ -177,10 +182,11 @@ contains
 ! !IROUTINE: cvmix_init_kpp
 ! !INTERFACE:
 
-  subroutine cvmix_init_kpp(ri_crit, vonkarman, Cstar, zeta_m, zeta_s,        &
-                            surf_layer_ext, Cv, interp_type, interp_type2,    &
-                            MatchTechnique, old_vals, lEkman, lMonOb,         &
-                            lnoDGat1, lavg_N_or_Nsqr, CVmix_kpp_params_user)
+  subroutine cvmix_init_kpp(ri_crit, minOBLdepth, maxOBLdepth, vonkarman,     &
+                            Cstar, zeta_m, zeta_s, surf_layer_ext, Cv,        &
+                            interp_type, interp_type2, MatchTechnique,        &
+                            old_vals, lEkman, lMonOb, lnoDGat1,               &
+                            lavg_N_or_Nsqr, CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
 !  Initialization routine for KPP mixing.
@@ -192,6 +198,8 @@ contains
 
 ! !INPUT PARAMETERS:
     real(cvmix_r8),   optional, intent(in) :: ri_crit,                        &
+                                              minOBLdepth,                    &
+                                              maxOBLdepth,                    &
                                               vonkarman,                      &
                                               Cstar,                          &
                                               zeta_m,                         &
@@ -224,6 +232,26 @@ contains
       call cvmix_put_kpp('Ri_crit', ri_crit, CVmix_kpp_params_user)
     else
       call cvmix_put_kpp('Ri_crit', 0.3_cvmix_r8, CVmix_kpp_params_user)
+    end if
+
+    if (present(minOBLdepth)) then
+      if (minOBLdepth.lt.cvmix_zero) then
+        print*, "ERROR: minOBLdepth can not be negative."
+        stop 1
+      end if
+      call cvmix_put_kpp('minOBLdepth', minOBLdepth, CVmix_kpp_params_user)
+    else
+      call cvmix_put_kpp('minOBLdepth', 0, CVmix_kpp_params_user)
+    end if
+
+    if (present(maxOBLdepth)) then
+      if (maxOBLdepth.lt.cvmix_zero) then
+        print*, "ERROR: maxOBLdepth can not be negative."
+        stop 1
+      end if
+      call cvmix_put_kpp('maxOBLdepth', maxOBLdepth, CVmix_kpp_params_user)
+    else
+      call cvmix_put_kpp('maxOBLdepth', 0, CVmix_kpp_params_user)
     end if
 
     if (present(vonkarman)) then
@@ -938,6 +966,10 @@ contains
     select case (trim(varname))
       case ('Ri_crit')
         CVmix_kpp_params_out%Ri_crit = val
+      case ('minOBLdepth')
+        CVmix_kpp_params_out%minOBLdepth = val
+      case ('maxOBLdepth')
+        CVmix_kpp_params_out%maxOBLdepth = val
       case ('vonkarman')
         CVmix_kpp_params_out%vonkarman = val
       case ('Cstar')
@@ -1292,6 +1324,9 @@ contains
       OBL_depth = min(OBL_depth, OBL_limit)
     end if
 
+    OBL_depth = max(OBL_depth, CVmix_kpp_params_in%minOBLdepth)
+    if (CVmix_kpp_params_in%maxOBLdepth.gt.cvmix_zero)                        &
+      OBL_depth = min(OBL_depth, CVmix_kpp_params_in%maxOBLdepth)
     kOBL_depth = cvmix_kpp_compute_kOBL_depth(zw_iface, zt_cntr, OBL_depth)
 
 !EOC
