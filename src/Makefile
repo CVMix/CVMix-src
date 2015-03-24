@@ -68,31 +68,40 @@ ifeq ($(USE_NETCDF),TRUE)
   else
     FCFLAGS += -D_NETCDF
   endif
+  ifeq ($(wildcard $(NETCDF_BIN)/nc-config),)
+    # If $(NETCDF_BIN)/nc-config exists, we will use it to determine both the
+    # compile flags and linking flags needed, otherwise we depend on the
+    # directories $(NETCDF_INC) and $(NETCDF_LIB)
     FCFLAGS += -I$(NETCDF_INC)
-  # Check for netcdf4 library
-  ifeq ($(wildcard $(NETCDF_LIB)/libnetcdff.a),)
-    LINKING_FLAGS += -L$(NETCDF_LIB) -lnetcdf
-  else
-    # with netcdf4, need to know whether to include hdf5 or not
-    # That comes from $(NETCDF_LIB)/pkgconfig/netcdf.pc
-    # (Note: some distributions now have netcdf-fortran.pc in addition to
-    # netcdf.pc... so check for netcdf-fortran.pc first)
-    NETCDF_PC = $(NETCDF_LIB)/pkgconfig/netcdf-fortran.pc
-    ifeq ($(wildcard $(NETCDF_PC)),)
-      NETCDF_PC = $(NETCDF_LIB)/pkgconfig/netcdf.pc
-    endif
-    ifeq ($(wildcard $(NETCDF_PC)),)
-      LINKING_FLAGS += -L$(NETCDF_LIB) -lnetcdff -lnetcdf
+    # Check for netcdf4 library
+    ifeq ($(wildcard $(NETCDF_LIB)/libnetcdff.a),)
+      LINKING_FLAGS += -L$(NETCDF_LIB) -lnetcdf
     else
-      # get flibs from netcdf.pc
-      FLIBS = $(subst flibs=,,$(shell grep flibs $(NETCDF_PC)))
-      # Workaround for yellowstone, I need to figure out where this
-      # @NC_FLIBS@ comes from
-      ifeq ($(FLIBS),@NC_FLIBS@)
-        FLIBS = -lnetcdf
+      # with netcdf4, need to know whether to include hdf5 or not
+      # That comes from either $(NETCDF_BIN)/nc-config or from
+      # $(NETCDF_LIB)/pkgconfig/netcdf.pc
+      # (Note: some distributions now have netcdf-fortran.pc in addition to
+      # netcdf.pc... so check for netcdf-fortran.pc first)
+      NETCDF_PC = $(NETCDF_LIB)/pkgconfig/netcdf-fortran.pc
+      ifeq ($(wildcard $(NETCDF_PC)),)
+        NETCDF_PC = $(NETCDF_LIB)/pkgconfig/netcdf.pc
       endif
-      LINKING_FLAGS += -L$(NETCDF_LIB) $(FLIBS)
+      ifeq ($(wildcard $(NETCDF_PC)),)
+        LINKING_FLAGS += -L$(NETCDF_LIB) -lnetcdff -lnetcdf
+      else
+        # get flibs from netcdf.pc
+        FLIBS = $(subst flibs=,,$(shell grep flibs $(NETCDF_PC)))
+        # Workaround for yellowstone, I need to figure out where this
+        # @NC_FLIBS@ comes from
+        ifeq ($(FLIBS),@NC_FLIBS@)
+          FLIBS = -lnetcdf
+        endif
+        LINKING_FLAGS += -L$(NETCDF_LIB) $(FLIBS)
+      endif
     endif
+  else
+    LINKING_FLAGS += $(shell $(NETCDF_BIN)/nc-config --flibs)
+    FCFLAGS += -I$(shell $(NETCDF_BIN)/nc-config --includedir)
   endif
   NEW_NETCDF = YES
 else

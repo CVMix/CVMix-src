@@ -43,22 +43,35 @@ if have_compiler + have_netcdf != 2:
 # For now, just need fortran compiler and netCDF location / flags
 if have_compiler == 0:
   compiler = raw_input('Fortran compiler (mpi not necessary): ')
+
+netcdf_bin = ""
+netcdf_inc = ""
+netcdf_lib = ""
 if have_netcdf == 0:
-  netcdf_dir = raw_input('Directory containing netcdf (enter "need_both" to enter netcdf include directory and netcdf lib directory separately): ')
-  if netcdf_dir == "need_both":
-    netcdf_inc = raw_input('netCDF/include location: ')
-    netcdf_lib = raw_input('netCDF/lib location: ')
+  netcdf_dir = raw_input('Directory containing netcdf configuration tool nc-config (or enter "no-nc-config" to enter location of netcdf include and netcdf lib directories): ')
+  if netcdf_dir == "no-nc-config":
+    netcdf_dir = raw_input('Directory containing netcdf (enter "need_both" to enter netcdf include directory and netcdf lib directory separately): ')
+    if netcdf_dir == "need_both":
+      netcdf_inc = raw_input('netCDF/include location: ')
+      netcdf_lib = raw_input('netCDF/lib location: ')
+    else:
+      netcdf_inc = netcdf_dir+"/include"
+      netcdf_lib = netcdf_dir+"/lib"
   else:
-    netcdf_inc = netcdf_dir+"/include"
-    netcdf_lib = netcdf_dir+"/lib"
+    netcdf_bin = netcdf_dir
 else:
   netcdf_inc = netcdf_dir+"/include"
   netcdf_lib = netcdf_dir+"/lib"
+  netcdf_bin = netcdf_dir+"/bin"
 
 if have_compiler + have_netcdf != 2:
   print "Writing environment settings to " + filename
 
 fid = open(filename, 'w')
 fid.write("FC = " + compiler+"\n")
-fid.write("NETCDF_INC = " + netcdf_inc+"\n")
-fid.write("NETCDF_LIB = " + netcdf_lib+"\n")
+if netcdf_bin != "":
+  fid.write("NETCDF_BIN = " + netcdf_bin+"\n")
+if netcdf_inc != "":
+  fid.write("NETCDF_INC = " + netcdf_inc+"\n")
+if netcdf_lib != "":
+  fid.write("NETCDF_LIB = " + netcdf_lib+"\n")
