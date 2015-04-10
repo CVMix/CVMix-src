@@ -73,7 +73,6 @@
   public :: cvmix_kpp_compute_shape_function_coeffs
   public :: cvmix_kpp_compute_kOBL_depth
   public :: cvmix_kpp_compute_enhanced_diff
-  public :: cvmix_kpp_compute_nonlocal
   public :: cvmix_kpp_compute_nu_at_OBL_depth_LMD94
 
   interface cvmix_coeffs_kpp
@@ -116,6 +115,9 @@
       real(cvmix_r8) :: vonkarman      ! von Karman constant
 
       real(cvmix_r8) :: Cstar          ! coefficient for nonlinear transport
+      real(cvmix_r8) :: nonlocal_coeff ! Cs from Eq (20) in LMD94
+                                       ! Default value comes from paper, but
+                                       ! some users may set it = 1.
 
       ! For velocity scale function, _m => momentum and _s => scalar (tracer)
       real(cvmix_r8) :: zeta_m         ! parameter for computing vel scale func
@@ -190,7 +192,7 @@ contains
                             Cv, interp_type, interp_type2, MatchTechnique,    &
                             old_vals, lEkman, lMonOb, lnoDGat1,               &
                             lavg_N_or_Nsqr, lenhanced_diff,                   &
-                            CVmix_kpp_params_user)
+                            lnonzero_surf_nonlocal, CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
 !  Initialization routine for KPP mixing.
@@ -219,7 +221,8 @@ contains
                                               lMonOb,                         &
                                               lnoDGat1,                       &
                                               lavg_N_or_Nsqr,                 &
-                                              lenhanced_diff
+                                              lenhanced_diff,                 &
+                                              lnonzero_surf_nonlocal
 
 ! !OUTPUT PARAMETERS:
     type(cvmix_kpp_params_type), intent(inout), target, optional ::           &
@@ -229,6 +232,9 @@ contains
 !BOC
 
     real(cvmix_r8) :: zm, zs, a_m, a_s, c_m, c_s
+    real(cvmix_r8) :: Cstar_loc, vonkar_loc, surf_layer_ext_loc
+    real(cvmix_r8) :: nonlocal_coeff
+  
 
     if (present(ri_crit)) then
       if (ri_crit.lt.cvmix_zero) then
@@ -275,16 +281,18 @@ contains
         print*, "ERROR: vonkarman can not be negative."
         stop 1
       end if
-      call cvmix_put_kpp('vonkarman', vonkarman, CVmix_kpp_params_user)
+      vonkar_loc = vonkarman
     else
-      call cvmix_put_kpp('vonkarman', 0.4_cvmix_r8, CVmix_kpp_params_user)
+      vonkar_loc = 0.4_cvmix_r8
     end if
+    call cvmix_put_kpp('vonkarman', vonkar_loc, CVmix_kpp_params_user)
 
     if (present(Cstar)) then
-      call cvmix_put_kpp('Cstar', Cstar, CVmix_kpp_params_user)
+      Cstar_loc = Cstar
     else
-      call cvmix_put_kpp('Cstar', 10, CVmix_kpp_params_user)
+      Cstar_loc = real(10,cvmix_r8)
     end if
+    call cvmix_put_kpp('Cstar', Cstar_loc, CVmix_kpp_params_user)
 
     if (present(zeta_m)) then
       if (zeta_m.ge.cvmix_zero) then
@@ -332,11 +340,12 @@ contains
         print*, "surf_layer_ext must be between 0 and 1, inclusive."
         stop 1
       end if
-      call cvmix_put_kpp('surf_layer_ext', surf_layer_ext,                    &
-                         CVmix_kpp_params_user)
+      surf_layer_ext_loc = surf_layer_ext
     else
-      call cvmix_put_kpp('surf_layer_ext', 0.1_cvmix_r8, CVmix_kpp_params_user)
+      surf_layer_ext_loc = 0.1_cvmix_r8
     end if
+    call cvmix_put_kpp('surf_layer_ext', surf_layer_ext_loc,                  &
+                       CVmix_kpp_params_user)
 
     if (present(Cv)) then
       ! Use scalar Cv parameter
@@ -468,6 +477,17 @@ contains
     else
       call cvmix_put_kpp('lenhanced_diff', .true., CVmix_kpp_params_user)
     end if
+
+    ! By default, assume that G(0) = 0 for nonlocal term
+    nonlocal_coeff = (Cstar_loc*vonkar_loc*                                   &
+                      (vonkar_loc*surf_layer_ext_loc*c_s)**                   &
+                      (cvmix_one/real(3,cvmix_r8)))
+    if (present(lnonzero_surf_nonlocal)) then
+      if (lnonzero_surf_nonlocal) then
+        nonlocal_coeff = real(1,cvmix_r8)
+      end if
+    end if
+    call cvmix_put_kpp('nonlocal_coeff',nonlocal_coeff,CVmix_kpp_params_user)
 
 !EOC
 
@@ -618,7 +638,7 @@ contains
     real(cvmix_r8) :: dMshapeAt1, dTshapeAt1, dSshapeAt1
 
     ! [MTS]shapeAtS is value of shape function at sigma = S
-    real(cvmix_r8) :: MshapeAtS, TshapeAtS, SshapeAtS
+    real(cvmix_r8) :: MshapeAtS, TshapeAtS, SshapeAtS, GAtS
 
     ! [MTS]diff_OBL is value of diffusivity at OBL depth
     ! d[MTS]diff_OBL is value of derivative of diffusivity at OBL depth
@@ -897,10 +917,10 @@ contains
 
       !   (3c) Compute nonlocal term at each cell interface
       if ((.not.lstable).and.(kw.le.kwup)) then
-        call cvmix_kpp_compute_nonlocal(Tshape2, sigma(kw), Tnonlocal(kw),    &
-                                        CVmix_kpp_params_user)
-        call cvmix_kpp_compute_nonlocal(Sshape2, sigma(kw), Snonlocal(kw),    &
-                                        CVmix_kpp_params_user)
+        GAtS = cvmix_math_evaluate_cubic(Tshape2, sigma(kw))
+        Tnonlocal(kw) = CVmix_kpp_params_user%nonlocal_coeff*GAtS
+        GAtS = cvmix_math_evaluate_cubic(Sshape2, sigma(kw))
+        Snonlocal(kw) = CVmix_kpp_params_user%nonlocal_coeff*GAtS
       end if
 
       !   (3d) Diffusivity = OBL_depth * (turbulent scale) * G(sigma)
@@ -1015,6 +1035,8 @@ contains
         CVmix_kpp_params_out%surf_layer_ext = val
       case ('Cv')
         CVmix_kpp_params_out%Cv = val
+      case ('nonlocal_coeff')
+        CVmix_kpp_params_out%nonlocal_coeff = val
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
         stop 1
@@ -1527,57 +1549,6 @@ contains
 ! EOC
 
   end subroutine cvmix_kpp_compute_enhanced_diff
-  
-!BOP
-
-! !IROUTINE: cvmix_kpp_compute_nonlocal
-! !INTERFACE:
-
-  subroutine cvmix_kpp_compute_nonlocal(shape_fun, sigma, nonlocal,           &
-                                        CVmix_kpp_params_user)
-
-! !DESCRIPTION:
-! Compute the nonlocal transport contribution to vertical turbulent fluxes.
-! Note that Large, et al., refer to $\gamma_x$ as the non-local term, while
-! this routine computes $K_x\gamma_x/$[surface forcing]
-!\\
-!\\
-
-! !INPUT PARAMETERS:
-    type(cvmix_kpp_params_type), intent(in), optional, target ::              &
-                                           CVmix_kpp_params_user
-    real(cvmix_r8), dimension(4), intent(in) :: shape_fun
-    real(cvmix_r8),               intent(in) :: sigma
-
-! !OUTPUT PARAMETERS:
-    real(cvmix_r8), intent(out) :: nonlocal
-
-    ! Local variables
-    type(cvmix_kpp_params_type), pointer :: CVmix_kpp_params_in
-
-    ! Constants from params
-    real(cvmix_r8) :: Cstar, vonkar, c_s, surf_layer_ext
-
-    real(cvmix_r8) :: GatS
-!EOP
-!BOC
-
-    CVmix_kpp_params_in => CVmix_kpp_params_saved
-    if (present(CVmix_kpp_params_user)) then
-      CVmix_kpp_params_in => CVmix_kpp_params_user
-    end if
-    vonkar         = cvmix_get_kpp_real('vonkarman', CVmix_kpp_params_in)
-    Cstar          = cvmix_get_kpp_real('Cstar', CVmix_kpp_params_in)
-    surf_layer_ext = cvmix_get_kpp_real('surf_layer_ext', CVmix_kpp_params_in)
-    c_s            = cvmix_get_kpp_real('c_s', CVmix_kpp_params_in)
-
-    GatS = cvmix_math_evaluate_cubic(shape_fun, sigma)
-
-    nonlocal = GatS*(Cstar*vonkar*(vonkar*surf_layer_ext*c_s)**               &
-               (cvmix_one/real(3,cvmix_r8)))
-! EOC
-
-  end subroutine cvmix_kpp_compute_nonlocal
   
 !BOP
 
