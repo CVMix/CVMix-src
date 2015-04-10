@@ -171,6 +171,7 @@
                                        ! False => N (or Nsqr) at cell center is
                                        !  set to value at interface below
                                        ! (only used in compute_unresolved_shear)
+      logical        :: lenhanced_diff ! True => enhance diffusivity at OBL
   end type cvmix_kpp_params_type
 
 !EOP
@@ -188,7 +189,8 @@ contains
                             vonkarman, Cstar, zeta_m, zeta_s, surf_layer_ext, &
                             Cv, interp_type, interp_type2, MatchTechnique,    &
                             old_vals, lEkman, lMonOb, lnoDGat1,               &
-                            lavg_N_or_Nsqr, CVmix_kpp_params_user)
+                            lavg_N_or_Nsqr, lenhanced_diff,                   &
+                            CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
 !  Initialization routine for KPP mixing.
@@ -216,7 +218,8 @@ contains
     logical,          optional, intent(in) :: lEkman,                         &
                                               lMonOb,                         &
                                               lnoDGat1,                       &
-                                              lavg_N_or_Nsqr
+                                              lavg_N_or_Nsqr,                 &
+                                              lenhanced_diff
 
 ! !OUTPUT PARAMETERS:
     type(cvmix_kpp_params_type), intent(inout), target, optional ::           &
@@ -457,6 +460,13 @@ contains
                          CVmix_kpp_params_user)
     else
       call cvmix_put_kpp('lavg_N_or_Nsqr', .true., CVmix_kpp_params_user)
+    end if
+
+    if (present(lenhanced_diff)) then
+      call cvmix_put_kpp('lenhanced_diff', lenhanced_diff,                    &
+                         CVmix_kpp_params_user)
+    else
+      call cvmix_put_kpp('lenhanced_diff', .true., CVmix_kpp_params_user)
     end if
 
 !EOC
@@ -914,7 +924,7 @@ contains
     Tdiff_ktup = OBL_depth * ws_ktup * TshapeAtS
     Sdiff_ktup = OBL_depth * ws_ktup * SshapeAtS
 
-    if (MatchTechnique.eq.CVMIX_KPP_MATCH_BOTH) then
+    if (CVmix_kpp_params_in%lenhanced_diff) then
       if ((ktup.eq.kwup).or.(ktup.eq.kwup-1)) then
         call cvmix_kpp_compute_enhanced_diff(Mdiff_ktup,                      &
                                              Tdiff_ktup,                      &
@@ -1108,6 +1118,8 @@ contains
         CVmix_kpp_params_out%lnoDGat1 = val
       case ('lavg_N_or_Nsqr')
         CVmix_kpp_params_out%lavg_N_or_Nsqr = val
+      case ('lenhanced_diff')
+        CVmix_kpp_params_out%lenhanced_diff = val
       case DEFAULT
         print*, "ERROR: ", trim(varname), " is not a boolean variable!"
         stop 1
