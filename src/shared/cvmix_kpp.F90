@@ -167,12 +167,6 @@
       logical        :: lMonOb         ! True => compute Monin-Obukhov limit
       logical        :: lnoDGat1       ! True => G'(1) = 0 (shape function)
                                        ! False => compute G'(1) as in LMD94
-      logical        :: lavg_N_or_Nsqr ! True => N (or Nsqr) at cell center is
-                                       !  average of values at interfaces above
-                                       !  and below.
-                                       ! False => N (or Nsqr) at cell center is
-                                       !  set to value at interface below
-                                       ! (only used in compute_unresolved_shear)
       logical        :: lenhanced_diff ! True => enhance diffusivity at OBL
   end type cvmix_kpp_params_type
 
@@ -191,8 +185,8 @@ contains
                             vonkarman, Cstar, zeta_m, zeta_s, surf_layer_ext, &
                             Cv, interp_type, interp_type2, MatchTechnique,    &
                             old_vals, lEkman, lMonOb, lnoDGat1,               &
-                            lavg_N_or_Nsqr, lenhanced_diff,                   &
-                            lnonzero_surf_nonlocal, CVmix_kpp_params_user)
+                            lenhanced_diff, lnonzero_surf_nonlocal,           &
+                            CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
 !  Initialization routine for KPP mixing.
@@ -220,7 +214,6 @@ contains
     logical,          optional, intent(in) :: lEkman,                         &
                                               lMonOb,                         &
                                               lnoDGat1,                       &
-                                              lavg_N_or_Nsqr,                 &
                                               lenhanced_diff,                 &
                                               lnonzero_surf_nonlocal
 
@@ -462,13 +455,6 @@ contains
       call cvmix_put_kpp('lnoDGat1', lnoDGat1, CVmix_kpp_params_user)
     else
       call cvmix_put_kpp('lnoDGat1', .true., CVmix_kpp_params_user)
-    end if
-
-    if (present(lavg_N_or_Nsqr)) then
-      call cvmix_put_kpp('lavg_N_or_Nsqr', lavg_N_or_Nsqr,                    &
-                         CVmix_kpp_params_user)
-    else
-      call cvmix_put_kpp('lavg_N_or_Nsqr', .true., CVmix_kpp_params_user)
     end if
 
     if (present(lenhanced_diff)) then
@@ -1138,8 +1124,6 @@ contains
         CVmix_kpp_params_out%lMonOb = val
       case ('lnoDGat1')
         CVmix_kpp_params_out%lnoDGat1 = val
-      case ('lavg_N_or_Nsqr')
-        CVmix_kpp_params_out%lavg_N_or_Nsqr = val
       case ('lenhanced_diff')
         CVmix_kpp_params_out%lenhanced_diff = val
       case DEFAULT
@@ -2105,11 +2089,7 @@ contains
         stop 1
       end if
       do kt=1,nlev
-        if (CVmix_kpp_params_in%lavg_N_or_Nsqr) then
-          N_cntr(kt) = 0.5_cvmix_r8*(N_iface(kt)+N_iface(kt+1))
-        else
-          N_cntr(kt) = N_iface(kt+1)
-        end if
+        N_cntr(kt) = N_iface(kt+1)
       end do
     else
       if (present(Nsqr_iface)) then
@@ -2118,12 +2098,7 @@ contains
           stop 1
         end if
         do kt=1,nlev
-          if (CVmix_kpp_params_in%lavg_N_or_Nsqr) then
-            N_cntr(kt)=0.5_cvmix_r8*(sqrt(max(Nsqr_iface(kt),cvmix_zero)) +   &
-                                     sqrt(max(Nsqr_iface(kt+1),cvmix_zero)))
-          else
-            N_cntr(kt)=sqrt(max(Nsqr_iface(kt+1),cvmix_zero))
-          end if
+          N_cntr(kt)=sqrt(max(Nsqr_iface(kt+1),cvmix_zero))
         end do
       else
         print*, "ERROR: you must provide N_iface OR Nsqr_iface"

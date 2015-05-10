@@ -38,7 +38,6 @@ mix_type = 'kpp'
   hmix5          = 17.0d0
   ! Parameter settings to match LMD94 (linear interp, average Nsqr)
   interp_type_t5 = "linear"
-  lavg_N_or_Nsqr = .true.
 /
 
 ! Test 6 params
