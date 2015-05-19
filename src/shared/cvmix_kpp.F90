@@ -904,9 +904,9 @@ contains
       !   (3c) Compute nonlocal term at each cell interface
       if ((.not.lstable).and.(kw.le.kwup)) then
         GAtS = cvmix_math_evaluate_cubic(Tshape2, sigma(kw))
-        Tnonlocal(kw) = CVmix_kpp_params_user%nonlocal_coeff*GAtS
+        Tnonlocal(kw) = CVmix_kpp_params_in%nonlocal_coeff*GAtS
         GAtS = cvmix_math_evaluate_cubic(Sshape2, sigma(kw))
-        Snonlocal(kw) = CVmix_kpp_params_user%nonlocal_coeff*GAtS
+        Snonlocal(kw) = CVmix_kpp_params_in%nonlocal_coeff*GAtS
       end if
 
       !   (3d) Diffusivity = OBL_depth * (turbulent scale) * G(sigma)
