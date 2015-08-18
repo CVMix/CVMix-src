@@ -152,6 +152,12 @@ contains
         cvmix_att_name = "Coriolis"
       case ("kOBL_depth", "BoundaryLayerDepthIndex")
         cvmix_att_name = "kOBL_depth"
+      ! QL, 150610
+      case ("LangmuirEnhancementFactor", "EnhancementFactor",   &
+              "langmuir_Efactor")
+        cvmix_att_name = "LangmuirEnhancementFactor"
+      case ("SurfaceStokesDrift", "stokes_drift")   
+        cvmix_att_name = "SurfaceStokesDrift"
 
       ! Variables on level interfaces
       case ("zw", "zw_iface")

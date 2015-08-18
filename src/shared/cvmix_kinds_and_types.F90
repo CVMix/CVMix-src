@@ -94,6 +94,13 @@ module cvmix_kinds_and_types
     ! Index of cell containing OBL (fraction > .5 => below cell center)
     real(cvmix_r8) :: kOBL_depth
                     ! units: unitless
+    ! QL, 150610
+    ! Langmuir mixing induced enhancement factor to turbulent velocity scale
+    real(cvmix_r8) :: LangmuirEnhancementFactor
+                    ! units: unitless
+    ! Surface Stokes drift magnitude
+    real(cvmix_r8) :: SurfaceStokesDrift
+                    ! units: m/s
 
     ! Values on interfaces (dimsize = nlev+1)
     ! --------------------

@@ -165,6 +165,11 @@ contains
         CVmix_vars%Coriolis = val
       case ("kOBL_depth")
         CVmix_vars%kOBL_depth = val
+      ! QL, 150610
+      case ("LangmuirEnhancementFactor")
+        CVmix_vars%LangmuirEnhancementFactor = val
+      case ("SurfaceStokesDrift")
+        CVmix_vars%SurfaceStokesDrift = val
 
       case ("dzw")
         print*, "WARNING: you are setting the cell midpoint to midpoint",     &
