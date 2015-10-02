@@ -405,7 +405,7 @@ module cvmix_ddiff
             CVmix_ddiff_params_in%ddiff_exp1)**CVmix_ddiff_params_in%ddiff_exp2
           Sdiff_out(k) = CVmix_ddiff_params_in%kappa_ddiff_s*ddiff
         end if
-        Tdiff_out = Sdiff_out*0.7_cvmix_r8
+        Tdiff_out(k) = Sdiff_out(k)*0.7_cvmix_r8
       end if
       if ((strat_param_num(k).ge.strat_param_denom(k)).and.                   &
           (strat_param_num(k).lt.cvmix_zero)) then
