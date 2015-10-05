@@ -240,7 +240,7 @@ Subroutine cvmix_kpp_driver()
     ! OBL_depth = surf_buoy_force = surf_fric_vel = 1 (with von Karman = 1 as
     ! well) => sigma = zeta
     call cvmix_kpp_compute_turbulent_scales(zeta, cvmix_one, cvmix_one,       &
-                                            cvmix_one, w_m, w_s)
+                                            cvmix_one, w_m=w_m, w_s=w_s)
 
     allocate(TwoDArray(nlev3+1,3))
     TwoDArray(:,1) = zeta

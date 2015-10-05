@@ -553,10 +553,7 @@ contains
 
     call cvmix_put(CVmix_vars, 'kpp_transport', cvmix_zero, max_nlev)
 
-    ! QL, 150610, new parameters: LangmuirEnhancementFactor, SurfaceStokesDrift
-    ! Note: SurfaceStokesDrift is passed in subtoutine cvmix_coeffs_kpp_low()
-    ! but not used yet. It is used only in function 
-    ! cvmix_kpp_compute_bulk_Richardson currently.
+    ! QL, 150610, new parameter: LangmuirEnhancementFactor
     call cvmix_coeffs_kpp(new_Mdiff, new_Tdiff, new_Sdiff,                    &
                           CVmix_vars%zw_iface, CVmix_vars%zt_cntr,            &
                           CVmix_vars%Mdiff_iface, CVmix_vars%Tdiff_iface,     &
@@ -569,7 +566,6 @@ contains
                           CVmix_vars%SurfaceBuoyancyForcing,                  &
                           nlev, max_nlev,                                     &
                           CVmix_vars%LangmuirEnhancementFactor,               &
-                          CVmix_vars%SurfaceStokesDrift,                      &
                           CVmix_kpp_params_user)
     call cvmix_update_wrap(CVmix_kpp_params_in%handle_old_vals, max_nlev,     &
                            Mdiff_out = CVmix_vars%Mdiff_iface,                &
@@ -588,13 +584,12 @@ contains
 ! !IROUTINE: cvmix_coeffs_kpp_low
 ! !INTERFACE:
 
-  ! QL, 150610, new parameters: langmuir_Efactor, stokes_drift
+  ! QL, 150610, new parameter: langmuir_Efactor
   subroutine cvmix_coeffs_kpp_low(Mdiff_out, Tdiff_out, Sdiff_out, zw, zt,    &
                                   old_Mdiff, old_Tdiff, old_Sdiff, OBL_depth, &
                                   kOBL_depth, Tnonlocal, Snonlocal, surf_fric,&
                                   surf_buoy, nlev, max_nlev,                  &
-                                  langmuir_Efactor, stokes_drift,             &
-                                  CVmix_kpp_params_user)
+                                  langmuir_Efactor, CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
 !  Computes vertical diffusion coefficients for the KPP boundary layer mixing
@@ -619,8 +614,8 @@ contains
                                                          surf_fric,           &
                                                          surf_buoy,           &
                                                          kOBL_depth
-    ! QL, 150610, langmuir_Efactor, stokes_drift
-    real(cvmix_r8), intent(in), optional :: langmuir_Efactor, stokes_drift
+    ! QL, 150610, langmuir_Efactor
+    real(cvmix_r8), intent(in), optional :: langmuir_Efactor
 
 ! !INPUT/OUTPUT PARAMETERS:
     real(cvmix_r8), dimension(max_nlev+1), intent(inout) :: Mdiff_out,        &
