@@ -4,7 +4,7 @@
 !\newpage
 ! !MODULE: cvmix_tidal
 !
-! !AUTHOR: 
+! !AUTHOR:
 !  Michael N. Levy, NCAR (mlevy@ucar.edu)
 !
 ! !DESCRIPTION:
@@ -31,6 +31,7 @@
                                     CVMIX_SUM_OLD_AND_NEW_VALS,               &
                                     CVMIX_MAX_OLD_AND_NEW_VALS
   use cvmix_utils,           only : cvmix_update_wrap
+  use cvmix_put_get,         only : cvmix_put
 
 !EOP
 
@@ -45,6 +46,7 @@
   public :: cvmix_init_tidal
   public :: cvmix_compute_vert_dep
   public :: cvmix_coeffs_tidal
+  public :: cvmix_compute_Simmons_invariant
   public :: cvmix_put_tidal
   public :: cvmix_get_tidal_real
   public :: cvmix_get_tidal_str
@@ -53,6 +55,11 @@
     module procedure cvmix_coeffs_tidal_low
     module procedure cvmix_coeffs_tidal_wrap
   end interface cvmix_coeffs_tidal
+
+  interface cvmix_compute_Simmons_invariant
+    module procedure cvmix_compute_Simmons_invariant_low
+    module procedure cvmix_compute_Simmons_invariant_wrap
+  end interface cvmix_compute_Simmons_invariant
 
   interface cvmix_put_tidal
     module procedure cvmix_put_tidal_int
@@ -83,7 +90,7 @@
       ! computed (like all depths, positive => below the surface)
       real(cvmix_r8) :: depth_cutoff         ! units: m
 
-      ! max_coefficient is the largest acceptable value for diffusivity 
+      ! max_coefficient is the largest acceptable value for diffusivity
       real(cvmix_r8) :: max_coefficient      ! units: m^2/s
 
       ! Flag for what to do with old values of CVmix_vars%[MTS]diff
@@ -224,7 +231,7 @@ contains
 ! !IROUTINE: cvmix_coeffs_tidal_wrap
 ! !INTERFACE:
 
-  subroutine cvmix_coeffs_tidal_wrap(CVmix_vars, CVmix_params, energy_flux,   &
+  subroutine cvmix_coeffs_tidal_wrap(CVmix_vars, CVmix_params,                &
                                      CVmix_tidal_params_user)
 
 ! !DESCRIPTION:
@@ -240,7 +247,6 @@ contains
     type(cvmix_tidal_params_type),  target, optional, intent(in) ::           &
                                             CVmix_tidal_params_user
     type(cvmix_global_params_type), intent(in) :: CVmix_params
-    real(cvmix_r8),                 intent(in) :: energy_flux
 
 ! !INPUT/OUTPUT PARAMETERS:
     type(cvmix_data_type), intent(inout) :: CVmix_vars
@@ -249,10 +255,10 @@ contains
 !BOC
 
     ! Local variables
-    real(cvmix_r8), dimension(CVmix_vars%max_nlev+1) :: new_Tdiff
+    real(cvmix_r8), dimension(CVmix_vars%max_nlev+1) :: new_Mdiff, new_Tdiff
     type(cvmix_tidal_params_type),  pointer :: CVmix_tidal_params_in
     integer :: nlev, max_nlev
-       
+
     CVmix_tidal_params_in => CVmix_tidal_params_saved
     if (present(CVmix_tidal_params_user)) then
       CVmix_tidal_params_in => CVmix_tidal_params_user
@@ -260,13 +266,17 @@ contains
     nlev = CVmix_vars%nlev
     max_nlev = CVmix_vars%max_nlev
 
-    call cvmix_coeffs_tidal(new_Tdiff, CVmix_vars%SqrBuoyancyFreq_iface,      & 
-                            CVmix_vars%zw_iface, CVmix_vars%zt_cntr,          &
-                            CVmix_vars%OceanDepth, CVMix_params, energy_flux, &
-                            nlev, max_nlev, CVmix_tidal_params_user)
+    call cvmix_coeffs_tidal(new_Mdiff, new_Tdiff,                             &
+                            CVmix_vars%SqrBuoyancyFreq_iface,                 &
+                            CVmix_vars%OceanDepth, CVmix_vars%SimmonsCoeff,   &
+                            CVmix_vars%VertDep_iface, nlev, max_nlev,         &
+                            CVMix_params, CVmix_tidal_params_user)
     call cvmix_update_wrap(CVmix_tidal_params_in%handle_old_vals, max_nlev,   &
+                           Mdiff_out = CVmix_vars%Mdiff_iface,                &
                            Tdiff_out = CVmix_vars%Tdiff_iface,                &
+                           new_Mdiff = new_Mdiff,                             &
                            new_Tdiff = new_Tdiff)
+
 !EOC
 
   end subroutine cvmix_coeffs_tidal_wrap
@@ -276,9 +286,9 @@ contains
 ! !IROUTINE: cvmix_coeffs_tidal_low
 ! !INTERFACE:
 
-  subroutine cvmix_coeffs_tidal_low(Tdiff_out, Nsqr, zw, zt, OceanDepth,      &
-                                    CVmix_params, energy_flux, nlev,          &
-                                    max_nlev, CVmix_tidal_params_user)
+  subroutine cvmix_coeffs_tidal_low(Mdiff_out, Tdiff_out, Nsqr, OceanDepth,   &
+                                    SimmonsCoeff, vert_dep, nlev, max_nlev,   &
+                                    CVmix_params, CVmix_tidal_params_user)
 
 ! !DESCRIPTION:
 !  Computes vertical diffusion coefficients for tidal mixing
@@ -294,12 +304,12 @@ contains
                                             CVmix_tidal_params_user
     integer,                               intent(in) :: nlev, max_nlev
     type(cvmix_global_params_type),        intent(in) :: CVmix_params
-    real(cvmix_r8),                        intent(in) :: OceanDepth,          &
-                                                         energy_flux
-    real(cvmix_r8), dimension(max_nlev+1), intent(in) :: Nsqr, zw
-    real(cvmix_r8), dimension(max_nlev),   intent(in) :: zt
+    real(cvmix_r8),                        intent(in) :: OceanDepth
+    real(cvmix_r8),                        intent(in) :: SimmonsCoeff
+    real(cvmix_r8), dimension(max_nlev+1), intent(in) :: Nsqr, vert_dep
 
 ! !INPUT/OUTPUT PARAMETERS:
+    real(cvmix_r8), dimension(max_nlev+1), intent(inout) :: Mdiff_out
     real(cvmix_r8), dimension(max_nlev+1), intent(inout) :: Tdiff_out
 
 !EOP
@@ -307,8 +317,6 @@ contains
 
     ! Local variables
     integer        :: k
-    real(cvmix_r8) :: coef, rho
-    real(cvmix_r8), dimension(nlev+1) :: vert_dep
 
     type(cvmix_tidal_params_type), pointer :: CVmix_tidal_params
 
@@ -318,20 +326,13 @@ contains
       CVmix_tidal_params => CVmix_tidal_params_saved
     end if
 
-    rho  = CVmix_params%FreshWaterDensity
-
     select case (trim(CVmix_tidal_params%mix_scheme))
       case ('simmons','Simmons')
-        vert_dep = cvmix_compute_vert_dep(zw(1:nlev+1), zt(1:nlev), nlev,     &
-                                          CVmix_tidal_params)
-        coef = CVmix_tidal_params%local_mixing_frac * &
-               CVmix_tidal_params%efficiency *        &
-               energy_flux
         Tdiff_out = cvmix_zero
         if (OceanDepth.ge.CVmix_tidal_params%depth_cutoff) then
           do k=1, nlev+1
             if (Nsqr(k).gt.cvmix_zero) &
-              Tdiff_out(k) = coef*vert_dep(k)/(rho*Nsqr(k))
+              Tdiff_out(k) = SimmonsCoeff*vert_dep(k)/Nsqr(k)
             if (Tdiff_out(k).gt.CVmix_tidal_params%max_coefficient) &
               Tdiff_out(k) = CVmix_tidal_params%max_coefficient
           end do
@@ -343,6 +344,7 @@ contains
         stop 1
 
     end select
+    Mdiff_out = CVmix_params%Prandtl*Tdiff_out
 
 !EOC
 
@@ -405,6 +407,110 @@ contains
 
 !BOP
 
+! !IROUTINE: cvmix_compute_Simmons_invariant_wrap
+! !INTERFACE:
+
+  subroutine cvmix_compute_Simmons_invariant_wrap(CVmix_vars, CVmix_params,   &
+                                                  energy_flux,                &
+                                                  CVmix_tidal_params_user)
+
+! !DESCRIPTION:
+!  Compute the time-invariant portion of the tidal mixing coefficient using
+!  the Simmons, et al., scheme.
+!\\
+!\\
+
+! !USES:
+!  Only those used by entire module.
+
+! !INPUT PARAMETERS:
+    type(cvmix_global_params_type), intent(in) :: CVmix_params
+    real(cvmix_r8), intent(in) :: energy_flux
+    type(cvmix_tidal_params_type),  target, optional, intent(in) ::           &
+                                            CVmix_tidal_params_user
+
+! !INPUT/OUTPUT PARAMETERS:
+    type(cvmix_data_type), intent(inout) :: CVmix_vars
+
+!EOP
+
+    ! local variables
+    type(cvmix_tidal_params_type), pointer :: CVmix_tidal_params
+
+    if (present(CVmix_tidal_params_user)) then
+      CVmix_tidal_params => CVmix_tidal_params_user
+    else
+      CVmix_tidal_params => CVmix_tidal_params_saved
+    end if
+
+    call cvmix_put(CVmix_vars, 'SimmonsCoeff', cvmix_zero)
+    call cvmix_put(CVmix_vars, 'VertDep', cvmix_zero)
+    call cvmix_compute_Simmons_invariant_low(CVmix_vars%nlev,                 &
+                                             energy_flux,                     &
+                                             CVmix_params%FreshWaterDensity,  &
+                                             CVmix_vars%SimmonsCoeff,         &
+                                             CVmix_vars%VertDep_iface,        &
+                                             CVmix_vars%zw_iface,             &
+                                             CVmix_vars%zt_cntr,              &
+                                             CVMix_tidal_params_user)
+
+!EOC
+
+  end subroutine cvmix_compute_Simmons_invariant_wrap
+
+!BOP
+
+! !IROUTINE: cvmix_compute_Simmons_invariant_low
+! !INTERFACE:
+
+  subroutine cvmix_compute_Simmons_invariant_low(nlev, energy_flux, rho,      &
+                                                 SimmonsCoeff, VertDep, zw,   &
+                                                 zt, CVmix_tidal_params_user)
+
+! !DESCRIPTION:
+!  Compute the time-invariant portion of the tidal mixing coefficient using
+!  the Simmons, et al., scheme.
+!\\
+!\\
+
+! !USES:
+!  Only those used by entire module.
+
+! !INPUT PARAMETERS:
+    integer,        intent(in) :: nlev
+    real(cvmix_r8), intent(in) :: energy_flux, rho
+    real(cvmix_r8), dimension(:), intent(in) :: zw, zt
+    type(cvmix_tidal_params_type),  target, optional, intent(in) ::           &
+                                            CVmix_tidal_params_user
+
+! !OUTPUT PARAMETERS:
+    real(cvmix_r8), intent(out) :: SimmonsCoeff
+    real(cvmix_r8), dimension(nlev+1), intent(inout) :: VertDep
+
+!EOP
+
+    ! local variables
+    type(cvmix_tidal_params_type), pointer :: CVmix_tidal_params
+
+    if (present(CVmix_tidal_params_user)) then
+      CVmix_tidal_params => CVmix_tidal_params_user
+    else
+      CVmix_tidal_params => CVmix_tidal_params_saved
+    end if
+
+    SimmonsCoeff = CVmix_tidal_params%local_mixing_frac *                     &
+                   CVmix_tidal_params%efficiency *                            &
+                   energy_flux/rho
+    VertDep = cvmix_compute_vert_dep(zw(1:nlev+1), zt(1:nlev), nlev,          &
+                                     CVmix_tidal_params)
+!BOC
+
+!EOC
+
+  end subroutine cvmix_compute_Simmons_invariant_low
+
+!BOP
+
 ! !IROUTINE: cvmix_put_tidal_int
 ! !INTERFACE:
 
@@ -416,7 +522,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*), intent(in) :: varname
@@ -461,7 +567,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*), intent(in) :: varname
@@ -496,7 +602,7 @@ contains
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
         stop 1
-      
+
     end select
 
 !EOC
@@ -516,7 +622,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*), intent(in) :: varname
@@ -543,7 +649,7 @@ contains
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
         stop 1
-      
+
     end select
 
 !EOC
@@ -563,7 +669,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*),                                intent(in) :: varname
@@ -618,7 +724,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*),                                intent(in) :: varname
@@ -645,7 +751,7 @@ contains
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
         stop 1
-      
+
     end select
 
 !EOC
