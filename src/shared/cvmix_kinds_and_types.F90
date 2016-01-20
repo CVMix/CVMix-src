@@ -101,6 +101,8 @@ module cvmix_kinds_and_types
     ! Surface Stokes drift magnitude
     real(cvmix_r8) :: SurfaceStokesDrift
                     ! units: m/s
+    ! A time-invariant coefficient needed for Simmons, et al. tidal mixing
+    real(cvmix_r8) :: SimmonsCoeff
 
     ! Values on interfaces (dimsize = nlev+1)
     ! --------------------
@@ -125,9 +127,12 @@ module cvmix_kinds_and_types
     real(cvmix_r8), dimension(:), pointer :: ShearRichardson_iface => NULL()
                                            ! units: unitless
 
-    ! For tidal mixing, we need the squared buoyancy frequency
+    ! For tidal mixing, we need the squared buoyancy frequency and vertical
+    ! deposition function
     real(cvmix_r8), dimension(:), pointer :: SqrBuoyancyFreq_iface => NULL()
                                            ! units: s^-2
+    real(cvmix_r8), dimension(:), pointer :: VertDep_iface => NULL()
+                                           ! units: unitless
 
     ! For KPP, need to store non-local transport term
     real(cvmix_r8), dimension(:), pointer :: kpp_Tnonlocal_iface => NULL()

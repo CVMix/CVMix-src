@@ -19,6 +19,7 @@ Subroutine cvmix_tidal_driver()
                                     cvmix_global_params_type
   use cvmix_tidal,           only : cvmix_init_tidal,                         &
                                     cvmix_coeffs_tidal,                       &
+                                    cvmix_compute_Simmons_invariant,          &
                                     cvmix_tidal_params_type,                  &
                                     cvmix_get_tidal_str,                      &
                                     cvmix_get_tidal_real
@@ -42,7 +43,7 @@ Subroutine cvmix_tidal_driver()
   type(cvmix_global_params_type) :: CVmix_params
   type(cvmix_tidal_params_type)  :: CVmix_Simmons_params
 
-  real(cvmix_r8), dimension(:,:,:), allocatable, target :: Tdiff
+  real(cvmix_r8), dimension(:,:,:), allocatable, target :: Mdiff, Tdiff
 
   ! file index
   integer :: fid
@@ -118,9 +119,11 @@ Subroutine cvmix_tidal_driver()
   buoy(:,:,1) = cvmix_zero
 
   ! Allocate memory to store diffusivity values
+  allocate(Mdiff(nlon, nlat, max_nlev+1))
   allocate(Tdiff(nlon, nlat, max_nlev+1))
   ! Set diffusivity to _FillValue
   FillVal = 1e5_cvmix_r8
+  Mdiff   = FillVal
   Tdiff   = FillVal
 
   ! Read in global data from grid file, physics file, and energy flux file
@@ -181,13 +184,18 @@ Subroutine cvmix_tidal_driver()
         call cvmix_put(CVmix_vars(i,j),       'lat',           lat(i,j))
         call cvmix_put(CVmix_vars(i,j),       'lon',           lon(i,j))
 
-        call cvmix_put(CVmix_params, 'max_nlev',        max_nlev)
+        call cvmix_put(CVmix_params, 'max_nlev',     max_nlev)
+        call cvmix_put(CVmix_params,  'Prandtl', 10._cvmix_r8)
         call cvmix_put(CVmix_params,   'fw_rho', 1e3_cvmix_r8)
+        call cvmix_compute_Simmons_invariant(CVmix_vars(i,j), CVmix_params,   &
+                                             energy_flux(i,j),                &
+                                             CVmix_Simmons_params)
         ! Point CVmix_vars values to memory allocated above
+        CVmix_vars(i,j)%Mdiff_iface => Mdiff(i,j,1:nlev+1)
         CVmix_vars(i,j)%Tdiff_iface => Tdiff(i,j,1:nlev+1)
 
         call cvmix_coeffs_tidal(CVmix_vars(i,j), CVmix_params,                &
-                                energy_flux(i,j), CVmix_Simmons_params)
+                                CVmix_Simmons_params)
 
       end if
     end do
@@ -205,7 +213,7 @@ Subroutine cvmix_tidal_driver()
     this_lat = CVmix_vars(lon_out, lat_out)%lat
     call cvmix_io_open(fid, "single_col.nc", "nc")
     call cvmix_output_write(fid, CVmix_vars(lon_out, lat_out),                &
-                            (/"zw_iface", "Tdiff   "/))
+                            (/"zw_iface", "Mdiff   ", "Tdiff   "/))
     if (this_lon.ge.0) then
       write(lonstr,"(F6.2,1X,A)") this_lon, "E"
     else
@@ -221,6 +229,9 @@ Subroutine cvmix_tidal_driver()
     call cvmix_output_write_att(fid, "column_lat", latstr)
 
     ! Variable Attributes
+    call cvmix_output_write_att(fid, "long_name", "momentum diffusivity",     &
+                                var_name="Mdiff")
+    call cvmix_output_write_att(fid, "units", "m^2/s", var_name="Mdiff")
     call cvmix_output_write_att(fid, "long_name", "tracer diffusivity",       &
                                 var_name="Tdiff")
     call cvmix_output_write_att(fid, "units", "m^2/s", var_name="Tdiff")
@@ -235,7 +246,15 @@ Subroutine cvmix_tidal_driver()
   end if
 
   ! Write diffusivity field to netcdf
-  call cvmix_io_open(fid, "diff.nc", "nc")
+  call cvmix_io_open(fid, "Mdiff.nc", "nc")
+  call cvmix_output_write(fid, "Mdiff", (/"nlon  ", "nlat  ", "niface"/),     &
+                          Mdiff, FillVal=FillVal)
+  call cvmix_output_write_att(fid, "long_name", "momentum diffusivity",       &
+                              var_name="Mdiff")
+  call cvmix_output_write_att(fid, "units", "m^2/s", var_name="Mdiff")
+  call cvmix_io_close(fid)
+
+  call cvmix_io_open(fid, "Tdiff.nc", "nc")
   call cvmix_output_write(fid, "Tdiff", (/"nlon  ", "nlat  ", "niface"/),     &
                           Tdiff, FillVal=FillVal)
   call cvmix_output_write_att(fid, "long_name", "tracer diffusivity",         &
