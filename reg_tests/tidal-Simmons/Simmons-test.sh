@@ -36,4 +36,4 @@ build
 run
 
 # (2) Look at output
-ncdump -v Tdiff single_col.nc
+ncdump -v Mdiff,Tdiff single_col.nc

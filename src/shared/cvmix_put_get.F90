@@ -4,7 +4,7 @@ module cvmix_put_get
 !\newpage
 ! !MODULE: cvmix_put_get
 !
-! !AUTHOR: 
+! !AUTHOR:
 !  Michael N. Levy, NCAR (mlevy@ucar.edu)
 !
 ! !DESCRIPTION:
@@ -57,7 +57,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*),           intent(in) :: varname
@@ -72,7 +72,7 @@ contains
 
     ! Local variables
     integer :: nlev
-  
+
     if (present(nlev_in)) then
       nlev = nlev_in
     else
@@ -85,7 +85,7 @@ contains
       print*, "You tried to set ", trim(varname)
       stop 1
     end if
-    
+
     select case (trim(cvmix_att_name(varname)))
       case ('nlev')
         CVmix_vars%nlev = val
@@ -118,7 +118,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*),           intent(in) :: varname
@@ -132,7 +132,7 @@ contains
 
     ! Local variables
     integer :: nlev
-  
+
     if (present(nlev_in)) then
       nlev = nlev_in
     else
@@ -145,7 +145,7 @@ contains
       print*, "You tried to set ", trim(varname)
       stop 1
     end if
-    
+
     select case (trim(cvmix_att_name(varname)))
       case ('OceanDepth')
         CVmix_vars%OceanDepth = val
@@ -170,10 +170,12 @@ contains
         CVmix_vars%LangmuirEnhancementFactor = val
       case ("SurfaceStokesDrift")
         CVmix_vars%SurfaceStokesDrift = val
+      case ('SimmonsCoeff')
+        CVmix_vars%SimmonsCoeff = val
 
       case ("dzw")
-        print*, "WARNING: you are setting the cell midpoint to midpoint",     &
-                "distance in all levels to a constant value"
+!        print*, "WARNING: you are setting the cell midpoint to midpoint ",    &
+!                "distance in all levels to a constant value"
         if (.not.associated(CVmix_vars%dzw)) then
           allocate(CVmix_vars%dzw(nlev+1))
         end if
@@ -194,15 +196,15 @@ contains
         end if
         CVmix_vars%Sdiff_iface(:) = val
       case ("ShearRichardson_iface")
-        print*, "WARNING: you are setting the Richardson number in all",      &
-                "levels to a constant value"
+!        print*, "WARNING: you are setting the Richardson number in all ",     &
+!                "levels to a constant value"
         if (.not.associated(CVmix_vars%ShearRichardson_iface)) then
           allocate(CVmix_vars%ShearRichardson_iface(nlev+1))
         end if
         CVmix_vars%ShearRichardson_iface(:) = val
       case ("SqrBuoyancyFreq_iface")
-        print*, "WARNING: you are setting the buoyancy in all levels to a", &
-                "constant value"
+!        print*, "WARNING: you are setting the buoyancy in all levels to a ",  &
+!                "constant value"
         if (.not.associated(CVmix_vars%SqrBuoyancyFreq_iface)) then
           allocate(CVmix_vars%SqrBuoyancyFreq_iface(nlev+1))
         end if
@@ -228,52 +230,57 @@ contains
         CVmix_vars%kpp_Snonlocal_iface(:) = val
 
       case ("dzt")
-        print*, "WARNING: you are setting the cell thickness in all levels",  &
-                "to a constant value"
+!        print*, "WARNING: you are setting the cell thickness in all levels ", &
+!                "to a constant value"
         if (.not.associated(CVmix_vars%dzt)) then
           allocate(CVmix_vars%dzt(nlev))
         end if
         CVmix_vars%dzt(:) = val
       case ("WaterDensity_cntr")
-        print*, "WARNING: you are setting the density in all levels to a",    &
-                "constant value"
+!        print*, "WARNING: you are setting the density in all levels to a ",   &
+!                "constant value"
         if (.not.associated(CVmix_vars%WaterDensity_cntr)) then
           allocate(CVmix_vars%WaterDensity_cntr(nlev))
         end if
         CVmix_vars%WaterDensity_cntr(:) = val
       case ("AdiabWaterDensity_cntr")
-        print*, "WARNING: you are setting the adiabatic density in all",      &
-                "levels to a constant value"
+!        print*, "WARNING: you are setting the adiabatic density in all ",     &
+!                "levels to a constant value"
         if (.not.associated(CVmix_vars%AdiabWaterDensity_cntr)) then
           allocate(CVmix_vars%AdiabWaterDensity_cntr(nlev))
         end if
         CVmix_vars%AdiabWaterDensity_cntr(:) = val
       case ("BulkRichardson_cntr")
-        print*, "WARNING: you are setting the bulk Richardson number in all", &
-                "levels to a constant value"
+!        print*, "WARNING: you are setting the bulk Richardson number in all", &
+!                " levels to a constant value"
         if (.not.associated(CVmix_vars%BulkRichardson_cntr)) then
           allocate(CVmix_vars%BulkRichardson_cntr(nlev))
         end if
         CVmix_vars%BulkRichardson_cntr(:) = val
       case ('strat_param_num')
-        print*, "WARNING: you are setting the numerator of the",              & 
-                "stratification parameter in all levels to a constant value"
+!        print*, "WARNING: you are setting the numerator of the ",             &
+!                "stratification parameter in all levels to a constant value"
         if (.not.associated(CVmix_vars%strat_param_num)) then
           allocate(CVmix_vars%strat_param_num(nlev))
         end if
         CVmix_vars%strat_param_num(:) = val
       case ('strat_param_denom')
-        print*, "WARNING: you are setting the denominator of the",            & 
-                "stratification parameter in all levels to a constant value"
+!        print*, "WARNING: you are setting the denominator of the ",           &
+!                "stratification parameter in all levels to a constant value"
         if (.not.associated(CVmix_vars%strat_param_denom)) then
           allocate(CVmix_vars%strat_param_denom(nlev))
         end if
         CVmix_vars%strat_param_denom(:) = val
+      case ("VertDep_iface")
+        if (.not.associated(CVmix_vars%VertDep_iface)) then
+          allocate(CVmix_vars%VertDep_iface(nlev+1))
+        end if
+        CVmix_vars%VertDep_iface(:) = val
 
       case default
-        print*, "ERROR: ", trim(varname), " not a valid choice!"
+        print*, "ERROR: ", trim(varname), " not a valid choice for cvmix_put!"
         stop 1
-      
+
     end select
 !EOC
 
@@ -292,7 +299,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*),             intent(in) :: varname
@@ -306,7 +313,7 @@ contains
 
     ! Local variables
     integer :: nlev
-  
+
     if (present(nlev_in)) then
       nlev = nlev_in
     else
@@ -319,7 +326,7 @@ contains
       print*, "You tried to set ", trim(varname)
       stop 1
     end if
-    
+
     select case (trim(cvmix_att_name(varname)))
       case ("zw_iface")
         if (.not.associated(CVmix_vars%zw_iface)) then
@@ -375,7 +382,11 @@ contains
           allocate(CVmix_vars%kpp_Snonlocal_iface(nlev+1))
         end if
         CVmix_vars%kpp_Snonlocal_iface(:) = val
-
+      case ("VertDep_iface")
+        if (.not.associated(CVmix_vars%VertDep_iface)) then
+          allocate(CVmix_vars%VertDep_iface(nlev+1))
+        end if
+        CVmix_vars%VertDep_iface(:) = val
       case ("zt_cntr")
         if (.not.associated(CVmix_vars%zt_cntr)) then
           allocate(CVmix_vars%zt_cntr(nlev))
@@ -423,9 +434,9 @@ contains
         CVmix_vars%Vy_cntr(:) = val
 
       case default
-        print*, "ERROR: ", trim(varname), " not a valid choice!"
+        print*, "ERROR: ", trim(varname), " not a valid choice for cvmix_put!"
         stop 1
-      
+
     end select
 
 !EOC
@@ -445,7 +456,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*), intent(in) :: varname
@@ -459,11 +470,11 @@ contains
     select case (trim(varname))
       case ('max_nlev')
         CVmix_params%max_nlev = val
-        
+
       case default
         print*, "ERROR: ", trim(varname), " not a valid choice!"
         stop 1
-      
+
     end select
 !EOC
 
@@ -482,7 +493,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*), intent(in) :: varname
@@ -494,17 +505,17 @@ contains
 !BOC
 
     select case (trim(varname))
-      case ('prandtl')
+      case ('prandtl','Prandtl')
         CVmix_params%prandtl = val
       case ('fw_rho','FreshWaterDensity')
         CVmix_params%FreshWaterDensity = val
       case ('sw_rho','SaltWaterDensity')
         CVmix_params%SaltWaterDensity= val
-        
+
       case default
         print*, "ERROR: ", trim(varname), " not a valid choice!"
         stop 1
-      
+
     end select
 !EOC
 

@@ -216,8 +216,12 @@ contains
         cvmix_att_name = "Vx_cntr"
       case ("V", "Vy", "Vy_cntr")
         cvmix_att_name = "Vy_cntr"
+      case ("SimmonsCoeff", "TidalCoeff")
+        cvmix_att_name = "SimmonsCoeff"
+      case ("VertDep", "VertDep_iface", "vert_dep")
+        cvmix_att_name = "VertDep_iface"
       case DEFAULT
-        print*, "ERROR: ", trim(varname), " is not tied to an attribute of",  &
+        print*, "ERROR: ", trim(varname), " is not tied to an attribute of ", &
                 "the cvmix_data_type structure."
         stop 1
     end select
