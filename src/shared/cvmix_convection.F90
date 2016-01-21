@@ -277,7 +277,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    real(cvmix_r8) :: vvconv, wgt
+    real(cvmix_r8) :: convect_mdiff, convect_tdiff, wgt
     integer        :: kw
     logical        :: lnoOBL
     type (cvmix_conv_params_type), pointer :: CVmix_conv_params_in
@@ -288,6 +288,8 @@ contains
       CVmix_conv_params_in => CVmix_conv_params_saved
     end if
     lnoOBL = CVMix_conv_params_in%lnoOBL
+    convect_mdiff = CVMix_conv_params_in%convect_visc
+    convect_tdiff = CVMix_conv_params_in%convect_diff
 
 !-----------------------------------------------------------------------
 !
@@ -344,19 +346,14 @@ contains
     else
       ! Default convection mixing based on density
       do kw=1,nlev-1
-        if (CVmix_conv_params_in%convect_visc.ne.cvmix_zero) then
-           vvconv = cvmix_get_conv_real('convect_visc', CVmix_conv_params_in)
-        else
-          ! convection only affects tracers
-          vvconv = Mdiff_out(kw)
-        end if
-
-!        if (CVmix_vars%WaterDensity_cntr(kw).gt.                              &
-!            CVmix_vars%AdiabWaterDensity_cntr(kw)) then
         if (dens(kw).gt.dens_lwr(kw)) then
-          Mdiff_out(kw+1) = vvconv
-          Tdiff_out(kw+1) = cvmix_get_conv_real('convect_diff',               &
-                                                CVmix_conv_params_in)
+          if (CVmix_conv_params_in%convect_visc.eq.cvmix_zero) then
+            ! convection only affects tracers
+            Mdiff_out(kw+1) = Mdiff_out(kw)
+          else
+            Mdiff_out(kw+1) = convect_mdiff
+          end if
+          Tdiff_out(kw+1) = convect_tdiff
         end if
       end do
     end if
