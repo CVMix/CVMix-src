@@ -1839,7 +1839,7 @@ contains
     integer :: n_sigma, kw
     logical :: compute_wm, compute_ws
     real(cvmix_r8), dimension(size(sigma_coord)) :: zeta
-    real(cvmix_r8) :: vonkar, sigma_coord_loc, surf_layer_ext
+    real(cvmix_r8) :: vonkar, surf_layer_ext
     type(cvmix_kpp_params_type), pointer :: CVmix_kpp_params_in
 
     n_sigma = size(sigma_coord)
@@ -1860,13 +1860,12 @@ contains
         ! compute scales at sigma if sigma < surf_layer_ext, otherwise compute
         ! at surf_layer_ext
                 if(surf_buoy_force .ge. cvmix_zero) then
-                        sigma_coord_loc = sigma_coord(kw)
+                        zeta(kw) = sigma_coord(kw) * OBL_depth *                      &
+                                surf_buoy_force*vonkar/(surf_fric_vel**3)
                 else
-                        sigma_coord_loc = min(surf_layer_ext, sigma_coord(kw))
+                        zeta(kw) = min(surf_layer_ext, sigma_coord(kw)) * OBL_depth *         &
+                                surf_buoy_force*vonkar/(surf_fric_vel**3)
                 endif
-
-                zeta(kw) = sigma_coord_loc * OBL_depth *               &
-                            surf_buoy_force*vonkar/(surf_fric_vel**3)
         end do
       else
         do kw=1,n_sigma
@@ -1982,7 +1981,7 @@ contains
     integer :: n_sigma, kw
     logical :: compute_wm, compute_ws
     real(cvmix_r8), dimension(size(surf_buoy_force)) :: zeta
-    real(cvmix_r8) :: vonkar, surf_layer_ext, sigma_coord_loc
+    real(cvmix_r8) :: vonkar, surf_layer_ext
     type(cvmix_kpp_params_type), pointer :: CVmix_kpp_params_in
 
     n_sigma = size(surf_buoy_force)
@@ -2004,13 +2003,12 @@ contains
         ! compute scales at sigma if sigma < surf_layer_ext, otherwise compute
         ! at surf_layer_ext
                 if(surf_buoy_force(kw) .ge. cvmix_zero) then
-                        sigma_coord_loc = sigma_coord
-                else
-                        sigma_coord_loc = min(surf_layer_ext, sigma_coord)
-                endif
-
-                zeta(kw) = sigma_coord_loc * OBL_depth(kw) *    &
+                        zeta(kw) = sigma_coord * OBL_depth(kw) *         &
                                 surf_buoy_force(kw)*vonkar/(surf_fric_vel**3)
+                else
+                        zeta(kw) = min(surf_layer_ext,sigma_coord) * OBL_depth(kw) *    &
+                                surf_buoy_force(kw)*vonkar/(surf_fric_vel**3)
+                 endif 
         end do
       else
         do kw=1,n_sigma
@@ -2403,4 +2401,4 @@ contains
 
 !EOC
 
-end module cvmix_kppS
+end module cvmix_kpp
