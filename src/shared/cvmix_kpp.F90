@@ -73,6 +73,7 @@
   public :: cvmix_kpp_compute_shape_function_coeffs
   public :: cvmix_kpp_compute_kOBL_depth
   public :: cvmix_kpp_compute_enhanced_diff
+  public :: cvmix_kpp_compute_nonlocal
   public :: cvmix_kpp_compute_nu_at_OBL_depth_LMD94
 
   interface cvmix_coeffs_kpp
@@ -115,9 +116,6 @@
       real(cvmix_r8) :: vonkarman      ! von Karman constant
 
       real(cvmix_r8) :: Cstar          ! coefficient for nonlinear transport
-      real(cvmix_r8) :: nonlocal_coeff ! Cs from Eq (20) in LMD94
-                                       ! Default value comes from paper, but
-                                       ! some users may set it = 1.
 
       ! For velocity scale function, _m => momentum and _s => scalar (tracer)
       real(cvmix_r8) :: zeta_m         ! parameter for computing vel scale func
@@ -167,13 +165,16 @@
       logical        :: lMonOb         ! True => compute Monin-Obukhov limit
       logical        :: lnoDGat1       ! True => G'(1) = 0 (shape function)
                                        ! False => compute G'(1) as in LMD94
-      logical        :: lenhanced_diff ! True => enhance diffusivity at OBL
-      ! QL, 150610
-      logical        :: llangmuirEF    ! True => apply Langmuir enhancement
-                                       !  factor to turbulent velocity scale
-      logical        :: lenhanced_entr ! True => enhance entrainment by adding
-                                       !  Stokes shear to the unresolved 
-                                       !  vertial shear
+      logical        :: lavg_N_or_Nsqr ! True => N (or Nsqr) at cell center is
+                                       !  average of values at interfaces above
+                                       !  and below.
+                                       ! False => N (or Nsqr) at cell center is
+                                       !  set to value at interface below
+                                       ! (only used in compute_unresolved_shear)
+      logical        :: l_LMD_ws       ! flag to use original Large et al. (1994)
+                                       ! equations, their Appendix B, essentially
+                                       ! this simply removes the limitation of sigma
+                                       ! to be < surf_layer_extent
   end type cvmix_kpp_params_type
 
 !EOP
@@ -186,14 +187,12 @@ contains
 
 ! !IROUTINE: cvmix_init_kpp
 ! !INTERFACE:
-  ! QL, 150610, new parameters: llangmuirEF and lenhanced_entr
+
   subroutine cvmix_init_kpp(ri_crit, minOBLdepth, maxOBLdepth, minVtsqr,      &
                             vonkarman, Cstar, zeta_m, zeta_s, surf_layer_ext, &
                             Cv, interp_type, interp_type2, MatchTechnique,    &
                             old_vals, lEkman, lMonOb, lnoDGat1,               &
-                            lenhanced_diff, lnonzero_surf_nonlocal,           &
-                            llangmuirEF, lenhanced_entr,                      &
-                            CVmix_kpp_params_user)
+                            lavg_N_or_Nsqr, l_LMD_ws, CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
 !  Initialization routine for KPP mixing.
@@ -218,14 +217,11 @@ contains
                                               interp_type2,                   &
                                               MatchTechnique,                 &
                                               old_vals
-    ! QL, 150610,llangmuirEF and lenhanced_entr
     logical,          optional, intent(in) :: lEkman,                         &
                                               lMonOb,                         &
                                               lnoDGat1,                       &
-                                              lenhanced_diff,                 &
-                                              llangmuirEF,                    &
-                                              lenhanced_entr,                 &
-                                              lnonzero_surf_nonlocal
+                                              lavg_N_or_Nsqr,                 &
+                                              l_LMD_ws
 
 ! !OUTPUT PARAMETERS:
     type(cvmix_kpp_params_type), intent(inout), target, optional ::           &
@@ -235,9 +231,6 @@ contains
 !BOC
 
     real(cvmix_r8) :: zm, zs, a_m, a_s, c_m, c_s
-    real(cvmix_r8) :: Cstar_loc, vonkar_loc, surf_layer_ext_loc
-    real(cvmix_r8) :: nonlocal_coeff
-  
 
     if (present(ri_crit)) then
       if (ri_crit.lt.cvmix_zero) then
@@ -284,18 +277,16 @@ contains
         print*, "ERROR: vonkarman can not be negative."
         stop 1
       end if
-      vonkar_loc = vonkarman
+      call cvmix_put_kpp('vonkarman', vonkarman, CVmix_kpp_params_user)
     else
-      vonkar_loc = 0.4_cvmix_r8
+      call cvmix_put_kpp('vonkarman', 0.4_cvmix_r8, CVmix_kpp_params_user)
     end if
-    call cvmix_put_kpp('vonkarman', vonkar_loc, CVmix_kpp_params_user)
 
     if (present(Cstar)) then
-      Cstar_loc = Cstar
+      call cvmix_put_kpp('Cstar', Cstar, CVmix_kpp_params_user)
     else
-      Cstar_loc = real(10,cvmix_r8)
+      call cvmix_put_kpp('Cstar', 10, CVmix_kpp_params_user)
     end if
-    call cvmix_put_kpp('Cstar', Cstar_loc, CVmix_kpp_params_user)
 
     if (present(zeta_m)) then
       if (zeta_m.ge.cvmix_zero) then
@@ -343,12 +334,11 @@ contains
         print*, "surf_layer_ext must be between 0 and 1, inclusive."
         stop 1
       end if
-      surf_layer_ext_loc = surf_layer_ext
+      call cvmix_put_kpp('surf_layer_ext', surf_layer_ext,                    &
+                         CVmix_kpp_params_user)
     else
-      surf_layer_ext_loc = 0.1_cvmix_r8
+      call cvmix_put_kpp('surf_layer_ext', 0.1_cvmix_r8, CVmix_kpp_params_user)
     end if
-    call cvmix_put_kpp('surf_layer_ext', surf_layer_ext_loc,                  &
-                       CVmix_kpp_params_user)
 
     if (present(Cv)) then
       ! Use scalar Cv parameter
@@ -467,39 +457,18 @@ contains
       call cvmix_put_kpp('lnoDGat1', .true., CVmix_kpp_params_user)
     end if
 
-    if (present(lenhanced_diff)) then
-      call cvmix_put_kpp('lenhanced_diff', lenhanced_diff,                    &
+    if (present(lavg_N_or_Nsqr)) then
+      call cvmix_put_kpp('lavg_N_or_Nsqr', lavg_N_or_Nsqr,                    &
                          CVmix_kpp_params_user)
     else
-      call cvmix_put_kpp('lenhanced_diff', .true., CVmix_kpp_params_user)
+      call cvmix_put_kpp('lavg_N_or_Nsqr', .true., CVmix_kpp_params_user)
     end if
-
-    ! QL, 150610, by default, not using Langmuir enhancement factor
-    if (present(llangmuirEF)) then
-      call cvmix_put_kpp('llangmuirEF', llangmuirEF,                          &
+    if (present(l_LMD_ws)) then
+      call cvmix_put_kpp('l_LMD_ws', l_LMD_ws,                    &
                          CVmix_kpp_params_user)
     else
-      call cvmix_put_kpp('llangmuirEF', .false., CVmix_kpp_params_user)
+      call cvmix_put_kpp('l_LMD_ws', .false., CVmix_kpp_params_user)
     end if
-
-    ! QL, 150610, by default, not using Stokes enhanced entrainment
-    if (present(lenhanced_entr)) then
-      call cvmix_put_kpp('lenhanced_entr', lenhanced_entr,                    &
-                         CVmix_kpp_params_user)
-    else
-      call cvmix_put_kpp('lenhanced_entr', .false., CVmix_kpp_params_user)
-    end if
-
-    ! By default, assume that G(0) = 0 for nonlocal term
-    nonlocal_coeff = (Cstar_loc*vonkar_loc*                                   &
-                      (vonkar_loc*surf_layer_ext_loc*c_s)**                   &
-                      (cvmix_one/real(3,cvmix_r8)))
-    if (present(lnonzero_surf_nonlocal)) then
-      if (lnonzero_surf_nonlocal) then
-        nonlocal_coeff = real(1,cvmix_r8)
-      end if
-    end if
-    call cvmix_put_kpp('nonlocal_coeff',nonlocal_coeff,CVmix_kpp_params_user)
 
 !EOC
 
@@ -553,7 +522,6 @@ contains
 
     call cvmix_put(CVmix_vars, 'kpp_transport', cvmix_zero, max_nlev)
 
-    ! QL, 150610, new parameter: LangmuirEnhancementFactor
     call cvmix_coeffs_kpp(new_Mdiff, new_Tdiff, new_Sdiff,                    &
                           CVmix_vars%zw_iface, CVmix_vars%zt_cntr,            &
                           CVmix_vars%Mdiff_iface, CVmix_vars%Tdiff_iface,     &
@@ -564,9 +532,7 @@ contains
                           CVmix_vars%kpp_Snonlocal_iface,                     &
                           CVmix_vars%SurfaceFriction,                         &
                           CVmix_vars%SurfaceBuoyancyForcing,                  &
-                          nlev, max_nlev,                                     &
-                          CVmix_vars%LangmuirEnhancementFactor,               &
-                          CVmix_kpp_params_user)
+                          nlev, max_nlev, CVmix_kpp_params_user)
     call cvmix_update_wrap(CVmix_kpp_params_in%handle_old_vals, max_nlev,     &
                            Mdiff_out = CVmix_vars%Mdiff_iface,                &
                            new_Mdiff = new_Mdiff,                             &
@@ -584,12 +550,11 @@ contains
 ! !IROUTINE: cvmix_coeffs_kpp_low
 ! !INTERFACE:
 
-  ! QL, 150610, new parameter: langmuir_Efactor
   subroutine cvmix_coeffs_kpp_low(Mdiff_out, Tdiff_out, Sdiff_out, zw, zt,    &
                                   old_Mdiff, old_Tdiff, old_Sdiff, OBL_depth, &
                                   kOBL_depth, Tnonlocal, Snonlocal, surf_fric,&
                                   surf_buoy, nlev, max_nlev,                  &
-                                  langmuir_Efactor, CVmix_kpp_params_user)
+                                  CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
 !  Computes vertical diffusion coefficients for the KPP boundary layer mixing
@@ -614,8 +579,7 @@ contains
                                                          surf_fric,           &
                                                          surf_buoy,           &
                                                          kOBL_depth
-    ! QL, 150610, langmuir_Efactor
-    real(cvmix_r8), intent(in), optional :: langmuir_Efactor
+
 
 ! !INPUT/OUTPUT PARAMETERS:
     real(cvmix_r8), dimension(max_nlev+1), intent(inout) :: Mdiff_out,        &
@@ -655,7 +619,7 @@ contains
     real(cvmix_r8) :: dMshapeAt1, dTshapeAt1, dSshapeAt1
 
     ! [MTS]shapeAtS is value of shape function at sigma = S
-    real(cvmix_r8) :: MshapeAtS, TshapeAtS, SshapeAtS, GAtS
+    real(cvmix_r8) :: MshapeAtS, TshapeAtS, SshapeAtS
 
     ! [MTS]diff_OBL is value of diffusivity at OBL depth
     ! d[MTS]diff_OBL is value of derivative of diffusivity at OBL depth
@@ -736,10 +700,8 @@ contains
         Sshape2    = Tshape2
       case DEFAULT
         ! (2a) Compute turbulent scales at OBL depth
-        ! QL, 150611, pass in langmuir_Efactor
         call cvmix_kpp_compute_turbulent_scales(cvmix_one, OBL_depth,         &
-                                                surf_buoy, surf_fric,         &
-                                                langmuir_Efactor, wm_OBL,     &
+                                                surf_buoy, surf_fric, wm_OBL, &
                                                 ws_OBL, CVmix_kpp_params_user)
 
         ! (2b) Compute diffusivities at OBL depth
@@ -925,10 +887,8 @@ contains
     OBL_Sdiff = cvmix_zero
     sigma = -zw(1:nlev+1)/OBL_depth
     !     (3a) Compute turbulent scales throghout column
-    ! QL, 150611, pass in langmuir_Efactor
     call cvmix_kpp_compute_turbulent_scales(sigma, OBL_depth, surf_buoy,      &
-                                            surf_fric, langmuir_Efactor,      &
-                                            w_m, w_s,                         &
+                                            surf_fric, w_m, w_s,              &
                                             CVmix_kpp_params_user)
     do kw=2,ktup+1
       !   (3b) Evaluate G(sigma) at each cell interface
@@ -938,10 +898,10 @@ contains
 
       !   (3c) Compute nonlocal term at each cell interface
       if ((.not.lstable).and.(kw.le.kwup)) then
-        GAtS = cvmix_math_evaluate_cubic(Tshape2, sigma(kw))
-        Tnonlocal(kw) = CVmix_kpp_params_in%nonlocal_coeff*GAtS
-        GAtS = cvmix_math_evaluate_cubic(Sshape2, sigma(kw))
-        Snonlocal(kw) = CVmix_kpp_params_in%nonlocal_coeff*GAtS
+        call cvmix_kpp_compute_nonlocal(Tshape2, sigma(kw), Tnonlocal(kw),    &
+                                        CVmix_kpp_params_user)
+        call cvmix_kpp_compute_nonlocal(Sshape2, sigma(kw), Snonlocal(kw),    &
+                                        CVmix_kpp_params_user)
       end if
 
       !   (3d) Diffusivity = OBL_depth * (turbulent scale) * G(sigma)
@@ -957,17 +917,15 @@ contains
     TshapeAtS = cvmix_math_evaluate_cubic(Tshape, sigma_ktup)
     SshapeAtS = cvmix_math_evaluate_cubic(Sshape, sigma_ktup)
     !     (4b) Compute turbulent scales at last cell center in OBL
-    ! QL, 150611, pass in langmuir_Efactor
     call cvmix_kpp_compute_turbulent_scales(sigma_ktup, OBL_depth, surf_buoy, &
-                                            surf_fric, langmuir_Efactor,      &
-                                            wm_ktup, ws_ktup,                 &
+                                            surf_fric, wm_ktup, ws_ktup,      &
                                             CVmix_kpp_params_user)
     !     (4c) Diffusivity = OBL_depth * (turbulent scale) * G(sigma)
     Mdiff_ktup = OBL_depth * wm_ktup * MshapeAtS
     Tdiff_ktup = OBL_depth * ws_ktup * TshapeAtS
     Sdiff_ktup = OBL_depth * ws_ktup * SshapeAtS
 
-    if (CVmix_kpp_params_in%lenhanced_diff) then
+    if (MatchTechnique.eq.CVMIX_KPP_MATCH_BOTH) then
       if ((ktup.eq.kwup).or.(ktup.eq.kwup-1)) then
         call cvmix_kpp_compute_enhanced_diff(Mdiff_ktup,                      &
                                              Tdiff_ktup,                      &
@@ -1058,8 +1016,6 @@ contains
         CVmix_kpp_params_out%surf_layer_ext = val
       case ('Cv')
         CVmix_kpp_params_out%Cv = val
-      case ('nonlocal_coeff')
-        CVmix_kpp_params_out%nonlocal_coeff = val
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
         stop 1
@@ -1161,13 +1117,10 @@ contains
         CVmix_kpp_params_out%lMonOb = val
       case ('lnoDGat1')
         CVmix_kpp_params_out%lnoDGat1 = val
-      case ('lenhanced_diff')
-        CVmix_kpp_params_out%lenhanced_diff = val
-      ! QL, 150610, llangmuirEF and lenhanced_entr
-      case ('llangmuirEF')
-        CVmix_kpp_params_out%llangmuirEF = val
-      case ('lenhanced_entr')
-        CVmix_kpp_params_out%lenhanced_entr = val
+      case ('lavg_N_or_Nsqr')
+        CVmix_kpp_params_out%lavg_N_or_Nsqr = val
+      case ('l_LMD_ws')
+        CVmix_kpp_params_out%l_LMD_ws = val
       case DEFAULT
         print*, "ERROR: ", trim(varname), " is not a boolean variable!"
         stop 1
@@ -1578,6 +1531,57 @@ contains
   
 !BOP
 
+! !IROUTINE: cvmix_kpp_compute_nonlocal
+! !INTERFACE:
+
+  subroutine cvmix_kpp_compute_nonlocal(shape_fun, sigma, nonlocal,           &
+                                        CVmix_kpp_params_user)
+
+! !DESCRIPTION:
+! Compute the nonlocal transport contribution to vertical turbulent fluxes.
+! Note that Large, et al., refer to $\gamma_x$ as the non-local term, while
+! this routine computes $K_x\gamma_x/$[surface forcing]
+!\\
+!\\
+
+! !INPUT PARAMETERS:
+    type(cvmix_kpp_params_type), intent(in), optional, target ::              &
+                                           CVmix_kpp_params_user
+    real(cvmix_r8), dimension(4), intent(in) :: shape_fun
+    real(cvmix_r8),               intent(in) :: sigma
+
+! !OUTPUT PARAMETERS:
+    real(cvmix_r8), intent(out) :: nonlocal
+
+    ! Local variables
+    type(cvmix_kpp_params_type), pointer :: CVmix_kpp_params_in
+
+    ! Constants from params
+    real(cvmix_r8) :: Cstar, vonkar, c_s, surf_layer_ext
+
+    real(cvmix_r8) :: GatS
+!EOP
+!BOC
+
+    CVmix_kpp_params_in => CVmix_kpp_params_saved
+    if (present(CVmix_kpp_params_user)) then
+      CVmix_kpp_params_in => CVmix_kpp_params_user
+    end if
+    vonkar         = cvmix_get_kpp_real('vonkarman', CVmix_kpp_params_in)
+    Cstar          = cvmix_get_kpp_real('Cstar', CVmix_kpp_params_in)
+    surf_layer_ext = cvmix_get_kpp_real('surf_layer_ext', CVmix_kpp_params_in)
+    c_s            = cvmix_get_kpp_real('c_s', CVmix_kpp_params_in)
+
+    GatS = cvmix_math_evaluate_cubic(shape_fun, sigma)
+
+    nonlocal = GatS*(Cstar*vonkar*(vonkar*surf_layer_ext*c_s)**               &
+               (cvmix_one/real(3,cvmix_r8)))
+! EOC
+
+  end subroutine cvmix_kpp_compute_nonlocal
+  
+!BOP
+
 ! !IROUTINE: cvmix_kpp_compute_OBL_depth_wrap
 ! !INTERFACE:
 
@@ -1627,14 +1631,7 @@ contains
   function cvmix_kpp_compute_bulk_Richardson(zt_cntr, delta_buoy_cntr,        &
                                              delta_Vsqr_cntr, Vt_sqr_cntr,    &
                                              ws_cntr, N_iface, Nsqr_iface,    &
-                                             stokes_drift,                    &
                                              CVmix_kpp_params_user)
-! QL, 150611, new parameter: stokes_drift
-!       Here the squared surface value of Stokes drift is added to the
-!       denominator of the bulk Richardson number if lenhanced_entr == True,
-!       to account for the enhanced entrainment due to unresolved Stokes shear.
-!       Might be an overestimation. Need better parameterization.
-!       See Li et al., 2015 for details
 
 ! !DESCRIPTION:
 !  Computes the bulk Richardson number at cell centers. If \verb|Vt_sqr_cntr|
@@ -1665,8 +1662,6 @@ contains
                                                  ws_cntr, Vt_sqr_cntr
     real(cvmix_r8), dimension(size(zt_cntr)+1), intent(in), optional ::       &
                                                     N_iface, Nsqr_iface
-    ! * QL, stokes_drift is the surface Stokes drift velocity (units: m/s)
-    real(cvmix_r8), intent(in), optional :: stokes_drift
     type(cvmix_kpp_params_type), intent(in), optional, target ::              &
                                            CVmix_kpp_params_user
 
@@ -1720,18 +1715,6 @@ contains
       ! Negative sign because we use positive-up for height
       num   = -scaling*zt_cntr(kt)*delta_buoy_cntr(kt)
       denom = delta_Vsqr_cntr(kt) + unresolved_shear_cntr_sqr(kt)
-      ! QL, 150611, add squared surface Stokes drift to the denominator if
-      ! lenhanced_entr to account for enhanced entrainment due to unresolved
-      ! Stokes shear
-      if(CVmix_kpp_params_in%lenhanced_entr) then
-        if (present(stokes_drift)) then
-          denom = denom + stokes_drift**2
-        else
-          print*, "ERROR: you must pass in stokes_drift if lenhanced_entr ",  &
-                  "is true!"
-          stop 1
-        end if
-      end if
       if (denom.ne.cvmix_zero) then
         cvmix_kpp_compute_bulk_Richardson(kt) = num/denom
       else
@@ -1751,11 +1734,8 @@ contains
 
   subroutine cvmix_kpp_compute_turbulent_scales_0d(sigma_coord, OBL_depth,    &
                                                    surf_buoy_force,           &
-                                                   surf_fric_vel,             &
-                                                   langmuir_Efactor,          &
-                                                   w_m, w_s,                  &
+                                                   surf_fric_vel, w_m, w_s,   &
                                                    CVmix_kpp_params_user)
-! QL, 150611, new input parameter: langmuir_Efactor
 
 ! !DESCRIPTION:
 !  Computes the turbulent velocity scales for momentum (\verb|w_m|) and scalars
@@ -1769,7 +1749,6 @@ contains
 ! !INPUT PARAMETERS:
     real(cvmix_r8), intent(in) :: sigma_coord
     real(cvmix_r8), intent(in) :: OBL_depth, surf_buoy_force, surf_fric_vel
-    real(cvmix_r8), intent(in), optional :: langmuir_Efactor
     type(cvmix_kpp_params_type), intent(in), optional, target ::              &
                                            CVmix_kpp_params_user
 
@@ -1794,20 +1773,17 @@ contains
     if (compute_wm.and.compute_ws) then
       call cvmix_kpp_compute_turbulent_scales(sigma, OBL_depth,               &
                                               surf_buoy_force, surf_fric_vel, &
-                                         langmuir_Efactor = langmuir_Efactor, &
                                               w_m = lcl_wm, w_s = lcl_ws,     &
                                   CVmix_kpp_params_user=CVmix_kpp_params_user)
     else
       if (compute_wm) &
         call cvmix_kpp_compute_turbulent_scales(sigma, OBL_depth,             &
                                                 surf_buoy_force,surf_fric_vel,&
-                                         langmuir_Efactor = langmuir_Efactor, &
                                                 w_m = lcl_wm,                 &
                                   CVmix_kpp_params_user=CVmix_kpp_params_user)
       if (compute_ws) &
         call cvmix_kpp_compute_turbulent_scales(sigma, OBL_depth,             &
                                                 surf_buoy_force,surf_fric_vel,&
-                                         langmuir_Efactor = langmuir_Efactor, &
                                                 w_s = lcl_ws,                 &
                                   CVmix_kpp_params_user=CVmix_kpp_params_user)
     end if
@@ -1830,10 +1806,8 @@ contains
                                                          OBL_depth,           &
                                                          surf_buoy_force,     &
                                                          surf_fric_vel,       &
-                                                         langmuir_Efactor,    &
                                                          w_m, w_s,            &
                                                          CVmix_kpp_params_user)
-! QL, 150611, new input parameter: langmuir_Efactor
 
 ! !DESCRIPTION:
 !  Computes the turbulent velocity scales for momentum (\verb|w_m|) and scalars
@@ -1851,7 +1825,6 @@ contains
 ! !INPUT PARAMETERS:
     real(cvmix_r8), dimension(:), intent(in) :: sigma_coord
     real(cvmix_r8), intent(in) :: OBL_depth, surf_buoy_force, surf_fric_vel
-    real(cvmix_r8), intent(in), optional :: langmuir_Efactor
     type(cvmix_kpp_params_type), intent(in), optional, target ::              &
                                            CVmix_kpp_params_user
 
@@ -1866,7 +1839,7 @@ contains
     integer :: n_sigma, kw
     logical :: compute_wm, compute_ws
     real(cvmix_r8), dimension(size(sigma_coord)) :: zeta
-    real(cvmix_r8) :: vonkar, surf_layer_ext
+    real(cvmix_r8) :: vonkar, sigma_coord_loc, surf_layer_ext
     type(cvmix_kpp_params_type), pointer :: CVmix_kpp_params_in
 
     n_sigma = size(sigma_coord)
@@ -1882,12 +1855,25 @@ contains
     surf_layer_ext = cvmix_get_kpp_real('surf_layer_ext', CVmix_kpp_params_in)
 
     if (surf_fric_vel.ne.cvmix_zero) then
-      do kw=1,n_sigma
+      if(CVmix_kpp_params_in%l_LMD_ws) then
+        do kw=1,n_sigma
         ! compute scales at sigma if sigma < surf_layer_ext, otherwise compute
         ! at surf_layer_ext
-        zeta(kw) = min(surf_layer_ext, sigma_coord(kw)) * OBL_depth *         &
-                   surf_buoy_force*vonkar/(surf_fric_vel**3)
-      end do
+                if(surf_buoy_force .ge. cvmix_zero) then
+                        sigma_coord_loc = sigma_coord(kw)
+                else
+                        sigma_coord_loc = min(surf_layer_ext, sigma_coord(kw))
+                endif
+
+                zeta(kw) = sigma_coord_loc * OBL_depth *               &
+                            surf_buoy_force*vonkar/(surf_fric_vel**3)
+        end do
+      else
+        do kw=1,n_sigma
+                zeta(kw) = min(surf_layer_ext, sigma_coord(kw)) * OBL_depth *         &
+                                surf_buoy_force*vonkar/(surf_fric_vel**3)
+        end do
+      endif
 
       if (compute_wm) then
         w_m(1) = compute_phi_inv(zeta(1), CVmix_kpp_params_in, lphi_m=.true.)*&
@@ -1900,22 +1886,6 @@ contains
                                            CVmix_kpp_params_in, lphi_m=.true.)
           end if
         end do
-        ! QL, 150611, if llangmuirEF == True, apply langmuir enhancement factor
-        if (CVmix_kpp_params_in%llangmuirEF) then
-          if (present(langmuir_Efactor)) then
-            ! QL, 150706, DEBUG
-            !print*, "langmuir_Efactor= ",           &
-            !      langmuir_Efactor   
-            !! DEBUG
-            do kw=1,n_sigma
-              w_m(kw) = w_m(kw)*langmuir_Efactor
-            end do
-          else
-            print*, "ERROR: you must pass in langmuir_Efactor if ",           &
-                  "llangmuirEF is true!"   
-            stop 1
-          end if
-        end if ! QL
       end if
 
       if (compute_ws) then
@@ -1929,22 +1899,6 @@ contains
                                            CVmix_kpp_params_in, lphi_s=.true.)
           end if
         end do
-        ! QL, 150611, if llangmuirEF == True, apply langmuir enhancement factor
-        if (CVmix_kpp_params_in%llangmuirEF) then
-          if (present(langmuir_Efactor)) then
-            ! QL, 150706, DEBUG
-            !print*, "langmuir_Efactor= ",           &
-            !      langmuir_Efactor   
-            !! DEBUG
-            do kw=1,n_sigma
-              w_s(kw) = w_s(kw)*langmuir_Efactor
-            end do
-          else
-            print*, "ERROR: you must pass in langmuir_Efactor if ",           &
-                  "llangmuirEF is true!"   
-            stop 1
-          end if
-        end if ! QL
       end if
     else ! surf_fric_vel = 0
       if (compute_wm) then
@@ -1994,10 +1948,8 @@ contains
                                                        OBL_depth,             &
                                                        surf_buoy_force,       &
                                                        surf_fric_vel,         &
-                                                       langmuir_Efactor,      &
                                                        w_m, w_s,              &
                                                        CVmix_kpp_params_user)
-! QL, 150611, new input parameter: langmuir_Efactor
 
 ! !DESCRIPTION:
 !  Computes the turbulent velocity scales for momentum (\verb|w_m|) and scalars
@@ -2015,7 +1967,6 @@ contains
 ! !INPUT PARAMETERS:
     real(cvmix_r8), intent(in) :: sigma_coord
     real(cvmix_r8), intent(in) :: surf_fric_vel
-    real(cvmix_r8), intent(in), optional :: langmuir_Efactor
     real(cvmix_r8), dimension(:), intent(in) ::  surf_buoy_force, OBL_depth
     type(cvmix_kpp_params_type), intent(in), optional, target ::              &
                                            CVmix_kpp_params_user
@@ -2031,7 +1982,7 @@ contains
     integer :: n_sigma, kw
     logical :: compute_wm, compute_ws
     real(cvmix_r8), dimension(size(surf_buoy_force)) :: zeta
-    real(cvmix_r8) :: vonkar, surf_layer_ext
+    real(cvmix_r8) :: vonkar, surf_layer_ext, sigma_coord_loc
     type(cvmix_kpp_params_type), pointer :: CVmix_kpp_params_in
 
     n_sigma = size(surf_buoy_force)
@@ -2047,12 +1998,29 @@ contains
     surf_layer_ext = cvmix_get_kpp_real('surf_layer_ext', CVmix_kpp_params_in)
 
     if (surf_fric_vel.ne.cvmix_zero) then
-      do kw=1,n_sigma
+
+      if(CVmix_kpp_params_in%l_LMD_ws) then
+        do kw=1,n_sigma
         ! compute scales at sigma if sigma < surf_layer_ext, otherwise compute
         ! at surf_layer_ext
-        zeta(kw) = min(surf_layer_ext, sigma_coord) * OBL_depth(kw) *         &
-                   surf_buoy_force(kw)*vonkar/(surf_fric_vel**3)
-      end do
+                if(surf_buoy_force(kw) .ge. cvmix_zero) then
+                        sigma_coord_loc = sigma_coord
+                else
+                        sigma_coord_loc = min(surf_layer_ext, sigma_coord)
+                endif
+
+                zeta(kw) = sigma_coord_loc * OBL_depth(kw) *    &
+                                surf_buoy_force(kw)*vonkar/(surf_fric_vel**3)
+        end do
+      else
+        do kw=1,n_sigma
+        ! compute scales at sigma if sigma < surf_layer_ext, otherwise compute
+        ! at surf_layer_ext
+           zeta(kw) = min(surf_layer_ext,sigma_coord) * OBL_depth(kw) *    &
+                surf_buoy_force(kw)*vonkar/(surf_fric_vel**3)
+                  
+        end do
+      endif
 
       if (compute_wm) then
         w_m(1) = compute_phi_inv(zeta(1), CVmix_kpp_params_in, lphi_m=.true.)*&
@@ -2065,22 +2033,6 @@ contains
                       vonkar*surf_fric_vel
           end if
         end do
-        ! QL, 150611, if llangmuirEF == True, apply langmuir enhancement factor
-        if (CVmix_kpp_params_in%llangmuirEF) then
-          if (present(langmuir_Efactor)) then
-            ! QL, 150706, DEBUG
-            !print*, "langmuir_Efactor= ",           &
-            !      langmuir_Efactor   
-            !! DEBUG
-            do kw=1,n_sigma
-              w_m(kw) = w_m(kw)*langmuir_Efactor
-            end do
-          else
-            print*, "ERROR: you must pass in langmuir_Efactor if ",           &
-                  "llangmuirEF is true!"   
-            stop 1
-          end if
-        end if ! QL
       end if
 
       if (compute_ws) then
@@ -2094,22 +2046,6 @@ contains
                       vonkar*surf_fric_vel
           end if
         end do
-        ! QL, 150611, if llangmuirEF == True, apply langmuir enhancement factor
-        if (CVmix_kpp_params_in%llangmuirEF) then
-          if (present(langmuir_Efactor)) then
-            ! QL, 150706, DEBUG
-            !print*, "langmuir_Efactor= ",           &
-            !      langmuir_Efactor   
-            !! DEBUG
-            do kw=1,n_sigma
-              w_s(kw) = w_s(kw)*langmuir_Efactor
-            end do
-          else
-            print*, "ERROR: you must pass in langmuir_Efactor if ",           &
-                  "llangmuirEF is true!"   
-            stop 1
-          end if
-        end if ! QL
       end if
 
 
@@ -2229,7 +2165,11 @@ contains
         stop 1
       end if
       do kt=1,nlev
-        N_cntr(kt) = N_iface(kt+1)
+        if (CVmix_kpp_params_in%lavg_N_or_Nsqr) then
+          N_cntr(kt) = 0.5_cvmix_r8*(N_iface(kt)+N_iface(kt+1))
+        else
+          N_cntr(kt) = N_iface(kt+1)
+        end if
       end do
     else
       if (present(Nsqr_iface)) then
@@ -2238,7 +2178,12 @@ contains
           stop 1
         end if
         do kt=1,nlev
-          N_cntr(kt)=sqrt(max(Nsqr_iface(kt+1),cvmix_zero))
+          if (CVmix_kpp_params_in%lavg_N_or_Nsqr) then
+            N_cntr(kt)=0.5_cvmix_r8*(sqrt(max(Nsqr_iface(kt),cvmix_zero)) +   &
+                                     sqrt(max(Nsqr_iface(kt+1),cvmix_zero)))
+          else
+            N_cntr(kt)=sqrt(max(Nsqr_iface(kt+1),cvmix_zero))
+          end if
         end do
       else
         print*, "ERROR: you must provide N_iface OR Nsqr_iface"
@@ -2458,4 +2403,4 @@ contains
 
 !EOC
 
-end module cvmix_kpp
+end module cvmix_kppS
