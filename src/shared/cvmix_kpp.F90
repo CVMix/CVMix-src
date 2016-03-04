@@ -174,6 +174,14 @@
       logical        :: lenhanced_entr ! True => enhance entrainment by adding
                                        !  Stokes shear to the unresolved 
                                        !  vertial shear
+      logical        :: l_LMD_ws       ! flag to use original Large et al. (1994)
+                                       ! equations for computing turbulent scales
+                                       ! rather than the updated methodology in
+                                       ! Danabasoglu et al. (2006). The latter
+                                       ! limits sigma to be < surf_layer_extent
+                                       ! when computing turbulent scales while
+                                       ! the former only imposes this restriction
+                                       ! in unstable regimes.
   end type cvmix_kpp_params_type
 
 !EOP
@@ -192,7 +200,7 @@ contains
                             Cv, interp_type, interp_type2, MatchTechnique,    &
                             old_vals, lEkman, lMonOb, lnoDGat1,               &
                             lenhanced_diff, lnonzero_surf_nonlocal,           &
-                            llangmuirEF, lenhanced_entr,                      &
+                            llangmuirEF, lenhanced_entr, l_LMD_ws,            &
                             CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
@@ -225,7 +233,8 @@ contains
                                               lenhanced_diff,                 &
                                               llangmuirEF,                    &
                                               lenhanced_entr,                 &
-                                              lnonzero_surf_nonlocal
+                                              lnonzero_surf_nonlocal,         &
+                                              l_LMD_ws
 
 ! !OUTPUT PARAMETERS:
     type(cvmix_kpp_params_type), intent(inout), target, optional ::           &
@@ -500,6 +509,15 @@ contains
       end if
     end if
     call cvmix_put_kpp('nonlocal_coeff',nonlocal_coeff,CVmix_kpp_params_user)
+
+    ! By default, use sigma construction from Danabasoglu et al. when computing
+    ! turbulent scales. Set l_LMD_ws = .true. to use Large et al. construction.
+    if (present(l_LMD_ws)) then
+      call cvmix_put_kpp('l_LMD_ws', l_LMD_ws,                    &
+                         CVmix_kpp_params_user)
+    else
+      call cvmix_put_kpp('l_LMD_ws', .false., CVmix_kpp_params_user)
+    end if
 
 !EOC
 
@@ -1168,6 +1186,8 @@ contains
         CVmix_kpp_params_out%llangmuirEF = val
       case ('lenhanced_entr')
         CVmix_kpp_params_out%lenhanced_entr = val
+      case ('l_LMD_ws')
+        CVmix_kpp_params_out%l_LMD_ws = val
       case DEFAULT
         print*, "ERROR: ", trim(varname), " is not a boolean variable!"
         stop 1
@@ -1864,8 +1884,8 @@ contains
 
     ! Local variables
     integer :: n_sigma, kw
-    logical :: compute_wm, compute_ws
-    real(cvmix_r8), dimension(size(sigma_coord)) :: zeta
+    logical :: compute_wm, compute_ws, l_LMD_ws
+    real(cvmix_r8), dimension(size(sigma_coord)) :: zeta, sigma_loc
     real(cvmix_r8) :: vonkar, surf_layer_ext
     type(cvmix_kpp_params_type), pointer :: CVmix_kpp_params_in
 
@@ -1878,16 +1898,21 @@ contains
 
     compute_wm = present(w_m)
     compute_ws = present(w_s)
-    vonkar = cvmix_get_kpp_real('vonkarman', CVmix_kpp_params_in)
-    surf_layer_ext = cvmix_get_kpp_real('surf_layer_ext', CVmix_kpp_params_in)
+
+    l_LMD_ws       = CVmix_kpp_params_in%l_LMD_ws
+    vonkar         = CVmix_kpp_params_in%vonkarman
+    surf_layer_ext = CVmix_kpp_params_in%surf_layer_ext
 
     if (surf_fric_vel.ne.cvmix_zero) then
-      do kw=1,n_sigma
-        ! compute scales at sigma if sigma < surf_layer_ext, otherwise compute
-        ! at surf_layer_ext
-        zeta(kw) = min(surf_layer_ext, sigma_coord(kw)) * OBL_depth *         &
-                   surf_buoy_force*vonkar/(surf_fric_vel**3)
-      end do
+      if ((surf_buoy_force.ge.cvmix_zero) .and. l_LMD_ws) then
+        sigma_loc(:) = sigma_coord(:)
+      else
+        sigma_loc(:) = min(surf_layer_ext, sigma_coord(:))
+      end if
+      ! compute scales at sigma if sigma < surf_layer_ext, otherwise compute
+      ! at surf_layer_ext
+      zeta(:) = sigma_loc(:) * OBL_depth * surf_buoy_force * vonkar /         &
+                (surf_fric_vel**3)
 
       if (compute_wm) then
         w_m(1) = compute_phi_inv(zeta(1), CVmix_kpp_params_in, lphi_m=.true.)*&
@@ -2029,8 +2054,8 @@ contains
 
     ! Local variables
     integer :: n_sigma, kw
-    logical :: compute_wm, compute_ws
-    real(cvmix_r8), dimension(size(surf_buoy_force)) :: zeta
+    logical :: compute_wm, compute_ws, l_LMD_ws
+    real(cvmix_r8), dimension(size(surf_buoy_force)) :: zeta, sigma_loc
     real(cvmix_r8) :: vonkar, surf_layer_ext
     type(cvmix_kpp_params_type), pointer :: CVmix_kpp_params_in
 
@@ -2043,16 +2068,20 @@ contains
 
     compute_wm = present(w_m)
     compute_ws = present(w_s)
-    vonkar = cvmix_get_kpp_real('vonkarman', CVmix_kpp_params_in)
-    surf_layer_ext = cvmix_get_kpp_real('surf_layer_ext', CVmix_kpp_params_in)
+
+    l_LMD_ws       = CVmix_kpp_params_in%l_LMD_ws
+    vonkar         = CVmix_kpp_params_in%vonkarman
+    surf_layer_ext = CVmix_kpp_params_in%surf_layer_ext
 
     if (surf_fric_vel.ne.cvmix_zero) then
-      do kw=1,n_sigma
-        ! compute scales at sigma if sigma < surf_layer_ext, otherwise compute
-        ! at surf_layer_ext
-        zeta(kw) = min(surf_layer_ext, sigma_coord) * OBL_depth(kw) *         &
-                   surf_buoy_force(kw)*vonkar/(surf_fric_vel**3)
-      end do
+      sigma_loc = min(surf_layer_ext, sigma_coord)
+      if (l_LMD_ws) then
+        where (surf_buoy_force.ge.cvmix_zero)
+          sigma_loc = sigma_coord
+        end where
+      end if
+      zeta(:) = sigma_loc(:) * OBL_depth(:) * surf_buoy_force(:) * vonkar /   &
+                (surf_fric_vel**3)
 
       if (compute_wm) then
         w_m(1) = compute_phi_inv(zeta(1), CVmix_kpp_params_in, lphi_m=.true.)*&
