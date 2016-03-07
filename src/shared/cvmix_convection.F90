@@ -75,6 +75,9 @@ module cvmix_convection
       ! Brunt-Vaisala parameterization
       real(cvmix_r8) :: BVsqr_convect ! units: s^-2
 
+      ! Only apply below the boundary layer?
+      logical :: lnoOBL
+
       ! Flag for what to do with old values of CVmix_vars%[MTS]diff
       integer :: handle_old_vals
   end type cvmix_conv_params_type
@@ -91,7 +94,8 @@ contains
 ! !INTERFACE:
 
   subroutine cvmix_init_conv(convect_diff, convect_visc, lBruntVaisala,       &
-                             BVsqr_convect, old_vals, CVmix_conv_params_user)
+                             BVsqr_convect, lnoOBL, old_vals,                 &
+                             CVmix_conv_params_user)
 
 ! !DESCRIPTION:
 !  Initialization routine for specifying convective mixing coefficients.
@@ -111,6 +115,7 @@ contains
       convect_visc        ! viscosity to parameterize convection
     logical,        intent(in), optional :: lBruntVaisala ! True => B-V mixing
     real(cvmix_r8), intent(in), optional :: BVsqr_convect ! B-V parameter
+    logical,        intent(in), optional :: lnoOBL ! False => apply in OBL too
     character(len=cvmix_strlen), optional, intent(in) :: old_vals
 
 !EOP
@@ -132,6 +137,12 @@ contains
                           CVmix_conv_params_user)
     else
       call cvmix_put_conv("BVsqr_convect", cvmix_zero, CVmix_conv_params_user)
+    end if
+
+    if (present(lnoOBL)) then
+      call cvmix_put_conv("lnoOBL", lnoOBL, CVmix_conv_params_user)
+    else
+      call cvmix_put_conv("lnoOBL", .true., CVmix_conv_params_user)
     end if
 
     if (present(old_vals)) then
@@ -212,7 +223,8 @@ contains
                            CVmix_vars%SqrBuoyancyFreq_iface,                  &
                            CVmix_vars%WaterDensity_cntr,                      &
                            CVmix_vars%AdiabWaterDensity_cntr,                 &
-                           nlev, max_nlev, CVmix_conv_params_user)
+                           nlev, max_nlev, nint(CVMix_vars%kOBL_depth)+1,     &
+                           CVmix_conv_params_user)
     call cvmix_update_wrap(CVmix_conv_params_in%handle_old_vals, max_nlev,    &
                            Mdiff_out = CVmix_vars%Mdiff_iface,                &
                            new_Mdiff = new_Mdiff,                             &
@@ -229,7 +241,8 @@ contains
 ! !INTERFACE:
 
   subroutine cvmix_coeffs_conv_low(Mdiff_out, Tdiff_out, Nsqr, dens, dens_lwr,&
-                                   nlev, max_nlev, CVmix_conv_params_user)
+                                   nlev, max_nlev, OBL_ind,                   &
+                                   CVmix_conv_params_user)
 
 ! !DESCRIPTION:
 !  Computes vertical diffusion coefficients for convective mixing.
@@ -242,6 +255,7 @@ contains
 ! !INPUT PARAMETERS:
 
     integer,                               intent(in) :: nlev, max_nlev
+    integer,                               intent(in) :: OBL_ind
     ! max_nlev+1
     real(cvmix_r8), dimension(max_nlev+1), intent(in) :: Nsqr
     ! max_nlev
@@ -263,8 +277,9 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    real(cvmix_r8) :: vvconv, wgt
+    real(cvmix_r8) :: convect_mdiff, convect_tdiff, wgt
     integer        :: kw
+    logical        :: lnoOBL
     type (cvmix_conv_params_type), pointer :: CVmix_conv_params_in
 
     if (present(CVmix_conv_params_user)) then
@@ -272,6 +287,9 @@ contains
     else
       CVmix_conv_params_in => CVmix_conv_params_saved
     end if
+    lnoOBL = CVMix_conv_params_in%lnoOBL
+    convect_mdiff = CVMix_conv_params_in%convect_visc
+    convect_tdiff = CVMix_conv_params_in%convect_diff
 
 !-----------------------------------------------------------------------
 !
@@ -311,8 +329,8 @@ contains
                                                   CVmix_conv_params_in)
         end do
       else ! BVsqr_convect >= 0 => step function
-        do kw=1,nlev-1
-          if (Nsqr(kw).le.0) then
+        do kw=1,nlev
+          if ((Nsqr(kw).le.0).and.((kw.ge.OBL_ind).or.(.not.lnoOBL))) then
             Mdiff_out(kw) = cvmix_get_conv_real('convect_visc',               &
                                                 CVmix_conv_params_in)
             Tdiff_out(kw) = cvmix_get_conv_real('convect_diff',               &
@@ -322,27 +340,20 @@ contains
             Tdiff_out(kw) = cvmix_zero
           end if
         end do
-        Mdiff_out(nlev) = cvmix_zero
-        Tdiff_out(nlev) = cvmix_zero
       end if
       Mdiff_out(nlev+1) = cvmix_zero
       Tdiff_out(nlev+1) = cvmix_zero
     else
       ! Default convection mixing based on density
       do kw=1,nlev-1
-        if (CVmix_conv_params_in%convect_visc.ne.cvmix_zero) then
-           vvconv = cvmix_get_conv_real('convect_visc', CVmix_conv_params_in)
-        else
-          ! convection only affects tracers
-          vvconv = Mdiff_out(kw)
-        end if
-
-!        if (CVmix_vars%WaterDensity_cntr(kw).gt.                              &
-!            CVmix_vars%AdiabWaterDensity_cntr(kw)) then
         if (dens(kw).gt.dens_lwr(kw)) then
-          Mdiff_out(kw+1) = vvconv
-          Tdiff_out(kw+1) = cvmix_get_conv_real('convect_diff',               &
-                                                CVmix_conv_params_in)
+          if (CVmix_conv_params_in%convect_visc.eq.cvmix_zero) then
+            ! convection only affects tracers
+            Mdiff_out(kw+1) = Mdiff_out(kw)
+          else
+            Mdiff_out(kw+1) = convect_mdiff
+          end if
+          Tdiff_out(kw+1) = convect_tdiff
         end if
       end do
     end if
@@ -485,6 +496,8 @@ contains
     select case (trim(varname))
       case ('lBruntVaisala')
         CVmix_conv_params_out%lBruntVaisala = val
+      case ('lnoOBL')
+        CVmix_conv_params_out%lnoOBL = val
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
         stop 1
