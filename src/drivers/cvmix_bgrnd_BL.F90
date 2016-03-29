@@ -83,14 +83,14 @@ Subroutine cvmix_BL_driver(nlev, max_nlev, ocn_depth)
   ! depth (also allocate memory for diffusivity and viscosity)
   allocate(iface_depth(max_nlev+1))
   iface_depth(1) = cvmix_zero
-  
+
   ! Depth is 0 at sea level and negative at ocean bottom in CVMix
   do kw = 2,max_nlev+1
     iface_depth(kw) = iface_depth(kw-1) - ocn_depth/real(nlev,cvmix_r8)
   end do
 
   ! Allocate memory to store viscosity and diffusivity values (for pointer)
-  allocate(Mdiff(ncol,max_nlev+1), Tdiff(ncol,max_nlev+1)) 
+  allocate(Mdiff(ncol,max_nlev+1), Tdiff(ncol,max_nlev+1))
 
   ! Initialization for CVMix data types
   call cvmix_put(CVmix_params,  'max_nlev', max_nlev)
@@ -142,7 +142,7 @@ Subroutine cvmix_BL_driver(nlev, max_nlev, ocn_depth)
                             cvmix_get_bkgnd_real_2D('static_Tdiff'),(/nlev+1/))
   call cvmix_coeffs_bkgnd(CVmix_vars_memcopy(2),                              &
                           CVmix_bkgnd_params_user=CVmix_BL_params)
-  
+
   ! Output
 #ifdef _NETCDF
   ! data will have diffusivity from both columns (needed for NCL script)

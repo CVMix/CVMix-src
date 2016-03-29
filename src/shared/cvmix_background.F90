@@ -4,7 +4,7 @@ module cvmix_background
 !\newpage
 ! !MODULE: cvmix_background
 !
-! !AUTHOR: 
+! !AUTHOR:
 !  Michael N. Levy, NCAR (mlevy@ucar.edu)
 !
 ! !DESCRIPTION:
@@ -120,7 +120,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     real(cvmix_r8),             intent(in) :: bkgnd_Tdiff
@@ -192,7 +192,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     real(cvmix_r8), dimension(:),          intent(in) :: bkgnd_Tdiff
@@ -293,7 +293,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     real(cvmix_r8), dimension(:,:),        intent(in) :: bkgnd_Tdiff
@@ -332,7 +332,7 @@ contains
                          CVmix_bkgnd_params_user)
     call cvmix_put_bkgnd("static_Tdiff", bkgnd_Tdiff, ncol, nlev,             &
                          CVmix_bkgnd_params_user)
- 
+
     if (present(old_vals)) then
       select case (trim(old_vals))
         case ("overwrite")
@@ -388,7 +388,7 @@ contains
 !  Journal of Geophysical Research, vol 84 (1979), pages 2503-2517.
 !  \end{quote}
 !
-!  In that paper, they recommend the parameters 
+!  In that paper, they recommend the parameters
 !  \begin{itemize}
 !  \item[] bl1 $= 8 \cdot 10^{-5}$ m$^2/$s
 !  \item[] bl2 $= 1.05 \cdot 10^{-4}$ m$^2/$s
@@ -396,9 +396,9 @@ contains
 !  \item[] bl4 $= 2500$ m
 !  \end{itemize}
 !  However, more recent usage of their scheme may warrant different settings.
-!    
+!
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     ! Contains depth and nlev
@@ -432,7 +432,7 @@ contains
     end if
 
     nlev = CVmix_params_in%max_nlev
-    
+
     ! Clean up memory in bkgnd_params_type (will be re-allocated in put call)
     if (allocated(CVmix_bkgnd_params_out%static_Mdiff))                       &
       deallocate(CVmix_bkgnd_params_out%static_Mdiff)
@@ -490,7 +490,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
 
@@ -509,7 +509,7 @@ contains
     real(cvmix_r8), dimension(CVmix_vars%max_nlev+1) :: new_Mdiff, new_Tdiff
     type(cvmix_bkgnd_params_type), pointer :: CVmix_bkgnd_params_in
     integer :: nlev, max_nlev
-       
+
     CVmix_bkgnd_params_in => CVmix_bkgnd_params_saved
     if (present(CVmix_bkgnd_params_user)) then
       CVmix_bkgnd_params_in => CVmix_bkgnd_params_user
@@ -551,7 +551,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
 
@@ -577,7 +577,7 @@ contains
 !-----------------------------------------------------------------------
 
     integer :: kw
-       
+
     do kw=1,nlev+1
       Mdiff_out(kw) = cvmix_bkgnd_static_Mdiff(CVmix_bkgnd_params_user, kw,   &
                                                colid)
@@ -603,7 +603,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     type(cvmix_bkgnd_params_type), intent(in) :: CVmix_bkgnd_params_test
@@ -632,7 +632,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     type(cvmix_bkgnd_params_type), target, optional, intent(in) ::            &
@@ -696,7 +696,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     type(cvmix_bkgnd_params_type), target, optional, intent(in) ::            &
@@ -760,7 +760,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*), intent(in) :: varname
@@ -805,7 +805,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*), intent(in) :: varname
@@ -849,7 +849,7 @@ contains
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
         stop 1
-      
+
     end select
 
 !EOC
@@ -872,7 +872,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*),             intent(in) :: varname
@@ -976,7 +976,7 @@ contains
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
         stop 1
-      
+
     end select
 
 !EOC
@@ -997,7 +997,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*),               intent(in) :: varname
@@ -1065,7 +1065,7 @@ contains
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
         stop 1
-      
+
     end select
 
 !EOC
@@ -1085,7 +1085,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*),                                intent(in) :: varname

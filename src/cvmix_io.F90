@@ -5,7 +5,7 @@ module cvmix_io
 ! !MODULE: cvmix_io
 !
 ! !DESCRIPTION:
-!  This module contains routines to read CVmix variables from data files or 
+!  This module contains routines to read CVmix variables from data files or
 !  output CVmix variables to data files. Currently only ascii and netCDF output
 !  are supported, as well as netCDF input, but the plan is to also include plain
 !  binary input / output as well.
@@ -102,7 +102,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*),  intent(in) :: file_name, file_format
@@ -139,8 +139,8 @@ contains
         file_index => file_index%next
       end do
       allocate(file_index%next)
-      file_index%next%file_id   = file_id 
-      file_index%next%prev     => file_index 
+      file_index%next%file_id   = file_id
+      file_index%next%prev     => file_index
       nullify(file_index%next%next)
       file_index => file_index%next
     end if
@@ -200,7 +200,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     integer,          intent(in)  :: file_id
@@ -242,7 +242,6 @@ contains
           end if
         end if
 
-        
         if (.not.lerr_in_read) then
           call netcdf_check(nf90_inquire_variable(file_id, varid, dimids=dims))
           dims1 = dims(1)
@@ -290,7 +289,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     integer,          intent(in)  :: file_id
@@ -331,7 +330,6 @@ contains
           end if
         end if
 
-        
         if (.not.lerr_in_read) then
           call netcdf_check(nf90_inquire_variable(file_id, varid, dimids=dims1))
           do i=1,2
@@ -381,7 +379,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     integer,          intent(in)  :: file_id
@@ -422,7 +420,6 @@ contains
           end if
         end if
 
-        
         if (.not.lerr_in_read) then
           call netcdf_check(nf90_inquire_variable(file_id, varid, dimids=dims1))
           do i=1,2
@@ -472,7 +469,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     integer,          intent(in)  :: file_id
@@ -513,7 +510,6 @@ contains
           end if
         end if
 
-        
         if (.not.lerr_in_read) then
           call netcdf_check(nf90_inquire_variable(file_id, varid, dimids=dims1))
           do i=1,3
@@ -564,7 +560,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     integer,                                    intent(in) :: file_id
@@ -795,7 +791,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     integer,                             intent(in) :: file_id
@@ -990,7 +986,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     integer,                           intent(in) :: file_id
@@ -1034,7 +1030,7 @@ contains
             write(file_id, "(E24.17E2)",advance='no') field(i,j)
             if (j.ne.dims(2)) write(file_id, "(1X)", advance='no')
           end do
-          write(file_id, *)          
+          write(file_id, *)
         end do
       case DEFAULT
         print*, "ERROR: cvmix_output_write_2d_double only writes to netcdf"
@@ -1065,7 +1061,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     integer,                             intent(in) :: file_id
@@ -1133,7 +1129,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     integer,          intent(in)           :: file_id
@@ -1198,7 +1194,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     integer,          intent(in)           :: file_id
@@ -1263,7 +1259,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     integer,          intent(in)           :: file_id
@@ -1327,7 +1323,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     integer, intent(in) :: file_id
@@ -1417,7 +1413,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !LOCAL VARIABLES:
     integer :: fid
@@ -1449,7 +1445,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     integer, intent(in) :: file_id
@@ -1493,7 +1489,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     integer, intent(in) :: file_id
@@ -1538,7 +1534,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     integer,          intent(in) :: file_id
@@ -1595,7 +1591,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     integer,          intent(in) :: file_id

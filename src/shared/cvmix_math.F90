@@ -6,11 +6,11 @@
 !\newpage
 ! !MODULE: cvmix_math
 !
-! !AUTHOR: 
+! !AUTHOR:
 !  Michael N. Levy, NCAR (mlevy@ucar.edu)
 !
 ! !DESCRIPTION:
-!  This module contains routines to compute polynomial interpolations (linear, 
+!  This module contains routines to compute polynomial interpolations (linear,
 !  quadratic, or cubic spline), evaluate  third-order polynomials and their
 !  derivatives at specific values, and compute roots of these polynomials.
 !\\
@@ -201,7 +201,7 @@
     cvmix_math_cubic_root_find = root
 
   end function cvmix_math_cubic_root_find
-      
+
 !BOP
 
 ! !IROUTINE: cvmix_math_evaluate_cubic
@@ -217,7 +217,7 @@
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     real(cvmix_r8), dimension(4), intent(in) :: coeffs
@@ -237,7 +237,7 @@
     ! then add the powers of x_in via a do-loop. This both reduces the number
     ! of arithmetic steps in the algorithm and avoids possible compiler issues
     ! if x_in = 0 (because 0*0 is undefined in some compilers)
-    cvmix_math_evaluate_cubic = coeffs(1) 
+    cvmix_math_evaluate_cubic = coeffs(1)
     if (present(fprime)) &
       fprime = coeffs(2)
     do i=2,4

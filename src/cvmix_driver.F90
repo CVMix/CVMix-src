@@ -24,7 +24,7 @@ Program cvmix_driver
 !EOP
 !BOC
   integer :: nlev, max_nlev
-  real(kind=cvmix_r8) :: ocn_depth 
+  real(kind=cvmix_r8) :: ocn_depth
   character(len=cvmix_strlen) :: mix_type
 
   namelist/cvmix_nml/mix_type, nlev, max_nlev, ocn_depth

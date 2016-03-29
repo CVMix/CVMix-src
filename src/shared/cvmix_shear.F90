@@ -4,7 +4,7 @@
 !\newpage
 ! !MODULE: cvmix_shear
 !
-! !AUTHOR: 
+! !AUTHOR:
 !  Michael N. Levy, NCAR (mlevy@ucar.edu)
 !
 ! !DESCRIPTION:
@@ -127,7 +127,7 @@ contains
 !  the interior mixing scheme laid out in Large et al.
 !\\
 !\\
-!  PP requires setting $\nu_0$ (\verb|PP_nu_zero| in this routine), $alpha$ 
+!  PP requires setting $\nu_0$ (\verb|PP_nu_zero| in this routine), $alpha$
 !  (\verb|PP_alpha|), and $n$ (\verb|PP_exp|), and returns
 !  \begin{eqnarray*}
 !  \nu_{PP} & = & \frac{\nu_0}{(1+\alpha \textrm{Ri})^n} + \nu_b \\
@@ -137,7 +137,7 @@ contains
 !  background diffusivities are computed in the \verb|cvmix_background| module
 ! \\
 ! \\
-! KPP requires setting $\nu^0$ (\verb|KPP_nu_zero|, $\textrm{Ri}_0 
+! KPP requires setting $\nu^0$ (\verb|KPP_nu_zero|, $\textrm{Ri}_0
 ! ($\verb|KPP_Ri_zero|), and $p_1$ (\verb|KPP_exp|),  and returns
 ! $$
 ! \nu_{KPP} = \left\{
@@ -389,7 +389,7 @@ contains
         ! Pacanowski-Philander
         do kw=1,nlev+1
           if (RICH(kw).gt.cvmix_zero) then
-            denom = cvmix_one + PP_alpha * RICH(kw) 
+            denom = cvmix_one + PP_alpha * RICH(kw)
           else
             ! Treat non-negative Richardson number as Ri = 0
             denom = cvmix_one
@@ -442,7 +442,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*), intent(in) :: varname
@@ -488,7 +488,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*), intent(in) :: varname
@@ -529,7 +529,7 @@ contains
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
         stop 1
-      
+
     end select
 
 !EOC
@@ -549,7 +549,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*), intent(in) :: varname
@@ -576,7 +576,7 @@ contains
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
         stop 1
-      
+
     end select
 
 !EOC
@@ -596,7 +596,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*),                                intent(in) :: varname
@@ -634,7 +634,7 @@ contains
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
         stop 1
-      
+
     end select
 
 !EOC
@@ -654,7 +654,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*),                                intent(in) :: varname
@@ -681,7 +681,7 @@ contains
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
         stop 1
-      
+
     end select
 
 !EOC

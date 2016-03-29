@@ -4,7 +4,7 @@ module cvmix_ddiff
 !\newpage
 ! !MODULE: cvmix_ddiff
 !
-! !AUTHOR: 
+! !AUTHOR:
 !  Michael N. Levy, NCAR (mlevy@ucar.edu)
 !
 ! !DESCRIPTION:
@@ -64,7 +64,7 @@ module cvmix_ddiff
   interface cvmix_put_ddiff
     module procedure cvmix_put_ddiff_str
     module procedure cvmix_put_ddiff_real
-    module procedure cvmix_put_ddiff_int 
+    module procedure cvmix_put_ddiff_int
   end interface cvmix_put_ddiff
 
 ! !PUBLIC TYPES:
@@ -143,8 +143,8 @@ module cvmix_ddiff
 !  \begin{eqnarray*}
 !  \kappa = \kappa^0 \left[ 1 - \left(\frac{R_\rho - 1}{R_\rho^0 - 1} \right)^{p_1}\right]^{p_2}
 !  \end{eqnarray*}
-!  By default, $R_\rho^0 = 2.55$, but that can be changed by setting 
-!  \verb|strat_param_max| in the code. Similarly, by default $p_1 = 1$ 
+!  By default, $R_\rho^0 = 2.55$, but that can be changed by setting
+!  \verb|strat_param_max| in the code. Similarly, by default $p_1 = 1$
 ! (\verb|ddiff_exp1|), $p_2 = 3$ (\verb|ddiff_exp2|), and
 !  \begin{eqnarray*}
 !  \kappa^0 = \left\{ \begin{array}{r l}
@@ -454,7 +454,7 @@ module cvmix_ddiff
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*), intent(in) :: varname, val
@@ -509,7 +509,7 @@ module cvmix_ddiff
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*), intent(in) :: varname
@@ -549,7 +549,7 @@ module cvmix_ddiff
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
         stop 1
-      
+
     end select
 
 !EOC
@@ -569,7 +569,7 @@ module cvmix_ddiff
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*), intent(in) :: varname
@@ -617,7 +617,7 @@ module cvmix_ddiff
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*),                                intent(in)    :: varname
@@ -658,7 +658,7 @@ module cvmix_ddiff
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
         stop 1
-      
+
     end select
 
 !EOC

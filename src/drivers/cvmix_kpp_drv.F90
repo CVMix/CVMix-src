@@ -78,7 +78,7 @@ Subroutine cvmix_kpp_driver()
 
   ! Read namelists
 
-  ! Defaults for test 1 
+  ! Defaults for test 1
   ltest1         = .false.
   nlev1          = 4
   layer_thick1   =  real(10,  cvmix_r8)
@@ -86,14 +86,14 @@ Subroutine cvmix_kpp_driver()
   ri_crit        =  0.3_cvmix_r8
   interp_type_t1 = 'quadratic'
 
-  ! Defaults for test 2 
+  ! Defaults for test 2
   ltest2 = .false.
 
-  ! Defaults for test 3 
+  ! Defaults for test 3
   ltest3 = .false.
   nlev3  = 220
 
-  ! Defaults for test 4 
+  ! Defaults for test 4
   ltest4         = .false.
   OBL_levid4     = 3
   interp_type_t4 = 'quadratic'
@@ -133,7 +133,7 @@ Subroutine cvmix_kpp_driver()
   !         layer thickness) is stored at cell centers and then interpolated
   !         (user can specify linear, quadratic or cubic interpolant) between
   !         cell centers. OBL_depth is set to depth where interpolated bulk
-  !         Richardson number = Ri_crit; level-center depth (zt) and bulk 
+  !         Richardson number = Ri_crit; level-center depth (zt) and bulk
   !         Richardson numbers are written out to test1.nc or test1.out
   if (ltest1) then
     print*, "Test 1: determining OBL depth"
@@ -338,7 +338,7 @@ Subroutine cvmix_kpp_driver()
 #endif
 
     call cvmix_output_write(fid, CVmix_vars4, (/"zt   ", "zw   ", "Mdiff",    &
-                                                "Tdiff", "Sdiff"/)) 
+                                                "Tdiff", "Sdiff"/))
 #ifdef _NETCDF
     call cvmix_output_write_att(fid, "interp_type2", interp_type_t4)
     call cvmix_output_write_att(fid, "OBL_depth",                             &
@@ -379,7 +379,7 @@ Subroutine cvmix_kpp_driver()
 #endif
 
     call cvmix_output_write(fid, CVmix_vars4, (/"zt   ", "zw   ", "Mdiff",    &
-                                                "Tdiff", "Sdiff"/)) 
+                                                "Tdiff", "Sdiff"/))
 #ifdef _NETCDF
     call cvmix_output_write_att(fid, "interp_type2", interp_type_t4)
     call cvmix_output_write_att(fid, "OBL_depth",                             &
@@ -462,7 +462,7 @@ Subroutine cvmix_kpp_driver()
                                              ws_cntr = w_s)
 
     shear_sqr = cvmix_kpp_compute_unresolved_shear(zt, w_s,                   &
-                                             Nsqr_iface = buoy_freq_iface**2) 
+                                             Nsqr_iface = buoy_freq_iface**2)
     ! Note that Vt_shear_sqr is the fourth argument in compute_bulk_Richardson
     ! so it does not need to declared explicitly (even though it is optional)
     Ri_bulk2  = cvmix_kpp_compute_bulk_Richardson(zt, (buoyancy(1)-buoyancy), &
@@ -525,7 +525,7 @@ Subroutine cvmix_kpp_driver()
     print*, ""
     print*, "Test 6: 2 simple tests for velocity scale"
     print*, "----------"
-    
+
     call cvmix_init_kpp(vonkarman=vonkarman6)
     sigma6 = 0.1_cvmix_r8
 
@@ -567,7 +567,6 @@ Subroutine cvmix_kpp_driver()
     print*, "w_m = ", w_m6
     print*, "w_s = ", w_s6
     print*, ""
-    
 
   end if ! ltest6
 

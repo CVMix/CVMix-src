@@ -4,7 +4,7 @@ module cvmix_utils
 !\newpage
 ! !MODULE: cvmix_utils
 !
-! !AUTHOR: 
+! !AUTHOR:
 !  Michael N. Levy, NCAR (mlevy@ucar.edu)
 !
 ! !DESCRIPTION:
@@ -52,7 +52,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     integer, intent(in) :: old_vals, nlev
@@ -117,7 +117,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*), intent(in) :: varname
@@ -156,7 +156,7 @@ contains
       case ("LangmuirEnhancementFactor", "EnhancementFactor",   &
               "langmuir_Efactor")
         cvmix_att_name = "LangmuirEnhancementFactor"
-      case ("SurfaceStokesDrift", "stokes_drift")   
+      case ("SurfaceStokesDrift", "stokes_drift")
         cvmix_att_name = "SurfaceStokesDrift"
 
       ! Variables on level interfaces

@@ -67,7 +67,7 @@ Subroutine cvmix_tidal_driver()
   namelist/Simmons_nml/grid_file, physics_file, energy_flux_file,             &
                        energy_flux_var, lon_out, lat_out
 
-  ! Read namelist variables 
+  ! Read namelist variables
   grid_file = "none"
   physics_file = "none"
   energy_flux_file = "none"
@@ -83,7 +83,7 @@ Subroutine cvmix_tidal_driver()
   nlat = -1
   max_nlev = -1
   call cvmix_io_open(fid, trim(grid_file), 'nc', read_only=.true.)
-#ifdef _NETCDF  
+#ifdef _NETCDF
   nlon = cvmix_input_get_netcdf_dim(fid, 'lon')
   nlat = cvmix_input_get_netcdf_dim(fid, 'lat')
   max_nlev = cvmix_input_get_netcdf_dim(fid, 'nlev')

@@ -6,7 +6,7 @@
 !\newpage
 ! !MODULE: cvmix_kpp
 !
-! !AUTHOR: 
+! !AUTHOR:
 !  Michael N. Levy, NCAR (mlevy@ucar.edu)
 !
 ! !DESCRIPTION:
@@ -172,7 +172,7 @@
       logical        :: llangmuirEF    ! True => apply Langmuir enhancement
                                        !  factor to turbulent velocity scale
       logical        :: lenhanced_entr ! True => enhance entrainment by adding
-                                       !  Stokes shear to the unresolved 
+                                       !  Stokes shear to the unresolved
                                        !  vertial shear
       logical        :: l_LMD_ws       ! flag to use original Large et al. (1994)
                                        ! equations for computing turbulent scales
@@ -246,7 +246,6 @@ contains
     real(cvmix_r8) :: zm, zs, a_m, a_s, c_m, c_s
     real(cvmix_r8) :: Cstar_loc, vonkar_loc, surf_layer_ext_loc
     real(cvmix_r8) :: nonlocal_coeff
-  
 
     if (present(ri_crit)) then
       if (ri_crit.lt.cvmix_zero) then
@@ -711,7 +710,7 @@ contains
     Sdiff_out = old_Sdiff
 
     ! (1) Column-specific parameters
-    !     
+    !
     ! Stability => positive surface buoyancy flux
     lstable = (surf_buoy.gt.cvmix_zero)
 
@@ -731,7 +730,7 @@ contains
       case (CVMIX_KPP_SIMPLE_SHAPES)
         ! Simple shape function is sigma*(1-sigma)^2
         Mshape(1) =  cvmix_zero
-        Mshape(2) =  cvmix_one 
+        Mshape(2) =  cvmix_one
         Mshape(3) = -real(2,cvmix_r8)
         Mshape(4) =  cvmix_one
         Tshape    = Mshape
@@ -742,12 +741,12 @@ contains
         ! Shape function is sigma*(1-sigma)^2 for gradient term
         ! and (1-sigma)^2 for non-local term
         Mshape(1) =  cvmix_zero
-        Mshape(2) =  cvmix_one 
+        Mshape(2) =  cvmix_one
         Mshape(3) = -real(2,cvmix_r8)
         Mshape(4) =  cvmix_one
         Tshape    = Mshape
         Sshape    = Mshape
-        Tshape2(1) =  cvmix_one 
+        Tshape2(1) =  cvmix_one
         Tshape2(2) = -real(2,cvmix_r8)
         Tshape2(3) =  cvmix_one
         Tshape2(4) =  cvmix_zero
@@ -854,7 +853,7 @@ contains
         !      i) momentum diffusivity (viscosity)
         !      ii) temperature diffusivity
         !      iii) other tracers diffusivity
-        ! Notes: 
+        ! Notes:
         !   * We are computing G(1) and G'(1) so we can represent G(sigma) as a
         !     cubic polynomial and then compute Kx = OBL_depth*wx*G. If either
         !     OBL_depth or wx are 0, it doesn't matter what G is because Kx
@@ -924,7 +923,7 @@ contains
         if (MatchTechnique.eq.CVMIX_KPP_MATCH_GRADIENT) then
           ! Only match for gradient term, use simple shape for nonlocal
           Tshape2(1) =  cvmix_zero
-          Tshape2(2) =  cvmix_one 
+          Tshape2(2) =  cvmix_one
           Tshape2(3) = -real(2,cvmix_r8)
           Tshape2(4) =  cvmix_one
           Sshape2 = Tshape2
@@ -1027,7 +1026,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*), intent(in) :: varname
@@ -1100,7 +1099,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*), intent(in) :: varname
@@ -1150,7 +1149,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*), intent(in) :: varname
@@ -1212,7 +1211,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*),                              intent(in) :: varname
@@ -1281,7 +1280,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     real(cvmix_r8), dimension(:),                   intent(in) :: Ri_bulk
@@ -1445,7 +1444,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     real(cvmix_r8), dimension(:), intent(in) :: zw_iface, zt_cntr
@@ -1514,7 +1513,7 @@ contains
     ! above OBL_depth divided by distance between cell centers bracketing
     ! OBL_depth).
     real(cvmix_r8), intent(in) :: delta
-    
+
     logical, intent(in) :: lkteqkw ! .true.  => interface ktup+1 is outside OBL
                                    !            (update diff and visc)
                                    ! .false. => interface ktup+1 is inside OBL
@@ -1553,7 +1552,7 @@ contains
       enh_Mdiff = (omd**2)*Mdiff_ktup + (delta**2)*Mdiff
       enh_Tdiff = (omd**2)*Tdiff_ktup + (delta**2)*Tdiff
       enh_Sdiff = (omd**2)*Sdiff_ktup + (delta**2)*Sdiff
-      
+
       ! (b) modify diffusivity values at kw = ktup+1 (again in diff and visc)
       Mdiff = omd*Mdiff + delta*enh_Mdiff
       Tdiff = omd*Tdiff + delta*enh_Tdiff
@@ -1572,7 +1571,7 @@ contains
       enh_Mdiff = (omd**2)*Mdiff_ktup + (delta**2)*OBL_Mdiff
       enh_Tdiff = (omd**2)*Tdiff_ktup + (delta**2)*OBL_Tdiff
       enh_Sdiff = (omd**2)*Sdiff_ktup + (delta**2)*OBL_Sdiff
-      
+
       ! (b) modify diffusivity values at kw = ktup+1 (again in OBL_diff and
       !     OBL_visc)
       OBL_Mdiff = omd*Mdiff + delta*enh_Mdiff
@@ -1595,7 +1594,7 @@ contains
 ! EOC
 
   end subroutine cvmix_kpp_compute_enhanced_diff
-  
+
 !BOP
 
 ! !IROUTINE: cvmix_kpp_compute_OBL_depth_wrap
@@ -1609,7 +1608,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     type(cvmix_kpp_params_type), optional, target, intent(in) ::                &
@@ -1629,7 +1628,7 @@ contains
                                      lcl_obl_depth,  lcl_kobl_depth,          &
                                      CVmix_vars%zt_cntr,                      &
                                      CVmix_vars%SurfaceFriction,              &
-                                     CVmix_vars%SurfaceBuoyancyForcing,       & 
+                                     CVmix_vars%SurfaceBuoyancyForcing,       &
                                      CVmix_vars%Coriolis,                     &
                                      CVmix_kpp_params_user)
     call cvmix_put(CVmix_vars, 'OBL_depth', lcl_obl_depth)
@@ -1665,7 +1664,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     ! * zt_cntr is level-center height (d in LMD94, units: m)
@@ -1784,7 +1783,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     real(cvmix_r8), intent(in) :: sigma_coord
@@ -1859,14 +1858,14 @@ contains
 !  Computes the turbulent velocity scales for momentum (\verb|w_m|) and scalars
 !  (\verb|w_s|) given a 1d array of $\sigma$ coordinates. Note that the
 !  turbulent scales are a continuous function, so there is no restriction to
-!  only evaluating this routine at interfaces or cell centers. Also, if 
+!  only evaluating this routine at interfaces or cell centers. Also, if
 !  $\sigma >$ \verb|surf_layer_ext| (which is typically 0.1), \verb|w_m| and
 !  \verb|w_s| will be evaluated at the latter value.
 !\\
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     real(cvmix_r8), dimension(:), intent(in) :: sigma_coord
@@ -1930,14 +1929,14 @@ contains
           if (present(langmuir_Efactor)) then
             ! QL, 150706, DEBUG
             !print*, "langmuir_Efactor= ",           &
-            !      langmuir_Efactor   
+            !      langmuir_Efactor
             !! DEBUG
             do kw=1,n_sigma
               w_m(kw) = w_m(kw)*langmuir_Efactor
             end do
           else
             print*, "ERROR: you must pass in langmuir_Efactor if ",           &
-                  "llangmuirEF is true!"   
+                  "llangmuirEF is true!"
             stop 1
           end if
         end if ! QL
@@ -1959,14 +1958,14 @@ contains
           if (present(langmuir_Efactor)) then
             ! QL, 150706, DEBUG
             !print*, "langmuir_Efactor= ",           &
-            !      langmuir_Efactor   
+            !      langmuir_Efactor
             !! DEBUG
             do kw=1,n_sigma
               w_s(kw) = w_s(kw)*langmuir_Efactor
             end do
           else
             print*, "ERROR: you must pass in langmuir_Efactor if ",           &
-                  "llangmuirEF is true!"   
+                  "llangmuirEF is true!"
             stop 1
           end if
         end if ! QL
@@ -2035,7 +2034,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     real(cvmix_r8), intent(in) :: sigma_coord
@@ -2099,14 +2098,14 @@ contains
           if (present(langmuir_Efactor)) then
             ! QL, 150706, DEBUG
             !print*, "langmuir_Efactor= ",           &
-            !      langmuir_Efactor   
+            !      langmuir_Efactor
             !! DEBUG
             do kw=1,n_sigma
               w_m(kw) = w_m(kw)*langmuir_Efactor
             end do
           else
             print*, "ERROR: you must pass in langmuir_Efactor if ",           &
-                  "llangmuirEF is true!"   
+                  "llangmuirEF is true!"
             stop 1
           end if
         end if ! QL
@@ -2128,14 +2127,14 @@ contains
           if (present(langmuir_Efactor)) then
             ! QL, 150706, DEBUG
             !print*, "langmuir_Efactor= ",           &
-            !      langmuir_Efactor   
+            !      langmuir_Efactor
             !! DEBUG
             do kw=1,n_sigma
               w_s(kw) = w_s(kw)*langmuir_Efactor
             end do
           else
             print*, "ERROR: you must pass in langmuir_Efactor if ",           &
-                  "llangmuirEF is true!"   
+                  "llangmuirEF is true!"
             stop 1
           end if
         end if ! QL
@@ -2206,7 +2205,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     ! zt_cntr: height at center of cell (units: m)
@@ -2385,7 +2384,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     real(cvmix_r8), intent(in) :: GAT1  ! G(1)
@@ -2422,7 +2421,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     ! depths_cntr  = (/layer center containing OBL, layer center below/)

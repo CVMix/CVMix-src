@@ -4,7 +4,7 @@ module cvmix_convection
 !\newpage
 ! !MODULE: cvmix_convection
 !
-! !AUTHOR: 
+! !AUTHOR:
 !  Michael N. Levy, NCAR (mlevy@ucar.edu)
 !
 ! !DESCRIPTION:
@@ -103,7 +103,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !OUTPUT PARAMETERS:
     type (cvmix_conv_params_type), optional, intent(inout) ::                 &
@@ -182,7 +182,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
 
@@ -250,7 +250,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
 
@@ -375,7 +375,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*), intent(in) :: varname
@@ -421,7 +421,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*), intent(in) :: varname
@@ -452,7 +452,7 @@ contains
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
         stop 1
-      
+
     end select
 
 !EOC
@@ -472,7 +472,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*), intent(in) :: varname
@@ -520,7 +520,7 @@ contains
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*),             intent(in) :: varname
@@ -549,7 +549,7 @@ contains
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
         stop 1
-      
+
     end select
 
 !EOC

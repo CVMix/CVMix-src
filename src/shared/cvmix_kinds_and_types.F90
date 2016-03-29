@@ -12,7 +12,7 @@ module cvmix_kinds_and_types
 !BOP
 ! !MODULE:  cvmix_kinds_and_types
 !
-! !AUTHOR: 
+! !AUTHOR:
 !  Michael Levy, NCAR (mlevy@ucar.edu)
 !
 ! !DESCRIPTION:
@@ -162,7 +162,7 @@ module cvmix_kinds_and_types
     ! level below where the water actually is
     real(cvmix_r8), dimension(:), pointer :: WaterDensity_cntr      => NULL()
     real(cvmix_r8), dimension(:), pointer :: AdiabWaterDensity_cntr => NULL()
-                                           ! units: kg m^-3 
+                                           ! units: kg m^-3
 
     ! bulk Richardson number
     real(cvmix_r8), dimension(:), pointer :: BulkRichardson_cntr => NULL()
