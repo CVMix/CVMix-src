@@ -41,11 +41,14 @@
   real(cvmix_r8), parameter :: CVMIX_MATH_NEWTON_TOL       = 1.0e-12_cvmix_r8
   integer,        parameter :: CVMIX_MATH_MAX_NEWTON_ITERS = 100
 
+  integer,        parameter :: CVMIX_MATH_ROOT_NOT_FOUND  = 1
+
 ! !PUBLIC MEMBER FUNCTIONS:
 
   public :: cvmix_math_poly_interp
   public :: cvmix_math_cubic_root_find
   public :: cvmix_math_evaluate_cubic
+  public :: CVMIX_MATH_ROOT_NOT_FOUND
 
 !EOP
 
@@ -180,21 +183,27 @@
 
   end subroutine cvmix_math_poly_interp
 
-  function cvmix_math_cubic_root_find(coeffs, x0)
+  function cvmix_math_cubic_root_find(coeffs, x0, errval)
 
     real(cvmix_r8), dimension(4), intent(in) :: coeffs
     real(cvmix_r8),               intent(in) :: x0
+    integer,                      intent(out) :: errval
 
     real(cvmix_r8) :: cvmix_math_cubic_root_find
     real(cvmix_r8) :: fun_val, root, slope
     integer :: it_cnt
 
+    errval = 0
     root = x0
     fun_val = coeffs(4)*(root**3)+coeffs(3)*(root**2)+coeffs(2)*root+coeffs(1)
     do it_cnt = 1, CVMIX_MATH_MAX_NEWTON_ITERS
       if (abs(fun_val).lt.CVMIX_MATH_NEWTON_TOL) &
         exit
       slope = 3.0_cvmix_r8*coeffs(4)*(root**2)+2.0_cvmix_r8*coeffs(3)*root+coeffs(2)
+      if (slope == 0) then
+        errval = CVMIX_MATH_ROOT_NOT_FOUND
+        exit
+      endif
       root = root - fun_val/slope
       fun_val = coeffs(4)*(root**3)+coeffs(3)*(root**2)+coeffs(2)*root+coeffs(1)
     end do
