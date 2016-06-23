@@ -26,8 +26,10 @@
 ! !USES:
 
   use cvmix_kinds_and_types, only : cvmix_r8,                                 &
+                                    cvmix_strlen,                             &
                                     cvmix_zero,                               &
                                     cvmix_one,                                &
+                                    cvmix_PI,                                 &
                                     cvmix_data_type,                          &
                                     CVMIX_OVERWRITE_OLD_VAL,                  &
                                     CVMIX_SUM_OLD_AND_NEW_VALS,               &
@@ -74,6 +76,10 @@
   public :: cvmix_kpp_compute_kOBL_depth
   public :: cvmix_kpp_compute_enhanced_diff
   public :: cvmix_kpp_compute_nu_at_OBL_depth_LMD94
+  ! QL, 160610, new public functions for getting the enhancement factor
+  public :: cvmix_kpp_efactor_read
+  public :: cvmix_kpp_efactor_model
+
 
   interface cvmix_coeffs_kpp
     module procedure cvmix_coeffs_kpp_low
@@ -2485,5 +2491,229 @@ contains
   end function cvmix_kpp_compute_nu_at_OBL_depth_LMD94
 
 !EOC
+
+! QL, 160411, new function reading and interpolating the enhancement factor
+
+  function cvmix_kpp_efactor_read(infile, lon, lat, time)
+
+! This function returns the enhancement factor given the location
+! and day of a year. It reads the enhancement factor array from a file
+! when being called for the first time and saves it in the memory,
+! so that in the subsequent calls there is no need to read from file.
+!
+! Qing Li, 160411
+
+! Input
+    real(cvmix_r8), intent(in) :: lat, lon, time
+    character(cvmix_strlen), intent(in) :: infile
+! Local variables
+    ! parameters
+    integer, parameter :: ef_nx = 90, ef_ny = 50, ef_nt = 12
+    real(cvmix_r8), parameter :: dofy = 365.0, mlon = 360.0
+    ! saved variables
+    real(cvmix_r8), dimension(ef_nx, ef_ny, ef_nt), save :: ef_data
+    real(cvmix_r8), dimension(ef_nx), save :: ef_xc
+    real(cvmix_r8), dimension(ef_ny), save :: ef_yc
+    real(cvmix_r8), dimension(ef_nt), save :: ef_time
+    logical, save :: ef_first_call = .true.
+    ! local variables
+    integer :: nid, i, ixc, iyc, itc, ixcp, iycp, itcp
+    real(cvmix_r8) :: xc, yc, tc, x_wgt, xp_wgt, y_wgt, &
+                      yp_wgt, t_wgt, tp_wgt
+    real(cvmix_r8) :: cvmix_kpp_efactor_read
+
+    ! read the file for the first time being called
+    if (ef_first_call) then
+        ef_first_call = .false.
+        nid = 20
+        open(nid,file=trim(infile),form='unformatted',status='old')
+        read(nid) ef_data, ef_xc, ef_yc, ef_time
+        close(nid)
+        print*, "Reading enhancement factor, done!"
+        print*, "x range: ",ef_xc(1)," to ",ef_xc(ef_nx)
+        print*, "y range: ",ef_yc(1)," to ",ef_yc(ef_ny)
+        print*, "t range: ",ef_time(1)," to ",ef_time(ef_nt)
+        if ( ef_xc(1) .lt. -180_cvmix_r8 .or. &
+             ef_xc(ef_nx) .gt. 360_cvmix_r8 .or. &
+             ef_xc(ef_nx) .le. ef_xc(1) .or. &
+             ef_xc(ef_nx)-ef_xc(1) .lt. 180_cvmix_r8 .or. &
+             ef_yc(1) .lt. -90_cvmix_r8 .or. &
+             ef_yc(ef_ny) .gt. 90_cvmix_r8 .or. &
+             ef_yc(ef_ny) .le. ef_yc(1) .or. &
+             ef_yc(ef_ny)-ef_yc(1) .lt. 90_cvmix_r8 .or. &
+             ef_time(1) .lt. cvmix_zero .or. &
+             ef_time(ef_nt) .gt. 365_cvmix_r8 .or. &
+             ef_time(ef_nt) .le. ef_time(1)) then
+            print*,"The enhancement factor file is not read correctly!"
+            stop
+        endif
+    endif
+    !
+    ! longitude in range 0-360
+    xc = mod(lon + mlon, mlon)
+    yc = lat
+    tc = time
+    if (xc .lt. cvmix_zero .or.   &
+        yc .lt. -90_cvmix_r8 .or. &
+        yc .gt. 90_cvmix_r8 .or.  &
+        tc .lt. cvmix_zero .or.   &
+        tc .gt. dofy) then
+        print*, "Error: Invalid lat, lon or day of a year."
+        stop 1
+    endif
+    !
+    if (yc .gt. ef_yc(ef_ny) .or. yc .lt. ef_yc(1)) then
+        ! outside the domain (polar regions)
+        cvmix_kpp_efactor_read = cvmix_one
+    else
+        ! find the indices for desired location and time
+        ! initialize the indices
+        ixc = 0
+        iyc = 0
+        itc = 0
+        ! periodic in x and t
+        ! get x indices
+        if (xc .lt. ef_xc(1)) then
+            ixc = ef_nx
+            ixcp = 1
+        else
+            do i = 1,ef_nx
+                if (xc .ge. ef_xc(i)) then
+                    ixc = i
+                endif
+            enddo
+            ixcp = mod(ixc, ef_nx)+1
+        endif
+        ! get y indices
+        do i = 1,ef_ny
+            if (yc .ge. ef_yc(i)) then
+                iyc = i
+            endif
+        enddo
+        iycp = iyc + 1
+        ! get t indices
+        if (tc .lt. ef_time(1)) then
+            itc = ef_nt
+            itcp = 1
+        else
+            do i = 1,ef_nt
+                if (tc .ge. ef_time(i)) then
+                    itc = i
+                endif
+            enddo
+            itcp = mod(itc, ef_nt)+1
+        endif
+        !
+        !!! bilinear interpolation
+        ! get x weight
+        x_wgt  = mod(ef_xc(ixcp)-xc+mlon,mlon)    &
+                /mod(ef_xc(ixcp)-ef_xc(ixc)+mlon,mlon)
+        xp_wgt = mod(xc-ef_xc(ixc)+mlon,mlon)     &
+                /mod(ef_xc(ixcp)-ef_xc(ixc)+mlon,mlon)
+        ! get y weight
+        y_wgt  = (ef_yc(iycp)-yc)/(ef_yc(iycp)-ef_yc(iyc))
+        yp_wgt = (yc-ef_yc(iyc))/(ef_yc(iycp)-ef_yc(iyc))
+        ! get time weight
+        t_wgt  = mod(ef_time(itcp)-tc+dofy,dofy)    &
+                /mod(ef_time(itcp)-ef_time(itc)+dofy,dofy)
+        tp_wgt = mod(tc-ef_time(itc)+dofy,dofy)     &
+                /mod(ef_time(itcp)-ef_time(itc)+dofy,dofy)
+        ! do interpolation
+        cvmix_kpp_efactor_read &
+                = x_wgt  * y_wgt  * t_wgt  * ef_data(ixc,  iyc,  itc ) &
+                + x_wgt  * y_wgt  * tp_wgt * ef_data(ixc,  iyc,  itcp) &
+                + x_wgt  * yp_wgt * t_wgt  * ef_data(ixc,  iycp, itc ) &
+                + x_wgt  * yp_wgt * tp_wgt * ef_data(ixc,  iycp, itcp) &
+                + xp_wgt * y_wgt  * t_wgt  * ef_data(ixcp, iyc,  itc ) &
+                + xp_wgt * y_wgt  * tp_wgt * ef_data(ixcp, iyc,  itcp) &
+                + xp_wgt * yp_wgt * t_wgt  * ef_data(ixcp, iycp, itc ) &
+                + xp_wgt * yp_wgt * tp_wgt * ef_data(ixcp, iycp, itcp)
+    endif
+  end function cvmix_kpp_efactor_read
+
+! QL, 160606, new function that models the enhancement factor
+
+  function cvmix_kpp_efactor_model(u10, ustar, hbl)
+
+! This function returns the enhancement factor, given the 10-meter
+! wind (m/s), friction velocity (m/s) and the boundary layer depth (m).
+!
+! Qing Li, 160606
+
+! Input
+    real(cvmix_r8), intent(in) :: u10, ustar, hbl
+! Local variables
+    ! parameters
+    real(cvmix_r8), parameter :: &
+        ! gravity
+        g = 9.81_cvmix_r8, &
+        ! ratio of U19.5 to U10 (Holthuijsen, 2007)
+        u10_to_u19p5 = 1.075_cvmix_r8, &
+        ! ratio of mean frequency to peak frequency for
+        ! Pierson-Moskowitz spectrum (Webb, 2011)
+        fp_to_fm = 1.296_cvmix_r8, &
+        ! beta parameter in (35) of Breivik et al., 2016
+        beta = cvmix_one, &
+        ! ratio of surface Stokes drift to U10
+        u10_to_us = 0.01_cvmix_r8
+
+    real(cvmix_r8) :: us, hm0, fm, fp, vstokes, kphil, kstar
+    real(cvmix_r8) :: z0, z0i, r1, r2, r3, r4, tmp, us_sl, lasl_sqr_i
+    real(cvmix_r8) :: cvmix_kpp_efactor_model
+
+    if (u10 .gt. cvmix_zero .and. ustar .gt. cvmix_zero) then
+      ! surface Stokes drift
+      us = u10_to_us*u10
+      !
+      ! significant wave height from Pierson-Moskowitz
+      ! spectrum (Bouws, 1998)
+      hm0 = 0.0246_cvmix_r8*u10**2
+      !
+      ! peak frequency (PM, Bouws, 1998)
+      tmp = 2.0_cvmix_r8*cvmix_PI*u10_to_u19p5*u10
+      fp = 0.877_cvmix_r8*g/tmp
+      !
+      ! mean frequency
+      fm = fp*fp_to_fm
+      !
+      ! total Stokes transport
+      vstokes = 0.125_cvmix_r8*cvmix_PI*fm*hm0**2
+      !
+      ! the general peak wavenumber for Phillips' spectrum
+      ! (Breivik et al., 2016)
+      kphil = 0.5_cvmix_r8*us/vstokes &
+              *(cvmix_one-2.0_cvmix_r8*beta/3.0_cvmix_r8)
+      !
+      ! surface layer averaged Stokes dirft with Stokes drift profile
+      ! estimated from Phillips' spectrum (Breivik et al., 2016)
+      ! the directional spreading effect from Webb and Fox-Kemper, 2015
+      ! is also included
+      kstar = kphil*2.56_cvmix_r8
+      ! surface layer
+      z0 = 0.2_cvmix_r8*abs(hbl)
+      z0i = cvmix_one/z0
+      ! term 1 to 4
+      r1 = (0.151_cvmix_r8/kphil*z0i-0.84_cvmix_r8) &
+            *(cvmix_one-exp(-2.0_cvmix_r8*kphil*z0))
+      r2 = -(0.84_cvmix_r8+0.0591_cvmix_r8/kphil*z0i) &
+             *sqrt(2.0_cvmix_r8*cvmix_PI*kphil*z0) &
+             *erfc(sqrt(2.0_cvmix_r8*kphil*z0))
+      r3 = (0.0632_cvmix_r8/kstar*z0i+0.125_cvmix_r8) &
+            *(cvmix_one-exp(-2.0_cvmix_r8*kstar*z0))
+      r4 = (0.125_cvmix_r8+0.0946_cvmix_r8/kstar*z0i) &
+             *sqrt(2.0_cvmix_r8*cvmix_PI*kstar*z0) &
+             *erfc(sqrt(2.0_cvmix_r8*kstar*z0))
+      us_sl = us*(0.715_cvmix_r8+r1+r2+r3+r4)
+      !
+      ! enhancement factor (Li et al., 2016)
+      lasl_sqr_i = us_sl/ustar
+      cvmix_kpp_efactor_model = sqrt(cvmix_one &
+                 +cvmix_one/1.5_cvmix_r8**2*lasl_sqr_i &
+                 +cvmix_one/5.4_cvmix_r8**4*lasl_sqr_i**2)
+    else
+      cvmix_kpp_efactor_model = cvmix_one
+    endif
+
+  end function cvmix_kpp_efactor_model
 
 end module cvmix_kpp
