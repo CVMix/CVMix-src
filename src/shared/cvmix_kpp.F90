@@ -26,7 +26,6 @@
 ! !USES:
 
   use cvmix_kinds_and_types, only : cvmix_r8,                                 &
-                                    cvmix_strlen,                             &
                                     cvmix_zero,                               &
                                     cvmix_one,                                &
                                     cvmix_PI,                                 &
