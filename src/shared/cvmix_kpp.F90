@@ -2641,7 +2641,13 @@ contains
 ! Qing Li, 160606
 
 ! Input
-    real(cvmix_r8), intent(in) :: u10, ustar, hbl
+    real(cvmix_r8), intent(in) :: &
+        ! 10 meter wind (m/s)
+        u10, &
+        ! water-side surface friction velocity (m/s)
+        ustar, &
+        ! boundary layer depth (m)
+        hbl
 ! Local variables
     ! parameters
     real(cvmix_r8), parameter :: &
@@ -2652,10 +2658,10 @@ contains
         ! ratio of mean frequency to peak frequency for
         ! Pierson-Moskowitz spectrum (Webb, 2011)
         fp_to_fm = 1.296_cvmix_r8, &
-        ! beta parameter in (35) of Breivik et al., 2016
-        beta = cvmix_one, &
         ! ratio of surface Stokes drift to U10
-        u10_to_us = 0.01_cvmix_r8
+        u10_to_us = 0.0162_cvmix_r8, &
+        ! loss ratio of Stokes transport
+        r_loss = 0.667_cvmix_r8
 
     real(cvmix_r8) :: us, hm0, fm, fp, vstokes, kphil, kstar
     real(cvmix_r8) :: z0, z0i, r1, r2, r3, r4, tmp, us_sl, lasl_sqr_i
@@ -2676,13 +2682,15 @@ contains
       ! mean frequency
       fm = fp*fp_to_fm
       !
-      ! total Stokes transport
-      vstokes = 0.125_cvmix_r8*cvmix_PI*fm*hm0**2
+      ! total Stokes transport (a factor r_loss is applied to account
+      !  for the effect of directional spreading, multidirectional waves
+      !  and the use of PM peak frequency and PM significant wave height
+      !  on estimating the Stokes transport)
+      vstokes = 0.125_cvmix_r8*cvmix_PI*r_loss*fm*hm0**2
       !
       ! the general peak wavenumber for Phillips' spectrum
-      ! (Breivik et al., 2016)
-      kphil = 0.5_cvmix_r8*us/vstokes &
-              *(cvmix_one-2.0_cvmix_r8*beta/3.0_cvmix_r8)
+      ! (Breivik et al., 2016) with correction of directional spreading
+      kphil = 0.176_cvmix_r8*us/vstokes
       !
       ! surface layer averaged Stokes dirft with Stokes drift profile
       ! estimated from Phillips' spectrum (Breivik et al., 2016)
