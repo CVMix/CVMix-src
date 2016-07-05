@@ -77,7 +77,6 @@
   public :: cvmix_kpp_compute_enhanced_diff
   public :: cvmix_kpp_compute_nu_at_OBL_depth_LMD94
   ! QL, 160610, new public functions for getting the enhancement factor
-  public :: cvmix_kpp_efactor_read
   public :: cvmix_kpp_efactor_model
 
 
