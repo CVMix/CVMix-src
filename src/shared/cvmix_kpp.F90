@@ -30,6 +30,7 @@
                                     cvmix_one,                                &
                                     cvmix_PI,                                 &
                                     cvmix_data_type,                          &
+                                    cvmix_global_params_type,                 &
                                     CVMIX_OVERWRITE_OLD_VAL,                  &
                                     CVMIX_SUM_OLD_AND_NEW_VALS,               &
                                     CVMIX_MAX_OLD_AND_NEW_VALS
@@ -2492,7 +2493,7 @@ contains
 
 ! QL, 160606, new function that models the enhancement factor
 
-  function cvmix_kpp_efactor_model(u10, ustar, hbl)
+  function cvmix_kpp_efactor_model(u10, ustar, hbl, CVmix_params_in)
 
 ! This function returns the enhancement factor, given the 10-meter
 ! wind (m/s), friction velocity (m/s) and the boundary layer depth (m).
@@ -2507,18 +2508,17 @@ contains
         ustar, &
         ! boundary layer depth (m)
         hbl
+    type(cvmix_global_params_type), intent(in) :: CVmix_params_in
 ! Local variables
     ! parameters
     real(cvmix_r8), parameter :: &
-        ! gravity
-        g = 9.81_cvmix_r8, &
         ! ratio of U19.5 to U10 (Holthuijsen, 2007)
-        u10_to_u19p5 = 1.075_cvmix_r8, &
+        u19p5_to_u10 = 1.075_cvmix_r8, &
         ! ratio of mean frequency to peak frequency for
         ! Pierson-Moskowitz spectrum (Webb, 2011)
-        fp_to_fm = 1.296_cvmix_r8, &
+        fm_to_fp = 1.296_cvmix_r8, &
         ! ratio of surface Stokes drift to U10
-        u10_to_us = 0.0162_cvmix_r8, &
+        us_to_u10 = 0.0162_cvmix_r8, &
         ! loss ratio of Stokes transport
         r_loss = 0.667_cvmix_r8
 
@@ -2528,18 +2528,18 @@ contains
 
     if (u10 .gt. cvmix_zero .and. ustar .gt. cvmix_zero) then
       ! surface Stokes drift
-      us = u10_to_us*u10
+      us = us_to_u10*u10
       !
       ! significant wave height from Pierson-Moskowitz
       ! spectrum (Bouws, 1998)
       hm0 = 0.0246_cvmix_r8*u10**2
       !
       ! peak frequency (PM, Bouws, 1998)
-      tmp = 2.0_cvmix_r8*cvmix_PI*u10_to_u19p5*u10
-      fp = 0.877_cvmix_r8*g/tmp
+      tmp = 2.0_cvmix_r8*cvmix_PI*u19p5_to_u10*u10
+      fp = 0.877_cvmix_r8*CVmix_params_in%Gravity/tmp
       !
       ! mean frequency
-      fm = fp*fp_to_fm
+      fm = fm_to_fp*fp
       !
       ! total Stokes transport (a factor r_loss is applied to account
       !  for the effect of directional spreading, multidirectional waves

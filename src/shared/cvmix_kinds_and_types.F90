@@ -189,6 +189,9 @@ module cvmix_kinds_and_types
     integer :: max_nlev
              ! units: unitless
 
+    ! QL, 160708, gravity, m s^-2
+    real(cvmix_r8) :: Gravity = 9.80616_cvmix_r8
+
     ! Prandtl number
     real(cvmix_r8) :: prandtl
                     ! units: unitless

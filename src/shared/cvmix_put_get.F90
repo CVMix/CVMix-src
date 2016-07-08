@@ -510,8 +510,10 @@ contains
       case ('fw_rho','FreshWaterDensity')
         CVmix_params%FreshWaterDensity = val
       case ('sw_rho','SaltWaterDensity')
-        CVmix_params%SaltWaterDensity= val
-
+        CVmix_params%SaltWaterDensity = val
+      ! QL, 160708, add gravity
+      case ('g','Gravity')
+        CVmix_params%Gravity = val
       case default
         print*, "ERROR: ", trim(varname), " not a valid choice!"
         stop 1
