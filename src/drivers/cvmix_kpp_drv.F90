@@ -55,7 +55,7 @@ Subroutine cvmix_kpp_driver()
   real(cvmix_r8), dimension(:,:), allocatable, target :: hor_vel
   real(cvmix_r8), dimension(2)                        :: ref_vel
   real(cvmix_r8), dimension(4) :: shape_coeffs
-  integer :: fid, kt, kw, nlev1, nlev3, nlev4, max_nlev4, OBL_levid4, nlev5
+  integer :: i, fid, kt, kw, nlev1, nlev3, nlev4, max_nlev4, OBL_levid4, nlev5
   real(cvmix_r8) :: hmix1, hmix5, ri_crit, layer_thick1, layer_thick4,        &
                     layer_thick5, OBL_depth4, OBL_depth5, N, Nsqr
   real(cvmix_r8) :: kOBL_depth, Bslope, Vslope
@@ -63,6 +63,7 @@ Subroutine cvmix_kpp_driver()
                     vonkarman6, tao, rho0, grav, alpha, Qnonpen, Cp0,         &
                     w_m6, w_s6, wm6_true, ws6_true
   character(len=cvmix_strlen) :: interp_type_t1, interp_type_t4, interp_type_t5
+  character(len=cvmix_strlen) :: filename
   ! True => run specified test
   logical :: ltest1, ltest2, ltest3, ltest4, ltest5, ltest6
   logical :: lnoDGat1 ! True => G'(1) = 0 (in test 4)
@@ -264,13 +265,17 @@ Subroutine cvmix_kpp_driver()
     deallocate(zeta, w_m, w_s)
   endif ! ltest3
 
+  ! Test 4: Compute boundary layer diffusivity
+  !         1) Boundary layer between top interface and cell center
+  !         2) Boundary layer between cell center and bottom interface
+  !         3,4) Same as above, without enhanced diffusivity
   if (ltest4) then
     print*, ""
     print*, "Test 4: Computing Diffusivity in boundary layer"
     print*, "        (2 cases - boundary layer above and below cell center)"
+    print*, "        (Both cases run with and without enhanced diffusivity)"
     print*, "----------"
 
-    call cvmix_init_kpp(MatchTechnique='MatchGradient')
     nlev4 = 5
     max_nlev4 = 10
     if (OBL_levid4.gt.nlev4) &
@@ -305,88 +310,106 @@ Subroutine cvmix_kpp_driver()
     call cvmix_put(CVmix_vars4, 'surf_buoy', real(100, cvmix_r8))
     call cvmix_put(CVmix_vars4, 'Coriolis',  1e-4_cvmix_r8)
 
-    ! Test 4a: Boundary layer above center of level containing it
-    Tdiff    = cvmix_zero
-    Tdiff(1) = cvmix_one
-    Tdiff(2) = real(10,cvmix_r8)
-    Tdiff(3) = real(5,cvmix_r8)
-    Mdiff = Tdiff
-    Sdiff = Tdiff
+    do i=1,2
+      ! Test 4a/c: Boundary layer above center of level containing it
+      Tdiff    = cvmix_zero
+      Tdiff(1) = cvmix_one
+      Tdiff(2) = real(10,cvmix_r8)
+      Tdiff(3) = real(5,cvmix_r8)
+      Mdiff = Tdiff
+      Sdiff = Tdiff
 
-    OBL_depth4 = abs(zt(OBL_levid4))-layer_thick4/real(4,cvmix_r8)
-    call cvmix_put(CVmix_vars4, 'OBL_depth', OBL_depth4)
-    call cvmix_put(CVmix_vars4, 'kOBL_depth',                                 &
-         cvmix_kpp_compute_kOBL_depth(zw_iface, zt, OBL_depth4))
+      OBL_depth4 = abs(zt(OBL_levid4))-layer_thick4/real(4,cvmix_r8)
+      call cvmix_put(CVmix_vars4, 'OBL_depth', OBL_depth4)
+      call cvmix_put(CVmix_vars4, 'kOBL_depth',                               &
+           cvmix_kpp_compute_kOBL_depth(zw_iface, zt, OBL_depth4))
 
-    print*, "OBL_depth = ", CVmix_vars4%BoundaryLayerDepth
-    print*, "kOBL_depth = ", CVmix_vars4%kOBL_depth
+      print*, "OBL_depth = ", CVmix_vars4%BoundaryLayerDepth
+      print*, "kOBL_depth = ", CVmix_vars4%kOBL_depth
 
-    call cvmix_init_kpp(ri_crit=ri_crit, vonkarman=0.4_cvmix_r8,              &
-                        interp_type2=interp_type_t4, lnoDGat1=lnoDGat1)
-    call cvmix_coeffs_kpp(CVmix_vars4)
+      call cvmix_init_kpp(ri_crit=ri_crit, vonkarman=0.4_cvmix_r8,            &
+                          interp_type2=interp_type_t4, lnoDGat1=lnoDGat1,     &
+                          MatchTechnique='MatchGradient',                     &
+                          lenhanced_diff=(i.eq.1))
+      call cvmix_coeffs_kpp(CVmix_vars4)
 
-    print*, "Height and Diffusivity throughout column: "
-    do kw=1,nlev4+1
-      write(*,"(1X, F6.2, 1X, F8.5)") zw_iface(kw), Mdiff(kw)
-    end do
-    print*, ""
+      print*, "Height and Diffusivity throughout column: "
+      do kw=1,nlev4+1
+        write(*,"(1X, F6.2, 1X, F8.5)") zw_iface(kw), Mdiff(kw)
+      end do
+      print*, ""
 
+      if (i.eq.1) then
+        filename="test4a"
+      else
+        filename="test4c"
+      endif
 #ifdef _NETCDF
-    call cvmix_io_open(fid, "test4a.nc", "nc")
+      call cvmix_io_open(fid, trim(filename) // ".nc", "nc")
 #else
-    call cvmix_io_open(fid, "test4a.out", "ascii")
+      call cvmix_io_open(fid, trim(filename) // ".out", "ascii")
 #endif
 
-    call cvmix_output_write(fid, CVmix_vars4, (/"zt   ", "zw   ", "Mdiff",    &
-                                                "Tdiff", "Sdiff"/))
+      call cvmix_output_write(fid, CVmix_vars4, (/"zt   ", "zw   ", "Mdiff",  &
+                                                  "Tdiff", "Sdiff"/))
 #ifdef _NETCDF
-    call cvmix_output_write_att(fid, "interp_type2", interp_type_t4)
-    call cvmix_output_write_att(fid, "OBL_depth",                             &
-                                CVmix_vars4%BoundaryLayerDepth)
+      call cvmix_output_write_att(fid, "interp_type2", interp_type_t4)
+      call cvmix_output_write_att(fid, "OBL_depth",                           &
+                                  CVmix_vars4%BoundaryLayerDepth)
 #endif
 
-    call cvmix_io_close(fid)
+      call cvmix_io_close(fid)
 
-    ! Test 4b: Boundary layer below center of level containing it
-    Tdiff    = cvmix_zero
-    Tdiff(1) = cvmix_one
-    Tdiff(2) = real(10,cvmix_r8)
-    Tdiff(3) = real(5,cvmix_r8)
-    Mdiff = Tdiff
-    Sdiff = Tdiff
+    ! Test 4b/d: Boundary layer below center of level containing it
+      Tdiff    = cvmix_zero
+      Tdiff(1) = cvmix_one
+      Tdiff(2) = real(10,cvmix_r8)
+      Tdiff(3) = real(5,cvmix_r8)
+      Mdiff = Tdiff
+      Sdiff = Tdiff
 
-    OBL_depth4 = abs(zt(OBL_levid4))+layer_thick4/real(4,cvmix_r8)
-    call cvmix_put(CVmix_vars4, 'OBL_depth', OBL_depth4)
-    call cvmix_put(CVmix_vars4, 'kOBL_depth',                                 &
-         cvmix_kpp_compute_kOBL_depth(zw_iface, zt, OBL_depth4))
+      OBL_depth4 = abs(zt(OBL_levid4))+layer_thick4/real(4,cvmix_r8)
+      call cvmix_put(CVmix_vars4, 'OBL_depth', OBL_depth4)
+      call cvmix_put(CVmix_vars4, 'kOBL_depth',                               &
+           cvmix_kpp_compute_kOBL_depth(zw_iface, zt, OBL_depth4))
 
-    print*, "OBL_depth = ", CVmix_vars4%BoundaryLayerDepth
-    print*, "kOBL_depth = ", CVmix_vars4%kOBL_depth
+      print*, "OBL_depth = ", CVmix_vars4%BoundaryLayerDepth
+      print*, "kOBL_depth = ", CVmix_vars4%kOBL_depth
 
-    call cvmix_init_kpp(ri_crit=ri_crit, vonkarman=0.4_cvmix_r8,              &
-                        interp_type2=interp_type_t4, lnoDGat1=lnoDGat1)
-    call cvmix_coeffs_kpp(CVmix_vars4)
+      call cvmix_init_kpp(ri_crit=ri_crit, vonkarman=0.4_cvmix_r8,            &
+                          interp_type2=interp_type_t4, lnoDGat1=lnoDGat1,     &
+                          MatchTechnique='MatchGradient',                     &
+                          lenhanced_diff=(i.eq.1))
+      call cvmix_coeffs_kpp(CVmix_vars4)
 
-    print*, "Height and Diffusivity throughout column: "
-    do kw=1,nlev4+1
-      write(*,"(1X, F6.2, 1X, F8.5)") zw_iface(kw), Mdiff(kw)
-    end do
+      print*, "Height and Diffusivity throughout column: "
+      do kw=1,nlev4+1
+        write(*,"(1X, F6.2, 1X, F8.5)") zw_iface(kw), Mdiff(kw)
+      end do
 
+      if (i.eq.1) then
+        print*, ""
+        filename="test4b"
+      else
+        filename="test4d"
+      endif
 #ifdef _NETCDF
-    call cvmix_io_open(fid, "test4b.nc", "nc")
+      call cvmix_io_open(fid, trim(filename) // ".nc", "nc")
 #else
-    call cvmix_io_open(fid, "test4b.out", "ascii")
+      call cvmix_io_open(fid, trim(filename) // ".out", "ascii")
 #endif
 
-    call cvmix_output_write(fid, CVmix_vars4, (/"zt   ", "zw   ", "Mdiff",    &
-                                                "Tdiff", "Sdiff"/))
+      call cvmix_output_write(fid, CVmix_vars4, (/"zt   ", "zw   ", "Mdiff",  &
+                                                  "Tdiff", "Sdiff"/))
 #ifdef _NETCDF
-    call cvmix_output_write_att(fid, "interp_type2", interp_type_t4)
-    call cvmix_output_write_att(fid, "OBL_depth",                             &
-                                CVmix_vars4%BoundaryLayerDepth)
+      call cvmix_output_write_att(fid, "interp_type2", interp_type_t4)
+      call cvmix_output_write_att(fid, "OBL_depth",                           &
+                                  CVmix_vars4%BoundaryLayerDepth)
 #endif
 
-    call cvmix_io_close(fid)
+      call cvmix_io_close(fid)
+
+    end do
 
     deallocate(zt, zw_iface)
     deallocate(Mdiff, Tdiff, Sdiff)
