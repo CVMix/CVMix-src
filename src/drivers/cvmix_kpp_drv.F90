@@ -329,7 +329,6 @@ Subroutine cvmix_kpp_driver()
 
       call cvmix_init_kpp(ri_crit=ri_crit, vonkarman=0.4_cvmix_r8,            &
                           interp_type2=interp_type_t4, lnoDGat1=lnoDGat1,     &
-                          MatchTechnique='MatchGradient',                     &
                           lenhanced_diff=(i.eq.1))
       call cvmix_coeffs_kpp(CVmix_vars4)
 
@@ -378,7 +377,6 @@ Subroutine cvmix_kpp_driver()
 
       call cvmix_init_kpp(ri_crit=ri_crit, vonkarman=0.4_cvmix_r8,            &
                           interp_type2=interp_type_t4, lnoDGat1=lnoDGat1,     &
-                          MatchTechnique='MatchGradient',                     &
                           lenhanced_diff=(i.eq.1))
       call cvmix_coeffs_kpp(CVmix_vars4)
 
