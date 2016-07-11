@@ -954,9 +954,36 @@ contains
                                             CVmix_kpp_params_user)
     do kw=2,kwup
       !   (3b) Evaluate G(sigma) at each cell interface
-      MshapeAtS = cvmix_math_evaluate_cubic(Mshape, sigma(kw))
-      TshapeAtS = cvmix_math_evaluate_cubic(Tshape, sigma(kw))
-      SshapeAtS = cvmix_math_evaluate_cubic(Sshape, sigma(kw))
+       !BGR{
+       !    KPP boundary layer scheme should not contribute diffusion
+       !      at interfaces below the surface boundary layer.  
+       !      To prevent this, the shape functions are set 
+       !      to 0 if sigma(kw) exceeds 1.  Without this, strange values
+       !      of viscosity can occur immediately below the OBL depth due
+       !      to shape function evaluation at sigma>1.  Note that the 
+       !      contribution of lenhanced_diff to diffusion at the interface
+       !      below the OBL depth is performed separately below.)
+       !---------
+       ! New Code
+       !//////
+       if (sigma(kw).lt. cvmix_one) then
+          MshapeAtS = cvmix_math_evaluate_cubic(Mshape, sigma(kw))
+          TshapeAtS = cvmix_math_evaluate_cubic(Tshape, sigma(kw))
+          SshapeAtS = cvmix_math_evaluate_cubic(Sshape, sigma(kw))
+       else
+          MshapeAtS = 0.0
+          TshapeAtS = 0.0
+          SshapeAtS = 0.0
+       endif
+       !\\\\\\
+       !---------
+       ! Old code
+       !////// 
+       !MshapeAtS = cvmix_math_evaluate_cubic(Mshape, sigma(kw))
+       !TshapeAtS = cvmix_math_evaluate_cubic(Tshape, sigma(kw))
+       !SshapeAtS = cvmix_math_evaluate_cubic(Sshape, sigma(kw))
+       !\\\\\\
+       !}BGR
 
       !   (3c) Compute nonlocal term at each cell interface
       if (.not.lstable) then
