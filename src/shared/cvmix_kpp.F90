@@ -80,6 +80,9 @@
   ! QL, 160610, new public functions for getting the enhancement factor
   public :: cvmix_kpp_efactor_read
   public :: cvmix_kpp_efactor_model
+  ! Qing Li, 20180130, new public function for getting the surface layer
+  !          averaged Stokes drift
+  public :: cvmix_kpp_ustokes_SL_model
 
 
   interface cvmix_coeffs_kpp
@@ -2711,6 +2714,43 @@ contains
         ! boundary layer depth (m)
         hbl
     type(cvmix_global_params_type), intent(in) :: CVmix_params_in
+
+! Local variables
+    real(cvmix_r8) :: us_sl, lasl_sqr_i
+    real(cvmix_r8) :: cvmix_kpp_efactor_model
+
+    if (u10 .gt. cvmix_zero .and. ustar .gt. cvmix_zero) then
+      ! surface layer averaged Stokes drift
+      us_sl = cvmix_kpp_ustokes_SL_model(u10, hbl, CVmix_params_in)
+      !
+      ! LaSL^{-2}
+      lasl_sqr_i = us_sl/ustar
+      !
+      ! enhancement factor (Li et al., 2016)
+      cvmix_kpp_efactor_model = sqrt(cvmix_one &
+                 +cvmix_one/1.5_cvmix_r8**2*lasl_sqr_i &
+                 +cvmix_one/5.4_cvmix_r8**4*lasl_sqr_i**2)
+    else
+      ! otherwise set to one
+      cvmix_kpp_efactor_model = cvmix_one
+    endif
+
+  end function cvmix_kpp_efactor_model
+
+  function cvmix_kpp_ustokes_SL_model(u10, hbl, CVmix_params_in)
+
+! This function returns the surface layer averaged Stokes drift, given
+! the 10-meter wind (m/s) and the boundary layer depth (m).
+!
+! Qing Li, 20180130
+
+! Input
+    real(cvmix_r8), intent(in) :: &
+        ! 10 meter wind (m/s)
+        u10, &
+        ! boundary layer depth (m)
+        hbl
+    type(cvmix_global_params_type), intent(in) :: CVmix_params_in
 ! Local variables
     ! parameters
     real(cvmix_r8), parameter :: &
@@ -2725,10 +2765,10 @@ contains
         r_loss = 0.667_cvmix_r8
 
     real(cvmix_r8) :: us, hm0, fm, fp, vstokes, kphil, kstar
-    real(cvmix_r8) :: z0, z0i, r1, r2, r3, r4, tmp, us_sl, lasl_sqr_i
-    real(cvmix_r8) :: cvmix_kpp_efactor_model
+    real(cvmix_r8) :: z0, z0i, r1, r2, r3, r4, tmp
+    real(cvmix_r8) :: cvmix_kpp_ustokes_SL_model
 
-    if (u10 .gt. cvmix_zero .and. ustar .gt. cvmix_zero) then
+    if (u10 .gt. cvmix_zero) then
       ! surface Stokes drift
       us = us_to_u10*u10
       !
@@ -2772,17 +2812,11 @@ contains
       r4 = (0.125_cvmix_r8+0.0946_cvmix_r8/kstar*z0i) &
              *sqrt(2.0_cvmix_r8*cvmix_PI*kstar*z0) &
              *erfc(sqrt(2.0_cvmix_r8*kstar*z0))
-      us_sl = us*(0.715_cvmix_r8+r1+r2+r3+r4)
-      !
-      ! enhancement factor (Li et al., 2016)
-      lasl_sqr_i = us_sl/ustar
-      cvmix_kpp_efactor_model = sqrt(cvmix_one &
-                 +cvmix_one/1.5_cvmix_r8**2*lasl_sqr_i &
-                 +cvmix_one/5.4_cvmix_r8**4*lasl_sqr_i**2)
+      cvmix_kpp_ustokes_SL_model = us*(0.715_cvmix_r8+r1+r2+r3+r4)
     else
-      cvmix_kpp_efactor_model = cvmix_one
+      cvmix_kpp_ustokes_SL_model = cvmix_zero
     endif
 
-  end function cvmix_kpp_efactor_model
+    end function cvmix_kpp_ustokes_SL_model
 
 end module cvmix_kpp
