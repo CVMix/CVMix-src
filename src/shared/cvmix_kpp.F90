@@ -179,8 +179,8 @@
       logical        :: llangmuirEF    ! True => apply Langmuir enhancement
                                        !  factor to turbulent velocity scale
       logical        :: lenhanced_entr ! True => enhance entrainment by adding
-                                       !  Stokes shear to the unresolved
-                                       !  vertial shear
+                                       !  modifying the entrainment buoyancy
+                                       !  flux scaling in the unresolved shear
       logical        :: l_LMD_ws       ! flag to use original Large et al. (1994)
                                        ! equations for computing turbulent scales
                                        ! rather than the updated methodology in
@@ -189,6 +189,12 @@
                                        ! when computing turbulent scales while
                                        ! the former only imposes this restriction
                                        ! in unstable regimes.
+      ! Qing Li, 20180129
+      real(cvmix_r8) :: c_LT, c_ST, c_CT  ! Empirical constants in the scaling of the
+                                          ! entrainment buoyancy flux
+                                          ! (20) in Li and Fox-Kemper, 2017, JPO
+      real(cvmix_r8) :: p_LT              ! Power of Langmuir number in the above
+                                          ! scaling
   end type cvmix_kpp_params_type
 
 !EOP
@@ -497,7 +503,7 @@ contains
       call cvmix_put_kpp('llangmuirEF', .false., CVmix_kpp_params_user)
     end if
 
-    ! QL, 150610, by default, not using Stokes enhanced entrainment
+    ! Qing Li, 20180129, by default, not using Langmuir enhanced entrainment
     if (present(lenhanced_entr)) then
       call cvmix_put_kpp('lenhanced_entr', lenhanced_entr,                    &
                          CVmix_kpp_params_user)
@@ -525,6 +531,12 @@ contains
       call cvmix_put_kpp('l_LMD_ws', .false., CVmix_kpp_params_user)
     end if
 
+    ! Initialize parameters for enhanced entrainment
+    ! Qing Li, 20180129
+    call cvmix_put_kpp('c_ST', 0.17_cvmix_r8, CVmix_kpp_params_user)
+    call cvmix_put_kpp('c_CT', 0.15_cvmix_r8, CVmix_kpp_params_user)
+    call cvmix_put_kpp('c_LT', 0.083_cvmix_r8, CVmix_kpp_params_user)
+    call cvmix_put_kpp('p_LT', 2.0_cvmix_r8, CVmix_kpp_params_user)
 !EOC
 
   end subroutine cvmix_init_kpp
@@ -1653,14 +1665,15 @@ contains
   function cvmix_kpp_compute_bulk_Richardson(zt_cntr, delta_buoy_cntr,        &
                                              delta_Vsqr_cntr, Vt_sqr_cntr,    &
                                              ws_cntr, N_iface, Nsqr_iface,    &
-                                             stokes_drift,                    &
+                                             LaSL, bfsfc, ustar,              &
                                              CVmix_kpp_params_user)
-! QL, 150611, new parameter: stokes_drift
-!       Here the squared surface value of Stokes drift is added to the
-!       denominator of the bulk Richardson number if lenhanced_entr == True,
-!       to account for the enhanced entrainment due to unresolved Stokes shear.
-!       Might be an overestimation. Need better parameterization.
-!       See Li et al., 2015 for details
+! New parameter: LaSL, the surface layer averaged Langmuir number
+!                bfsfc, surface buoyancy flux
+!                ustar, friction velocity
+!   Langmuir enhanced entrainment is parameterized by using a LaSL-related
+!   scaling factor of the entrainment buoyancy flux in Vt_sqr.
+!   (26) of Li and Fox-Kemper, 2017, JPO
+! Qing Li, 20180129
 
 ! !DESCRIPTION:
 !  Computes the bulk Richardson number at cell centers. If \verb|Vt_sqr_cntr|
@@ -1691,8 +1704,10 @@ contains
                                                  ws_cntr, Vt_sqr_cntr
     real(cvmix_r8), dimension(size(zt_cntr)+1), intent(in), optional ::       &
                                                     N_iface, Nsqr_iface
-    ! * QL, stokes_drift is the surface Stokes drift velocity (units: m/s)
-    real(cvmix_r8), intent(in), optional :: stokes_drift
+    ! * LaSL: surface layer averaged Langmuir number (units: none)
+    ! * bfsfc: surface buoyancy flux (units: m^2/s^3)
+    ! * ustar: friction velocity (units: m/s)
+    real(cvmix_r8), intent(in), optional :: LaSL, bfsfc, ustar
     type(cvmix_kpp_params_type), intent(in), optional, target ::              &
                                            CVmix_kpp_params_user
 
@@ -1735,9 +1750,17 @@ contains
         print*, "ERROR: you must pass in either Vt_sqr_cntr or ws_cntr!"
         stop 1
       end if
-      unresolved_shear_cntr_sqr = cvmix_kpp_compute_unresolved_shear(zt_cntr, &
-                                      ws_cntr, N_iface, Nsqr_iface,           &
-                                      CVmix_kpp_params_user)
+      ! Qing Li, 20180129
+      if(CVmix_kpp_params_in%lenhanced_entr) then
+        if (.not.(present(LaSL) .and. present(bfsfc) .and. present(ustar))) then
+          print*, "ERROR: you must pass in LaSL, bfsfc and ustar if ",&
+                  "lenhanced_entr is true!"
+          stop 1
+        end if
+      end if
+      unresolved_shear_cntr_sqr = cvmix_kpp_compute_unresolved_shear(       &
+                                    zt_cntr, ws_cntr, N_iface, Nsqr_iface,    &
+                                    LaSL, bfsfc, ustar, CVmix_kpp_params_user)
     end if
 
     ! scaling because we want (d-dr) = (d-0.5*eps*d) = (1-0.5*eps)*d
@@ -1746,18 +1769,6 @@ contains
       ! Negative sign because we use positive-up for height
       num   = -scaling*zt_cntr(kt)*delta_buoy_cntr(kt)
       denom = delta_Vsqr_cntr(kt) + unresolved_shear_cntr_sqr(kt)
-      ! QL, 150611, add squared surface Stokes drift to the denominator if
-      ! lenhanced_entr to account for enhanced entrainment due to unresolved
-      ! Stokes shear
-      if(CVmix_kpp_params_in%lenhanced_entr) then
-        if (present(stokes_drift)) then
-          denom = denom + stokes_drift**2
-        else
-          print*, "ERROR: you must pass in stokes_drift if lenhanced_entr ",  &
-                  "is true!"
-          stop 1
-        end if
-      end if
       if (denom.ne.cvmix_zero) then
         cvmix_kpp_compute_bulk_Richardson(kt) = num/denom
       else
@@ -2198,7 +2209,8 @@ contains
 ! !INTERFACE:
 
   function cvmix_kpp_compute_unresolved_shear(zt_cntr, ws_cntr, N_iface,      &
-                                            Nsqr_iface, CVmix_kpp_params_user)
+                                            Nsqr_iface, LaSL, bfsfc, ustar,   &
+                                            CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
 !  Computes the square of the unresolved shear ($V_t^2$ in Eq. (23) of LMD94)
@@ -2223,6 +2235,10 @@ contains
     ! note that you must provide exactly one of these two inputs!
     real(cvmix_r8), dimension(size(zt_cntr)+1), intent(in), optional ::       &
                                                     N_iface, Nsqr_iface
+    ! LaSL: surface layer averaged Langmuir number (units: none)
+    ! bfsfc: surface buoyancy flux (units: m^2/s^3)
+    ! ustar: friction velocity (units: m/s)
+    real(cvmix_r8), intent(in), optional :: LaSL, bfsfc, ustar
     type(cvmix_kpp_params_type),  intent(in), optional, target ::             &
                                            CVmix_kpp_params_user
 
@@ -2238,6 +2254,8 @@ contains
     real(cvmix_r8) :: Cv, Vtc
     ! N_cntr: buoyancy frequency at cell centers, derived from either N_iface
     !        or Nsqr_iface (units: 1/s)
+    real(cvmix_r8) :: c_CT, c_ST, c_LT, p_LT
+    logical :: l_entr
     real(cvmix_r8), dimension(size(zt_cntr)) :: N_cntr
     type(cvmix_kpp_params_type), pointer :: CVmix_kpp_params_in
 
@@ -2281,29 +2299,72 @@ contains
       end if
     end if
 
-    ! From LMD 94, Vtc = sqrt(-beta_T/(c_s*eps))/kappa^2
-    Vtc = sqrt(0.2_cvmix_r8/(cvmix_get_kpp_real('c_s', CVmix_kpp_params_in) * &
-                cvmix_get_kpp_real('surf_layer_ext', CVmix_kpp_params_in))) / &
-          (cvmix_get_kpp_real('vonkarman', CVmix_kpp_params_in)**2)
-    do kt=1,nlev
-      if (CVmix_kpp_params_in%lscalar_Cv) then
-        Cv = cvmix_get_kpp_real('Cv', CVmix_kpp_params_in)
-      else
-        ! Cv computation comes from Danabasoglu et al., 2006
-        if (N_cntr(kt).lt.0.002_cvmix_r8) then
-          Cv = 2.1_cvmix_r8-real(200,cvmix_r8)*N_cntr(kt)
-        else
-          Cv = 1.7_cvmix_r8
-        end if
+    ! check if Langmuir enhanced entrainment is on
+    l_entr = .false.
+    if(CVmix_kpp_params_in%lenhanced_entr) then
+      if (.not.(present(LaSL) .and. present(bfsfc) .and. present(ustar))) then
+        print*, "ERROR: you must pass in LaSL, bfsfc and ustar if ",&
+                "lenhanced_entr is true!"
+        stop 1
       end if
+      ! only apply Langmuir enhanced entrainment under unstable condition
+      if (bfsfc<cvmix_zero) then
+        l_entr = .true.
+      end if
+    end if
 
-      cvmix_kpp_compute_unresolved_shear(kt) = -Cv*Vtc*zt_cntr(kt)*           &
-                            N_cntr(kt)*ws_cntr(kt)/CVmix_kpp_params_in%Ri_crit
-      if (cvmix_kpp_compute_unresolved_shear(kt).lt.                          &
-          CVmix_kpp_params_in%minVtsqr) then
-        cvmix_kpp_compute_unresolved_shear(kt) = CVmix_kpp_params_in%minVtsqr
-      end if
-    end do
+    if (l_entr) then
+      ! (26) of Li and Fox-Kemper, 2017, JPO
+      c_CT =  cvmix_get_kpp_real('c_CT', CVmix_kpp_params_in)
+      c_ST =  cvmix_get_kpp_real('c_ST', CVmix_kpp_params_in)
+      c_LT =  cvmix_get_kpp_real('c_LT', CVmix_kpp_params_in)
+      p_LT =  cvmix_get_kpp_real('p_LT', CVmix_kpp_params_in)
+      do kt=1,nlev
+        if (CVmix_kpp_params_in%lscalar_Cv) then
+          Cv = cvmix_get_kpp_real('Cv', CVmix_kpp_params_in)
+        else
+          ! Cv computation comes from Danabasoglu et al., 2006
+          if (N_cntr(kt).lt.0.002_cvmix_r8) then
+            Cv = 2.1_cvmix_r8-real(200,cvmix_r8)*N_cntr(kt)
+          else
+            Cv = 1.7_cvmix_r8
+          end if
+        end if
+        Vtc = sqrt((c_CT*bfsfc*zt_cntr(kt) + c_ST*ustar**3 +                    &
+                c_LT*ustar**3*LaSL**p_LT)/ws_cntr(kt))
+        cvmix_kpp_compute_unresolved_shear(kt) = -Cv*Vtc*zt_cntr(kt)*           &
+                              N_cntr(kt)/CVmix_kpp_params_in%Ri_crit
+        if (cvmix_kpp_compute_unresolved_shear(kt).lt.                          &
+            CVmix_kpp_params_in%minVtsqr) then
+          cvmix_kpp_compute_unresolved_shear(kt) = CVmix_kpp_params_in%minVtsqr
+        end if
+      end do
+    else
+      ! From LMD 94, Vtc = sqrt(-beta_T/(c_s*eps))/kappa^2
+      Vtc = sqrt(0.2_cvmix_r8/(cvmix_get_kpp_real('c_s', CVmix_kpp_params_in) * &
+                  cvmix_get_kpp_real('surf_layer_ext', CVmix_kpp_params_in))) / &
+            (cvmix_get_kpp_real('vonkarman', CVmix_kpp_params_in)**2)
+
+      do kt=1,nlev
+        if (CVmix_kpp_params_in%lscalar_Cv) then
+          Cv = cvmix_get_kpp_real('Cv', CVmix_kpp_params_in)
+        else
+          ! Cv computation comes from Danabasoglu et al., 2006
+          if (N_cntr(kt).lt.0.002_cvmix_r8) then
+            Cv = 2.1_cvmix_r8-real(200,cvmix_r8)*N_cntr(kt)
+          else
+            Cv = 1.7_cvmix_r8
+          end if
+        end if
+
+        cvmix_kpp_compute_unresolved_shear(kt) = -Cv*Vtc*zt_cntr(kt)*           &
+                              N_cntr(kt)*ws_cntr(kt)/CVmix_kpp_params_in%Ri_crit
+        if (cvmix_kpp_compute_unresolved_shear(kt).lt.                          &
+            CVmix_kpp_params_in%minVtsqr) then
+          cvmix_kpp_compute_unresolved_shear(kt) = CVmix_kpp_params_in%minVtsqr
+        end if
+      end do
+    end if
 
 !EOC
 

@@ -156,8 +156,9 @@ contains
       case ("LangmuirEnhancementFactor", "EnhancementFactor",   &
               "langmuir_Efactor")
         cvmix_att_name = "LangmuirEnhancementFactor"
-      case ("SurfaceStokesDrift", "stokes_drift")
-        cvmix_att_name = "SurfaceStokesDrift"
+      ! Qing Li, 20180129
+      case ("LangmuirNumber", "La", "LaSL")
+        cvmix_att_name = "LangmuirNumber"
 
       ! Variables on level interfaces
       case ("zw", "zw_iface")

@@ -98,9 +98,10 @@ module cvmix_kinds_and_types
     ! Langmuir mixing induced enhancement factor to turbulent velocity scale
     real(cvmix_r8) :: LangmuirEnhancementFactor
                     ! units: unitless
-    ! Surface Stokes drift magnitude
-    real(cvmix_r8) :: SurfaceStokesDrift
-                    ! units: m/s
+    ! Qing Li, 20180129
+    ! Langmuir number
+    real(cvmix_r8) :: LangmuirNumber
+                    ! units: unitless
     ! A time-invariant coefficient needed for Simmons, et al. tidal mixing
     real(cvmix_r8) :: SimmonsCoeff
 

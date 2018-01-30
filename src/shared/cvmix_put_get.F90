@@ -168,8 +168,9 @@ contains
       ! QL, 150610
       case ("LangmuirEnhancementFactor")
         CVmix_vars%LangmuirEnhancementFactor = val
-      case ("SurfaceStokesDrift")
-        CVmix_vars%SurfaceStokesDrift = val
+      ! Qing Li, 20180129
+      case ("LangmuirNumber")
+        CVmix_vars%LangmuirNumber = val
       case ('SimmonsCoeff')
         CVmix_vars%SimmonsCoeff = val
 
