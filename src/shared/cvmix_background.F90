@@ -58,7 +58,8 @@ module cvmix_background
     module procedure cvmix_init_bkgnd_scalar
     module procedure cvmix_init_bkgnd_1D
     module procedure cvmix_init_bkgnd_2D
-    module procedure cvmix_init_bkgnd_BryanLewis
+    module procedure cvmix_init_bkgnd_BryanLewis_wrap
+    module procedure cvmix_init_bkgnd_BryanLewis_low
   end interface cvmix_init_bkgnd
 
   interface cvmix_coeffs_bkgnd
@@ -360,12 +361,51 @@ contains
 
 !BOP
 
-! !IROUTINE: cvmix_init_bkgnd_BryanLewis
+! !IROUTINE: cvmix_init_bkgnd_BryanLewis_wrap
 ! !INTERFACE:
 
-  subroutine cvmix_init_bkgnd_BryanLewis(CVmix_vars, bl1, bl2, bl3, bl4,      &
-                                         CVmix_params_in, old_vals,           &
-                                         CVmix_bkgnd_params_user)
+  subroutine cvmix_init_bkgnd_BryanLewis_wrap(CVmix_vars, bl1, bl2, bl3, bl4, &
+                                              CVmix_params_in, old_vals,      &
+                                              CVmix_bkgnd_params_user)
+
+! !DESCRIPTION:
+!  Calls cvmix_init_bkgnd_BryanLewis_low
+!
+! !USES:
+!  Only those used by entire module.
+
+! !INPUT PARAMETERS:
+    ! Contains depth and nlev
+    type(cvmix_data_type), intent(in) :: CVmix_vars
+    ! Units are first column if CVmix_data%depth is m, second if cm
+    real(cvmix_r8), intent(in) :: bl1,     &! m^2/s or cm^2/s
+                                  bl2,     &! m^2/s or cm^2/s
+                                  bl3,     &! 1/m   or 1/cm
+                                  bl4       ! m     or cm
+    character(len=cvmix_strlen),            optional, intent(in) :: old_vals
+    type(cvmix_global_params_type), intent(in) :: CVmix_params_in
+
+! !OUTPUT PARAMETERS:
+    type(cvmix_bkgnd_params_type),  target, optional, intent(inout) ::        &
+                                               CVmix_bkgnd_params_user
+!EOP
+!BOC
+
+    call cvmix_init_bkgnd(-CVMix_vars%zw_iface, bl1, bl2, bl3, bl4,           &
+                          CVmix_params_in, old_vals, CVmix_bkgnd_params_user)
+
+!EOC
+
+  end subroutine cvmix_init_bkgnd_BryanLewis_wrap
+
+!BOP
+
+! !IROUTINE: cvmix_coeffs_bkgnd_low
+! !INTERFACE:
+
+  subroutine cvmix_init_bkgnd_BryanLewis_low(zw, bl1, bl2, bl3, bl4,          &
+                                             CVmix_params_in, old_vals,       &
+                                             CVmix_bkgnd_params_user)
 
 ! !DESCRIPTION:
 !  Initialization routine for Bryan-Lewis diffusivity/viscosity calculation.
@@ -401,8 +441,7 @@ contains
 !  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
-    ! Contains depth and nlev
-    type(cvmix_data_type), intent(in) :: CVmix_vars
+    real(cvmix_r8), dimension(:), intent(in) :: zw
     ! Units are first column if CVmix_data%depth is m, second if cm
     real(cvmix_r8), intent(in) :: bl1,     &! m^2/s or cm^2/s
                                   bl2,     &! m^2/s or cm^2/s
@@ -424,7 +463,7 @@ contains
     integer :: nlev  ! max number of levels
 
     ! Local copies to make code easier to read
-    real(cvmix_r8), dimension(CVmix_params_in%max_nlev+1) :: Mdiff, Tdiff, zw
+    real(cvmix_r8), dimension(CVmix_params_in%max_nlev+1) :: Mdiff, Tdiff
 
     CVmix_bkgnd_params_out => CVmix_bkgnd_params_saved
     if (present(CVmix_bkgnd_params_user)) then
@@ -440,7 +479,6 @@ contains
       deallocate(CVmix_bkgnd_params_out%static_Tdiff)
 
     ! Set static_[MT]diff in background_input_type
-    zw   = -CVmix_vars%zw_iface
     Tdiff = bl1 + (bl2/cvmix_PI)*atan(bl3*(zw-bl4))
     Mdiff = CVmix_params_in%prandtl*Tdiff
 
@@ -472,7 +510,7 @@ contains
 
 !EOC
 
-  end subroutine cvmix_init_bkgnd_BryanLewis
+  end subroutine cvmix_init_bkgnd_BryanLewis_low
 
 !BOP
 
