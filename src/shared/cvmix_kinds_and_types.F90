@@ -36,8 +36,9 @@ module cvmix_kinds_and_types
 
   ! Kind Types:
   ! The cvmix package uses double precision for floating point computations.
-  integer, parameter, public :: cvmix_r8     = selected_real_kind(15, 307),   &
-                                cvmix_strlen = 256
+  integer, parameter, public :: cvmix_r8       = selected_real_kind(15, 307), &
+                                cvmix_log_kind = kind(.true.),                &
+                                cvmix_strlen   = 256
 
   ! Parameters to allow CVMix to store integers instead of strings
   integer, parameter, public :: CVMIX_OVERWRITE_OLD_VAL    = 1
@@ -82,12 +83,10 @@ module cvmix_kinds_and_types
                     ! units: m^2 s^-3
     ! latitude of column
     real(cvmix_r8) :: lat
-                    ! units: can be degrees or radians (there are no internal
-                    !        computations based on this term)
+                    ! units: degrees
     ! longitude of column
     real(cvmix_r8) :: lon
-                    ! units: can be degrees or radians (there are no internal
-                    !        computations based on this term)
+                    ! units: degrees
     ! Coriolis parameter
     real(cvmix_r8) :: Coriolis
                     ! units: s^-1
@@ -133,6 +132,17 @@ module cvmix_kinds_and_types
                                            ! units: s^-2
     real(cvmix_r8), dimension(:), pointer :: VertDep_iface => NULL()
                                            ! units: unitless
+
+    ! A time-dependent coefficient needed for Schmittner 2014
+    real(cvmix_r8), dimension(:), pointer   :: SchmittnerCoeff => NULL()
+
+    ! A time-invariant coefficient needed in Schmittner tidal mixing
+    real(cvmix_r8), dimension(:), pointer   :: SchmittnerSouthernOcean => NULL()
+
+    ! Another time-invariant coefficient needed in Schmittner tidal mixing
+    real(cvmix_r8), dimension(:,:), pointer :: exp_hab_zetar => NULL()
+
+
 
     ! For KPP, need to store non-local transport term
     real(cvmix_r8), dimension(:), pointer :: kpp_Tnonlocal_iface => NULL()
