@@ -391,8 +391,9 @@ contains
 !EOP
 !BOC
 
-    call cvmix_init_bkgnd(-CVMix_vars%zw_iface, bl1, bl2, bl3, bl4,           &
-                          CVmix_params_in, old_vals, CVmix_bkgnd_params_user)
+    call cvmix_init_bkgnd(CVmix_params_in%max_nlev,-CVMix_vars%zw_iface, bl1,      &
+                          bl2, bl3, bl4, CVmix_params_in%prandtl,                  &
+                          old_vals, CVmix_bkgnd_params_user)
 
 !EOC
 
@@ -403,9 +404,8 @@ contains
 ! !IROUTINE: cvmix_coeffs_bkgnd_low
 ! !INTERFACE:
 
-  subroutine cvmix_init_bkgnd_BryanLewis_low(zw, bl1, bl2, bl3, bl4,          &
-                                             CVmix_params_in, old_vals,       &
-                                             CVmix_bkgnd_params_user)
+  subroutine cvmix_init_bkgnd_BryanLewis_low(max_nlev, zw, bl1, bl2, bl3, bl4, &
+                                      prandtl, old_vals, CVmix_bkgnd_params_user)
 
 ! !DESCRIPTION:
 !  Initialization routine for Bryan-Lewis diffusivity/viscosity calculation.
@@ -441,14 +441,15 @@ contains
 !  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
-    real(cvmix_r8), dimension(:), intent(in) :: zw
+    integer,                      intent(in) :: max_nlev
+    real(cvmix_r8), dimension(max_nlev+1), intent(in) :: zw
     ! Units are first column if CVmix_data%depth is m, second if cm
     real(cvmix_r8), intent(in) :: bl1,     &! m^2/s or cm^2/s
                                   bl2,     &! m^2/s or cm^2/s
                                   bl3,     &! 1/m   or 1/cm
-                                  bl4       ! m     or cm
+                                  bl4,     &! m     or cm
+                                  prandtl   ! nondim
     character(len=cvmix_strlen),            optional, intent(in) :: old_vals
-    type(cvmix_global_params_type), intent(in) :: CVmix_params_in
 
 ! !OUTPUT PARAMETERS:
     type(cvmix_bkgnd_params_type),  target, optional, intent(inout) ::        &
@@ -459,18 +460,13 @@ contains
     ! Pointers to parameter data type
     type(cvmix_bkgnd_params_type),  pointer :: CVmix_bkgnd_params_out
 
-    ! Local index
-    integer :: nlev  ! max number of levels
-
     ! Local copies to make code easier to read
-    real(cvmix_r8), dimension(CVmix_params_in%max_nlev+1) :: Mdiff, Tdiff
+    real(cvmix_r8), dimension(max_nlev+1) :: Mdiff, Tdiff
 
     CVmix_bkgnd_params_out => CVmix_bkgnd_params_saved
     if (present(CVmix_bkgnd_params_user)) then
       CVmix_bkgnd_params_out => CVmix_bkgnd_params_user
     end if
-
-    nlev = CVmix_params_in%max_nlev
 
     ! Clean up memory in bkgnd_params_type (will be re-allocated in put call)
     if (allocated(CVmix_bkgnd_params_out%static_Mdiff))                       &
@@ -480,12 +476,12 @@ contains
 
     ! Set static_[MT]diff in background_input_type
     Tdiff = bl1 + (bl2/cvmix_PI)*atan(bl3*(zw-bl4))
-    Mdiff = CVmix_params_in%prandtl*Tdiff
+    Mdiff = prandtl*Tdiff
 
     call cvmix_put_bkgnd("static_Mdiff", Mdiff, CVmix_bkgnd_params_user,      &
-                         nlev=nlev)
+                         nlev=max_nlev)
     call cvmix_put_bkgnd("static_Tdiff", Tdiff, CVmix_bkgnd_params_user,      &
-                         nlev=nlev)
+                         nlev=max_nlev)
 
     if (present(old_vals)) then
       select case (trim(old_vals))
