@@ -1,7 +1,7 @@
 &cvmix_nml
 mix_type = 'kpp-langmuir'
 /
- 
+
 ! Langmuir Test params
 &langmuir_col_nml
   nlev           = 256
@@ -16,7 +16,7 @@ mix_type = 'kpp-langmuir'
   jerlov_water_type = 3
   ustar          = 6.0000e-03
   Coriolis       = 1.0284e-04
-  infile         = '/Users/qingli/GoogleDrive/BrownWork/matlab/ncarles/testCVMix/uvbPfl.txt'
+  infile         = '../../inputdata/langmuir/les_profile_data_20180130.nc'
   outfile        = 'langmuir_off.out'
   lnoDGat1       = .false.
 /

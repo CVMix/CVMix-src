@@ -1099,6 +1099,14 @@ contains
         CVmix_kpp_params_out%Cv = val
       case ('nonlocal_coeff')
         CVmix_kpp_params_out%nonlocal_coeff = val
+      case ('c_CT')
+        CVmix_kpp_params_out%c_CT = val
+      case ('c_ST')
+        CVmix_kpp_params_out%c_ST = val
+      case ('c_LT')
+        CVmix_kpp_params_out%c_LT = val
+      case ('p_LT')
+        CVmix_kpp_params_out%p_LT = val
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
         stop 1
