@@ -1285,6 +1285,14 @@ contains
         cvmix_get_kpp_real = CVmix_kpp_params_get%surf_layer_ext
       case ('Cv')
         cvmix_get_kpp_real = CVmix_kpp_params_get%Cv
+      case ('c_CT')
+        cvmix_get_kpp_real = CVmix_kpp_params_get%c_CT
+      case ('c_ST')
+        cvmix_get_kpp_real = CVmix_kpp_params_get%c_ST
+      case ('c_LT')
+        cvmix_get_kpp_real = CVmix_kpp_params_get%c_LT
+      case ('p_LT')
+        cvmix_get_kpp_real = CVmix_kpp_params_get%p_LT
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
         stop 1
