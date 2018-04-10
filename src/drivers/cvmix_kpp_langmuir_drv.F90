@@ -71,12 +71,13 @@ subroutine cvmix_kpp_langmuir_driver()
    character(len=cvmix_strlen) :: interp_type, MatchTechnique
    character(len=cvmix_strlen) :: infile, outfile, infileEF
    character(len=cvmix_strlen), dimension(:), allocatable :: langmuir_opt
-   logical :: llangmuir_efactor, lnoDGat1, luse_efactor_model, l_debug
+   logical :: llangmuir_efactor, llangmuir_entr, lnoDGat1, luse_efactor_model, l_debug
    type(cvmix_global_params_type) :: CVmix_params
 
    namelist/langmuir_col_nml/nlev, max_nlev, &
                              interp_type, ri_crit, init_hbl, &
-                             llangmuir_efactor, lamult, jerlov_water_type, &
+                             llangmuir_efactor, llangmuir_entr, lamult, &
+                             jerlov_water_type, &
                              b0, b0sol, ustar, lon, lat, infile, &
                              lnoDGat1, outfile, dayofyear, infileEF
 
@@ -115,7 +116,7 @@ subroutine cvmix_kpp_langmuir_driver()
             vvv_array(nlev,ncase))
    allocate(hbl_kpp(ncase,3))
    allocate(langmuir_opt(3))
-   langmuir_opt = (/'off', 'lw16', 'lf17'/)
+   langmuir_opt = (/'off ', 'lw16', 'lf17'/)
 
    print*, "Test starts"
    print*, "-----------"
@@ -182,7 +183,7 @@ subroutine cvmix_kpp_langmuir_driver()
 
       ! get the enhancement factor
       luse_efactor_model = .false.
-      select case (trim(langmuir_opt))
+      select case (trim(langmuir_opt(1)))
          case ('read')
             efactor = cvmix_kpp_efactor_read(infileEF, &
                       lon, lat, dayofyear)
@@ -287,8 +288,8 @@ subroutine cvmix_kpp_langmuir_driver()
 
    deallocate(zt, zw_iface)
    deallocate(uuu, vvv, bbb, delta_vel_sqr, w_s, Ri_bulk, buoy_freq_iface)
-   deallocate(Mdiff, Tdiff, Sdiff, Ghat)
-   deallocate(uw,vw,wb)
+   ! deallocate(Mdiff, Tdiff, Sdiff, Ghat)
+   ! deallocate(uw,vw,wb)
 !EOC
 
 end subroutine cvmix_kpp_langmuir_driver
