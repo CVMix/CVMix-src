@@ -498,7 +498,7 @@ contains
     select case (trim(cvmix_att_name(varname)))
       case ("exp_hab_zetar")
         if (.not.associated(CVmix_vars%exp_hab_zetar)) then
-          allocate(CVmix_vars%exp_hab_zetar(2:CVmix_vars%nlev+1,2:CVmix_vars%nlev+1))
+          allocate(CVmix_vars%exp_hab_zetar(CVmix_vars%nlev+1,CVmix_vars%nlev+1))
         end if
         CVmix_vars%exp_hab_zetar = val
 
