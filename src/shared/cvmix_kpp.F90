@@ -58,10 +58,10 @@
   integer, parameter :: CVMIX_KPP_MATCH_GRADIENT     = 2
   integer, parameter :: CVMIX_KPP_SIMPLE_SHAPES      = 3
   integer, parameter :: CVMIX_KPP_PARABOLIC_NONLOCAL = 4
-  integer, parameter :: NO_LANGMUIR_MIXING           = 0
+  integer, parameter :: NO_LANGMUIR_MIXING           = -1
   integer, parameter :: LANGMUIR_MIXING_L16          = 1
   integer, parameter :: LANGMUIR_MIXING_RWHGK16      = 2
-  integer, parameter :: NO_LANGMUIR_ENTRAINMENT      = 0
+  integer, parameter :: NO_LANGMUIR_ENTRAINMENT      = -1
   integer, parameter :: LANGMUIR_ENTRAINMENT_L16     = 1
   integer, parameter :: LANGMUIR_ENTRAINMENT_LF17    = 2
   integer, parameter :: LANGMUIR_ENTRAINMENT_RWHGK16 = 3
@@ -523,11 +523,12 @@ contains
           call cvmix_put_kpp('Langmuir_Mixing_Opt', &
                Langmuir_Mixing_RWHGK16, CVmix_kpp_params_user)
        case ("NONE")
-       call cvmix_put_kpp('Langmuir_Mixing_Opt', &
-               No_Langmuir_Mixing, CVmix_kpp_params_user)
+          print*,NO_LANGMUIR_MIXING
+          call cvmix_put_kpp('Langmuir_Mixing_Opt', &
+               NO_LANGMUIR_MIXING, CVmix_kpp_params_user)
        case DEFAULT
           call cvmix_put_kpp('Langmuir_Mixing_Opt', &
-               No_Langmuir_Mixing, CVmix_kpp_params_user)
+               NO_LANGMUIR_MIXING, CVmix_kpp_params_user)
        end select
     else
        call cvmix_put_kpp('Langmuir_Mixing_Opt', &
@@ -1176,7 +1177,11 @@ contains
       case ('c_LT')
         CVmix_kpp_params_out%c_LT = val
       case ('p_LT')
-        CVmix_kpp_params_out%p_LT = val
+         CVmix_kpp_params_out%p_LT = val
+      case ('RWHGK_ENTR_COEF')
+         CVmix_kpp_params_out%p_LT = val
+      case ('RWHGK_ENTR_EXP')
+         CVmix_kpp_params_out%p_LT = val
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
         stop 1
@@ -1228,9 +1233,9 @@ contains
         CVmix_kpp_params_out%MatchTechnique = val
       case ('old_vals', 'handle_old_vals')
         CVmix_kpp_params_out%handle_old_vals = val
-      case ('Langmuir_Mixing_opt')
+      case ('Langmuir_Mixing_Opt')
         CVmix_kpp_params_out%Langmuir_Mixing_opt = val
-     case ('Langmuir_Entrainment_opt')
+      case ('Langmuir_Entrainment_Opt')
         CVmix_kpp_params_out%Langmuir_Entrainment_opt = val
       case DEFAULT
         call cvmix_put_kpp(varname, real(val, cvmix_r8), CVmix_kpp_params_out)
@@ -1368,6 +1373,10 @@ contains
         cvmix_get_kpp_real = CVmix_kpp_params_get%c_LT
       case ('p_LT')
         cvmix_get_kpp_real = CVmix_kpp_params_get%p_LT
+      case ('RWHGK_ENTR_COEF')
+         cvmix_get_kpp_real = CVmix_kpp_params_get%RWHGK_ENTR_COEF
+      case ('RWHGK_ENTR_EXP')
+         cvmix_get_kpp_real = CVmix_kpp_params_get%RWHGK_ENTR_EXP
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
         stop 1
