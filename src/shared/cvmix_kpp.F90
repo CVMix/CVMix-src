@@ -523,7 +523,6 @@ contains
           call cvmix_put_kpp('Langmuir_Mixing_Opt', &
                Langmuir_Mixing_RWHGK16, CVmix_kpp_params_user)
        case ("NONE")
-          print*,NO_LANGMUIR_MIXING
           call cvmix_put_kpp('Langmuir_Mixing_Opt', &
                NO_LANGMUIR_MIXING, CVmix_kpp_params_user)
        case DEFAULT
@@ -1179,9 +1178,9 @@ contains
       case ('p_LT')
          CVmix_kpp_params_out%p_LT = val
       case ('RWHGK_ENTR_COEF')
-         CVmix_kpp_params_out%p_LT = val
+         CVmix_kpp_params_out%rwhgk_entr_coef = val
       case ('RWHGK_ENTR_EXP')
-         CVmix_kpp_params_out%p_LT = val
+         CVmix_kpp_params_out%rwhgk_entr_exp = val
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
         stop 1
@@ -2446,21 +2445,22 @@ contains
         end do
       endif
     else
-      if (CVmix_kpp_params_in%Langmuir_Entrainment_Opt &
-           == Langmuir_Entrainment_RWHGK16) then
-         if (.not.(present(LaSL) )) then
-        print*, "ERROR: you must pass in LaSL if ",&
-                "langmuir_Entrainment_RWHGK16 is chosen!"
-        stop 1
-      end if
-         RWHGK_ENTR_COEF =  cvmix_get_kpp_real('RWHGK_ENTR_COEF', &
-              CVmix_kpp_params_in)
-         RWHGK_ENTR_EXP =  cvmix_get_kpp_real('RWHGK_ENTR_EXP', &
-                             CVmix_kpp_params_in)
-         Vt2_Enhancement = cvmix_one + RWHGK_ENTR_COEF * LASL**RWHGK_ENTR_EXP
-      else
-         Vt2_Enhancement = cvmix_one
-      endif
+       if (CVmix_kpp_params_in%Langmuir_Entrainment_Opt &
+            == Langmuir_Entrainment_RWHGK16) then
+          if (.not.(present(LaSL) )) then
+             print*, "ERROR: you must pass in LaSL if ",&
+                  "langmuir_Entrainment_RWHGK16 is chosen!"
+             stop 1
+          end if
+          RWHGK_ENTR_COEF =  cvmix_get_kpp_real('RWHGK_ENTR_COEF', &
+               CVmix_kpp_params_in)
+          RWHGK_ENTR_EXP =  cvmix_get_kpp_real('RWHGK_ENTR_EXP', &
+               CVmix_kpp_params_in)
+          Vt2_Enhancement = cvmix_one + RWHGK_ENTR_COEF * LASL**RWHGK_ENTR_EXP
+       else
+          Vt2_Enhancement = cvmix_one
+       endif
+
       ! From LMD 94, Vtc = sqrt(-beta_T/(c_s*eps))/kappa^2
       Vtc = sqrt(0.2_cvmix_r8/(cvmix_get_kpp_real('c_s', CVmix_kpp_params_in) * &
                   cvmix_get_kpp_real('surf_layer_ext', CVmix_kpp_params_in))) / &
