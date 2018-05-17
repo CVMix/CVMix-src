@@ -2434,16 +2434,16 @@ contains
               Cv = 1.7_cvmix_r8
             end if
           end if
-          Vtc = sqrt((c_CT*bfsfc*zt_cntr(kt) + c_ST*ustar**3 +                  &
-               c_LT*ustar**3*LaSL**p_LT)/ws_cntr(kt))
-          cvmix_kpp_compute_unresolved_shear(kt) = -Cv*Vtc*zt_cntr(kt)*         &
-               N_cntr(kt)/CVmix_kpp_params_in%Ri_crit
-          if (cvmix_kpp_compute_unresolved_shear(kt).lt.                        &
-               CVmix_kpp_params_in%minVtsqr) then
-             cvmix_kpp_compute_unresolved_shear(kt) = CVmix_kpp_params_in%minVtsqr
-          end if
-        end do
-      endif
+        end if
+        Vtc = sqrt((c_CT*bfsfc*zt_cntr(kt) + c_ST*ustar**3 +                    &
+                c_LT*ustar**3*LaSL**(-1.*p_LT))/ws_cntr(kt))
+        cvmix_kpp_compute_unresolved_shear(kt) = -Cv*Vtc*zt_cntr(kt)*           &
+                              N_cntr(kt)/CVmix_kpp_params_in%Ri_crit
+        if (cvmix_kpp_compute_unresolved_shear(kt).lt.                          &
+            CVmix_kpp_params_in%minVtsqr) then
+          cvmix_kpp_compute_unresolved_shear(kt) = CVmix_kpp_params_in%minVtsqr
+        end if
+      end do
     else
        if (CVmix_kpp_params_in%Langmuir_Entrainment_Opt &
             == Langmuir_Entrainment_RWHGK16) then
