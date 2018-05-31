@@ -210,7 +210,7 @@
       !BGR
       real(cvmix_r8) :: RWHGK_ENTR_COEF,& ! Coefficient and exponent from
                         RWHGK_ENTR_EXP    ! RWHGK16 Langmuir parameterization
-      
+
   end type cvmix_kpp_params_type
 
 !EOP
@@ -533,7 +533,7 @@ contains
        call cvmix_put_kpp('Langmuir_Mixing_Opt', &
             No_Langmuir_Mixing, CVmix_kpp_params_user)
     end if
-    
+
     ! Qing Li, 20180129, by default, not using Langmuir enhanced entrainment
     if (present(Langmuir_Entrainment_Str)) then
        select case (trim(Langmuir_Entrainment_Str))
@@ -743,7 +743,7 @@ contains
     real(cvmix_r8) :: dMshapeAt1, dTshapeAt1, dSshapeAt1
 
     ! [MTS]shapeAtS is value of shape function at sigma = S
-    real(cvmix_r8) :: MshapeAtS, TshapeAtS, SshapeAtS, GAtS, NMshapeAtS
+    real(cvmix_r8) :: MshapeAtS, TshapeAtS, SshapeAtS, GAtS
     ! Storing the maximum value of shape function for no-matching case
     !  that is used as an option for Langmuir mixing
     real(cvmix_r8), parameter :: NMshapeMax = 4./27.
@@ -765,7 +765,7 @@ contains
     ! Parameters for RWHGK16 Langmuir parameterization
     real(cvmix_r8) :: MixingCoefEnhancement
     real(cvmix_r8) :: ShapeNoMatchAtS
-    
+
     ! Constant from params
     integer :: interp_type2, MatchTechnique
 
@@ -1045,7 +1045,7 @@ contains
         GAtS = cvmix_math_evaluate_cubic(Sshape2, sigma(kw))
         Snonlocal(kw) = CVmix_kpp_params_in%nonlocal_coeff*GAtS
       end if
-      
+
       if (CVMix_KPP_Params_in%Langmuir_Mixing_Opt == &
            Langmuir_Mixing_RWHGK16) then
          MixingCoefEnhancement = cvmix_one + ShapeNoMatchAtS/NMshapeMax * &
@@ -1288,12 +1288,6 @@ contains
         CVmix_kpp_params_out%lnoDGat1 = val
       case ('lenhanced_diff')
         CVmix_kpp_params_out%lenhanced_diff = val
-      ! QL, 150610, llangmuirEF and lenhanced_entr
-      ! BGR this is now an integer
-      !case ('llangmuirEF')
-      !  CVmix_kpp_params_out%llangmuirEF = val
-      !case ('lenhanced_entr')
-      !  CVmix_kpp_params_out%lenhanced_entr = val
       case ('l_LMD_ws')
         CVmix_kpp_params_out%l_LMD_ws = val
       case DEFAULT
@@ -1852,15 +1846,6 @@ contains
         print*, "ERROR: you must pass in either Vt_sqr_cntr or ws_cntr!"
         stop 1
       end if
-      ! Qing Li, 20180129
-      if(CVmix_kpp_params_in%Langmuir_Entrainment_Opt == &
-           Langmuir_Entrainment_LF17) then
-        if (.not.(present(LaSL) .and. present(bfsfc) .and. present(ustar))) then
-          print*, "ERROR: you must pass in LaSL, bfsfc and ustar if ",&
-                  "lenhanced_entr is true!"
-          stop 1
-        end if
-      end if
       unresolved_shear_cntr_sqr = cvmix_kpp_compute_unresolved_shear(       &
                                     zt_cntr, ws_cntr, N_iface, Nsqr_iface,    &
                                     LaSL, bfsfc, ustar, CVmix_kpp_params_user)
@@ -2059,7 +2044,7 @@ contains
             end do
           else
             print*, "ERROR: you must pass in langmuir_Efactor if ",           &
-                  "llangmuirEF is true!"
+                  "Langmuir_Mixing_Opt==Langmuir_Mixing_L16!"
             stop 1
           end if
         end if
@@ -2088,7 +2073,7 @@ contains
             end do
           else
             print*, "ERROR: you must pass in langmuir_Efactor if ",           &
-                  "llangmuirEF is true!"
+                  "Langmuir_Mixing_Opt==Langmuir_Mixing_L16!"
             stop 1
           end if
         end if ! QL
@@ -2229,7 +2214,7 @@ contains
             end do
           else
             print*, "ERROR: you must pass in langmuir_Efactor if ",           &
-                  "llangmuirEF is true!"
+                  "Langmuir_Mixing_Opt==Langmuir_Mixing_L16!"
             stop 1
           end if
         end if ! QL
@@ -2259,7 +2244,7 @@ contains
             end do
           else
             print*, "ERROR: you must pass in langmuir_Efactor if ",           &
-                  "llangmuirEF is true!"
+                  "Langmuir_Mixing_Opt==Langmuir_Mixing_L16!"
             stop 1
           end if
         end if ! QL
@@ -2364,7 +2349,7 @@ contains
     real(cvmix_r8) :: c_CT, c_ST, c_LT, p_LT
     real(cvmix_r8) :: RWHGK_ENTR_COEF, RWHGK_ENTR_EXP
     real(cvmix_r8) :: Vt2_Enhancement
-    
+
     real(cvmix_r8), dimension(size(zt_cntr)) :: N_cntr
     type(cvmix_kpp_params_type), pointer :: CVmix_kpp_params_in
 
@@ -2408,85 +2393,136 @@ contains
       end if
     end if
 
-    ! check if Langmuir enhanced entrainment is on
-    if (CVmix_kpp_params_in%Langmuir_Entrainment_Opt &
-         == Langmuir_Entrainment_LF17) then
-      if (.not.(present(LaSL) .and. present(bfsfc) .and. present(ustar))) then
-        print*, "ERROR: you must pass in LaSL, bfsfc and ustar if ",&
-                "Langmuir_Entrainment_LF17 is chosen!"
-        stop 1
-      end if
-      ! only apply Langmuir enhanced entrainment under unstable condition
-      if (bfsfc<cvmix_zero) then
-        ! (26) of Li and Fox-Kemper, 2017, JPO
-        c_CT =  cvmix_get_kpp_real('c_CT', CVmix_kpp_params_in)
-        c_ST =  cvmix_get_kpp_real('c_ST', CVmix_kpp_params_in)
-        c_LT =  cvmix_get_kpp_real('c_LT', CVmix_kpp_params_in)
-        p_LT =  cvmix_get_kpp_real('p_LT', CVmix_kpp_params_in)
+    ! options for Langmuir enhanced entrainment
+    select case (CVmix_kpp_params_in%Langmuir_Entrainment_Opt)
+
+      case (Langmuir_Entrainment_LF17)
+
+        if (.not.(present(LaSL) .and. present(bfsfc) .and. present(ustar))) then
+          print*, "ERROR: you must pass in LaSL, bfsfc and ustar if ",&
+                  "Langmuir_Entrainment_LF17 is chosen!"
+          stop 1
+        end if
+        ! only apply Langmuir enhanced entrainment under unstable condition
+        if (bfsfc<cvmix_zero) then
+          ! (26) of Li and Fox-Kemper, 2017, JPO
+          c_CT =  cvmix_get_kpp_real('c_CT', CVmix_kpp_params_in)
+          c_ST =  cvmix_get_kpp_real('c_ST', CVmix_kpp_params_in)
+          c_LT =  cvmix_get_kpp_real('c_LT', CVmix_kpp_params_in)
+          p_LT =  cvmix_get_kpp_real('p_LT', CVmix_kpp_params_in)
+          do kt=1,nlev
+            if (CVmix_kpp_params_in%lscalar_Cv) then
+              Cv = cvmix_get_kpp_real('Cv', CVmix_kpp_params_in)
+            else
+            ! Cv computation comes from Danabasoglu et al., 2006
+              if (N_cntr(kt).lt.0.002_cvmix_r8) then
+                Cv = 2.1_cvmix_r8-real(200,cvmix_r8)*N_cntr(kt)
+              else
+                Cv = 1.7_cvmix_r8
+              end if
+            end if
+            Vtc = sqrt((c_CT*bfsfc*zt_cntr(kt) + c_ST*ustar**3 +                 &
+                     c_LT*ustar**3*LaSL**(-1.*p_LT))/ws_cntr(kt))
+            cvmix_kpp_compute_unresolved_shear(kt) = -Cv*Vtc*zt_cntr(kt)*        &
+                                   N_cntr(kt)/CVmix_kpp_params_in%Ri_crit
+            if (cvmix_kpp_compute_unresolved_shear(kt).lt.                       &
+                CVmix_kpp_params_in%minVtsqr) then
+              cvmix_kpp_compute_unresolved_shear(kt) = CVmix_kpp_params_in%minVtsqr
+            end if
+          end do
+        else
+          ! From LMD 94, Vtc = sqrt(-beta_T/(c_s*eps))/kappa^2
+          Vtc = sqrt(0.2_cvmix_r8/(cvmix_get_kpp_real('c_s', CVmix_kpp_params_in) * &
+                cvmix_get_kpp_real('surf_layer_ext', CVmix_kpp_params_in))) / &
+                (cvmix_get_kpp_real('vonkarman', CVmix_kpp_params_in)**2)
+
+          do kt=1,nlev
+            if (CVmix_kpp_params_in%lscalar_Cv) then
+              Cv = cvmix_get_kpp_real('Cv', CVmix_kpp_params_in)
+            else
+              ! Cv computation comes from Danabasoglu et al., 2006
+              if (N_cntr(kt).lt.0.002_cvmix_r8) then
+                Cv = 2.1_cvmix_r8-real(200,cvmix_r8)*N_cntr(kt)
+              else
+                Cv = 1.7_cvmix_r8
+              end if
+            end if
+
+            cvmix_kpp_compute_unresolved_shear(kt) = -Cv*Vtc*zt_cntr(kt) *       &
+                              N_cntr(kt)*ws_cntr(kt)/CVmix_kpp_params_in%Ri_crit
+            if (cvmix_kpp_compute_unresolved_shear(kt).lt.                       &
+                CVmix_kpp_params_in%minVtsqr) then
+              cvmix_kpp_compute_unresolved_shear(kt) = CVmix_kpp_params_in%minVtsqr
+            end if
+          end do
+        end if
+
+      case (Langmuir_Entrainment_RWHGK16)
+
+        if (.not.(present(LaSL) )) then
+           print*, "ERROR: you must pass in LaSL if ",&
+                "langmuir_Entrainment_RWHGK16 is chosen!"
+           stop 1
+        end if
+        RWHGK_ENTR_COEF =  cvmix_get_kpp_real('RWHGK_ENTR_COEF', &
+             CVmix_kpp_params_in)
+        RWHGK_ENTR_EXP =  cvmix_get_kpp_real('RWHGK_ENTR_EXP', &
+             CVmix_kpp_params_in)
+        Vt2_Enhancement = cvmix_one + RWHGK_ENTR_COEF * LASL**RWHGK_ENTR_EXP
+
+        ! From LMD 94, Vtc = sqrt(-beta_T/(c_s*eps))/kappa^2
+        Vtc = sqrt(0.2_cvmix_r8/(cvmix_get_kpp_real('c_s', CVmix_kpp_params_in) * &
+              cvmix_get_kpp_real('surf_layer_ext', CVmix_kpp_params_in))) / &
+              (cvmix_get_kpp_real('vonkarman', CVmix_kpp_params_in)**2)
+
         do kt=1,nlev
           if (CVmix_kpp_params_in%lscalar_Cv) then
             Cv = cvmix_get_kpp_real('Cv', CVmix_kpp_params_in)
           else
-          ! Cv computation comes from Danabasoglu et al., 2006
+            ! Cv computation comes from Danabasoglu et al., 2006
             if (N_cntr(kt).lt.0.002_cvmix_r8) then
               Cv = 2.1_cvmix_r8-real(200,cvmix_r8)*N_cntr(kt)
             else
               Cv = 1.7_cvmix_r8
             end if
           end if
-        end if
-        Vtc = sqrt((c_CT*bfsfc*zt_cntr(kt) + c_ST*ustar**3 +                    &
-                c_LT*ustar**3*LaSL**(-1.*p_LT))/ws_cntr(kt))
-        cvmix_kpp_compute_unresolved_shear(kt) = -Cv*Vtc*zt_cntr(kt)*           &
-                              N_cntr(kt)/CVmix_kpp_params_in%Ri_crit
-        if (cvmix_kpp_compute_unresolved_shear(kt).lt.                          &
-            CVmix_kpp_params_in%minVtsqr) then
-          cvmix_kpp_compute_unresolved_shear(kt) = CVmix_kpp_params_in%minVtsqr
-        end if
-      end do
-    else
-       if (CVmix_kpp_params_in%Langmuir_Entrainment_Opt &
-            == Langmuir_Entrainment_RWHGK16) then
-          if (.not.(present(LaSL) )) then
-             print*, "ERROR: you must pass in LaSL if ",&
-                  "langmuir_Entrainment_RWHGK16 is chosen!"
-             stop 1
+
+          cvmix_kpp_compute_unresolved_shear(kt) = -Cv*Vtc*zt_cntr(kt)*          &
+                                N_cntr(kt)*ws_cntr(kt)/                          &
+                                CVmix_kpp_params_in%Ri_crit * Vt2_Enhancement
+          if (cvmix_kpp_compute_unresolved_shear(kt).lt.                         &
+              CVmix_kpp_params_in%minVtsqr) then
+            cvmix_kpp_compute_unresolved_shear(kt) = CVmix_kpp_params_in%minVtsqr
           end if
-          RWHGK_ENTR_COEF =  cvmix_get_kpp_real('RWHGK_ENTR_COEF', &
-               CVmix_kpp_params_in)
-          RWHGK_ENTR_EXP =  cvmix_get_kpp_real('RWHGK_ENTR_EXP', &
-               CVmix_kpp_params_in)
-          Vt2_Enhancement = cvmix_one + RWHGK_ENTR_COEF * LASL**RWHGK_ENTR_EXP
-       else
-          Vt2_Enhancement = cvmix_one
-       endif
+        end do
 
-      ! From LMD 94, Vtc = sqrt(-beta_T/(c_s*eps))/kappa^2
-      Vtc = sqrt(0.2_cvmix_r8/(cvmix_get_kpp_real('c_s', CVmix_kpp_params_in) * &
-                  cvmix_get_kpp_real('surf_layer_ext', CVmix_kpp_params_in))) / &
-            (cvmix_get_kpp_real('vonkarman', CVmix_kpp_params_in)**2)
+      case DEFAULT
 
-      do kt=1,nlev
-        if (CVmix_kpp_params_in%lscalar_Cv) then
-          Cv = cvmix_get_kpp_real('Cv', CVmix_kpp_params_in)
-        else
-          ! Cv computation comes from Danabasoglu et al., 2006
-          if (N_cntr(kt).lt.0.002_cvmix_r8) then
-            Cv = 2.1_cvmix_r8-real(200,cvmix_r8)*N_cntr(kt)
+        ! From LMD 94, Vtc = sqrt(-beta_T/(c_s*eps))/kappa^2
+        Vtc = sqrt(0.2_cvmix_r8/(cvmix_get_kpp_real('c_s', CVmix_kpp_params_in) * &
+              cvmix_get_kpp_real('surf_layer_ext', CVmix_kpp_params_in))) / &
+              (cvmix_get_kpp_real('vonkarman', CVmix_kpp_params_in)**2)
+
+        do kt=1,nlev
+          if (CVmix_kpp_params_in%lscalar_Cv) then
+            Cv = cvmix_get_kpp_real('Cv', CVmix_kpp_params_in)
           else
-            Cv = 1.7_cvmix_r8
+            ! Cv computation comes from Danabasoglu et al., 2006
+            if (N_cntr(kt).lt.0.002_cvmix_r8) then
+              Cv = 2.1_cvmix_r8-real(200,cvmix_r8)*N_cntr(kt)
+            else
+              Cv = 1.7_cvmix_r8
+            end if
           end if
-        end if
 
-        cvmix_kpp_compute_unresolved_shear(kt) = -Cv*Vtc*zt_cntr(kt)*           &
-                              N_cntr(kt)*ws_cntr(kt)/                           &
-                              CVmix_kpp_params_in%Ri_crit * Vt2_Enhancement
-        if (cvmix_kpp_compute_unresolved_shear(kt).lt.                          &
-            CVmix_kpp_params_in%minVtsqr) then
-          cvmix_kpp_compute_unresolved_shear(kt) = CVmix_kpp_params_in%minVtsqr
-        end if
-      end do
-    end if
+          cvmix_kpp_compute_unresolved_shear(kt) = -Cv*Vtc*zt_cntr(kt) *       &
+                            N_cntr(kt)*ws_cntr(kt)/CVmix_kpp_params_in%Ri_crit
+          if (cvmix_kpp_compute_unresolved_shear(kt).lt.                       &
+              CVmix_kpp_params_in%minVtsqr) then
+            cvmix_kpp_compute_unresolved_shear(kt) = CVmix_kpp_params_in%minVtsqr
+          end if
+        end do
+    end select
 
 !EOC
 

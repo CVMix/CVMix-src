@@ -71,12 +71,14 @@ subroutine cvmix_kpp_langmuir_driver()
    character(len=cvmix_strlen) :: interp_type, MatchTechnique
    character(len=cvmix_strlen) :: infile, outfile, infileEF
    character(len=cvmix_strlen), dimension(:), allocatable :: langmuir_opt
-   logical :: llangmuir_efactor, llangmuir_entr, lnoDGat1, luse_efactor_model, l_debug
+   character(len=cvmix_strlen) :: langmuir_mixing_opt, langmuir_entrainment_opt
+   logical :: lnoDGat1, luse_efactor_model, l_debug
    type(cvmix_global_params_type) :: CVmix_params
 
    namelist/langmuir_col_nml/nlev, max_nlev, &
                              interp_type, ri_crit, init_hbl, &
-                             llangmuir_efactor, llangmuir_entr, lamult, &
+                             langmuir_mixing_opt, langmuir_entrainment_opt, &
+                             lamult, &
                              jerlov_water_type, &
                              b0, b0sol, ustar, lon, lat, infile, &
                              lnoDGat1, outfile, dayofyear, infileEF
@@ -151,8 +153,8 @@ subroutine cvmix_kpp_langmuir_driver()
 !-----------------------------------------------------------------------
 
    call cvmix_init_kpp(ri_crit=ri_crit, interp_type=interp_type,              &
-                      llangmuirEF=llangmuir_efactor,                          &
-                      lenhanced_entr=llangmuir_entr,                          &
+                      langmuir_mixing_str=langmuir_mixing_opt,                &
+                      langmuir_entrainment_str=langmuir_entrainment_opt,      &
                       MatchTechnique=MatchTechnique,                          &
                       lnoDGat1=lnoDGat1)
    call cvmix_put(CVmix_vars, 'nlev', nlev)
