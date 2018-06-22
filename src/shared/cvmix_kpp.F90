@@ -1020,12 +1020,6 @@ contains
     call cvmix_kpp_compute_turbulent_scales(sigma, OBL_depth, surf_buoy,      &
                                             surf_fric, w_m, w_s,              &
                                             CVmix_kpp_params_user)
-    if (CVMix_KPP_Params_in%Langmuir_Mixing_Opt &
-       .eq. LANGMUIR_MIXING_LWF16) then
-      ! enhance the turbulent velocity scale
-      w_m = w_m * Langmuir_EFactor
-      w_s = w_s * Langmuir_EFactor
-    end if
     do kw=2,kwup
       !   (3b) Evaluate G(sigma) at each cell interface
       MshapeAtS = cvmix_math_evaluate_cubic(Mshape, sigma(kw))
