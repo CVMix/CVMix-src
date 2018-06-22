@@ -94,11 +94,9 @@ module cvmix_kinds_and_types
     ! Index of cell containing OBL (fraction > .5 => below cell center)
     real(cvmix_r8) :: kOBL_depth
                     ! units: unitless
-    ! QL, 150610
     ! Langmuir mixing induced enhancement factor to turbulent velocity scale
     real(cvmix_r8) :: LangmuirEnhancementFactor
                     ! units: unitless
-    ! Qing Li, 20180129
     ! Langmuir number
     real(cvmix_r8) :: LangmuirNumber
                     ! units: unitless
@@ -190,7 +188,6 @@ module cvmix_kinds_and_types
     integer :: max_nlev
              ! units: unitless
 
-    ! QL, 160708, gravity, m s^-2
     real(cvmix_r8) :: Gravity = 9.80616_cvmix_r8
 
     ! Prandtl number

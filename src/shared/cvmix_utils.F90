@@ -152,11 +152,9 @@ contains
         cvmix_att_name = "Coriolis"
       case ("kOBL_depth", "BoundaryLayerDepthIndex")
         cvmix_att_name = "kOBL_depth"
-      ! QL, 150610
       case ("LangmuirEnhancementFactor", "EnhancementFactor",   &
               "langmuir_Efactor")
         cvmix_att_name = "LangmuirEnhancementFactor"
-      ! Qing Li, 20180129
       case ("LangmuirNumber", "La", "LaSL")
         cvmix_att_name = "LangmuirNumber"
 

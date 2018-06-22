@@ -259,7 +259,8 @@ subroutine cvmix_kpp_langmuir_driver()
          ! compute velocity scales at sigma, for hbl = -zt(kl)
          sigma = epssfc
          call cvmix_kpp_compute_turbulent_scales(sigma, -zt(kl),       &
-                 bfsfc, ustar, langmuir_Efactor=efactor, w_s=w_s(kl))
+                 bfsfc, ustar, w_s=w_s(kl))
+         w_s(kl) = w_s(kl) * efactor
          !print*, "kl = ", kl, "ws = ",w_s(kl)
       end do
 
