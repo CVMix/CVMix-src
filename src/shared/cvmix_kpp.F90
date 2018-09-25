@@ -2280,12 +2280,12 @@ contains
     end if
 
     ! From LMD 94, Vtc = sqrt(-beta_T/(c_s*eps))/kappa^2
-    Vtc = sqrt(0.2_cvmix_r8/(cvmix_get_kpp_real('c_s', CVmix_kpp_params_in) * &
-                cvmix_get_kpp_real('surf_layer_ext', CVmix_kpp_params_in))) / &
-          (cvmix_get_kpp_real('vonkarman', CVmix_kpp_params_in)**2)
+    Vtc = sqrt(0.2_cvmix_r8/(CVmix_kpp_params_in%c_s * &
+                CVmix_kpp_params_in%surf_layer_ext)) / &
+          (CVmix_kpp_params_in%vonkarman**2)
     do kt=1,nlev
       if (CVmix_kpp_params_in%lscalar_Cv) then
-        Cv = cvmix_get_kpp_real('Cv', CVmix_kpp_params_in)
+        Cv = CVmix_kpp_params_in%Cv
       else
         ! Cv computation comes from Danabasoglu et al., 2006
         if (N_cntr(kt).lt.0.002_cvmix_r8) then
