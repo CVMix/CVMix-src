@@ -244,7 +244,7 @@
       cvmix_math_evaluate_cubic = cvmix_math_evaluate_cubic +                 &
                                   coeffs(i)*(x_in**(i-1))
       if (present(fprime).and.(i.gt.2)) &
-        fprime = fprime + real(i-1,cvmix_r8)*(x_in**(i-2))
+        fprime = fprime + coeffs(i)*real(i-1,cvmix_r8)*(x_in**(i-2))
     end do
 
   end function cvmix_math_evaluate_cubic

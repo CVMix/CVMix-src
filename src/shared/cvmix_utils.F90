@@ -145,9 +145,9 @@ contains
       case ("surf_buoy", "SurfaceBuoyancy", "SurfaceBuoyancyForcing")
         cvmix_att_name = "SurfaceBuoyancyForcing"
       case ("lat", "latitude", "Latitude")
-        cvmix_att_name = "lat"
+        cvmix_att_name = "Latitude"
       case ("lon", "longitude", "Longitude")
-        cvmix_att_name = "lon"
+        cvmix_att_name = "Longitude"
       case ("coriolis", "Coriolis", "CoriolisFreq", "CoriolisFrequency")
         cvmix_att_name = "Coriolis"
       case ("kOBL_depth", "BoundaryLayerDepthIndex")
@@ -155,8 +155,12 @@ contains
       case ("LangmuirEnhancementFactor", "EnhancementFactor",   &
               "langmuir_Efactor")
         cvmix_att_name = "LangmuirEnhancementFactor"
-      case ("LangmuirNumber", "La", "LaSL")
+      case ("LangmuirNumber", "La")
         cvmix_att_name = "LangmuirNumber"
+      case ("ltidal_Schmittner_socn")
+        cvmix_att_name = "UseSchmittnerSouthernOceanMods"
+      case ("ltidal_max")
+        cvmix_att_name = "ApplyTidalMixingCap"
 
       ! Variables on level interfaces
       case ("zw", "zw_iface")
@@ -217,6 +221,12 @@ contains
         cvmix_att_name = "Vy_cntr"
       case ("SimmonsCoeff", "TidalCoeff")
         cvmix_att_name = "SimmonsCoeff"
+      case ("SchmittnerCoeff")
+        cvmix_att_name = "SchmittnerCoeff"
+      case ("SchmittnerSouthernOcean")
+        cvmix_att_name = "SchmittnerSouthernOcean"
+      case ("exp_hab_zetar")
+        cvmix_att_name = "exp_hab_zetar"
       case ("VertDep", "VertDep_iface", "vert_dep")
         cvmix_att_name = "VertDep_iface"
       case DEFAULT

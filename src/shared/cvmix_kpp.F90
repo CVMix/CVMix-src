@@ -1480,8 +1480,7 @@ contains
       lstable = (surf_buoy.gt.cvmix_zero)
 
       if (lstable) then
-        MoninObukhov = surf_fric**3/(surf_buoy*cvmix_get_kpp_real('vonkarman',&
-                                                     CVmix_kpp_params_in))
+        MoninObukhov = surf_fric**3/(surf_buoy*CVmix_kpp_params_in%vonkarman)
       else
         MoninObukhov = abs(zt_cntr(nlev))
       end if
@@ -2034,7 +2033,7 @@ contains
           do kw=1,n_sigma
             ! Compute (u*/phi_m)^3 [this is where the zeros in numerator and
             !                       denominator cancel when u* = 0]
-            w_m(kw) = -cvmix_get_kpp_real('c_m', CVmix_kpp_params_in) *       &
+            w_m(kw) = -CVmix_kpp_params_in%c_m *                              &
                       min(surf_layer_ext, sigma_coord(kw)) * OBL_depth *      &
                       vonkar * surf_buoy_force
             ! w_m = vonkar * u* / phi_m
@@ -2053,7 +2052,7 @@ contains
           do kw=1,n_sigma
             ! Compute (u*/phi_s)^3 [this is where the zeros in numerator and
             !                       denominator cancel when u* = 0]
-            w_s(kw) = -cvmix_get_kpp_real('c_s', CVmix_kpp_params_in) *       &
+            w_s(kw) = -CVmix_kpp_params_in%c_s *                              &
                       min(surf_layer_ext, sigma_coord(kw)) * OBL_depth *      &
                       vonkar * surf_buoy_force
             ! w_s = vonkar * u* / phi_s
@@ -2168,7 +2167,7 @@ contains
           else
             ! Compute (u*/phi_m)^3 [this is where the zeros in numerator and
             !                       denominator cancel when u* = 0]
-            w_m(kw) = -cvmix_get_kpp_real('c_m', CVmix_kpp_params_in) *       &
+            w_m(kw) = -CVmix_kpp_params_in%c_m *                              &
                       min(surf_layer_ext, sigma_coord) * OBL_depth(kw) *      &
                       vonkar * surf_buoy_force(kw)
             ! w_m = vonkar * u* / phi_m
@@ -2188,7 +2187,7 @@ contains
             ! Unstable forcing, Eqs. (13) and (B1e) reduce to following
             ! Compute (u*/phi_s)^3 [this is where the zeros in numerator and
             !                       denominator cancel when u* = 0]
-            w_s(kw) = -cvmix_get_kpp_real('c_s', CVmix_kpp_params_in) *       &
+            w_s(kw) = -CVmix_kpp_params_in%c_s *                              &
                       min(surf_layer_ext, sigma_coord) * OBL_depth(kw) *      &
                       vonkar * surf_buoy_force(kw)
             ! w_s = vonkar * u* / phi_s
@@ -2509,11 +2508,11 @@ contains
       if (zeta.ge.cvmix_zero) then
         ! Stable region
         compute_phi_inv = cvmix_one/(cvmix_one + real(5,cvmix_r8)*zeta)
-      else if (zeta.ge.cvmix_get_kpp_real('zeta_m', CVmix_kpp_params_in)) then
+      else if (zeta.ge.CVmix_kpp_params_in%zeta_m) then
         compute_phi_inv = (cvmix_one - real(16,cvmix_r8)*zeta)**0.25_cvmix_r8
       else
-        compute_phi_inv = (cvmix_get_kpp_real('a_m', CVmix_kpp_params_in) -      &
-                          cvmix_get_kpp_real('c_m', CVmix_kpp_params_in)*zeta)** &
+        compute_phi_inv = (CVmix_kpp_params_in%a_m -                          &
+                          CVmix_kpp_params_in%c_m*zeta)**                     &
                           (cvmix_one/real(3,cvmix_r8))
       end if
     end if
@@ -2522,11 +2521,11 @@ contains
       if (zeta.ge.cvmix_zero) then
         ! Stable region
         compute_phi_inv = cvmix_one/(cvmix_one + real(5,cvmix_r8)*zeta)
-      else if (zeta.ge.cvmix_get_kpp_real('zeta_s', CVmix_kpp_params_in)) then
+      else if (zeta.ge.CVmix_kpp_params_in%zeta_s) then
         compute_phi_inv = (cvmix_one - real(16,cvmix_r8)*zeta)**0.5_cvmix_r8
       else
-        compute_phi_inv = (cvmix_get_kpp_real('a_s', CVmix_kpp_params_in) -      &
-                          cvmix_get_kpp_real('c_s', CVmix_kpp_params_in)*zeta)** &
+        compute_phi_inv = (CVmix_kpp_params_in%a_s -                          &
+                          CVmix_kpp_params_in%c_s*zeta)**                     &
                           (cvmix_one/real(3,cvmix_r8))
       end if
     end if

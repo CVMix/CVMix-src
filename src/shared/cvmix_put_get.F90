@@ -37,6 +37,7 @@ module cvmix_put_get
     module procedure cvmix_put_int
     module procedure cvmix_put_real
     module procedure cvmix_put_real_1D
+    module procedure cvmix_put_real_2D
     module procedure cvmix_put_global_params_int
     module procedure cvmix_put_global_params_real
   end interface cvmix_put
@@ -157,9 +158,9 @@ contains
         CVmix_vars%SurfaceFriction = val
       case ("SurfaceBuoyancyForcing")
         CVmix_vars%SurfaceBuoyancyForcing = val
-      case ("lat")
+      case ("Latitude")
         CVmix_vars%lat = val
-      case ("lon")
+      case ("Longitude")
         CVmix_vars%lon = val
       case ("Coriolis")
         CVmix_vars%Coriolis = val
@@ -277,7 +278,7 @@ contains
         CVmix_vars%VertDep_iface(:) = val
 
       case default
-        print*, "ERROR: ", trim(varname), " not a valid choice for cvmix_put!"
+        print*, "ERROR: ", trim(varname), " not a valid choice for cvmix_put_real!"
         stop 1
 
     end select
@@ -431,9 +432,19 @@ contains
           allocate(CVmix_vars%Vy_cntr(nlev))
         end if
         CVmix_vars%Vy_cntr(:) = val
+      case ("SchmittnerSouthernOcean")
+        if (.not.associated(CVmix_vars%SchmittnerSouthernOcean)) then
+          allocate(CVmix_vars%SchmittnerSouthernOcean(CVmix_vars%max_nlev+1))
+        end if
+        CVmix_vars%SchmittnerSouthernOcean(:) = val
+      case ("SchmittnerCoeff")
+        if (.not.associated(CVmix_vars%SchmittnerCoeff)) then
+          allocate(CVmix_vars%SchmittnerCoeff(CVmix_vars%max_nlev+1))
+        end if
+        CVmix_vars%SchmittnerCoeff(:) = val
 
       case default
-        print*, "ERROR: ", trim(varname), " not a valid choice for cvmix_put!"
+        print*, "ERROR: ", trim(varname), " not a valid choice for cvmix_put_real_1D!"
         stop 1
 
     end select
@@ -441,6 +452,65 @@ contains
 !EOC
 
   end subroutine cvmix_put_real_1D
+
+!BOP
+
+! !IROUTINE: cvmix_put_real_2D
+! !INTERFACE:
+
+  subroutine cvmix_put_real_2D(CVmix_vars, varname, val, nlev_in)
+
+! !DESCRIPTION:
+!  Write an array of real values into a cvmix\_data\_type variable.
+!\\
+!\\
+
+! !USES:
+!  Only those used by entire module.
+
+! !INPUT PARAMETERS:
+    character(len=*),             intent(in) :: varname
+    real(cvmix_r8), dimension(:,:), intent(in) :: val
+    integer,        optional,     intent(in) :: nlev_in
+
+! !OUTPUT PARAMETERS:
+    type(cvmix_data_type), intent(inout) :: CVmix_vars
+!EOP
+!BOC
+
+    ! Local variables
+    integer :: nlev
+
+    if (present(nlev_in)) then
+      nlev = nlev_in
+    else
+      nlev = CVmix_vars%max_nlev
+    end if
+
+    if (nlev.eq.-1) then
+      print*, "ERROR: you must specify the number of levels before ", &
+              "you can pack data into a cvmix_data_type!"
+      print*, "You tried to set ", trim(varname)
+      stop 1
+    end if
+
+    select case (trim(cvmix_att_name(varname)))
+      case ("exp_hab_zetar")
+        if (.not.associated(CVmix_vars%exp_hab_zetar)) then
+          allocate(CVmix_vars%exp_hab_zetar(CVmix_vars%nlev+1,CVmix_vars%nlev+1))
+        end if
+        CVmix_vars%exp_hab_zetar = val
+
+
+      case default
+        print*, "ERROR: ", trim(varname), " not a valid choice for cvmix_put_real_2D!"
+        stop 1
+
+    end select
+
+!EOC
+
+  end subroutine cvmix_put_real_2D
 
 !BOP
 
@@ -471,7 +541,7 @@ contains
         CVmix_params%max_nlev = val
 
       case default
-        print*, "ERROR: ", trim(varname), " not a valid choice!"
+        print*, "ERROR: ", trim(varname), " not a valid choice for cvmix_put_global_params_int!"
         stop 1
 
     end select
@@ -513,7 +583,7 @@ contains
       case ('g','Gravity')
         CVmix_params%Gravity = val
       case default
-        print*, "ERROR: ", trim(varname), " not a valid choice!"
+        print*, "ERROR: ", trim(varname), " not a valid choice for cvmix_put_global_params_real!"
         stop 1
 
     end select
