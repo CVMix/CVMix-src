@@ -1,7 +1,7 @@
 #/bin/bash
 
 usage() {
-  if [ $ThisScript == "Simmons-test.sh" ] || [ $ThisScript == "Langmuir-test.sh" ]; then
+  if [ $ThisScript == "Simmons-test.sh" ]; then
     USE="$ThisScript -nc|--netcdf"
   else
     USE="$ThisScript [-nc|--netcdf]"
@@ -9,7 +9,7 @@ usage() {
   USE="$USE [-nb|--no_build]"
   echo $USE
   echo ''
-  if [ $ThisScript == "Simmons-test.sh" ] || [ $ThisScript == "Langmuir-test.sh" ]; then
+  if [ $ThisScript == "Simmons-test.sh" ]; then
     echo 'This test requires netcdf input, so you must run with the -nc option.'
   else
     echo 'By default, output is ascii.'
