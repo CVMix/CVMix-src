@@ -122,7 +122,7 @@ ifneq ($(OLD_NETCDF), $(NEW_NETCDF))
 endif
 
 # Dependencies: all drivers use cvmix_io
-# Note that these are separated 
+# Note that these are separated
 OBJS = cvmix_driver.o \
        cvmix_io.o
 DRIVER_OBJS = cvmix_bgrnd_BL.o      \
@@ -156,7 +156,7 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.F90
 $(OBJ_DIR)/%.o: $(SRC_DRIVE_DIR)/%.F90
 	$(FC) $(FCFLAGS) -c $< -o $@
 
-# Dependencies are read in from standalone_deps.d 
+# Dependencies are read in from standalone_deps.d
 $(DEP_FILE): $(MAKE_DEP) $(SRC_DIR)/*.F90 $(SRC_DRIVE_DIR)/*.F90
 	$(MAKE_DEP) $(DEP_FILE) $(OBJ_DIR) $(SRC_DIR) $(SRC_DRIVE_DIR) $(INC_DIR)
 	@echo "Generated dependencies!"
@@ -207,7 +207,7 @@ clean: remove_exe
 	/bin/rm -rf $(INFO_FILE) $(DEP_FILE)                                \
               $(addprefix $(OBJ_DIR)/,$(MODS) $(OBJS) $(DRIVER_OBJS))
 
-# Delete all object and module files from the shared directory, as well as 
+# Delete all object and module files from the shared directory, as well as
 # libcvmix.a
 libclean:
 	$(MAKE) -f $(SRC_SHARED_DIR)/Makefile clean SRC_DIR=$(SRC_SHARED_DIR)       \

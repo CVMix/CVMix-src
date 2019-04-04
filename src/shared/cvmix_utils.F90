@@ -152,12 +152,11 @@ contains
         cvmix_att_name = "Coriolis"
       case ("kOBL_depth", "BoundaryLayerDepthIndex")
         cvmix_att_name = "kOBL_depth"
-      ! QL, 150610
       case ("LangmuirEnhancementFactor", "EnhancementFactor",   &
               "langmuir_Efactor")
         cvmix_att_name = "LangmuirEnhancementFactor"
-      case ("SurfaceStokesDrift", "stokes_drift")
-        cvmix_att_name = "SurfaceStokesDrift"
+      case ("LangmuirNumber", "La")
+        cvmix_att_name = "LangmuirNumber"
       case ("ltidal_Schmittner_socn")
         cvmix_att_name = "UseSchmittnerSouthernOceanMods"
       case ("ltidal_max")

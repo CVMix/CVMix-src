@@ -166,11 +166,10 @@ contains
         CVmix_vars%Coriolis = val
       case ("kOBL_depth")
         CVmix_vars%kOBL_depth = val
-      ! QL, 150610
       case ("LangmuirEnhancementFactor")
         CVmix_vars%LangmuirEnhancementFactor = val
-      case ("SurfaceStokesDrift")
-        CVmix_vars%SurfaceStokesDrift = val
+      case ("LangmuirNumber")
+        CVmix_vars%LangmuirNumber = val
       case ('SimmonsCoeff')
         CVmix_vars%SimmonsCoeff = val
 
@@ -581,7 +580,6 @@ contains
         CVmix_params%FreshWaterDensity = val
       case ('sw_rho','SaltWaterDensity')
         CVmix_params%SaltWaterDensity = val
-      ! QL, 160708, add gravity
       case ('g','Gravity')
         CVmix_params%Gravity = val
       case default
