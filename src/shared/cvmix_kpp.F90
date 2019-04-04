@@ -503,48 +503,48 @@ contains
       call cvmix_put_kpp('lenhanced_diff', .true., CVmix_kpp_params_user)
     end if
 
-    ! By default, not using Langmuir enhancement factor
     if (present(Langmuir_mixing_str)) then
        select case (trim(Langmuir_mixing_str))
        case ("LWF16")
-          call cvmix_put_kpp('Langmuir_Mixing_Opt', LANGMUIR_MIXING_LWF16 ,&
+          call cvmix_put_kpp('Langmuir_Mixing_Opt', LANGMUIR_MIXING_LWF16 ,   &
                CVmix_kpp_params_user)
        case ("RWHGK16")
-          call cvmix_put_kpp('Langmuir_Mixing_Opt', &
+          call cvmix_put_kpp('Langmuir_Mixing_Opt',                           &
                LANGMUIR_MIXING_RWHGK16, CVmix_kpp_params_user)
        case ("NONE")
-          call cvmix_put_kpp('Langmuir_Mixing_Opt', &
+          call cvmix_put_kpp('Langmuir_Mixing_Opt',                           &
                NO_LANGMUIR_MIXING, CVmix_kpp_params_user)
        case DEFAULT
-          call cvmix_put_kpp('Langmuir_Mixing_Opt', &
-               NO_LANGMUIR_MIXING, CVmix_kpp_params_user)
+          print*, "ERROR: ", trim(Langmuir_mixing_str), " is not a valid ",   &
+                  "option for Langmuir_mixing_str!"
+          stop 1
        end select
     else
-       call cvmix_put_kpp('Langmuir_Mixing_Opt', &
+       call cvmix_put_kpp('Langmuir_Mixing_Opt',                              &
             NO_LANGMUIR_MIXING, CVmix_kpp_params_user)
     end if
 
-    ! By default, not using Langmuir enhanced entrainment
     if (present(Langmuir_entrainment_str)) then
        select case (trim(Langmuir_entrainment_str))
        case ("LWF16")
-          call cvmix_put_kpp('Langmuir_Entrainment_Opt', &
+          call cvmix_put_kpp('Langmuir_Entrainment_Opt',                      &
                LANGMUIR_ENTRAINMENT_LWF16, CVmix_kpp_params_user)
        case ("LF17")
-          call cvmix_put_kpp('Langmuir_Entrainment_Opt', &
+          call cvmix_put_kpp('Langmuir_Entrainment_Opt',                      &
                LANGMUIR_ENTRAINMENT_LF17, CVmix_kpp_params_user)
        case ("RWHGK16")
-          call cvmix_put_kpp('Langmuir_Entrainment_Opt', &
+          call cvmix_put_kpp('Langmuir_Entrainment_Opt',                      &
                LANGMUIR_ENTRAINMENT_RWHGK16, CVmix_kpp_params_user)
        case ("NONE")
-          call cvmix_put_kpp('Langmuir_Entrainment_Opt', &
+          call cvmix_put_kpp('Langmuir_Entrainment_Opt',                      &
                NO_LANGMUIR_ENTRAINMENT, CVmix_kpp_params_user)
        case DEFAULT
-          call cvmix_put_kpp('Langmuir_Entrainment_Opt', &
-               NO_LANGMUIR_ENTRAINMENT, CVmix_kpp_params_user)
+          print*, "ERROR: ", trim(Langmuir_entrainment_str), " is not a ",    &
+                  "valid option for Langmuir_entrainment_str!"
+          stop 1
        end select
     else
-       call cvmix_put_kpp('Langmuir_Entrainment_Opt', &
+       call cvmix_put_kpp('Langmuir_Entrainment_Opt',                         &
             NO_LANGMUIR_ENTRAINMENT, CVmix_kpp_params_user)
     end if
 
@@ -2255,11 +2255,15 @@ contains
     real(cvmix_r8) :: Cv, Vtc
     ! N_cntr: buoyancy frequency at cell centers, derived from either N_iface
     !        or Nsqr_iface (units: 1/s)
-    real(cvmix_r8) :: c_CT, c_ST, c_LT, p_LT
-    real(cvmix_r8) :: RWHGK_ENTR_COEF, RWHGK_ENTR_EXP
-    real(cvmix_r8) :: Vt2_Enhancement
-
     real(cvmix_r8), dimension(size(zt_cntr)) :: N_cntr
+    ! c_CT, c_ST, c_LT, p_LT: parameters of Langmuir-enhanced entrainment
+    !                         in Li and Fox-Kemper, 2017, JPO
+    real(cvmix_r8) :: c_CT, c_ST, c_LT, p_LT
+    ! RWHGK_ENTR_COEF, RWHGK_ENTR_EXP: parameters of Langmuir-enhanced
+    !                         entrainment in Reichl et al., 2016, JPO
+    real(cvmix_r8) :: RWHGK_ENTR_COEF, RWHGK_ENTR_EXP
+    ! Vt2_Enhancement: enhancement factor for unresolved shear
+    real(cvmix_r8) :: Vt2_Enhancement
     type(cvmix_kpp_params_type), pointer :: CVmix_kpp_params_in
 
     nlev = size(zt_cntr)
