@@ -20,7 +20,7 @@ else
 endif
 
 ifeq ($(FC_TMP),gfortran)
-  FCFLAGS = -O2 -ffree-form -J $(OBJ_DIR) -cpp -Wall -Werror -Wno-unused-dummy-argument
+  FCFLAGS = -O2 -ffree-form -J $(OBJ_DIR) -cpp -Wall -Werror
 endif
 
 ifeq ($(FC_TMP),pgf90)
