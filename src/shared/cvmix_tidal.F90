@@ -360,10 +360,10 @@ contains
                                 (new_Mdiff, new_Tdiff,                      &
                                 CVmix_vars%SqrBuoyancyFreq_iface,           &
                                 CVmix_vars%OceanDepth,                      &
-                                CVmix_vars%VertDep_iface, nlev, max_nlev,   &
+                                nlev, max_nlev,                             &
                                 CVmix_vars%SchmittnerCoeff,                 &
                                 CVmix_vars%SchmittnerSouthernOcean,         &
-                                CVMix_params,                               &
+                                CVmix_params,                               &
                                 CVmix_tidal_params_user)
 
     end select
@@ -470,12 +470,12 @@ contains
 ! !IROUTINE: cvmix_coeffs_tidal_schmittner
 ! !INTERFACE:
 
-  subroutine cvmix_coeffs_tidal_schmittner                                         &
-                                          (Mdiff_out, Tdiff_out, Nsqr, OceanDepth, &
-                                           vert_dep, nlev, max_nlev,               &
-                                           SchmittnerCoeff,                        &
-                                           SchmittnerSouthernOcean,                &
-                                           CVmix_params,                           &
+  subroutine cvmix_coeffs_tidal_schmittner                                    &
+                                          (Mdiff_out, Tdiff_out, Nsqr,        &
+                                           OceanDepth, nlev, max_nlev,        &
+                                           SchmittnerCoeff,                   &
+                                           SchmittnerSouthernOcean,           &
+                                           CVmix_params,                      &
                                            CVmix_tidal_params_user)
 
 ! !DESCRIPTION:
@@ -493,7 +493,7 @@ contains
     integer,                               intent(in) :: nlev, max_nlev
     type(cvmix_global_params_type),        intent(in) :: CVmix_params
     real(cvmix_r8),                        intent(in) :: OceanDepth
-    real(cvmix_r8), dimension(max_nlev+1), intent(in) :: Nsqr, vert_dep
+    real(cvmix_r8), dimension(max_nlev+1), intent(in) :: Nsqr
     real(cvmix_r8), dimension(max_nlev+1), intent(in) :: SchmittnerSouthernOcean
     real(cvmix_r8), dimension(max_nlev+1), intent(in) :: SchmittnerCoeff
 
@@ -867,8 +867,8 @@ contains
 ! !IROUTINE: cvmix_compute_SchmittnerCoeff_wrap
 ! !INTERFACE:
 
-  subroutine cvmix_compute_SchmittnerCoeff_wrap(CVmix_vars, CVmix_params, nlev, &
-                                                energy_flux, CVmix_tidal_params_user)
+  subroutine cvmix_compute_SchmittnerCoeff_wrap(CVmix_vars, nlev, energy_flux, &
+                                                CVmix_tidal_params_user)
 
 ! !DESCRIPTION:
 !  Compute the full time-dependent tidal mixing coefficient using
@@ -881,7 +881,6 @@ contains
 
 ! !INPUT PARAMETERS:
     integer, intent(in)  :: nlev
-    type(cvmix_global_params_type), intent(in) :: CVmix_params
     real(cvmix_r8), dimension(2:nlev+1),   intent(in) :: energy_flux
     type(cvmix_tidal_params_type),  target, optional, intent(in) ::           &
                                             CVmix_tidal_params_user
@@ -902,7 +901,6 @@ contains
 
     call cvmix_compute_SchmittnerCoeff_low(CVmix_vars%nlev,                 &
                                            energy_flux,                     &
-                                           CVmix_params%FreshWaterDensity,  &
                                            CVmix_vars%SchmittnerCoeff,      &
                                            CVmix_vars%exp_hab_zetar,        &
                                            CVMix_tidal_params_user)
@@ -915,7 +913,7 @@ contains
 ! !IROUTINE: cvmix_compute_SchmittnerCoeff_low
 ! !INTERFACE:
 
-  subroutine cvmix_compute_SchmittnerCoeff_low(nlev, energy_flux, rho,     &
+  subroutine cvmix_compute_SchmittnerCoeff_low(nlev, energy_flux,          &
                                                SchmittnerCoeff,            &
                                                exp_hab_zetar,              &
                                                CVmix_tidal_params_user)
@@ -931,7 +929,6 @@ contains
 
 ! !INPUT PARAMETERS:
     integer,        intent(in) :: nlev
-    real(cvmix_r8), intent(in) :: rho
     real(cvmix_r8), dimension(2:nlev+1,2:nlev+1), intent(in) :: exp_hab_zetar
     real(cvmix_r8), dimension(2:nlev+1),   intent(in) :: energy_flux
     type(cvmix_tidal_params_type),  target, optional, intent(in) ::        &
@@ -973,7 +970,6 @@ contains
 ! !INTERFACE:
 
   subroutine cvmix_compute_socn_tidal_invariant_wrap(CVmix_vars,            &
-                                                     CVmix_params,          &
                                                      CVmix_tidal_params_user)
 
 ! !DESCRIPTION:
@@ -985,7 +981,6 @@ contains
 !  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
-    type(cvmix_global_params_type), intent(in) :: CVmix_params
     type(cvmix_tidal_params_type),  target, optional, intent(in) ::           &
                                             CVmix_tidal_params_user
 
@@ -1006,7 +1001,6 @@ contains
     if (CVmix_tidal_params%ltidal_Schmittner_socn) &
     call cvmix_compute_socn_tidal_invariant_low(CVmix_vars%nlev,                   &
                                                 CVmix_vars%lat,                    &
-                                                CVmix_vars%lon,                    &
                                                 CVmix_vars%zw_iface,               &
                                                 cvmix_vars%SchmittnerSouthernOcean,&
                                                 CVMix_tidal_params_user            )
@@ -1022,7 +1016,6 @@ contains
 
   subroutine cvmix_compute_socn_tidal_invariant_low(nlev,                    &
                                                     lat,                     &
-                                                    lon,                     &
                                                     zw,                      &
                                                     SchmittnerSouthernOcean, &
                                                     CVmix_tidal_params_user  )
@@ -1038,7 +1031,6 @@ contains
 ! !INPUT PARAMETERS:
     integer,        intent(in) :: nlev
     real(cvmix_r8), intent(in) :: lat
-    real(cvmix_r8), intent(in) :: lon
     real(cvmix_r8), dimension(:), intent(in) :: zw
     type(cvmix_tidal_params_type),  target, optional, intent(in) ::  &
                                             CVmix_tidal_params_user
