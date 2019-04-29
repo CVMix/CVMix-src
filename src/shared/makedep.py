@@ -6,7 +6,11 @@
 # Read in every file in $SRC_DIR and $SRC_DIR2 (arguments 3 and 4)
 # Only depend on modules located in $SRC_DIR or $SRC_DIR2
 
-import os, sys, re
+from __future__ import print_function, unicode_literals
+
+import os
+import sys
+import re
 
 try:
   dep_file = sys.argv[1]
@@ -53,17 +57,17 @@ for src_file in files_in_src_dir:
         # so we need to strip away the , to get the module name
         file_used = line_array[1].split(',')[0]
         if file_used+'.F90' in files_in_src_dir:
-          print file_name+'.o depends on '+file_used+'.o'
+          print(file_name+'.o depends on '+file_used+'.o')
           fout.write(obj_dir+'/'+file_name+'.o: '+obj_dir+'/'+file_used+'.o\n')
         else:
           if inc_dir != 'NONE':
             if file_used+'.mod' in files_in_inc_dir:
-              print file_name+'.o depends on '+file_used+'.mod'
+              print(file_name+'.o depends on '+file_used+'.mod')
               fout.write(obj_dir+'/'+file_name+'.o: '+inc_dir+'/'+file_used+'.mod\n')
             else:
               # Check for upper case
               file_used = file_used.upper()
               if file_used+'.mod' in files_in_inc_dir:
-                print file_name+'.o depends on '+file_used+'.mod'
+                print(file_name+'.o depends on '+file_used+'.mod')
                 fout.write(obj_dir+'/'+file_name+'.o: '+inc_dir+'/'+file_used+'.mod\n')
     fin.close
