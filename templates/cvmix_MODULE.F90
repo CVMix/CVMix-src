@@ -4,7 +4,7 @@ module cvmix_MODULE
 !\newpage
 ! !MODULE: cvmix_MODULE
 !
-! !AUTHOR: 
+! !AUTHOR:
 !  [your name], [your affiliation] ([your email address])
 !
 ! !DESCRIPTION:
@@ -120,7 +120,7 @@ module cvmix_MODULE
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*), intent(in) :: varname
@@ -137,7 +137,7 @@ module cvmix_MODULE
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
         stop 1
-      
+
     end select
 
 !EOC
@@ -159,7 +159,7 @@ module cvmix_MODULE
 !\\
 
 ! !USES:
-!  Only those used by entire module. 
+!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*),                                intent(in)    :: varname
@@ -186,7 +186,7 @@ module cvmix_MODULE
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
         stop 1
-      
+
     end select
 
 !EOC

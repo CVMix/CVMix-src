@@ -32,7 +32,7 @@ Subroutine cvmix_shear_driver(nlev, max_nlev)
 #endif
                                     cvmix_io_close
 
-  Implicit None
+  implicit none
 
 ! !INPUT PARAMETERS:
   integer, intent(in) :: nlev,               &! number of levels for column

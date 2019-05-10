@@ -2,11 +2,24 @@
 
 # Need to parse command line
 import sys
+
+# Use logger rather than print statements
+import logging
+logging.basicConfig(format='(cvmix_setup): %(message)s', level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Need input to work for python 2 and python 3
+# Achieve this my copying correct function to my_input
+try:
+    my_input = raw_input
+except NameError:
+    my_input = input
+
 # Allow tab completion
 try:
   import readline,glob
 except ImportError:
-  print "Can not find readline or glob package, so tab-complete will not work"
+  logger.info("Can not find readline or glob package, so tab-complete will not work")
 else:
   def complete(text, state):
     return(glob.glob(text+'*')+[None])[state]
@@ -34,26 +47,26 @@ filename = ".CVMix_env"
 
 # Print standard information about this tool
 if have_compiler + have_netcdf != 2:
-  print "This utility needs to be run before the included Makefile will"
-  print "successfully compile CVMix. It collects information about your compiler"
-  print "and associated libraries, and saves it in the .CVMix_env file. Note that"
-  print "it only needs to be run once, though you should run it again if anything"
-  print "changes.\n"
+  logger.info("This utility needs to be run before the included Makefile will")
+  logger.info("successfully compile CVMix. It collects information about your compiler")
+  logger.info("and associated libraries, and saves it in the .CVMix_env file. Note that")
+  logger.info("it only needs to be run once, though you should run it again if anything")
+  logger.info("changes.\n")
 
 # For now, just need fortran compiler and netCDF location / flags
 if have_compiler == 0:
-  compiler = raw_input('Fortran compiler (mpi not necessary): ')
+  compiler = my_input('Fortran compiler (mpi not necessary): ')
 
 netcdf_bin = ""
 netcdf_inc = ""
 netcdf_lib = ""
 if have_netcdf == 0:
-  netcdf_dir = raw_input('Directory containing netcdf configuration tool nc-config (or enter "no-nc-config" to enter location of netcdf include and netcdf lib directories): ')
+  netcdf_dir = my_input('Directory containing netcdf configuration tool nc-config (or enter "no-nc-config" to enter location of netcdf include and netcdf lib directories): ')
   if netcdf_dir == "no-nc-config":
-    netcdf_dir = raw_input('Directory containing netcdf (enter "need_both" to enter netcdf include directory and netcdf lib directory separately): ')
+    netcdf_dir = my_input('Directory containing netcdf (enter "need_both" to enter netcdf include directory and netcdf lib directory separately): ')
     if netcdf_dir == "need_both":
-      netcdf_inc = raw_input('netCDF/include location: ')
-      netcdf_lib = raw_input('netCDF/lib location: ')
+      netcdf_inc = my_input('netCDF/include location: ')
+      netcdf_lib = my_input('netCDF/lib location: ')
     else:
       netcdf_inc = netcdf_dir+"/include"
       netcdf_lib = netcdf_dir+"/lib"
@@ -65,7 +78,7 @@ else:
   netcdf_bin = netcdf_dir+"/bin"
 
 if have_compiler + have_netcdf != 2:
-  print "Writing environment settings to " + filename
+  logger.info("Writing environment settings to %s", filename)
 
 fid = open(filename, 'w')
 fid.write("FC = " + compiler+"\n")
