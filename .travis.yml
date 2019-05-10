@@ -4,7 +4,7 @@ before_install:
   - sudo apt-get install gfortran mpich libnetcdf-dev netcdf-bin
 python:
   - '2.7'
-  - '3.7'
+  - '3.6'
 script:
   - cd src; make SETUP_ARGS="gfortran $(dirname $(dirname $(which nc-config)))"
 branches:
