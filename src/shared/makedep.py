@@ -6,7 +6,10 @@
 # Read in every file in $SRC_DIR and $SRC_DIR2 (arguments 3 and 4)
 # Only depend on modules located in $SRC_DIR or $SRC_DIR2
 
-import os, sys, re, logging
+import os
+import sys
+import re
+import logging
 logger = logging.getLogger(__name__)
 logging.basicConfig(format='(makedep.py): %(message)s', level=logging.INFO)
 
