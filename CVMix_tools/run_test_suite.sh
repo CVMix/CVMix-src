@@ -80,12 +80,6 @@ print_status "make libcvmix.a" >> $OUTFILE
 
 # Build stand-alone executable (only if library built successfully)
 if [ "${STATUS}" == "PASS" ]; then
-  cd ${CVMIX_ROOT}/src
-  echo "$ make USE_NETCDF=TRUE"
-  make USE_NETCDF=TRUE
-  STATUS=$(check_return $?)
-  print_status "make cvmix.exe with netcdf" >> $OUTFILE
-
   echo "$ make"
   make
   STATUS=$(check_return $?)
@@ -96,12 +90,52 @@ fi
 if [ "${STATUS}" == "PASS" ]; then
   # Bryan-Lewis test
   cd ${CVMIX_ROOT}/reg_tests/Bryan-Lewis
-  echo "$ ./BL_test.sh"
-  ./BL_test.sh
+  echo "$ ./Bryan-Lewis-test.sh"
+  ./Bryan-Lewis-test.sh
   STATUS=$(check_return $?)
-  print_status "BL_test.sh" >> $OUTFILE
+  print_status "Bryan Lewis" >> $OUTFILE
+
+  # Double Diffusion test
+  cd ${CVMIX_ROOT}/reg_tests/double_diff
+  echo "$ ./double_diff-test.sh"
+  ./double_diff-test.sh
+  STATUS=$(check_return $?)
+  print_status "Double Diffusion" >> $OUTFILE
+
+  # Shear test
+  cd ${CVMIX_ROOT}/reg_tests/shear
+  echo "$ ./shear-test.sh"
+  ./shear-test.sh
+  STATUS=$(check_return $?)
+  print_status "Shear" >> $OUTFILE
+
+  # KPP test
+  cd ${CVMIX_ROOT}/reg_tests/kpp
+  echo "$ ./kpp-test.sh"
+  ./kpp-test.sh
+  STATUS=$(check_return $?)
+  print_status "KPP.sh" >> $OUTFILE
+
+  # Build stand-alone executable with netCDF
+  cd ${CVMIX_ROOT}/src
+  echo "$ make USE_NETCDF=TRUE"
+  make USE_NETCDF=TRUE
+  STATUS=$(check_return $?)
+  print_status "make cvmix.exe with netcdf" >> $OUTFILE
+
+  # Only test Fortran executable with netcdf if build was successful
+  if [ "${STATUS}" == "PASS" ]; then
+    # Tidal (Simmons) test
+    cd ${CVMIX_ROOT}/reg_tests/tidal-Simmons
+    echo "$ ./Simmons-test.sh -nc"
+    ./Simmons-test.sh -nc
+    STATUS=$(check_return $?)
+    print_status "Tidal (requires netCDF)" >> $OUTFILE
+  fi
 
 fi
+
+
 
 echo "----"
 cat $OUTFILE
