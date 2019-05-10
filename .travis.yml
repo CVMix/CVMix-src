@@ -7,6 +7,7 @@ python:
   - '3.6'
 script:
   - cd src; make SETUP_ARGS="gfortran $(dirname $(dirname $(which nc-config)))"
+  - make USE_NETCDF=TRUE
 branches:
   only:
   - master
