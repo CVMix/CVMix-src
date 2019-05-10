@@ -1,0 +1,12 @@
+language: python
+sudo: required
+before_install:
+  - sudo apt-get install gfortran mpich libnetcdf-dev netcdf-bin
+python:
+  - '2.7'
+  - '3.7'
+script:
+  - cd src; make
+branches:
+  only:
+  - master
