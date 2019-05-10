@@ -6,8 +6,8 @@ python:
   - '2.7'
   - '3.6'
 script:
-  - cd src; make SETUP_ARGS="gfortran $(dirname $(dirname $(which nc-config)))"
-  - make USE_NETCDF=TRUE
+  - cd bld; ./cvmix_setup gfortran $(dirname $(dirname $(which nc-config)))
+  - cd ../CVMix_tools; ./run_test_suite.sh --already-ran-setup
 branches:
   only:
   - master
