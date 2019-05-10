@@ -33,7 +33,7 @@ Subroutine cvmix_tidal_driver()
                                     cvmix_output_write_att,                   &
                                     cvmix_io_close
 
-  Implicit None
+  implicit none
 
 !EOP
 !BOC

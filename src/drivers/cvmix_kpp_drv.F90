@@ -34,7 +34,7 @@ Subroutine cvmix_kpp_driver()
 #endif
                                     cvmix_io_close
 
-  Implicit None
+  implicit none
 
 !EOP
 !BOC
