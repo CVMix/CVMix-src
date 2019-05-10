@@ -165,7 +165,7 @@ $(DEP_FILE): $(MAKE_DEP) $(SRC_DIR)/*.F90 $(SRC_DRIVE_DIR)/*.F90
 # CVMix_env. If the file doesn't exist, then the python script "cvmix_setup"
 # is run to generate the file.
 $(ENV_FILE):
-	@(cd $(BLD_DIR); ./cvmix_setup)
+	@(cd $(BLD_DIR); ./cvmix_setup $(SETUP_ARGS))
 	$(MAKE) -f $(SRC_DIR)/Makefile
 
 .PHONY: exe netcdf depends check lib remove_exe clean libclean allclean       \

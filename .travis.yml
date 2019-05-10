@@ -6,7 +6,7 @@ python:
   - '2.7'
   - '3.7'
 script:
-  - cd src; make
+  - cd src; make SETUP_ARGS="gfortran $(dirname $(dirname $(which nc-config)))"
 branches:
   only:
   - master
