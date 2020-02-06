@@ -1425,7 +1425,7 @@ contains
     ! Error checks
     ! (1) if using Ekman length, need to pass surf_fric and Coriolis
     if ((.not.(present(surf_fric).and.present(Coriolis))).and.                &
-        CVmix_kpp_params_in%lMonOb) then
+        CVmix_kpp_params_in%lEkman) then
       print*, "ERROR: must pass surf_fric and Coriolis if you want to ",      &
                 "compute Ekman length"
       stop 1

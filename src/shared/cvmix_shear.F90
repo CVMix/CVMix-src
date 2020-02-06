@@ -384,7 +384,7 @@ contains
         PP_alpha   = CVmix_shear_params%PP_alpha
         loc_exp    = CVmix_shear_params%PP_exp
         PP_nu_b    = CVmix_shear_params%PP_nu_b
-        PP_kappa_b = CVmix_shear_params%PP_nu_b
+        PP_kappa_b = CVmix_shear_params%PP_kappa_b
 
         ! Pacanowski-Philander
         do kw=1,nlev+1
