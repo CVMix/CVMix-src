@@ -1,13 +1,20 @@
+dist: trusty
 language: python
 sudo: required
-before_install:
-  - sudo apt-get install gfortran mpich libnetcdf-dev netcdf-bin
+
+addons:
+   apt:
+      packages:
+         - netcdf-bin libnetcdf-dev openmpi-bin libopenmpi-dev gfortran
+
 python:
   - '2.7'
   - '3.6'
+
 script:
   - cd bld; ./cvmix_setup gfortran $(dirname $(dirname $(which nc-config)))
   - cd ../CVMix_tools; ./run_test_suite.sh --already-ran-setup
+
 branches:
   only:
   - master
