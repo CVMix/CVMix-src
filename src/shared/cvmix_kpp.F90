@@ -1469,11 +1469,11 @@ contains
       ! Column is stable if surf_buoy > 0
       lstable = (surf_buoy.gt.cvmix_zero)
 
-      if (Coriolis.eq.cvmix_zero .and. .not. lstable) then !should not apply in unstable conditions
-        ! Rather than divide by zero, set Ekman depth to ocean bottom
-        Ekman = abs(zt_cntr(nlev))
-      else
+      if (Coriolis.ne.cvmix_zero .and. lstable) then
         Ekman = 0.7_cvmix_r8*surf_fric/abs(Coriolis)
+      else
+        ! Rather than divide by zero (or if column is unstable), set Ekman depth to ocean bottom
+        Ekman = abs(zt_cntr(nlev))
       end if
       OBL_limit = min(OBL_limit, Ekman)
     end if
