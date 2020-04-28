@@ -37,11 +37,11 @@ goes into details about how to contribute, but basically we ask three things:
 INSTALLATION NOTES
 ------------------
 
-CVMix can be installed using two different methods. The original using Make
-and a set of Makefiles. Or, using CMake using two CMakelists.txt files for
-configuration.
+CVMix can be installed using two different methods. The original uses Make
+and a set of Makefiles. The new methos uses CMake and two CMakelists.txt 
+files.
 
-### Building/installing using Make
+#### Building/installing using Make
 
 The src directory contains a Makefile and a simple 'make' should be sufficient
 to build the standalone driver. The first time you build, the 'cvmix_setup'
@@ -64,7 +64,7 @@ $ make FC=[compiler]                        \
 And then use -I$(INC_DIR) -L$(LIB_DIR) -lcvmix when you build software using
 the CVMix library.
 
-### Building/installing using CMake
+#### Building/installing using CMake
 
 [CMake](https://cmake.org/) can be used in GUI mode. Further information can
 be found on the CMake web-page. Below is provided the command line commands
@@ -85,8 +85,13 @@ providing the full path.
    * Specifying a Fortran compiler
 5. cmake $CVMIX\_BASE -DCVMIX\_BUILD\_DRIVER=on
    * Build the CVMix driver program
-5. cmake $CVMIX\_BASE -DCMAKE\_INSTALL\_PREFIX=~/local
+6. cmake $CVMIX\_BASE -DCVMIX\_BUILD\_DRIVER=on CVMIX\_USE\_NetCDF=on
+   * Include support for NetCDF in the driver model
+   * Note that this requires proper configuration of the installed NetCDF library.
+7. cmake $CVMIX\_BASE -DCMAKE\_INSTALL\_PREFIX=~/local
    * Providing installation folder
+
+Combination of the above commands is possible.
 
 After configuration has been done compilation is as simple as:
 ```
@@ -97,6 +102,13 @@ and instllation by:
 ```
 make install
 ```
+
+After installation the build directory can be removed.
+
+The support for CMake builds provides sufficient infrastructure for CVMix 
+being included in ocean models using the GIT submodule feature. This has
+been used in the [GOTM](https:/gotm.net) inclusion of the CVMix mixing
+models as a supplement to the original turbulence models in GOTM.
 
 DIRECTORY STRUCTURE
 -------------------
