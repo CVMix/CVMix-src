@@ -37,6 +37,12 @@ goes into details about how to contribute, but basically we ask three things:
 INSTALLATION NOTES
 ------------------
 
+CVMix can be installed using two different methods. The original using Make
+and a set of Makefiles. Or, using CMake using two CMakelists.txt files for
+configuration.
+
+### Building/installing using Make
+
 The src directory contains a Makefile and a simple 'make' should be sufficient
 to build the standalone driver. The first time you build, the 'cvmix_setup'
 utility will run and prompt you for compiler and netcdf information - it will
@@ -58,6 +64,39 @@ $ make FC=[compiler]                        \
 And then use -I$(INC_DIR) -L$(LIB_DIR) -lcvmix when you build software using
 the CVMix library.
 
+### Building/installing using CMake
+
+[CMake](https://cmake.org/) can be used in GUI mode. Further information can
+be found on the CMake web-page. Below is provided the command line commands
+to configure and compile CVMix. Note that CVMix has been build on Windows using
+VisualStudio and the Intel Fortran compiler.
+
+In this recipe CVMIX\_BASE s a convinience environmental variable pointing to 
+the CVMix source directory. It is possible to execute the following commands 
+providing the full path.
+
+
+1. mkdir ~/build/cvmix
+   * [CMake](https://cmake.org/) promotes out of source compilation
+2. cd ~/build/cvmix
+3. cmake $CVMIX\_BASE 
+   * The simplest configuration - using default Fortran compiler
+4. cmake $CVMIX\_BASE -DCMAKE\_Fortran\_COMPILER=ifort
+   * Specifying a Fortran compiler
+5. cmake $CVMIX\_BASE -DCVMIX\_BUILD\_DRIVER=on
+   * Build the CVMix driver program
+5. cmake $CVMIX\_BASE -DCMAKE\_INSTALL\_PREFIX=~/local
+   * Providing installation folder
+
+After configuration has been done compilation is as simple as:
+```
+make
+```
+
+and instllation by:
+```
+make install
+```
 
 DIRECTORY STRUCTURE
 -------------------
