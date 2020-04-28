@@ -86,8 +86,9 @@ providing the full path.
 5. cmake $CVMIX\_BASE -DCVMIX\_BUILD\_DRIVER=on
    * Build the CVMix driver program
 6. cmake $CVMIX\_BASE -DCVMIX\_BUILD\_DRIVER=on CVMIX\_USE\_NetCDF=on
-   * Include support for NetCDF in the driver model
+   * Include support for NetCDF in the driver model(1)
    * Note that this requires proper configuration of the installed NetCDF library.
+   * Setting NetCDF\_INCLUDE and NetCDF\_LIBRARIES might help.
 7. cmake $CVMIX\_BASE -DCMAKE\_INSTALL\_PREFIX=~/local
    * Providing installation folder
 
@@ -109,6 +110,8 @@ The support for CMake builds provides sufficient infrastructure for CVMix
 being included in ocean models using the GIT submodule feature. This has
 been used in the [GOTM](https:/gotm.net) inclusion of the CVMix mixing
 models as a supplement to the original turbulence models in GOTM.
+
+1): There is unfortunately not an official NetCDF module finder in CMake.
 
 DIRECTORY STRUCTURE
 -------------------

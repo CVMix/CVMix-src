@@ -20,14 +20,15 @@ target_sources( cvmix_objects PRIVATE
 if(CVMIX_BUILD_DRIVER)
 
    add_library(cvmix_io STATIC .)
-   set_property( TARGET cvmix_io PROPERTY FOLDER drivers )
+   set_property( TARGET cvmix_io PROPERTY FOLDER driver )
    target_sources( cvmix_io PRIVATE
       cvmix_io.F90
    )
-   target_link_libraries(cvmix_io PRIVATE cvmix_static)
+#   target_link_libraries(cvmix_io PRIVATE cvmix_static PUBLIC netcdff )
+   target_link_libraries(cvmix_io PRIVATE cvmix_static PUBLIC $ENV{NetCDF_LIBRARIES} )
 
    add_library(cvmix_drivers STATIC .)
-   set_property( TARGET cvmix_drivers PROPERTY FOLDER drivers )
+   set_property( TARGET cvmix_drivers PROPERTY FOLDER driver )
    target_sources( cvmix_drivers PRIVATE
       drivers/cvmix_bgrnd_BL.F90
       drivers/cvmix_ddiff_drv.F90

@@ -12,6 +12,10 @@ endif()
 
 # Configuration options
 option( CVMIX_USE_NetCDF "Enable NetCDF format" OFF )
+if(CVMIX_USE_NetCDF)
+   add_compile_definitions(_NETCDF)
+   include_directories($ENV{NetCDF_INCLUDE})
+endif(CVMIX_USE_NetCDF)
 option( CVMIX_BUILD_STATIC_LIBS "Build static library" ON )
 option( CVMIX_BUILD_SHARED_LIBS "Build shared library" ON )
 option( CVMIX_BUILD_DRIVER "Build CVMix example/test driver" OFF )
@@ -75,14 +79,11 @@ endforeach()
 
 if(CVMIX_BUILD_DRIVER)
 
-   if(CVMIX_USE_NetCDF)
-      find_package(NetCDF REQUIRED)
-   endif(CVMIX_USE_NetCDF)
    add_executable( cvmix_driver . )
    target_sources( cvmix_driver PRIVATE src/cvmix_driver.F90 )
    set_property( TARGET cvmix_driver PROPERTY FOLDER driver )
    target_include_directories( cvmix_driver PRIVATE ${CMAKE_BINARY_DIR}/modules )
-   target_link_libraries( cvmix_driver PRIVATE cvmix_drivers cvmix_static netcdf )
+   target_link_libraries( cvmix_driver PRIVATE cvmix_drivers )
 
 endif()
 
