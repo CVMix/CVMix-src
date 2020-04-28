@@ -69,7 +69,8 @@ the CVMix library.
 [CMake](https://cmake.org/) can be used in GUI mode. Further information can
 be found on the CMake web-page. Below is provided the command line commands
 to configure and compile CVMix. Note that CVMix has been build on Windows using
-VisualStudio and the Intel Fortran compiler.
+VisualStudio and the Intel Fortran compiler but NetCDF support has not been
+tested.
 
 In this recipe CVMIX\_BASE s a convinience environmental variable pointing to 
 the CVMix source directory. It is possible to execute the following commands 
