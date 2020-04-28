@@ -38,7 +38,7 @@ INSTALLATION NOTES
 ------------------
 
 CVMix can be installed using two different methods. The original uses Make
-and a set of Makefiles. The new methos uses CMake and two CMakelists.txt 
+and a set of Makefiles. The new method uses CMake and two CMakelists.txt 
 files.
 
 #### Building/installing using Make
@@ -85,13 +85,13 @@ providing the full path.
 4. cmake $CVMIX\_BASE -DCMAKE\_Fortran\_COMPILER=ifort
    * Specifying a Fortran compiler
 5. cmake $CVMIX\_BASE -DCVMIX\_BUILD\_DRIVER=on
-   * Build the CVMix driver program
+   * Build the CVMix driver program - off by default
 6. cmake $CVMIX\_BASE -DCVMIX\_BUILD\_DRIVER=on CVMIX\_USE\_NetCDF=on
    * Include support for NetCDF in the driver model(1)
    * Note that this requires proper configuration of the installed NetCDF library.
    * Setting NetCDF\_INCLUDE and NetCDF\_LIBRARIES might help.
 7. cmake $CVMIX\_BASE -DCMAKE\_INSTALL\_PREFIX=~/local
-   * Providing installation folder
+   * Providing an installation folder
 
 Combination of the above commands is possible.
 
