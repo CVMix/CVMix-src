@@ -1,4 +1,4 @@
-cmake_minimum_required( VERSION 3.10 )
+cmake_minimum_required( VERSION 3.9 )
 
 project( cvmix VERSION 4.0.1 LANGUAGES Fortran )
 
