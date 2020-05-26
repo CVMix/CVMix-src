@@ -3,7 +3,7 @@
 run () {
 
   if [ "${CMAKE_BUILD}" == "TRUE" ]; then
-    CVMIX_EXE=$CVMix/bld/cmake_bld/cvmix_driver
+    CVMIX_EXE=$CVMix/cmake_bin/bin/cvmix_driver
   else
     CVMIX_EXE=$CVMix/bin/cvmix
   fi

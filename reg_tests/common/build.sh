@@ -5,7 +5,10 @@ build () {
     if [ "${CMAKE_BUILD}" == "TRUE" ]; then
       CWD=$PWD
       cd $CVMix/bld/cmake_bld
-      cmake $CVMix -DCVMIX_BUILD_DRIVER=on -DCMAKE_Fortran_COMPILER=gfortran && make
+      cmake $CVMix -DCVMIX_BUILD_DRIVER=on \
+                   -DCMAKE_Fortran_COMPILER=gfortran \
+                   -DCMAKE_INSTALL_PREFIX=$CVMix/cmake_bin \
+      && make && make install
       STATUS=$?
       cd $CWD
     else
