@@ -72,7 +72,7 @@ to configure and compile CVMix. Note that CVMix has been build on Windows using
 VisualStudio and the Intel Fortran compiler but NetCDF support has not been
 tested.
 
-In this recipe CVMIX\_BASE s a convinience environmental variable pointing to 
+In this recipe CVMIX\_BASE is a convinient environmental variable pointing to 
 the CVMix source directory. It is possible to execute the following commands 
 providing the full path.
 
@@ -100,7 +100,7 @@ After configuration has been done compilation is as simple as:
 make
 ```
 
-and instllation by:
+and installation by:
 ```
 make install
 ```
