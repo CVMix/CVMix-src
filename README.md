@@ -96,7 +96,7 @@ After configuration has been done compilation is as simple as:
 make
 ```
 
-and instllation by:
+and installation by:
 
 ```
 make install
