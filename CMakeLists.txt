@@ -1,4 +1,4 @@
-cmake_minimum_required( VERSION 3.10 )
+cmake_minimum_required( VERSION 3.9 )
 
 project( cvmix VERSION 4.0.1 LANGUAGES Fortran )
 
@@ -42,8 +42,8 @@ add_subdirectory( src )
 # Note - KB:
 # Building static and shared libs require an ugly construct to build on both
 # Windows and Linux. Windows will not create the libraries unless a Fortran
-# file is explicitly given - and Linux complains (I think due to a race 
-# condition) if it is. Therefor the construct below - a proper solution is 
+# file is explicitly given - and Linux complains (I think due to a race
+# condition) if it is. Therefor the construct below - a proper solution is
 # most welcome.
 
 # Add static lib target
