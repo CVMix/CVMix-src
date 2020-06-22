@@ -14,6 +14,7 @@ python:
 script:
   - cd bld; ./cvmix_setup gfortran $(dirname $(dirname $(which nc-config)))
   - cd ../CVMix_tools; ./run_test_suite.sh --already-ran-setup
+  - cd ../reg_tests/Bryan-Lewis/; ./Bryan-Lewis-test.sh --cmake
 
 branches:
   only:

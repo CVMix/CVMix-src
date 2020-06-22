@@ -43,6 +43,9 @@ while [ $# -gt 0 ]; do
         bad_input $1
       fi
     ;;
+    -cm|--cmake)
+      CMAKE_BUILD=TRUE
+    ;;
     * )
       bad_input $1
     ;;

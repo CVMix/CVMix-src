@@ -37,6 +37,12 @@ goes into details about how to contribute, but basically we ask three things:
 INSTALLATION NOTES
 ------------------
 
+CVMix can be installed using two different methods. The original uses Make
+and a set of Makefiles. The new method uses CMake and two CMakelists.txt
+files.
+
+#### Building/installing using Make
+
 The src directory contains a Makefile and a simple 'make' should be sufficient
 to build the standalone driver. The first time you build, the 'cvmix_setup'
 utility will run and prompt you for compiler and netcdf information - it will
@@ -58,6 +64,52 @@ $ make FC=[compiler]                        \
 And then use -I$(INC_DIR) -L$(LIB_DIR) -lcvmix when you build software using
 the CVMix library.
 
+#### Building/installing using CMake
+
+[CMake](https://cmake.org/) can be used in GUI mode. Further information can
+be found on the CMake web-page. Below is provided the command line commands
+to configure and compile CVMix. Note that CVMix has been build on Windows using
+VisualStudio and the Intel Fortran compiler but NetCDF support has not been
+tested.
+
+1. cd $CVMix/bld/cmake_bld
+   * [CMake](https://cmake.org/) promotes out of source compilation,
+     any such directory will do.
+2. cmake $CVMix
+   * The simplest configuration - using default Fortran compiler
+3. cmake $CVMix -DCMAKE\_Fortran\_COMPILER=ifort
+   * Specifying a Fortran compiler
+4. cmake $CVMix -DCVMIX\_BUILD\_DRIVER=on
+   * Build the CVMix driver program - off by default
+5. cmake $CVMix -DCVMIX\_BUILD\_DRIVER=on CVMIX\_USE\_NetCDF=on
+   * Include support for NetCDF in the driver model(1)
+   * Note that this requires proper configuration of the installed NetCDF library.
+   * Setting NetCDF\_INCLUDE and NetCDF\_LIBRARIES might help.
+6. cmake $CVMix -DCMAKE\_INSTALL\_PREFIX=$CVMix/bin
+   * Providing an installation folder (again, any such directory will do)
+
+Combination of the above commands is possible.
+
+After configuration has been done compilation is as simple as:
+
+```
+make
+```
+
+and installation by:
+
+```
+make install
+```
+
+After installation the build directory can be removed.
+
+The support for CMake builds provides sufficient infrastructure for CVMix
+being included in ocean models using the GIT submodule feature. This has
+been used in the [GOTM](https:/gotm.net) inclusion of the CVMix mixing
+models as a supplement to the original turbulence models in GOTM.
+
+1): There is unfortunately not an official NetCDF module finder in CMake.
 
 DIRECTORY STRUCTURE
 -------------------
@@ -65,7 +117,7 @@ DIRECTORY STRUCTURE
 bin/ -- Default location for the cvmix executable.
 
 bld/ -- Contains auxiliary files needed by the build system. CompileFlags.mak
-        has default compile flags for 5 different compilers -- gfortran, 
+        has default compile flags for 5 different compilers -- gfortran,
         pgf90, ifort, xlf90, and nagfor, as well as ftn (the Cray wrapper for
         pgf90). At this time, no other compilers are supported on Cray systems.
         cvmix_setup is a python script that saves information about what
@@ -179,7 +231,7 @@ src/ -- Contains the source code, organized as follows. The top directory
 
   src/drivers/ -- Subroutines called by the driver (one per test).
 
-  src/shared/  -- Where all the modules that are needed to use CVMix with an 
+  src/shared/  -- Where all the modules that are needed to use CVMix with an
                   outside model are stored. Also contains the Makefile used to
                   build the libcvmix.a library.
 
