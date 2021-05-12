@@ -38,6 +38,7 @@
   use cvmix_math, only :            CVMIX_MATH_INTERP_LINEAR,                 &
                                     CVMIX_MATH_INTERP_QUAD,                   &
                                     CVMIX_MATH_INTERP_CUBE_SPLINE,            &
+                                    CVMIX_MATH_ROOT_NOT_FOUND,                &
                                     cvmix_math_poly_interp,                   &
                                     cvmix_math_cubic_root_find,               &
                                     cvmix_math_evaluate_cubic
@@ -1412,7 +1413,8 @@ contains
     real(kind=cvmix_r8), dimension(:), pointer :: depth
     real(kind=cvmix_r8), dimension(4)          :: coeffs
     real(kind=cvmix_r8) :: Ekman, MoninObukhov, OBL_Limit
-    integer             :: nlev, k
+    real(kind=cvmix_r8), dimension(3) :: root_guess_mul
+    integer             :: nlev, k, r, errval
     logical             :: lstable
 
     type(cvmix_kpp_params_type), pointer :: CVmix_kpp_params_in
@@ -1512,8 +1514,18 @@ contains
       end if
       coeffs(1) = coeffs(1)-CVmix_kpp_params_in%ri_crit
 
-      OBL_depth = -cvmix_math_cubic_root_find(coeffs, 0.5_cvmix_r8 *          &
-                                                      (depth(k)+depth(k+1)))
+      root_guess_mul = (/ 0.5_cvmix_r8, 0.25_cvmix_r8, 0.75_cvmix_r8 /)
+      do r=1,size(root_guess_mul)
+        OBL_depth = -cvmix_math_cubic_root_find(coeffs, root_guess_mul(r) * &
+                                               (depth(k)+depth(k+1)), errval)
+        if (errval /= CVMIX_MATH_ROOT_NOT_FOUND) then
+          exit
+        endif
+      enddo
+      if (errval == CVMIX_MATH_ROOT_NOT_FOUND) then
+        print*, "ERROR: cvmix_math_cubic_root_find could not find root."
+        stop 1
+      endif
 
       ! OBL_depth needs to be at or below the center of the top level
       ! Note: OBL_depth can only be computed to be above this point if k=1,
