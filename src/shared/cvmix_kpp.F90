@@ -150,7 +150,7 @@
       integer        :: interp_type2   ! interpolation type used to interpolate
                                        ! diff and visc at OBL_depth
 
- ! Cv is a parameter used to compute the unresolved shear. By default, the
+      ! Cv is a parameter used to compute the unresolved shear. By default, the
       ! formula from Eq. (A3) of Danabasoglu et al. is used, but a single
       ! scalar value can be set instead.
       real(cvmix_r8) :: Cv
@@ -1568,7 +1568,7 @@ contains
     real(cvmix_r8), dimension(:), optional,  intent(in) ::  Xi, surf_buoy
     real(cvmix_r8),               optional,         intent(in) :: surf_fric,  &
                                                                   Coriolis,   &
-                                                                  zBottom 
+                                                                  zBottom
     type(cvmix_kpp_params_type),  optional, target, intent(in) ::             &
                                             CVmix_kpp_params_user
 
@@ -1582,7 +1582,7 @@ contains
     real(kind=cvmix_r8), dimension(:), pointer :: depth
     real(kind=cvmix_r8), dimension(4)          :: coeffs
     real(kind=cvmix_r8) :: Ekman, MoninObukhov, OBL_Limit
-    integer             :: nlev, k, kRi, kMO
+    integer             :: nlev, k, kRi
     logical             :: lstable
 
     type(cvmix_kpp_params_type), pointer :: CVmix_kpp_params_in
@@ -2401,7 +2401,7 @@ contains
 !  Computes the turbulent velocity scales for momentum (\verb|w_m|) and scalars
 !  (\verb|w_s|) given a single $\sigma$ coordinate and an array of boundary
 !  layer depths. Note that the turbulent scales are a continuous function, so
-!  they are evaluated at sigma_coord * OBL_depth(z) using surf_buoy_force(z) 
+!  they are evaluated at sigma_coord * OBL_depth(z) using surf_buoy_force(z)
 !\\
 !\\
 
@@ -3336,12 +3336,12 @@ subroutine cvmix_kpp_composite_Gshape(sigma , Gat1, Gsig, dGdsig)
   if (sigma .lT. sig_m)  then
     sig    = MAX( sigma , cvmix_zero)
     Gsig   = sig + sig * sig * (a2Gsig + a3Gsig * sig)
-    dGdsig = cvmix_one + sig * (2.0_cvmix_r8 * a2Gsig + 3.0_cvmix_r8 * a3Gsig * sig) 
+    dGdsig = cvmix_one + sig * (2.0_cvmix_r8 * a2Gsig + 3.0_cvmix_r8 * a3Gsig * sig)
   else
     bGsig  =  (G_m-G_1) / (1.-sig_m)**2
     sig    = MIN( sigma , cvmix_one )
     Gsig   = G_1 + bGsig * (cvmix_one - sig) * (cvmix_one - sig)
-    dGdsig = bGsig * 2.0_cvmix_r8 * (sig - cvmix_one)    
+    dGdsig = bGsig * 2.0_cvmix_r8 * (sig - cvmix_one)
   endif
   end subroutine cvmix_kpp_composite_Gshape
 
@@ -3353,7 +3353,7 @@ subroutine cvmix_kpp_compute_StokesXi (zi, zk, kSL, SLDepth,                    
 
 ! !DESCRIPTION: wgl(04/05/24)
 !  Compute the Stokes similarity parameter, StokesXI, and Entrainment Rule, BEdE_ER, from
-!  surface layer integrated TKE production terms as parameterized in 
+!  surface layer integrated TKE production terms as parameterized in
 !  Large et al., 2020 (doi:10.1175/JPO-D-20-0308.1)
 
 ! !INPUT PARAMETERS:
@@ -3378,9 +3378,9 @@ subroutine cvmix_kpp_compute_StokesXi (zi, zk, kSL, SLDepth,                    
   real(cvmix_r8) :: uS_TMP, vS_TMP, uSbar_TMP, vSbar_TMP                       ! Temporary Store
   real(cvmix_r8) :: ustar, delH, delU, delV, omega_E2x, cosOmega, sinOmega
   real(cvmix_r8) :: BLDepth, TauMAG, TauCG, TauDG, taux0, tauy0, Stk0 , Pinc
-  real(cvmix_r8) :: a2Gsig, a3Gsig, PBfact , CempCGm, tiny                     ! Empirical constants
-  real(cvmix_r8) :: dtop, tauEtop, tauStop, tauxtop, tauytop, sigtop           ! Cell top values
-  real(cvmix_r8) :: dbot, tauEbot, tauSbot, tauxbot, tauybot, sigbot, Gbot     ! Cell bottom values
+  real(cvmix_r8) :: PBfact , CempCGm                                           ! Empirical constants
+  real(cvmix_r8) :: dtop, tauEtop, tauxtop, tauytop                            ! Cell top values
+  real(cvmix_r8) :: dbot, tauEbot, tauxbot, tauybot, sigbot, Gbot              ! Cell bottom values
   integer        :: ktmp                                                       ! vertical loop
 
   CVmix_kpp_params_in => CVmix_kpp_params_saved
@@ -3408,12 +3408,11 @@ subroutine cvmix_kpp_compute_StokesXi (zi, zk, kSL, SLDepth,                    
   Stk0    = sqrt( uS(1)**2 + vS(1)**2 )
   BLDepth = SLDepth / CVmix_kpp_params_in%surf_layer_ext
 
-!                                           Parameterized Buoyancy production of TKE
+  ! Parameterized Buoyancy production of TKE
   PBfact =  0.110_cvmix_r8
-  ! 0.089 ~ eps*(1.+eps*(0.5*a2Gsig+eps*a3Gsig/3.)) = 0.094 (dcent) = 0.1095~0.11 (Rs=4.7)
   PB      = PBfact * MAX( -surf_buoy_force * BLdepth ,  cvmix_zero )
 
-!                 Compute Both Shear Production Terms down from  Surface = initial top values
+  ! Compute Both Shear Production Terms down from  Surface = initial top values
   PU      = 0.0
   PS      = 0.0
   dtop    = 0.0
@@ -3456,7 +3455,7 @@ subroutine cvmix_kpp_compute_StokesXi (zi, zk, kSL, SLDepth,                    
   enddo
 !                                         Compute Stokes similarity parameter
   StokesXI  = PS / MAX( PU + PS + PB , 1.e-12_cvmix_r8 )
-  
+
 
 !        Restore bottom of cell kSL at zi(kSL+1) with stored Stokes Drift ; ditto average over cell kSL
   uS(kSL+1)  = uS_TMP
