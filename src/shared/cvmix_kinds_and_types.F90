@@ -99,6 +99,12 @@ module cvmix_kinds_and_types
     ! Langmuir number
     real(cvmix_r8) :: LangmuirNumber
                     ! units: unitless
+    ! Stokes Similarity Parameter
+    real(cvmix_r8) :: StokesMostXi
+                    ! units: unitless
+    ! Numerical limit of Ocean Boundary Layer Depth
+    real(cvmix_r8) :: zBottomOceanNumerics
+                    ! units: m
     ! A time-invariant coefficient needed for Simmons, et al. tidal mixing
     real(cvmix_r8) :: SimmonsCoeff
 
