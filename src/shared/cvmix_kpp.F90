@@ -945,7 +945,7 @@ contains
     Mdiff_out(2:ktup+1) = OBL_Mdiff(2:ktup+1)
     Tdiff_out(2:ktup+1) = OBL_Tdiff(2:ktup+1)
     Sdiff_out(2:ktup+1) = OBL_Sdiff(2:ktup+1)
-  else       !.not. Stokes_MOST
+  else ! not  Stokes_MOST
 
     XIone = cvmix_one
     ! (2) Compute coefficients of shape function
@@ -1261,7 +1261,7 @@ contains
     Tdiff_out(2:ktup+1) = OBL_Tdiff(2:ktup+1)
     Sdiff_out(2:ktup+1) = OBL_Sdiff(2:ktup+1)
 
-  endif   ! Stokes_MOST
+  endif    ! lStokesMOST
 
 !EOC
   end subroutine cvmix_coeffs_kpp_low
@@ -1698,7 +1698,7 @@ contains
     OBL_depth  = min(OBL_depth, OBL_limit )
     kOBL_depth = cvmix_kpp_compute_kOBL_depth(zw_iface, zt_cntr, OBL_depth)
 
-  else                   !.not.Stokes_MOST
+  else ! not Stokes_MOST
 
     OBL_limit  = abs(zt_cntr(nlev))
 
@@ -1774,7 +1774,7 @@ contains
       OBL_depth = min(OBL_depth, CVmix_kpp_params_in%maxOBLdepth)
     kOBL_depth = cvmix_kpp_compute_kOBL_depth(zw_iface, zt_cntr, OBL_depth)
 
-  endif  ! Stokes_MOST
+  endif    ! lStokesMOST
 
 !EOC
 
@@ -2306,7 +2306,7 @@ contains
     else
       print*, "ERROR: Similarity xi must be present in 1d_sigma to use Stokes_MOST package!"
       stop 1
-    endif       !  lStokesMOST and xi not present
+    endif    ! lStokesMOST and xi not present
 
   else    ! not lStokesMOST
 
@@ -2384,11 +2384,15 @@ contains
         end if ! surf_buoy_force >= 0
       end if ! compute_ws
     end if ! surf_fric_vel != 0
-  endif                                    ! lStokesMOST
-
+  endif    ! lStokesMOST
 !EOC
 
   end subroutine cvmix_kpp_compute_turbulent_scales_1d_sigma
+
+!BOP
+
+! !IROUTINE: cvmix_kpp_compute_turbulent_scales_1d_OBL
+! !INTERFACE:
 
   subroutine cvmix_kpp_compute_turbulent_scales_1d_OBL(sigma_coord,           &
                                                        OBL_depth,             &
@@ -2497,7 +2501,7 @@ contains
     else
       print*, "ERROR: Similarity xi must be present in 1d_OBL to use Stokes_MOST package!"
       stop 1
-    endif       !  lStokesMOST but xi not present
+    endif    ! lStokesMOST but xi not present
 
   else    ! not lStokesMOST
 
@@ -2576,7 +2580,7 @@ contains
         end do
       end if ! compute_ws
     end if ! surf_fric_vel != 0
-  endif                                ! lStokesMOST
+  endif    ! lStokesMOST
 
 !EOC
 
@@ -2721,7 +2725,7 @@ contains
      print*, "ERROR: StokesMOST package requires N_iface in cvmix_kpp_compute_unresolved_shear "
         stop 1
     end if
-  else     !.not StokesMOST
+  else    ! not lStokesMOST
 
     ! options for Langmuir enhanced entrainment
     select case (CVmix_kpp_params_in%Langmuir_Entrainment_Opt)
@@ -2888,23 +2892,40 @@ contains
         end do
 
     end select
-  endif                    ! StokesMOST
+  endif    ! lStokesMOST
 
 !EOC
 
   end function cvmix_kpp_compute_unresolved_shear
 
+!BOP
+
+! !IROUTINE: compute_phi_inv
+! !INTERFACE:
+
   function compute_phi_inv(zeta, CVmix_kpp_params_in, L_Lstokes, lphi_m, lphi_s)
 
+! !DESCRIPTION:
+!  Computes 1/phi_m or 1/phi_s
+!\\
+!\\
+
+! !USES:
+!  Only those used by entire module.
+
+! !INPUT PARAMETERS:
     real(cvmix_r8),              intent(in) :: zeta
     type(cvmix_kpp_params_type), intent(in) :: CVmix_kpp_params_in
     real(cvmix_r8), optional,    intent(in) :: L_Lstokes
     logical, optional,           intent(in) :: lphi_m, lphi_s
 
+! !OUTPUT PARAMETERS:
     real(cvmix_r8) :: compute_phi_inv
 
+!EOP
+!BOC
+
     logical :: lm, ls
-!   local
     real(cvmix_r8) :: zetastar
 
     ! If not specifying lphi_m or lphi_s, routine will error out, but
@@ -2949,7 +2970,7 @@ contains
           (cvmix_one - real(25,cvmix_r8)*zetastar)**(cvmix_one/real(3,cvmix_r8))
         endif
       endif
-    else       ! .not lStokesMOST
+    else    ! not lStokesMOST
 
       if (lm) then
         if (zeta.ge.cvmix_zero) then
@@ -2978,17 +2999,35 @@ contains
       end if
     endif
 
+!EOC
+
   end function compute_phi_inv
 
-! compute Stokes similarity function chi, of Stokes parameter xi= Ps/(PU+PS+PB)
+!BOP
+
+! !IROUTINE: compute_Stokes_chi
+! !INTERFACE:
+
   function compute_Stokes_chi( xi, lchi_m, lchi_s)
 
+! !DESCRIPTION:
+!  Compute Stokes similarity function chi, of Stokes parameter xi= Ps/(PU+PS+PB)
+!\\
+!\\
+
+! !USES:
+!  Only those used by entire module.
+
+! !INPUT PARAMETERS:
     real(cvmix_r8),              intent(in) :: xi
     logical, optional,           intent(in) :: lchi_m, lchi_s
 
+! !OUTPUT PARAMETERS:
     real(cvmix_r8) :: compute_Stokes_chi
 
-!   local
+!EOP
+!BOC
+
     logical :: lm, ls
     real(cvmix_r8)  :: chi, xi_tmp
 
@@ -3029,6 +3068,8 @@ contains
       chi = 0.78_cvmix_r8 + xi_tmp * ( 0.67_cvmix_r8*xi_tmp - 1.20_cvmix_r8 )
     compute_Stokes_chi = chi
   end if
+
+!EOC
 
   end function compute_Stokes_chi
 
@@ -3146,34 +3187,34 @@ contains
     end if
     cvmix_kpp_compute_nu_at_OBL_depth_LMD94=cvmix_math_evaluate_cubic(coeffs, &
                                                                   -OBL_depth)
-!      call cvmix_math_poly_interp(coeffs, interp_type2, layer_depth, layer_nu,&
-!           depth_2above, nu_2above)
-!      cvmix_kpp_compute_nu_at_OBL_depth = cvmix_math_evaluate_cubic(coeffs,   &
-!                                                                   -OBL_depth,&
-!                                                                    dnu_dz)
+!EOC
 
   end function cvmix_kpp_compute_nu_at_OBL_depth_LMD94
 
-!EOC
+!BOP
 
+! !IROUTINE: cvmix_kpp_EFactor_model
+! !INTERFACE:
   function cvmix_kpp_EFactor_model(u10, ustar, hbl, CVmix_params_in)
 
-! This function returns the enhancement factor, given the 10-meter
-! wind (m/s), friction velocity (m/s) and the boundary layer depth (m).
-!
-! Qing Li, 160606
+! !DESCRIPTION:
+!  This function returns the enhancement factor, given the 10-meter
+!  wind (m/s), friction velocity (m/s) and the boundary layer depth (m).
+!\\
+!\\
 
-! Input
-    real(cvmix_r8), intent(in) :: &
-        ! 10 meter wind (m/s)
-        u10, &
-        ! water-side surface friction velocity (m/s)
-        ustar, &
-        ! boundary layer depth (m)
-        hbl
+! !USES:
+!  Only those used by entire module.
+
+! !INPUT PARAMETERS:
+    real(cvmix_r8),                 intent(in) :: u10    ! 10 meter wind (m/s)
+    real(cvmix_r8),                 intent(in) :: ustar  ! water-side surface friction velocity (m/s)
+    real(cvmix_r8),                 intent(in) :: hbl    ! boundary layer depth (m)
     type(cvmix_global_params_type), intent(in) :: CVmix_params_in
 
-! Local variables
+!EOP
+!BOC
+
     real(cvmix_r8) :: us_sl, lasl_sqr_i
     real(cvmix_r8) :: cvmix_kpp_EFactor_model
 
@@ -3193,24 +3234,28 @@ contains
       cvmix_kpp_EFactor_model = cvmix_one
     endif
 
+!EOC
+
   end function cvmix_kpp_EFactor_model
 
+!BOP
+
+! !IROUTINE: cvmix_kpp_ustokes_SL_model
+! !INTERFACE:
   function cvmix_kpp_ustokes_SL_model(u10, hbl, CVmix_params_in)
 
-! This function returns the surface layer averaged Stokes drift, given
-! the 10-meter wind (m/s) and the boundary layer depth (m).
-!
-! Qing Li, 20180130
+! !DESCRIPTION:
+!  This function returns the surface layer averaged Stokes drift, given
+!  the 10-meter wind (m/s) and the boundary layer depth (m).
 
-! Input
-    real(cvmix_r8), intent(in) :: &
-        ! 10 meter wind (m/s)
-        u10, &
-        ! boundary layer depth (m)
-        hbl
+! !INPUT PARAMETERS:
+    real(cvmix_r8),                 intent(in) :: u10    ! 10 meter wind (m/s)
+    real(cvmix_r8),                 intent(in) :: hbl    ! boundary layer depth (m)
     type(cvmix_global_params_type), intent(in) :: CVmix_params_in
-! Local variables
-    ! parameters
+
+!EOP
+!BOC
+
     real(cvmix_r8), parameter :: &
         ! ratio of U19.5 to U10 (Holthuijsen, 2007)
         u19p5_to_u10 = 1.075_cvmix_r8, &
@@ -3275,80 +3320,106 @@ contains
       cvmix_kpp_ustokes_SL_model = cvmix_zero
     endif
 
-    end function cvmix_kpp_ustokes_SL_model
+!EOC
 
-!  !DESCRIPTION:  wgl(04/05/24)
-!  This function/subroutine returns the value of the composite shape function for both
-!  momentum and scalars at fractional depth sigma in the boundary layer.
-!  This shape function is a cubic for sigma<sig_m; and a quadratic below, as
-!  fit to Fig. 6 of Large et al., 2020 (doi:10.1175/JPO-D-20-0308.1)
-!  The subroutine also returns the derivative  dG / dsig
-!\\
-!\\
+  end function cvmix_kpp_ustokes_SL_model
+
+!BOP
+
+! !IROUTINE: cvmix_kpp_composite_shape
+! !INTERFACE:
 
   function cvmix_kpp_composite_shape( sigma , Gat1)
 
+!  !DESCRIPTION:
+!   This function returns the value of the composite shape function for both
+!   momentum and scalars at fractional depth sigma in the boundary layer.
+!   This shape function is a cubic for sigma<sig_m; and a quadratic below, as
+!   fit to Fig. 6 of Large et al., 2020 (doi:10.1175/JPO-D-20-0308.1)
+!   The subroutine also returns the derivative  dG / dsig
+!\\
+!\\
+
 ! !INPUT PARAMETERS:
-  real(cvmix_r8),                    intent(in)  ::  sigma
-  real(cvmix_r8), optional,          intent(in)  ::  Gat1
+    real(cvmix_r8),                    intent(in)  ::  sigma
+    real(cvmix_r8), optional,          intent(in)  ::  Gat1
 ! !OUTPUT PARAMETERS:
-  real(cvmix_r8) :: cvmix_kpp_composite_shape
+    real(cvmix_r8) :: cvmix_kpp_composite_shape
 
-! local
-  real(cvmix_r8)  :: a2Gsig, a3Gsig, sig_m, G_m, G_1, sig
-  a2Gsig = -2.1637_cvmix_r8
-  a3Gsig =  0.5831_cvmix_r8
-  sig_m  =  0.35_cvmix_r8
-  G_m    =  0.11_cvmix_r8     ! sig_m + sig_m * sig_m * (a2Gsig + a3Gsig * sig_m)
-  if ( present(Gat1) ) then
-    G_1  = MAX( cvmix_zero  ,  MIN( Gat1 , G_m ) )
-  else
-    G_1  =  cvmix_zero
-  endif
+!BOP
+!EOC
 
-  if (sigma .lt. sig_m)  then
-    sig = MAX( sigma , cvmix_zero)
-    cvmix_kpp_composite_shape = sig + sig * sig * (a2Gsig + a3Gsig * sig)
-  else
-    sig = MIN( sigma , cvmix_one )
-    cvmix_kpp_composite_shape = G_1 + (G_m-G_1) * ((1.-sig) / (1.-sig_m))**2
-  endif
+    real(cvmix_r8)  :: a2Gsig, a3Gsig, sig_m, G_m, G_1, sig
+    a2Gsig = -2.1637_cvmix_r8
+    a3Gsig =  0.5831_cvmix_r8
+    sig_m  =  0.35_cvmix_r8
+    G_m    =  0.11_cvmix_r8     ! sig_m + sig_m * sig_m * (a2Gsig + a3Gsig * sig_m)
+    if ( present(Gat1) ) then
+      G_1  = MAX( cvmix_zero  ,  MIN( Gat1 , G_m ) )
+    else
+      G_1  =  cvmix_zero
+    endif
+
+    if (sigma .lt. sig_m)  then
+      sig = MAX( sigma , cvmix_zero)
+      cvmix_kpp_composite_shape = sig + sig * sig * (a2Gsig + a3Gsig * sig)
+    else
+      sig = MIN( sigma , cvmix_one )
+      cvmix_kpp_composite_shape = G_1 + (G_m-G_1) * ((1.-sig) / (1.-sig_m))**2
+    endif
+
+!EOC
+
   end function cvmix_kpp_composite_shape
 
-subroutine cvmix_kpp_composite_Gshape(sigma , Gat1, Gsig, dGdsig)
+!BOP
+
+! !IROUTINE: cvmix_kpp_composite_shape
+! !INTERFACE:
+
+  subroutine cvmix_kpp_composite_Gshape(sigma , Gat1, Gsig, dGdsig)
 
 ! !INPUT PARAMETERS:
-  real(cvmix_r8),                    intent(in)  ::  sigma
-  real(cvmix_r8),                    intent(in)  ::  Gat1
-! !OUTPUT PARAMETERS:
-  real(cvmix_r8),                  intent(inout) ::  Gsig
-  real(cvmix_r8),                  intent(inout) ::  dGdsig
+    real(cvmix_r8),                    intent(in)  ::  sigma
+    real(cvmix_r8),                    intent(in)  ::  Gat1
+! !INPUT/OUTPUT PARAMETERS:
+    real(cvmix_r8),                  intent(inout) ::  Gsig
+    real(cvmix_r8),                  intent(inout) ::  dGdsig
 
-! local
-  real(cvmix_r8)  :: a2Gsig, a3Gsig, bGsig, sig_m, G_m, G_1, sig
+!EOP
+!BOC
 
-  a2Gsig = -2.1637_cvmix_r8
-  a3Gsig =  0.5831_cvmix_r8
-  sig_m  =  0.35_cvmix_r8
-  G_m    =  0.11_cvmix_r8     ! sig_m + sig_m * sig_m * (a2Gsig + a3Gsig * sig_m)
-  G_1    =  MAX( cvmix_zero  ,  MIN( Gat1 , G_m ) )
+    real(cvmix_r8)  :: a2Gsig, a3Gsig, bGsig, sig_m, G_m, G_1, sig
 
-  if (sigma .lT. sig_m)  then
-    sig    = MAX( sigma , cvmix_zero)
-    Gsig   = sig + sig * sig * (a2Gsig + a3Gsig * sig)
-    dGdsig = cvmix_one + sig * (2.0_cvmix_r8 * a2Gsig + 3.0_cvmix_r8 * a3Gsig * sig)
-  else
-    bGsig  =  (G_m-G_1) / (1.-sig_m)**2
-    sig    = MIN( sigma , cvmix_one )
-    Gsig   = G_1 + bGsig * (cvmix_one - sig) * (cvmix_one - sig)
-    dGdsig = bGsig * 2.0_cvmix_r8 * (sig - cvmix_one)
-  endif
+    a2Gsig = -2.1637_cvmix_r8
+    a3Gsig =  0.5831_cvmix_r8
+    sig_m  =  0.35_cvmix_r8
+    G_m    =  0.11_cvmix_r8     ! sig_m + sig_m * sig_m * (a2Gsig + a3Gsig * sig_m)
+    G_1    =  MAX( cvmix_zero  ,  MIN( Gat1 , G_m ) )
+
+    if (sigma .lT. sig_m)  then
+      sig    = MAX( sigma , cvmix_zero)
+      Gsig   = sig + sig * sig * (a2Gsig + a3Gsig * sig)
+      dGdsig = cvmix_one + sig * (2.0_cvmix_r8 * a2Gsig + 3.0_cvmix_r8 * a3Gsig * sig)
+    else
+      bGsig  =  (G_m-G_1) / (1.-sig_m)**2
+      sig    = MIN( sigma , cvmix_one )
+      Gsig   = G_1 + bGsig * (cvmix_one - sig) * (cvmix_one - sig)
+      dGdsig = bGsig * 2.0_cvmix_r8 * (sig - cvmix_one)
+    endif
+
+!EOC
+
   end subroutine cvmix_kpp_composite_Gshape
 
+!BOP
 
-subroutine cvmix_kpp_compute_StokesXi (zi, zk, kSL, SLDepth,                            &
-           surf_buoy_force,surf_fric_vel, omega_w2x,  &
-           uE, vE, uS, vS, uSbar, vSbar, uS_SLD, vS_SLD, uSbar_SLD, vSbar_SLD,          &
+! !IROUTINE: cvmix_coeffs_bkgnd_wrap
+! !INTERFACE:
+
+  subroutine cvmix_kpp_compute_StokesXi (zi, zk, kSL, SLDepth,          &
+           surf_buoy_force, surf_fric_vel, omega_w2x, uE, vE, uS, vS,   &
+           uSbar, vSbar, uS_SLD, vS_SLD, uSbar_SLD, vSbar_SLD,          &
            StokesXI, CVmix_kpp_params_user)
 
 ! !DESCRIPTION: wgl(04/05/24)
@@ -3357,117 +3428,125 @@ subroutine cvmix_kpp_compute_StokesXi (zi, zk, kSL, SLDepth,                    
 !  Large et al., 2020 (doi:10.1175/JPO-D-20-0308.1)
 
 ! !INPUT PARAMETERS:
-  real(cvmix_r8), dimension(:), intent(in) :: zi, zk          !< Cell interface and center heights < 0
-  real(cvmix_r8), dimension(:), intent(in) :: uE, vE          !< Eulerian velocity at centers
-  real(cvmix_r8), dimension(:), intent(inout) :: uS, vS       !< Stokes drift at interfaces
-  real(cvmix_r8), dimension(:), intent(inout) :: uSbar, vSbar !< Cell average Stokes drift
+    real(cvmix_r8), dimension(:), intent(in) :: zi, zk          !< Cell interface and center heights < 0
+    integer,        intent(in) :: kSL                           !< cell index of Surface Layer Depth
+    real(cvmix_r8), intent(in) :: SLDepth                       !< Surface Layer Depth Integration limit
+    real(cvmix_r8), intent(in) :: surf_buoy_force               !< Surface buoyancy flux forcing
+    real(cvmix_r8), intent(in) :: surf_fric_vel, omega_w2x      !< Surface wind forcing from x-axis
+    real(cvmix_r8), dimension(:), intent(in) :: uE, vE          !< Eulerian velocity at centers
+    real(cvmix_r8), intent(in) :: uS_SLD, vS_SLD                !< Stokes drift at SLDepth
+    real(cvmix_r8), intent(in) :: uSbar_SLD, vSbar_SLD          !< Average Stokes drift cell kSL to SLDepth
 
-  real(cvmix_r8), intent(in) :: surf_buoy_force               !< Surface buoyancy flux forcing
-  real(cvmix_r8), intent(in) :: surf_fric_vel, omega_w2x      !< Surface wind forcing from x-axis
-  real(cvmix_r8), intent(in) :: SLDepth                       !< Surface Layer Depth Integration limit
-  real(cvmix_r8), intent(in) :: uS_SLD, vS_SLD                !< Stokes drift at SLDepth
-  real(cvmix_r8), intent(in) :: uSbar_SLD, vSbar_SLD          !< Average Stokes drift cell kSL to SLDepth
-  integer,        intent(in) :: kSL                           !< cell index of Surface Layer Depth
-  real(cvmix_r8), intent(inout) :: StokesXI                   !< Stokes similarity parameter
+    type(cvmix_kpp_params_type), intent(in), optional, target :: CVmix_kpp_params_user
 
-  type(cvmix_kpp_params_type), intent(in), optional, target :: CVmix_kpp_params_user
+! !INPUT/OUTPUT PARAMETERS:
+    real(cvmix_r8), dimension(:), intent(inout) :: uS, vS       !< Stokes drift at interfaces
+    real(cvmix_r8), dimension(:), intent(inout) :: uSbar, vSbar !< Cell average Stokes drift
+    real(cvmix_r8), intent(inout) :: StokesXI                   !< Stokes similarity parameter
 
-! Local variables
-  type(cvmix_kpp_params_type),  pointer :: CVmix_kpp_params_in
-  real(cvmix_r8) :: PU, PS , PB                   ! surface layer TKE production terms
-  real(cvmix_r8) :: uS_TMP, vS_TMP, uSbar_TMP, vSbar_TMP                       ! Temporary Store
-  real(cvmix_r8) :: ustar, delH, delU, delV, omega_E2x, cosOmega, sinOmega
-  real(cvmix_r8) :: BLDepth, TauMAG, TauCG, TauDG, taux0, tauy0, Stk0 , Pinc
-  real(cvmix_r8) :: PBfact , CempCGm                                           ! Empirical constants
-  real(cvmix_r8) :: dtop, tauEtop, tauxtop, tauytop                            ! Cell top values
-  real(cvmix_r8) :: dbot, tauEbot, tauxbot, tauybot, sigbot, Gbot              ! Cell bottom values
-  integer        :: ktmp                                                       ! vertical loop
+!EOP
+!BOC
 
-  CVmix_kpp_params_in => CVmix_kpp_params_saved
-  if (present(CVmix_kpp_params_user)) then
-    CVmix_kpp_params_in => CVmix_kpp_params_user
-  end if
+    type(cvmix_kpp_params_type),  pointer :: CVmix_kpp_params_in
+    real(cvmix_r8) :: PU, PS , PB                   ! surface layer TKE production terms
+    real(cvmix_r8) :: uS_TMP, vS_TMP, uSbar_TMP, vSbar_TMP                       ! Temporary Store
+    real(cvmix_r8) :: ustar, delH, delU, delV, omega_E2x, cosOmega, sinOmega
+    real(cvmix_r8) :: BLDepth, TauMAG, TauCG, TauDG, taux0, tauy0, Stk0 , Pinc
+    real(cvmix_r8) :: PBfact , CempCGm                                           ! Empirical constants
+    real(cvmix_r8) :: dtop, tauEtop, tauxtop, tauytop                            ! Cell top values
+    real(cvmix_r8) :: dbot, tauEbot, tauxbot, tauybot, sigbot, Gbot              ! Cell bottom values
+    integer        :: ktmp                                                       ! vertical loop
 
-  if ( CVmix_kpp_params_in%lStokesMOST ) then     ! lStokesMOST
+    CVmix_kpp_params_in => CVmix_kpp_params_saved
+    if (present(CVmix_kpp_params_user)) then
+      CVmix_kpp_params_in => CVmix_kpp_params_user
+    end if
 
-!                 Move bottom of cell kSL up to Surface Layer Extent = SLDepth
-  uS_TMP = uS(kSL+1)
-  vS_TMP = vS(kSL+1)
-  uSbar_TMP = uSbar(kSL)
-  vSbar_TMP = vSbar(kSL)
-  uS(kSL+1)   = uS_SLD
-  vS(kSL+1)   = vS_SLD
-  uSbar(kSL)= uSbar_SLD
-  vSbar(kSL)= vSbar_SLD
+    if ( CVmix_kpp_params_in%lStokesMOST ) then
 
-  CempCGm=  3.5_cvmix_r8
+    ! Move bottom of cell kSL up to Surface Layer Extent = SLDepth
+    uS_TMP = uS(kSL+1)
+    vS_TMP = vS(kSL+1)
+    uSbar_TMP = uSbar(kSL)
+    vSbar_TMP = vSbar(kSL)
+    uS(kSL+1)   = uS_SLD
+    vS(kSL+1)   = vS_SLD
+    uSbar(kSL)= uSbar_SLD
+    vSbar(kSL)= vSbar_SLD
 
-  ustar   = MAX( surf_fric_vel , 1.e-4_cvmix_r8 )   ! > 0
-  taux0   = ustar**2 * cos(omega_w2x)
-  tauy0   = ustar**2 * sin(omega_w2x)
-  Stk0    = sqrt( uS(1)**2 + vS(1)**2 )
-  BLDepth = SLDepth / CVmix_kpp_params_in%surf_layer_ext
+    CempCGm=  3.5_cvmix_r8
 
-  ! Parameterized Buoyancy production of TKE
-  PBfact =  0.110_cvmix_r8
-  PB      = PBfact * MAX( -surf_buoy_force * BLdepth ,  cvmix_zero )
+    ustar   = MAX( surf_fric_vel , 1.e-4_cvmix_r8 )   ! > 0
+    taux0   = ustar**2 * cos(omega_w2x)
+    tauy0   = ustar**2 * sin(omega_w2x)
+    Stk0    = sqrt( uS(1)**2 + vS(1)**2 )
+    BLDepth = SLDepth / CVmix_kpp_params_in%surf_layer_ext
 
-  ! Compute Both Shear Production Terms down from  Surface = initial top values
-  PU      = 0.0
-  PS      = 0.0
-  dtop    = 0.0
-  delU    = uE(1) - uE(2)
-  delV    = vE(1) - vE(2)
-  tauEtop = (taux0 * delU + tauy0 * delV ) / (zk(1) - zk(2) )
-  tauxtop = taux0
-  tauytop = tauy0
+    ! Parameterized Buoyancy production of TKE
+    PBfact =  0.110_cvmix_r8
+    PB      = PBfact * MAX( -surf_buoy_force * BLdepth ,  cvmix_zero )
 
-  do ktmp = 1, kSL
-    ! SLdepth can be between cell interfaces kSL and kSL+1
-    delH = min( max(cvmix_zero, SLdepth - dtop), (zi(ktmp) - zi(ktmp+1) ) )
-    dbot = MIN( dtop + delH ,  SLdepth)
-    sigbot = dbot / BLdepth
-    Gbot     = cvmix_kpp_composite_shape(sigbot)
-    TauMAG   = ustar * ustar * Gbot / sigbot
-    delU     = uE(ktmp) - uE(ktmp+1)
-    delV     = vE(ktmp) - vE(ktmp+1)
-    Omega_E2x= atan2( delV  , delU )
-    cosOmega = cos(Omega_E2x)
-    sinOmega = sin(Omega_E2x)
-    tauCG    = CempCGm * Gbot *  (taux0 * cosOmega - tauy0 * sinOmega)
-!   tauDG    = sqrt( TauMAG**2 - tauCG**2 ) ! G
-    tauDG    = TauMAG                       ! E
-    tauxbot  = tauDG * cosOmega  -  tauCG * sinOmega
-    tauybot  = tauDG * sinOmega  +  tauCG * cosOmega
-    tauEbot  = (tauxbot * delU + tauybot * delV) / (zk(ktmp) - zk(ktmp+1) )
-!                                                 Increment Eulerian Shear Production
-    Pinc     = 0.5_cvmix_r8 * (tauEbot + tauEtop) * delH
-    PU       = PU + MAX( Pinc , cvmix_zero )
-!                                                 Increment Stokes Shear Production
-    Pinc   = tauxtop*uS(ktmp) - tauxbot*uS(ktmp+1) + tauytop*vS(ktmp) - tauybot*vS(ktmp+1)
-    Pinc   = Pinc - (tauxtop-tauxbot) * uSbar(ktmp)  - (tauytop-tauybot) * vSbar(ktmp)
-    PS     = PS +  MAX( Pinc , cvmix_zero )
-!                                          Bottom becomes next top
-    dtop    = dbot
-    tauxtop = tauxbot
-    tauytop = tauybot
-    tauEtop = tauEbot
-  enddo
-!                                         Compute Stokes similarity parameter
-  StokesXI  = PS / MAX( PU + PS + PB , 1.e-12_cvmix_r8 )
+    ! Compute Both Shear Production Terms down from  Surface = initial top values
+    PU      = 0.0
+    PS      = 0.0
+    dtop    = 0.0
+    delU    = uE(1) - uE(2)
+    delV    = vE(1) - vE(2)
+    tauEtop = (taux0 * delU + tauy0 * delV ) / (zk(1) - zk(2) )
+    tauxtop = taux0
+    tauytop = tauy0
+
+    do ktmp = 1, kSL
+      ! SLdepth can be between cell interfaces kSL and kSL+1
+      delH = min( max(cvmix_zero, SLdepth - dtop), (zi(ktmp) - zi(ktmp+1) ) )
+      dbot = MIN( dtop + delH ,  SLdepth)
+      sigbot = dbot / BLdepth
+      Gbot     = cvmix_kpp_composite_shape(sigbot)
+      TauMAG   = ustar * ustar * Gbot / sigbot
+      delU     = uE(ktmp) - uE(ktmp+1)
+      delV     = vE(ktmp) - vE(ktmp+1)
+      Omega_E2x= atan2( delV  , delU )
+      cosOmega = cos(Omega_E2x)
+      sinOmega = sin(Omega_E2x)
+      tauCG    = CempCGm * Gbot *  (taux0 * cosOmega - tauy0 * sinOmega)
+      ! tauDG    = sqrt( TauMAG**2 - tauCG**2 ) ! G
+      tauDG    = TauMAG                       ! E
+      tauxbot  = tauDG * cosOmega  -  tauCG * sinOmega
+      tauybot  = tauDG * sinOmega  +  tauCG * cosOmega
+      tauEbot  = (tauxbot * delU + tauybot * delV) / (zk(ktmp) - zk(ktmp+1) )
+
+      ! Increment Eulerian Shear Production
+      Pinc     = 0.5_cvmix_r8 * (tauEbot + tauEtop) * delH
+      PU       = PU + MAX( Pinc , cvmix_zero )
+
+      ! Increment Stokes Shear Production
+      Pinc   = tauxtop*uS(ktmp) - tauxbot*uS(ktmp+1) + tauytop*vS(ktmp) - tauybot*vS(ktmp+1)
+      Pinc   = Pinc - (tauxtop-tauxbot) * uSbar(ktmp)  - (tauytop-tauybot) * vSbar(ktmp)
+      PS     = PS +  MAX( Pinc , cvmix_zero )
+
+      ! Bottom becomes next top
+      dtop    = dbot
+      tauxtop = tauxbot
+      tauytop = tauybot
+      tauEtop = tauEbot
+    enddo
+
+    ! Compute Stokes similarity parameter
+    StokesXI  = PS / MAX( PU + PS + PB , 1.e-12_cvmix_r8 )
 
 
-!        Restore bottom of cell kSL at zi(kSL+1) with stored Stokes Drift ; ditto average over cell kSL
-  uS(kSL+1)  = uS_TMP
-  vS(kSL+1)  = vS_TMP
-  uSbar(kSL) = uSbar_TMP
-  vSbar(kSL) = vSbar_TMP
+    ! Restore bottom of cell kSL at zi(kSL+1) with stored Stokes Drift ; ditto average over cell kSL
+    uS(kSL+1)  = uS_TMP
+    vS(kSL+1)  = vS_TMP
+    uSbar(kSL) = uSbar_TMP
+    vSbar(kSL) = vSbar_TMP
 
- else       ! .not. lStokesMOST
-   StokesXI  = cvmix_zero
+   else    ! not lStokesMOST
+     StokesXI  = cvmix_zero
+   endif
 
- endif
+!EOC
 
-end subroutine cvmix_kpp_compute_StokesXi
+  end subroutine cvmix_kpp_compute_StokesXi
 
 end module cvmix_kpp
