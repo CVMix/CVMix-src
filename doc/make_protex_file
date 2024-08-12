@@ -29,6 +29,4 @@ rm -f protex_out/protex_documentation.*
 cd protex_out
 pdflatex protex_documentation.tex
 pdflatex protex_documentation.tex
-pdflatex protex_documentation.tex
-pdflatex protex_documentation.tex
 cp -f protex_documentation.pdf ../
