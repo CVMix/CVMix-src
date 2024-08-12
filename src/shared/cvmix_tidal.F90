@@ -550,8 +550,9 @@ contains
   end subroutine cvmix_coeffs_tidal_schmittner
 
 !BOP
-  !IROUTINE: cvmix_compute_vert_dep
-  !INTERFACE:
+
+! !IROUTINE: cvmix_compute_vert_dep
+! !INTERFACE:
 
   function cvmix_compute_vert_dep(zw, zt, nlev, CVmix_tidal_params)
 
@@ -604,8 +605,9 @@ contains
   end function cvmix_compute_vert_dep
 
 !BOP
-  !IROUTINE: cvmix_compute_vert_dep_Schmittner
-  !INTERFACE:
+
+! !IROUTINE: cvmix_compute_vert_dep_Schmittner
+! !INTERFACE:
 
   function cvmix_compute_vert_dep_Schmittner(zw, nlev, CVmix_tidal_params)
 
@@ -648,6 +650,7 @@ contains
   end function cvmix_compute_vert_dep_Schmittner
 
 !BOP
+
 ! !IROUTINE: cvmix_compute_Simmons_invariant_wrap
 ! !INTERFACE:
 
@@ -751,6 +754,7 @@ contains
   end subroutine cvmix_compute_Simmons_invariant_low
 
 !BOP
+
 ! !IROUTINE: cvmix_compute_Schmittner_invariant_wrap
 ! !INTERFACE:
 
@@ -801,6 +805,7 @@ contains
   end subroutine cvmix_compute_Schmittner_invariant_wrap
 
 !BOP
+
 ! !IROUTINE: cvmix_compute_Schmittner_invariant_low
 ! !INTERFACE:
 
@@ -864,6 +869,7 @@ contains
   end subroutine cvmix_compute_Schmittner_invariant_low
 
 !BOP
+
 ! !IROUTINE: cvmix_compute_SchmittnerCoeff_wrap
 ! !INTERFACE:
 
@@ -910,6 +916,7 @@ contains
   end subroutine cvmix_compute_SchmittnerCoeff_wrap
 
 !BOP
+
 ! !IROUTINE: cvmix_compute_SchmittnerCoeff_low
 ! !INTERFACE:
 
@@ -966,6 +973,7 @@ contains
   end subroutine cvmix_compute_SchmittnerCoeff_low
 
 !BOP
+
 ! !IROUTINE: cvmix_compute_socn_tidal_invariant_wrap
 ! !INTERFACE:
 
@@ -1109,6 +1117,8 @@ contains
 !EOC
 
   end subroutine cvmix_put_tidal_int
+
+!BOP
 
 ! !IROUTINE: cvmix_put_tidal_logical
 ! !INTERFACE:

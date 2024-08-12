@@ -1554,7 +1554,7 @@ contains
 
 ! !DESCRIPTION:
 !  Computes the depth of the ocean boundary layer (OBL) for a given column.
-!  Ri_bulk(h) = Ricr; h < -zBottom, (stable+lMonOb) 0 < h < vonKaraman Lstar
+!  Ri\_bulk(h) = Ricr; h < -zBottom, (stable+lMonOb) 0 < h < vonKaraman Lstar
 !\\
 !\\
 
@@ -2405,7 +2405,7 @@ contains
 !  Computes the turbulent velocity scales for momentum (\verb|w_m|) and scalars
 !  (\verb|w_s|) given a single $\sigma$ coordinate and an array of boundary
 !  layer depths. Note that the turbulent scales are a continuous function, so
-!  they are evaluated at sigma_coord * OBL_depth(z) using surf_buoy_force(z)
+!  they are evaluated at sigma\_coord * OBL\_depth(z) using surf\_buoy\_force(z)
 !\\
 !\\
 
@@ -2906,7 +2906,7 @@ contains
   function compute_phi_inv(zeta, CVmix_kpp_params_in, L_Lstokes, lphi_m, lphi_s)
 
 ! !DESCRIPTION:
-!  Computes 1/phi_m or 1/phi_s
+!  Computes 1/phi\_m or 1/phi\_s
 !\\
 !\\
 
@@ -3334,7 +3334,7 @@ contains
 !  !DESCRIPTION:
 !   This function returns the value of the composite shape function for both
 !   momentum and scalars at fractional depth sigma in the boundary layer.
-!   This shape function is a cubic for sigma<sig_m; and a quadratic below, as
+!   This shape function is a cubic for sigma<sig\_m; and a quadratic below, as
 !   fit to Fig. 6 of Large et al., 2020 (doi:10.1175/JPO-D-20-0308.1)
 !   The subroutine also returns the derivative  dG / dsig
 !\\
@@ -3423,7 +3423,7 @@ contains
            StokesXI, CVmix_kpp_params_user)
 
 ! !DESCRIPTION: wgl(04/05/24)
-!  Compute the Stokes similarity parameter, StokesXI, and Entrainment Rule, BEdE_ER, from
+!  Compute the Stokes similarity parameter, StokesXI, and Entrainment Rule, BEdE\_ER, from
 !  surface layer integrated TKE production terms as parameterized in
 !  Large et al., 2020 (doi:10.1175/JPO-D-20-0308.1)
 

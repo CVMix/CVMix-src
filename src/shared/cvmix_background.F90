@@ -369,7 +369,7 @@ contains
                                               CVmix_bkgnd_params_user)
 
 ! !DESCRIPTION:
-!  Calls cvmix_init_bkgnd_BryanLewis_low
+!  Calls cvmix\_init\_bkgnd\_BryanLewis\_low
 !
 ! !USES:
 !  Only those used by entire module.

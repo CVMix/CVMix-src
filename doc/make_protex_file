@@ -1,9 +1,12 @@
-#!/bin/bash
+#!/bin/bash -e
 
 SRC=../src
 DRIVE=$SRC/drivers
 SHARE=$SRC/shared
-f90pdf                                       \
+
+mkdir -p protex_out
+rm -f protex_out/protex_documentation.*
+./protex                                     \
        $SHARE/cvmix_kinds_and_types.F90      \
        $SHARE/cvmix_background.F90           \
        $SHARE/cvmix_shear.F90                \
@@ -20,7 +23,12 @@ f90pdf                                       \
        $DRIVE/cvmix_tidal_Simmons.F90        \
        $DRIVE/cvmix_ddiff_drv.F90            \
        $DRIVE/cvmix_kpp_drv.F90              \
-       $SRC/cvmix_io.F90
+       $SRC/cvmix_io.F90 >                   \
+       protex_out/protex_documentation.tex
 
-rm -f output.tex
-mv -f output.pdf protex_documentation.pdf
+cd protex_out
+pdflatex protex_documentation.tex
+pdflatex protex_documentation.tex
+pdflatex protex_documentation.tex
+pdflatex protex_documentation.tex
+cp -f protex_documentation.pdf ../
