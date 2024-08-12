@@ -831,7 +831,7 @@ contains
             Mdiff_vals(2)  = old_Mdiff(kwup+2)
             Tdiff_vals(2)  = old_Tdiff(kwup+2)
             Sdiff_vals(2)  = old_Sdiff(kwup+2)
-          endif
+          end if
           if (kwup.eq.1) then
             Mdiff_OBL = cvmix_kpp_compute_nu_at_OBL_depth_LMD94(col_centers,  &
                                                       col_widths,             &
@@ -861,7 +861,7 @@ contains
                                                       Sdiff_vals, OBL_depth,  &
                                                       old_Sdiff(kwup),        &
                                                       dnu_dz=dSdiff_OBL)
-          endif
+          end if
 
     !     (3a) Compute turbulent scales at interfaces throughout column
     sigma = -zw(1:nlev+1)/OBL_depth
@@ -884,7 +884,7 @@ contains
       else
         Tnonlocal(kw) = cvmix_zero
         Snonlocal(kw) = cvmix_zero
-      endif
+      end if
 
     !   (3d) Diffusivity = (OBL_depth * turbulent scale * G(sigma) + Xdiff_OBL * Hsigma)
       OBL_Mdiff(kw) = OBL_depth * w_m(kw) * Gcomposite  + Mdiff_OBL * Hsigma
@@ -931,14 +931,14 @@ contains
         print*, "ERROR: ktup should be either kwup or kwup-1!"
         print*, "ktup = ", ktup, " and kwup = ", kwup
         stop 1
-      endif
+      end if
     else
       if ( kwup .eq. ktup )  then
         OBL_Mdiff(ktup+1) = old_Mdiff(ktup+1)
         OBL_Tdiff(ktup+1) = old_Tdiff(ktup+1)
         OBL_Sdiff(ktup+1) = old_Sdiff(ktup+1)
-      endif
-    endif
+      end if
+    end if
 
     ! (5) Combine interior and boundary coefficients
 
@@ -1253,7 +1253,7 @@ contains
         OBL_Mdiff(ktup+1) = old_Mdiff(ktup+1)
         OBL_Tdiff(ktup+1) = old_Tdiff(ktup+1)
         OBL_Sdiff(ktup+1) = old_Sdiff(ktup+1)
-      endif
+      end if
     end if
 
     ! (5) Combine interior and boundary coefficients
@@ -1261,7 +1261,7 @@ contains
     Tdiff_out(2:ktup+1) = OBL_Tdiff(2:ktup+1)
     Sdiff_out(2:ktup+1) = OBL_Sdiff(2:ktup+1)
 
-  endif    ! lStokesMOST
+  end if    ! lStokesMOST
 
 !EOC
   end subroutine cvmix_coeffs_kpp_low
@@ -1638,7 +1638,7 @@ contains
       OBL_limit = abs(zBottom)
     else
       OBL_limit = abs(zt_cntr(nlev))
-    endif
+    end if
 
     ! (1) Find k such that Ri_bulk at level k+1 > Ri_crit
     do k=0,size(Ri_bulk)-1
@@ -1670,7 +1670,7 @@ contains
     ! (3) OBL_depth needs to be at or below the center of the top level
       ! Note: OBL_depth can only be computed to be above this point if k=1,
       if (k.eq.1)  OBL_depth = max(OBL_depth, -zt_cntr(1))
-    endif                 !  -zt_cntr(1)  <  OBL_depth < OBL_limit
+    end if                 !  -zt_cntr(1)  <  OBL_depth < OBL_limit
 
       ! (5) the modified MoninObukhov limit (= vonk*Lstar) if stable and lMonOb=True
     if (CVmix_kpp_params_in%lMonOb ) then
@@ -1686,13 +1686,13 @@ contains
           OBL_limit  = abs(zt_cntr(1))
         elseif (k.lt.kRi) then
            OBL_limit = min( OBL_limit, abs(zw_iface(k)) )
-        endif
+        end if
 
       else
         print*, "ERROR: Stokes_XI and surf_buoy both must be present if lMonOb=true with Stokes_Most package"
         stop 1
-      endif
-    endif     ! lMonOb
+      end if
+    end if     ! lMonOb
 
       ! (4) OBL_depth must be at or above OBL_limit -zt_cntr(1)  <  OBL_depth < OBL_limit
     OBL_depth  = min(OBL_depth, OBL_limit )
@@ -1774,7 +1774,7 @@ contains
       OBL_depth = min(OBL_depth, CVmix_kpp_params_in%maxOBLdepth)
     kOBL_depth = cvmix_kpp_compute_kOBL_depth(zw_iface, zt_cntr, OBL_depth)
 
-  endif    ! lStokesMOST
+  end if    ! lStokesMOST
 
 !EOC
 
@@ -2149,7 +2149,7 @@ contains
       lcl_XI = xi
     else
       lcl_XI = cvmix_zero           ! NO WAVES
-    endif
+    end if
 
     compute_wm = present(w_m)
     compute_ws = present(w_s)
@@ -2263,14 +2263,14 @@ contains
             w_m(kw) = compute_phi_inv(zeta(kw),CVmix_kpp_params_in, L_StokesL, lphi_m=.true.)*&
                       vonkar*surf_fric_vel / chi_m
           end do
-        endif
+        end if
         if (compute_ws) then
           chi_s = compute_Stokes_chi( xi , lchi_s=.true. )
           do kw=1,n_sigma
             w_s(kw) = compute_phi_inv(zeta(kw),CVmix_kpp_params_in, L_StokesL, lphi_s=.true.)*&
                       vonkar*surf_fric_vel / chi_s
           end do
-        endif
+        end if
 
       else ! surf_fric_vel = 0
         if (compute_wm) then
@@ -2284,8 +2284,8 @@ contains
                          OBL_depth * vonkar * L_StokesL
               w_m(kw) = vonkar*(w_m(kw)**(cvmix_one/real(3,cvmix_r8))) / chi_m
             end do
-          endif
-        endif   ! compute_wm
+          end if
+        end if   ! compute_wm
 
         if (compute_ws) then
           if (surf_buoy_force.ge.cvmix_zero) then  ! STABLE
@@ -2298,15 +2298,15 @@ contains
                         OBL_depth * vonkar * L_StokesL
               w_s(kw) = vonkar*(w_s(kw)**(cvmix_one/real(3,cvmix_r8))) / chi_s
             end do
-          endif  ! surf_buoy_force >= 0
-        endif    ! compute_ws
+          end if  ! surf_buoy_force >= 0
+        end if    ! compute_ws
 
-      endif ! surf_fric_vel != 0
+      end if ! surf_fric_vel != 0
 
     else
       print*, "ERROR: Similarity xi must be present in 1d_sigma to use Stokes_MOST package!"
       stop 1
-    endif    ! lStokesMOST and xi not present
+    end if    ! lStokesMOST and xi not present
 
   else    ! not lStokesMOST
 
@@ -2384,7 +2384,7 @@ contains
         end if ! surf_buoy_force >= 0
       end if ! compute_ws
     end if ! surf_fric_vel != 0
-  endif    ! lStokesMOST
+  end if    ! lStokesMOST
 !EOC
 
   end subroutine cvmix_kpp_compute_turbulent_scales_1d_sigma
@@ -2462,7 +2462,7 @@ contains
             w_m(kw)=compute_phi_inv(zeta(kw),CVmix_kpp_params_in,L_StokesL,lphi_m=.true.) * &
                       vonkar*surf_fric_vel / chi_m
           end do
-        endif
+        end if
 
         if (compute_ws) then
           do kw = 1,n_sigma
@@ -2470,7 +2470,7 @@ contains
             w_s(kw)=compute_phi_inv(zeta(kw),CVmix_kpp_params_in,L_StokesL,lphi_s=.true.) * &
                       vonkar*surf_fric_vel  / chi_s
           end do
-        endif
+        end if
 
       else ! surf_fric_vel = 0
         if (compute_wm) then
@@ -2482,9 +2482,9 @@ contains
               w_m(kw) = -surf_buoy_force(kw) * real(14,cvmix_r8) * sigma_coord * &
                         OBL_depth(kw) * vonkar * L_StokesL
               w_m(kw) =vonkar*(w_m(kw)**(cvmix_one/real(3,cvmix_r8))) / compute_Stokes_chi(xi(kw),lchi_m=.true.)
-            endif
+            end if
           end do
-        endif
+        end if
         if (compute_ws) then
           do kw = 1,n_sigma
             if (surf_buoy_force(kw).ge.cvmix_zero) then  ! STABLE
@@ -2494,14 +2494,14 @@ contains
               w_s(kw) = -surf_buoy_force(kw) * real(25,cvmix_r8) * sigma_coord * &
                         OBL_depth(kw) * vonkar * L_StokesL
               w_s(kw) =vonkar*(w_s(kw)**(cvmix_one/real(3,cvmix_r8))) / compute_Stokes_chi(xi(kw),lchi_s=.true.)
-            endif  ! surf_buoy_force >= 0
+            end if  ! surf_buoy_force >= 0
           end do
-        endif    ! compute_ws
-      endif      ! surf_fric_vel = 0
+        end if    ! compute_ws
+      end if      ! surf_fric_vel = 0
     else
       print*, "ERROR: Similarity xi must be present in 1d_OBL to use Stokes_MOST package!"
       stop 1
-    endif    ! lStokesMOST but xi not present
+    end if    ! lStokesMOST but xi not present
 
   else    ! not lStokesMOST
 
@@ -2556,7 +2556,7 @@ contains
             ! w_m = vonkar * u* / phi_m
             !     = vonkar * ((u*/phi_m)^3)^1/3
             w_m(kw) = vonkar*(w_m(kw)**(cvmix_one/real(3,cvmix_r8)))
-        endif
+        end if
         end do
       end if ! compute_wm
 
@@ -2580,7 +2580,7 @@ contains
         end do
       end if ! compute_ws
     end if ! surf_fric_vel != 0
-  endif    ! lStokesMOST
+  end if    ! lStokesMOST
 
 !EOC
 
@@ -2714,7 +2714,7 @@ contains
         else
           cvmix_kpp_compute_unresolved_shear(kt) = &
                -zt_cntr(kt) * N_iface(kt) * Cv * Vtc * ws_cntr(kt) / ws_wstar
-        endif
+        end if
 
         if (cvmix_kpp_compute_unresolved_shear(kt).lt.                       &
                 CVmix_kpp_params_in%minVtsqr) then
@@ -2892,7 +2892,7 @@ contains
         end do
 
     end select
-  endif    ! lStokesMOST
+  end if    ! lStokesMOST
 
 !EOC
 
@@ -2960,16 +2960,16 @@ contains
         else
           compute_phi_inv = &
           (cvmix_one - real(14,cvmix_r8)*zetastar)**(cvmix_one/real(3,cvmix_r8))
-        endif
-      endif
+        end if
+      end if
       if (ls) then
         if (zeta.ge.cvmix_zero) then   ! STABLE
           compute_phi_inv = cvmix_one/(cvmix_one + real( 5,cvmix_r8)*zetastar)
         else
           compute_phi_inv = &
           (cvmix_one - real(25,cvmix_r8)*zetastar)**(cvmix_one/real(3,cvmix_r8))
-        endif
-      endif
+        end if
+      end if
     else    ! not lStokesMOST
 
       if (lm) then
@@ -2997,7 +2997,7 @@ contains
                             (cvmix_one/real(3,cvmix_r8))
         end if
       end if
-    endif
+    end if
 
 !EOC
 
@@ -3232,7 +3232,7 @@ contains
     else
       ! otherwise set to one
       cvmix_kpp_EFactor_model = cvmix_one
-    endif
+    end if
 
 !EOC
 
@@ -3318,7 +3318,7 @@ contains
       cvmix_kpp_ustokes_SL_model = us*(0.715_cvmix_r8+r1+r2+r3+r4)
     else
       cvmix_kpp_ustokes_SL_model = cvmix_zero
-    endif
+    end if
 
 !EOC
 
@@ -3358,7 +3358,7 @@ contains
       G_1  = MAX( cvmix_zero  ,  MIN( Gat1 , G_m ) )
     else
       G_1  =  cvmix_zero
-    endif
+    end if
 
     if (sigma .lt. sig_m)  then
       sig = MAX( sigma , cvmix_zero)
@@ -3366,7 +3366,7 @@ contains
     else
       sig = MIN( sigma , cvmix_one )
       cvmix_kpp_composite_shape = G_1 + (G_m-G_1) * ((1.-sig) / (1.-sig_m))**2
-    endif
+    end if
 
 !EOC
 
@@ -3406,7 +3406,7 @@ contains
       sig    = MIN( sigma , cvmix_one )
       Gsig   = G_1 + bGsig * (cvmix_one - sig) * (cvmix_one - sig)
       dGdsig = bGsig * 2.0_cvmix_r8 * (sig - cvmix_one)
-    endif
+    end if
 
 !EOC
 
@@ -3543,7 +3543,7 @@ contains
 
    else    ! not lStokesMOST
      StokesXI  = cvmix_zero
-   endif
+   end if
 
 !EOC
 

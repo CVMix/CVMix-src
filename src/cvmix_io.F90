@@ -871,19 +871,19 @@ contains
             do icol=1,ncol
               lcl_Mdiff(icol,:) = CVmix_vars(icol)%Mdiff_iface(1:nlev+1)
             end do
-          endif
+          end if
           if (trim(var_name).eq."Tdiff_iface") then
             allocate(lcl_Tdiff(ncol,nlev+1))
             do icol=1,ncol
               lcl_Tdiff(icol,:) = CVmix_vars(icol)%Tdiff_iface(1:nlev+1)
             end do
-          endif
+          end if
           if (trim(var_name).eq."Sdiff_iface") then
             allocate(lcl_Sdiff(ncol,nlev+1))
             do icol=1,ncol
               lcl_Sdiff(icol,:) = CVmix_vars(icol)%Sdiff_iface(1:nlev+1)
             end do
-          endif
+          end if
 
         end do
         call netcdf_check(nf90_enddef(file_id))

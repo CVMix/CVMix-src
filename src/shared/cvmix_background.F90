@@ -224,7 +224,7 @@ contains
                 "containing max_nlev!"
         stop 1
       end if
-    endif
+    end if
 
     CVmix_bkgnd_params_out => CVmix_bkgnd_params_saved
     if (present(CVmix_bkgnd_params_user)) then
