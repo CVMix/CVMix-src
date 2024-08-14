@@ -220,12 +220,14 @@ if __name__ == "__main__":
 
     fortran_files = [] # pylint: disable=C0103
     python_files = []  # pylint: disable=C0103
+    perl_files = []    # pylint: disable=C0103
     for root, dirs, files in os.walk(CVMIX_ROOT):
         for thisfile in files:
             if thisfile.endswith(".F90"):
                 fortran_files.append(os.path.join(root, thisfile))
             elif thisfile.endswith(".py"):
                 python_files.append(os.path.join(root, thisfile))
+    perl_files.append(os.path.join(CVMIX_ROOT, 'doc', 'protex'))
 
     # Use logging to write messages to stdout
     logging.basicConfig(format='%(message)s', level=logging.DEBUG)
@@ -267,7 +269,21 @@ if __name__ == "__main__":
     PYTHON_ERROR_COUNT = Tests.process()
     LOGGER.info("Python errors found: %d", PYTHON_ERROR_COUNT)
 
-    if FORTRAN_ERROR_COUNT + PYTHON_ERROR_COUNT > 0:
+    # Perl error checks
+    LOGGER.info("\nCheck perl files for coding standard violations:")
+    for thisfile in perl_files:
+        with open(thisfile, "r") as perl_file:
+            line_cnt = 0
+            for thisline in perl_file.readlines():
+                line_without_cr = thisline.rstrip("\n")
+                line_cnt = line_cnt + 1
+                file_and_line_number = "%s:%d" % (thisfile, line_cnt)
+                Tests.check_for_hard_tabs(file_and_line_number, line_without_cr)
+                Tests.check_for_trailing_whitespace(file_and_line_number, line_without_cr)
+    PERL_ERROR_COUNT = Tests.process()
+    LOGGER.info("Perl errors found: %d", PERL_ERROR_COUNT)
+
+    if FORTRAN_ERROR_COUNT + PYTHON_ERROR_COUNT + PERL_ERROR_COUNT > 0:
         LOGGER.info("\nTotal error count: %d", FORTRAN_ERROR_COUNT + PYTHON_ERROR_COUNT)
         sys.exit(1)
 
