@@ -1,0 +1,26 @@
+name: CVMix CI
+on: [push, pull_request]
+jobs:
+  CVMix-Testing:
+    runs-on: ubuntu-latest
+
+    strategy:
+        matrix:
+            python-version:
+                - 3.9
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Load Environment
+        run: |
+          sudo apt-get update
+          sudo apt install make gfortran netcdf-bin libnetcdf-dev libnetcdff-dev openmpi-bin libopenmpi-dev
+      - name: Run Test Suite
+        run: |
+          cd bld
+          ./cvmix_setup gfortran $(dirname $(dirname $(which nc-config)))
+          cd ../CVMix_tools
+          ./run_test_suite.sh --already-ran-setup
+          cd ../reg_tests/Bryan-Lewis/
+          ./Bryan-Lewis-test.sh --cmake
