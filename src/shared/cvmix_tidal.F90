@@ -151,9 +151,8 @@ contains
 !  mixing scheme.
 !                    - set \verb|mix_scheme = 'schmittner'| to use the Schmittner
 !  mixing scheme.
-!
-! !USES:
-!  Only those used by entire module.
+!\\
+!\\
 
 ! !INPUT PARAMETERS:
     character(len=*),        optional, intent(in) :: mix_scheme, old_vals
@@ -317,9 +316,6 @@ contains
 !  parameterizations.
 !\\
 !\\
-!
-! !USES:
-!  only those used by entire module.
 
 ! !INPUT PARAMETERS:
     type(cvmix_tidal_params_type),  target, optional, intent(in) ::           &
@@ -393,9 +389,6 @@ contains
 !  parameterizations.
 !\\
 !\\
-!
-! !USES:
-!  only those used by entire module.
 
 ! !INPUT PARAMETERS:
     type(cvmix_tidal_params_type),  target, optional, intent(in) ::           &
@@ -483,9 +476,6 @@ contains
 !  parameterizations.
 !\\
 !\\
-!
-! !USES:
-!  only those used by entire module.
 
 ! !INPUT PARAMETERS:
     type(cvmix_tidal_params_type),  target, optional, intent(in) ::           &
@@ -550,8 +540,9 @@ contains
   end subroutine cvmix_coeffs_tidal_schmittner
 
 !BOP
-  !IROUTINE: cvmix_compute_vert_dep
-  !INTERFACE:
+
+! !IROUTINE: cvmix_compute_vert_dep
+! !INTERFACE:
 
   function cvmix_compute_vert_dep(zw, zt, nlev, CVmix_tidal_params)
 
@@ -560,9 +551,6 @@ contains
 !  mixing.
 !\\
 !\\
-!
-! !USES:
-!  only those used by entire module.
 
 ! !INPUT PARAMETERS:
     type(cvmix_tidal_params_type),     intent(in) :: CVmix_tidal_params
@@ -604,8 +592,9 @@ contains
   end function cvmix_compute_vert_dep
 
 !BOP
-  !IROUTINE: cvmix_compute_vert_dep_Schmittner
-  !INTERFACE:
+
+! !IROUTINE: cvmix_compute_vert_dep_Schmittner
+! !INTERFACE:
 
   function cvmix_compute_vert_dep_Schmittner(zw, nlev, CVmix_tidal_params)
 
@@ -614,9 +603,6 @@ contains
 !  mixing.
 !\\
 !\\
-!
-! !USES:
-!  only those used by entire module.
 
 ! !INPUT PARAMETERS:
     type(cvmix_tidal_params_type),     intent(in) :: CVmix_tidal_params
@@ -648,6 +634,7 @@ contains
   end function cvmix_compute_vert_dep_Schmittner
 
 !BOP
+
 ! !IROUTINE: cvmix_compute_Simmons_invariant_wrap
 ! !INTERFACE:
 
@@ -660,9 +647,6 @@ contains
 !  the Simmons, et al., scheme.
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     type(cvmix_global_params_type), intent(in) :: CVmix_params
@@ -714,9 +698,6 @@ contains
 !\\
 !\\
 
-! !USES:
-!  Only those used by entire module.
-
 ! !INPUT PARAMETERS:
     integer,        intent(in) :: nlev
     real(cvmix_r8), intent(in) :: energy_flux, rho
@@ -751,6 +732,7 @@ contains
   end subroutine cvmix_compute_Simmons_invariant_low
 
 !BOP
+
 ! !IROUTINE: cvmix_compute_Schmittner_invariant_wrap
 ! !INTERFACE:
 
@@ -763,9 +745,6 @@ contains
 !  the Schmittner 2014 scheme.
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     type(cvmix_global_params_type), intent(in) :: CVmix_params
@@ -801,6 +780,7 @@ contains
   end subroutine cvmix_compute_Schmittner_invariant_wrap
 
 !BOP
+
 ! !IROUTINE: cvmix_compute_Schmittner_invariant_low
 ! !INTERFACE:
 
@@ -813,9 +793,6 @@ contains
 !  the Schmittner 2014 scheme.
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     integer,        intent(in) :: nlev
@@ -864,6 +841,7 @@ contains
   end subroutine cvmix_compute_Schmittner_invariant_low
 
 !BOP
+
 ! !IROUTINE: cvmix_compute_SchmittnerCoeff_wrap
 ! !INTERFACE:
 
@@ -875,9 +853,6 @@ contains
 !  the Schmittner 2014 scheme.
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     integer, intent(in)  :: nlev
@@ -910,6 +885,7 @@ contains
   end subroutine cvmix_compute_SchmittnerCoeff_wrap
 
 !BOP
+
 ! !IROUTINE: cvmix_compute_SchmittnerCoeff_low
 ! !INTERFACE:
 
@@ -923,9 +899,6 @@ contains
 !  the Schmittner 2014 scheme.
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     integer,        intent(in) :: nlev
@@ -966,6 +939,7 @@ contains
   end subroutine cvmix_compute_SchmittnerCoeff_low
 
 !BOP
+
 ! !IROUTINE: cvmix_compute_socn_tidal_invariant_wrap
 ! !INTERFACE:
 
@@ -976,9 +950,6 @@ contains
 !  Compute the time-invariant Schmittner Southern-Ocean tidal mixing terms
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     type(cvmix_tidal_params_type),  target, optional, intent(in) ::           &
@@ -1024,9 +995,6 @@ contains
 !  Compute the time-invariant Schmittner Southern-Ocean tidal mixing terms
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     integer,        intent(in) :: nlev
@@ -1077,9 +1045,6 @@ contains
 !\\
 !\\
 
-! !USES:
-!  Only those used by entire module.
-
 ! !INPUT PARAMETERS:
     character(len=*), intent(in) :: varname
     integer,          intent(in) :: val
@@ -1110,6 +1075,8 @@ contains
 
   end subroutine cvmix_put_tidal_int
 
+!BOP
+
 ! !IROUTINE: cvmix_put_tidal_logical
 ! !INTERFACE:
 
@@ -1119,9 +1086,6 @@ contains
 !  Write a logical value into a cvmix\_tidal\_params\_type variable.
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*),       intent(in) :: varname
@@ -1164,9 +1128,6 @@ contains
 !  Write a real value into a cvmix\_tidal\_params\_type variable.
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*), intent(in) :: varname
@@ -1222,9 +1183,6 @@ contains
 !\\
 !\\
 
-! !USES:
-!  Only those used by entire module.
-
 ! !INPUT PARAMETERS:
     character(len=*), intent(in) :: varname
     character(len=*), intent(in) :: val
@@ -1268,9 +1226,6 @@ contains
 !  Returns the real value of a cvmix\_tidal\_params\_type variable.
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*),                                intent(in) :: varname
@@ -1323,9 +1278,6 @@ contains
 !  Returns the string value of a cvmix\_tidal\_params\_type variable.
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*),                                intent(in) :: varname

@@ -1,5 +1,4 @@
 !BOP
-!\newpage
 ! !ROUTINE: cvmix_BL_driver
 
 ! !DESCRIPTION: A routine to test the Bryan-Lewis implementation of static

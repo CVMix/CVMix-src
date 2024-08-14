@@ -127,7 +127,7 @@ contains
 !  the interior mixing scheme laid out in Large et al.
 !\\
 !\\
-!  PP requires setting $\nu_0$ (\verb|PP_nu_zero| in this routine), $alpha$
+!  PP requires setting $\nu_0$ (\verb|PP_nu_zero| in this routine), $\alpha$
 !  (\verb|PP_alpha|), and $n$ (\verb|PP_exp|), and returns
 !  \begin{eqnarray*}
 !  \nu_{PP} & = & \frac{\nu_0}{(1+\alpha \textrm{Ri})^n} + \nu_b \\
@@ -149,9 +149,8 @@ contains
 ! 0     & \textrm{Ri}_0 < \textrm{Ri}
 ! \end{array} \right.
 ! $$
-!
-! !USES:
-!  Only those used by entire module.
+!\\
+!\\
 
 ! !INPUT PARAMETERS:
     character(len=*), optional, intent(in) :: mix_scheme,                     &
@@ -289,9 +288,6 @@ contains
 !  is needed at both T-points and U-points.
 !\\
 !\\
-!
-! !USES:
-!  only those used by entire module.
 
 ! !INPUT PARAMETERS:
     type(cvmix_shear_params_type), target, optional, intent(in) ::            &
@@ -345,9 +341,6 @@ contains
 !  is needed at both T-points and U-points.
 !\\
 !\\
-!
-! !USES:
-!  only those used by entire module.
 
 ! !INPUT PARAMETERS:
     type(cvmix_shear_params_type), target, optional, intent(in) ::            &
@@ -441,9 +434,6 @@ contains
 !\\
 !\\
 
-! !USES:
-!  Only those used by entire module.
-
 ! !INPUT PARAMETERS:
     character(len=*), intent(in) :: varname
     integer,          intent(in) :: val
@@ -486,9 +476,6 @@ contains
 !  Write a real value into a cvmix\_shear\_params\_type variable.
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*), intent(in) :: varname
@@ -548,9 +535,6 @@ contains
 !\\
 !\\
 
-! !USES:
-!  Only those used by entire module.
-
 ! !INPUT PARAMETERS:
     character(len=*), intent(in) :: varname
     character(len=*), intent(in) :: val
@@ -594,9 +578,6 @@ contains
 !  Read the real value of a cvmix\_shear\_params\_type variable.
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*),                                intent(in) :: varname
@@ -652,9 +633,6 @@ contains
 !  Read the string contents of a cvmix\_shear\_params\_type variable.
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*),                                intent(in) :: varname

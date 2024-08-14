@@ -1,5 +1,4 @@
 !BOP
-!\newpage
 ! !ROUTINE: cvmix_kpp_driver
 
 ! !DESCRIPTION: A routine to test the KPP module.

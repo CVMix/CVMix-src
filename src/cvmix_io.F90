@@ -101,9 +101,6 @@ contains
 !\\
 !\\
 
-! !USES:
-!  Only those used by entire module.
-
 ! !INPUT PARAMETERS:
     character(len=*),  intent(in) :: file_name, file_format
     logical, optional, intent(in) :: read_only
@@ -199,9 +196,6 @@ contains
 !\\
 !\\
 
-! !USES:
-!  Only those used by entire module.
-
 ! !INPUT PARAMETERS:
     integer,          intent(in)  :: file_id
     character(len=*), intent(in)  :: var_name
@@ -287,9 +281,6 @@ contains
 !  files.
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     integer,          intent(in)  :: file_id
@@ -378,9 +369,6 @@ contains
 !\\
 !\\
 
-! !USES:
-!  Only those used by entire module.
-
 ! !INPUT PARAMETERS:
     integer,          intent(in)  :: file_id
     character(len=*), intent(in)  :: var_name
@@ -467,9 +455,6 @@ contains
 !  files.
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     integer,          intent(in)  :: file_id
@@ -558,9 +543,6 @@ contains
 !  MEMBER FUNCTIONS above).
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     integer,                                    intent(in) :: file_id
@@ -790,9 +772,6 @@ contains
 !\\
 !\\
 
-! !USES:
-!  Only those used by entire module.
-
 ! !INPUT PARAMETERS:
     integer,                             intent(in) :: file_id
     type(cvmix_data_type), dimension(:), intent(in) :: CVmix_vars
@@ -871,19 +850,19 @@ contains
             do icol=1,ncol
               lcl_Mdiff(icol,:) = CVmix_vars(icol)%Mdiff_iface(1:nlev+1)
             end do
-          endif
+          end if
           if (trim(var_name).eq."Tdiff_iface") then
             allocate(lcl_Tdiff(ncol,nlev+1))
             do icol=1,ncol
               lcl_Tdiff(icol,:) = CVmix_vars(icol)%Tdiff_iface(1:nlev+1)
             end do
-          endif
+          end if
           if (trim(var_name).eq."Sdiff_iface") then
             allocate(lcl_Sdiff(ncol,nlev+1))
             do icol=1,ncol
               lcl_Sdiff(icol,:) = CVmix_vars(icol)%Sdiff_iface(1:nlev+1)
             end do
-          endif
+          end if
 
         end do
         call netcdf_check(nf90_enddef(file_id))
@@ -985,9 +964,6 @@ contains
 !\\
 !\\
 
-! !USES:
-!  Only those used by entire module.
-
 ! !INPUT PARAMETERS:
     integer,                           intent(in) :: file_id
     character(len=*),                  intent(in) :: var_name
@@ -1060,9 +1036,6 @@ contains
 !\\
 !\\
 
-! !USES:
-!  Only those used by entire module.
-
 ! !INPUT PARAMETERS:
     integer,                             intent(in) :: file_id
     character(len=*),                    intent(in) :: var_name
@@ -1128,9 +1101,6 @@ contains
 !\\
 !\\
 
-! !USES:
-!  Only those used by entire module.
-
 ! !INPUT PARAMETERS:
     integer,          intent(in)           :: file_id
     character(len=*), intent(in)           :: att_name
@@ -1192,9 +1162,6 @@ contains
 !  cvmix\_output\_write\_att (see interface in PUBLIC MEMBER FUNCTIONS above).
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     integer,          intent(in)           :: file_id
@@ -1258,9 +1225,6 @@ contains
 !\\
 !\\
 
-! !USES:
-!  Only those used by entire module.
-
 ! !INPUT PARAMETERS:
     integer,          intent(in)           :: file_id
     character(len=*), intent(in)           :: att_name, att_val
@@ -1321,9 +1285,6 @@ contains
 !  to avoid trying to write to the file in the future.
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     integer, intent(in) :: file_id
@@ -1412,9 +1373,6 @@ contains
 !\\
 !\\
 
-! !USES:
-!  Only those used by entire module.
-
 ! !LOCAL VARIABLES:
     integer :: fid
 
@@ -1443,9 +1401,6 @@ contains
 !  is not in the database, returns FILE\_NOT\_FOUND.
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     integer, intent(in) :: file_id
@@ -1488,9 +1443,6 @@ contains
 !\\
 !\\
 
-! !USES:
-!  Only those used by entire module.
-
 ! !INPUT PARAMETERS:
     integer, intent(in) :: file_id
 
@@ -1532,9 +1484,6 @@ contains
 !  the dimension does not exist, returns -1.
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     integer,          intent(in) :: file_id
@@ -1589,9 +1538,6 @@ contains
 !  file\_id. If the variable does not exist, returns -1.
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     integer,          intent(in) :: file_id

@@ -120,9 +120,6 @@ contains
 !\\
 !\\
 
-! !USES:
-!  Only those used by entire module.
-
 ! !INPUT PARAMETERS:
     real(cvmix_r8),             intent(in) :: bkgnd_Tdiff
     real(cvmix_r8),             intent(in) :: bkgnd_Mdiff
@@ -192,9 +189,6 @@ contains
 !\\
 !\\
 
-! !USES:
-!  Only those used by entire module.
-
 ! !INPUT PARAMETERS:
     real(cvmix_r8), dimension(:),          intent(in) :: bkgnd_Tdiff
     real(cvmix_r8), dimension(:),          intent(in) :: bkgnd_Mdiff
@@ -224,7 +218,7 @@ contains
                 "containing max_nlev!"
         stop 1
       end if
-    endif
+    end if
 
     CVmix_bkgnd_params_out => CVmix_bkgnd_params_saved
     if (present(CVmix_bkgnd_params_user)) then
@@ -292,9 +286,6 @@ contains
 !  2D field.
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     real(cvmix_r8), dimension(:,:),        intent(in) :: bkgnd_Tdiff
@@ -369,10 +360,9 @@ contains
                                               CVmix_bkgnd_params_user)
 
 ! !DESCRIPTION:
-!  Calls cvmix_init_bkgnd_BryanLewis_low
-!
-! !USES:
-!  Only those used by entire module.
+!  Calls cvmix\_init\_bkgnd\_BryanLewis\_low
+!\\
+!\\
 
 ! !INPUT PARAMETERS:
     ! Contains depth and nlev
@@ -436,9 +426,8 @@ contains
 !  \item[] bl4 $= 2500$ m
 !  \end{itemize}
 !  However, more recent usage of their scheme may warrant different settings.
-!
-! !USES:
-!  Only those used by entire module.
+!\\
+!\\
 
 ! !INPUT PARAMETERS:
     integer,                      intent(in) :: max_nlev
@@ -523,9 +512,6 @@ contains
 !\\
 !\\
 
-! !USES:
-!  Only those used by entire module.
-
 ! !INPUT PARAMETERS:
 
     ! Need to know column for pulling data from static_[MT]diff
@@ -584,9 +570,6 @@ contains
 !\\
 !\\
 
-! !USES:
-!  Only those used by entire module.
-
 ! !INPUT PARAMETERS:
 
     ! Need to know column for pulling data from static_[MT]diff
@@ -636,9 +619,6 @@ contains
 !\\
 !\\
 
-! !USES:
-!  Only those used by entire module.
-
 ! !INPUT PARAMETERS:
     type(cvmix_bkgnd_params_type), intent(in) :: CVmix_bkgnd_params_test
 
@@ -664,9 +644,6 @@ contains
 !  Obtain the background diffusivity value at a position in a water column.
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     type(cvmix_bkgnd_params_type), target, optional, intent(in) ::            &
@@ -729,9 +706,6 @@ contains
 !\\
 !\\
 
-! !USES:
-!  Only those used by entire module.
-
 ! !INPUT PARAMETERS:
     type(cvmix_bkgnd_params_type), target, optional, intent(in) ::            &
                                            CVmix_bkgnd_params_user
@@ -793,9 +767,6 @@ contains
 !\\
 !\\
 
-! !USES:
-!  Only those used by entire module.
-
 ! !INPUT PARAMETERS:
     character(len=*), intent(in) :: varname
     integer,          intent(in) :: val
@@ -837,9 +808,6 @@ contains
 !  Write a real value into a cvmix\_bkgnd\_params\_type variable.
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*), intent(in) :: varname
@@ -904,9 +872,6 @@ contains
 !  horizontal direction, otherwise it is assumed to vary in the vertical.
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*),             intent(in) :: varname
@@ -1030,9 +995,6 @@ contains
 !\\
 !\\
 
-! !USES:
-!  Only those used by entire module.
-
 ! !INPUT PARAMETERS:
     character(len=*),               intent(in) :: varname
     real(cvmix_r8), dimension(:,:), intent(in) :: val
@@ -1117,9 +1079,6 @@ contains
 !  Read the real values of a cvmix\_bkgnd\_params\_type 2D array variable.
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*),                                intent(in) :: varname

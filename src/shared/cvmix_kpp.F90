@@ -79,6 +79,8 @@
   public :: cvmix_kpp_compute_bulk_Richardson
   public :: cvmix_kpp_compute_turbulent_scales
   public :: cvmix_kpp_compute_unresolved_shear
+  public :: cvmix_kpp_composite_Gshape                     !STOKES_MOST
+  public :: cvmix_kpp_compute_StokesXi                    !STOKES_MOST
   ! These are public for testing, may end up private later
   public :: cvmix_kpp_compute_shape_function_coeffs
   public :: cvmix_kpp_compute_kOBL_depth
@@ -175,6 +177,7 @@
       integer :: handle_old_vals
 
       ! Logic flags to dictate if / how various terms are computed
+      logical        :: lStokesMOST    ! True => use Stokes Similarty package
       logical        :: lscalar_Cv     ! True => use the scalar Cv value
       logical        :: lEkman         ! True => compute Ekman depth limit
       logical        :: lMonOb         ! True => compute Monin-Obukhov limit
@@ -220,7 +223,7 @@ contains
   subroutine cvmix_init_kpp(ri_crit, minOBLdepth, maxOBLdepth, minVtsqr,      &
                             vonkarman, Cstar, zeta_m, zeta_s, surf_layer_ext, &
                             Cv, interp_type, interp_type2, MatchTechnique,    &
-                            old_vals, lEkman, lMonOb, lnoDGat1,               &
+                            old_vals, lEkman, lStokesMOST, lMonOb, lnoDGat1,  &
                             lenhanced_diff, lnonzero_surf_nonlocal,           &
                             Langmuir_mixing_str, Langmuir_entrainment_str,    &
                             l_LMD_ws, CVmix_kpp_params_user)
@@ -229,9 +232,6 @@ contains
 !  Initialization routine for KPP mixing.
 !\\
 !\\
-!
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     real(cvmix_r8),   optional, intent(in) :: ri_crit,                        &
@@ -251,6 +251,7 @@ contains
                                               Langmuir_mixing_str,            &
                                               Langmuir_entrainment_str
     logical,          optional, intent(in) :: lEkman,                         &
+                                              lStokesMOST,                    &
                                               lMonOb,                         &
                                               lnoDGat1,                       &
                                               lenhanced_diff,                 &
@@ -478,6 +479,12 @@ contains
                                cvmix_kpp_params_user)
     end if
 
+    if (present(lStokesMOST)) then
+       call cvmix_put_kpp('lStokesMOST',lStokesMOST , CVmix_kpp_params_user)
+    else
+      call cvmix_put_kpp('lStokesMOST', .false., CVmix_kpp_params_user)
+    end if
+
     if (present(lEkman)) then
       call cvmix_put_kpp('lEkman', lEkman, CVmix_kpp_params_user)
     else
@@ -591,9 +598,6 @@ contains
 !  parameterization.
 !\\
 !\\
-!
-! !USES:
-!  only those used by entire module.
 
 ! !INPUT PARAMETERS:
     type(cvmix_kpp_params_type), intent(in), optional, target ::              &
@@ -639,7 +643,9 @@ contains
                           CVmix_vars%SurfaceBuoyancyForcing,                  &
                           nlev, max_nlev,                                     &
                           CVmix_vars%LangmuirEnhancementFactor,               &
+                          CVmix_vars%StokesMostXi,                            &
                           CVmix_kpp_params_user)
+
     call cvmix_update_wrap(CVmix_kpp_params_in%handle_old_vals, max_nlev,     &
                            Mdiff_out = CVmix_vars%Mdiff_iface,                &
                            new_Mdiff = new_Mdiff,                             &
@@ -660,17 +666,14 @@ contains
   subroutine cvmix_coeffs_kpp_low(Mdiff_out, Tdiff_out, Sdiff_out, zw, zt,    &
                                   old_Mdiff, old_Tdiff, old_Sdiff, OBL_depth, &
                                   kOBL_depth, Tnonlocal, Snonlocal, surf_fric,&
-                                  surf_buoy, nlev, max_nlev,                  &
-                                  Langmuir_EFactor, CVmix_kpp_params_user)
+                                  surf_buoy, nlev, max_nlev, Langmuir_EFactor,&
+                                  StokesXI,CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
 !  Computes vertical diffusion coefficients for the KPP boundary layer mixing
 !  parameterization.
 !\\
 !\\
-!
-! !USES:
-!  only those used by entire module.
 
 ! !INPUT PARAMETERS:
     type(cvmix_kpp_params_type),  intent(in), optional, target ::             &
@@ -688,7 +691,7 @@ contains
                                                          kOBL_depth
     ! Langmuir enhancement factor
     real(cvmix_r8), intent(in), optional :: Langmuir_EFactor
-
+    real(cvmix_r8), intent(in), optional :: StokesXI
 ! !INPUT/OUTPUT PARAMETERS:
     real(cvmix_r8), dimension(max_nlev+1), intent(inout) :: Mdiff_out,        &
                                                             Tdiff_out,        &
@@ -753,6 +756,9 @@ contains
     real(cvmix_r8) :: MixingCoefEnhancement
     real(cvmix_r8) :: ShapeNoMatchAtS
 
+    ! Parameters for Stokes_MOST
+    real(cvmix_r8) :: Gcomposite, Hsigma, sigh, T_NLenhance , S_NLenhance , XIone
+
     ! Constant from params
     integer :: interp_type2, MatchTechnique
 
@@ -790,6 +796,149 @@ contains
       delta = (OBL_depth+zt(ktup))/(zt(ktup)-zt(ktup+1))
     end if
 
+  if ( CVmix_kpp_params_in%lStokesMOST ) then             ! Stokes_MOST
+
+        ! (2a) Compute turbulent scales at OBL depth
+        call cvmix_kpp_compute_turbulent_scales(cvmix_one, OBL_depth,         &
+                                                surf_buoy, surf_fric,         &
+                               StokesXI,        wm_OBL, ws_OBL,               &
+                                                CVmix_kpp_params_user)
+
+        ! (2b) Compute diffusivities at OBL depth
+          col_centers(1) = zt(kwup)
+          col_widths(1) = zw(kwup) - zw(kwup+1)
+          Mdiff_vals(1) = old_Mdiff(kwup+1)
+          Tdiff_vals(1) = old_Tdiff(kwup+1)
+          Sdiff_vals(1) = old_Sdiff(kwup+1)
+          if (kwup.eq.nlev) then
+            col_centers(2) = zw(kwup+1)
+            col_widths(2)  = 1.0_cvmix_r8 !Value doesn't matter, will divide into zero
+            Mdiff_vals(2)  = old_Mdiff(kwup+1)   !Mdiff_out(kwup+1)
+            Tdiff_vals(2)  = old_Tdiff(kwup+1)
+            Sdiff_vals(2)  = old_Sdiff(kwup+1)
+          else
+            col_centers(2) = zt(kwup+1)
+            col_widths(2)  = zw(kwup+1) - zw(kwup+2)
+            Mdiff_vals(2)  = old_Mdiff(kwup+2)
+            Tdiff_vals(2)  = old_Tdiff(kwup+2)
+            Sdiff_vals(2)  = old_Sdiff(kwup+2)
+          end if
+          if (kwup.eq.1) then
+            Mdiff_OBL = cvmix_kpp_compute_nu_at_OBL_depth_LMD94(col_centers,  &
+                                                      col_widths,             &
+                                                      Mdiff_vals, OBL_depth,  &
+                                                      dnu_dz=dMdiff_OBL)
+            Tdiff_OBL = cvmix_kpp_compute_nu_at_OBL_depth_LMD94(col_centers,  &
+                                                      col_widths,             &
+                                                      Tdiff_vals, OBL_depth,  &
+                                                      dnu_dz=dTdiff_OBL)
+            Sdiff_OBL = cvmix_kpp_compute_nu_at_OBL_depth_LMD94(col_centers,  &
+                                                      col_widths,             &
+                                                      Sdiff_vals, OBL_depth,  &
+                                                      dnu_dz=dSdiff_OBL)
+          else ! interp_type == 'LMD94' and kwup > 1
+            Mdiff_OBL = cvmix_kpp_compute_nu_at_OBL_depth_LMD94(col_centers,  &
+                                                      col_widths,             &
+                                                      Mdiff_vals, OBL_depth,  &
+                                                      old_Mdiff(kwup),        &
+                                                      dnu_dz=dMdiff_OBL)
+            Tdiff_OBL = cvmix_kpp_compute_nu_at_OBL_depth_LMD94(col_centers,  &
+                                                      col_widths,             &
+                                                      Tdiff_vals, OBL_depth,  &
+                                                      old_Tdiff(kwup),        &
+                                                      dnu_dz=dTdiff_OBL)
+            Sdiff_OBL = cvmix_kpp_compute_nu_at_OBL_depth_LMD94(col_centers,  &
+                                                      col_widths,             &
+                                                      Sdiff_vals, OBL_depth,  &
+                                                      old_Sdiff(kwup),        &
+                                                      dnu_dz=dSdiff_OBL)
+          end if
+
+    !     (3a) Compute turbulent scales at interfaces throughout column
+    sigma = -zw(1:nlev+1)/OBL_depth
+    call cvmix_kpp_compute_turbulent_scales(sigma, OBL_depth, surf_buoy, & !_1d
+                surf_fric,   xi=StokesXI,    w_m=w_m, w_s=w_s,           &
+                CVmix_kpp_params_user = CVmix_kpp_params_user)
+
+    do kw=2,kwup                                   ! OBL overwrite loop to kwup
+    !     (3b) Evaluate G(sigma) >= 0  at each cell interface
+      Gcomposite = cvmix_kpp_composite_shape(sigma(kw))
+      sigh   = MAX(CVmix_kpp_params_in%surf_layer_ext, MIN(sigma(kw) ,cvmix_one))
+      Hsigma = ((sigh      - CVmix_kpp_params_in%surf_layer_ext) / &
+                (cvmix_one - CVmix_kpp_params_in%surf_layer_ext) )**2
+!     Hsigma = MAX( cvmix_zero , MIN( cvmix_one , Hsigma ) )
+
+    !   (3c) Compute nonlocal term at each cell interface
+      if (.not.lstable) then
+        Tnonlocal(kw) = 4.7 * Gcomposite ! LMD 6.26 Gcubic
+        Snonlocal(kw) = 4.7 * Gcomposite
+      else
+        Tnonlocal(kw) = cvmix_zero
+        Snonlocal(kw) = cvmix_zero
+      end if
+
+    !   (3d) Diffusivity = (OBL_depth * turbulent scale * G(sigma) + Xdiff_OBL * Hsigma)
+      OBL_Mdiff(kw) = OBL_depth * w_m(kw) * Gcomposite  + Mdiff_OBL * Hsigma
+      OBL_Tdiff(kw) = OBL_depth * w_s(kw) * Gcomposite  + Tdiff_OBL * Hsigma
+      OBL_Sdiff(kw) = OBL_depth * w_s(kw) * Gcomposite  + Sdiff_OBL * Hsigma
+
+    end do
+
+    ! (4) Compute the enhanced diffusivity
+    !     (4a) Compute shape function at last cell center in OBL
+    sigma_ktup = -zt(ktup)/OBL_depth
+    Gcomposite =  cvmix_kpp_composite_shape(sigma_ktup)
+    sigh   = MAX(CVmix_kpp_params_in%surf_layer_ext, MIN(sigma_ktup ,cvmix_one))
+    Hsigma = ( (sigh - CVmix_kpp_params_in%surf_layer_ext) / &
+                 (cvmix_one - CVmix_kpp_params_in%surf_layer_ext) )**2
+
+    !     (4b) Compute turbulent scales at last cell center in OBL
+    call cvmix_kpp_compute_turbulent_scales(sigma_ktup, OBL_depth, surf_buoy, & !0d
+                      surf_fric, StokesXI,  wm_ktup, ws_ktup,      &
+                     CVmix_kpp_params_user)
+
+    !     (4c) Diffusivity at last cell center in OBL
+    Mdiff_ktup = OBL_depth * wm_ktup * Gcomposite  + Mdiff_OBL * Hsigma
+    Tdiff_ktup = OBL_depth * ws_ktup * Gcomposite  + Tdiff_OBL * Hsigma
+    Sdiff_ktup = OBL_depth * ws_ktup * Gcomposite  + Sdiff_OBL * Hsigma
+
+    if (CVmix_kpp_params_in%lenhanced_diff) then
+      if ((ktup.eq.kwup).or.(ktup.eq.kwup-1)) then
+        T_NLenhance =  Tnonlocal(ktup+1)
+        S_NLenhance =  Snonlocal(ktup+1)
+        call cvmix_kpp_compute_enhanced_diff(Mdiff_ktup,                      &
+                                             Tdiff_ktup,                      &
+                                             Sdiff_ktup,                      &
+                                             Mdiff_out(ktup+1),               &
+                                             Tdiff_out(ktup+1),               &
+                                             Sdiff_out(ktup+1),               &
+                                             OBL_Mdiff(ktup+1),               &
+                                             OBL_Tdiff(ktup+1),               &
+                                             OBL_Sdiff(ktup+1),               &
+                                             T_NLenhance      ,               &
+                                             S_NLenhance      ,               &
+                                             delta, lkteqkw=(ktup.eq.kwup))
+      else
+        print*, "ERROR: ktup should be either kwup or kwup-1!"
+        print*, "ktup = ", ktup, " and kwup = ", kwup
+        stop 1
+      end if
+    else
+      if ( kwup .eq. ktup )  then
+        OBL_Mdiff(ktup+1) = old_Mdiff(ktup+1)
+        OBL_Tdiff(ktup+1) = old_Tdiff(ktup+1)
+        OBL_Sdiff(ktup+1) = old_Sdiff(ktup+1)
+      end if
+    end if
+
+    ! (5) Combine interior and boundary coefficients
+
+    Mdiff_out(2:ktup+1) = OBL_Mdiff(2:ktup+1)
+    Tdiff_out(2:ktup+1) = OBL_Tdiff(2:ktup+1)
+    Sdiff_out(2:ktup+1) = OBL_Sdiff(2:ktup+1)
+  else ! not  Stokes_MOST
+
+    XIone = cvmix_one
     ! (2) Compute coefficients of shape function
     !     A no-match case is stored for use in Langmuir scheme
     NMshape(1) = cvmix_zero
@@ -825,7 +974,7 @@ contains
         ! (2a) Compute turbulent scales at OBL depth
         call cvmix_kpp_compute_turbulent_scales(cvmix_one, OBL_depth,         &
                                                 surf_buoy, surf_fric,         &
-                                                wm_OBL, ws_OBL,               &
+                                                XIone, wm_OBL, ws_OBL,        &
                                                 CVmix_kpp_params_user)
         if (CVMix_KPP_Params_in%Langmuir_Mixing_Opt &
            .eq. LANGMUIR_MIXING_LWF16) then
@@ -1016,8 +1165,8 @@ contains
     OBL_Sdiff = cvmix_zero
     sigma = -zw(1:nlev+1)/OBL_depth
     !     (3a) Compute turbulent scales throghout column
-    call cvmix_kpp_compute_turbulent_scales(sigma, OBL_depth, surf_buoy,      &
-                                            surf_fric, w_m, w_s,              &
+    call cvmix_kpp_compute_turbulent_scales(sigma, OBL_depth, surf_buoy,   &
+                                            surf_fric, XIone, w_m, w_s,    &
                                             CVmix_kpp_params_user)
     do kw=2,kwup
       !   (3b) Evaluate G(sigma) at each cell interface
@@ -1058,8 +1207,8 @@ contains
     SshapeAtS = cvmix_math_evaluate_cubic(Sshape, sigma_ktup)
     !     (4b) Compute turbulent scales at last cell center in OBL
     call cvmix_kpp_compute_turbulent_scales(sigma_ktup, OBL_depth, surf_buoy, &
-                                            surf_fric, wm_ktup, ws_ktup,      &
-                                            CVmix_kpp_params_user)
+                                       surf_fric, XIone, wm_ktup, ws_ktup, &
+                                       CVmix_kpp_params_user)
     if (CVMix_KPP_Params_in%Langmuir_Mixing_Opt &
        .eq. LANGMUIR_MIXING_LWF16) then
       ! enhance the turbulent velocity scale
@@ -1090,12 +1239,20 @@ contains
         print*, "ktup = ", ktup, " and kwup = ", kwup
         stop 1
       end if
+    else
+      if ( kwup .eq. ktup ) then
+        OBL_Mdiff(ktup+1) = old_Mdiff(ktup+1)
+        OBL_Tdiff(ktup+1) = old_Tdiff(ktup+1)
+        OBL_Sdiff(ktup+1) = old_Sdiff(ktup+1)
+      end if
     end if
 
     ! (5) Combine interior and boundary coefficients
     Mdiff_out(2:ktup+1) = OBL_Mdiff(2:ktup+1)
     Tdiff_out(2:ktup+1) = OBL_Tdiff(2:ktup+1)
     Sdiff_out(2:ktup+1) = OBL_Sdiff(2:ktup+1)
+
+  end if    ! lStokesMOST
 
 !EOC
   end subroutine cvmix_coeffs_kpp_low
@@ -1111,9 +1268,6 @@ contains
 !  Write a real value into a cvmix\_kpp\_params\_type variable.
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*), intent(in) :: varname
@@ -1197,9 +1351,6 @@ contains
 !\\
 !\\
 
-! !USES:
-!  Only those used by entire module.
-
 ! !INPUT PARAMETERS:
     character(len=*), intent(in) :: varname
     integer,          intent(in) :: val
@@ -1251,9 +1402,6 @@ contains
 !\\
 !\\
 
-! !USES:
-!  Only those used by entire module.
-
 ! !INPUT PARAMETERS:
     character(len=*), intent(in) :: varname
     logical,          intent(in) :: val
@@ -1277,6 +1425,8 @@ contains
         CVmix_kpp_params_out%lscalar_Cv = val
       case ('lEkman')
         CVmix_kpp_params_out%lEkman = val
+      case ('lStokesMOST')
+        CVmix_kpp_params_out%lStokesMOST = val
       case ('lMonOb')
         CVmix_kpp_params_out%lMonOb = val
       case ('lnoDGat1')
@@ -1307,9 +1457,6 @@ contains
 !  queries of ddiff parameters, such as at initialization.
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*),                              intent(in) :: varname
@@ -1381,24 +1528,23 @@ contains
 
   subroutine cvmix_kpp_compute_OBL_depth_low(Ri_bulk, zw_iface, OBL_depth,    &
                                              kOBL_depth, zt_cntr, surf_fric,  &
-                                             surf_buoy, Coriolis,             &
+                                             surf_buoy, Coriolis,Xi, zBottom, &
                                              CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
-!  Computes the depth of the ocean boundary layer (OBL) for a given column.
+!  Computes the depth of the ocean boundary layer (\verb|OBL_depth|) for a given column.
+!  Ri\_bulk(h) = Ricr; h < -zBottom, (stable+lMonOb) 0 < h < vonKaraman Lstar
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     real(cvmix_r8), dimension(:),                   intent(in) :: Ri_bulk
     real(cvmix_r8), dimension(:),           target, intent(in) :: zw_iface,   &
                                                                   zt_cntr
+    real(cvmix_r8), dimension(:), optional,  intent(in) ::  Xi, surf_buoy
     real(cvmix_r8),               optional,         intent(in) :: surf_fric,  &
-                                                                  surf_buoy,  &
-                                                                  Coriolis
+                                                                  Coriolis,   &
+                                                                  zBottom
     type(cvmix_kpp_params_type),  optional, target, intent(in) ::             &
                                             CVmix_kpp_params_user
 
@@ -1412,7 +1558,7 @@ contains
     real(kind=cvmix_r8), dimension(:), pointer :: depth
     real(kind=cvmix_r8), dimension(4)          :: coeffs
     real(kind=cvmix_r8) :: Ekman, MoninObukhov, OBL_Limit
-    integer             :: nlev, k
+    integer             :: nlev, k, kRi
     logical             :: lstable
 
     type(cvmix_kpp_params_type), pointer :: CVmix_kpp_params_in
@@ -1461,13 +1607,82 @@ contains
     ! if lEkman = .true., OBL_depth must be between the surface and the Ekman
     ! depth. Similarly, if lMonOb = .true., OBL_depth must be between the
     ! surface and the Monin-Obukhov depth
+
+  if ( CVmix_kpp_params_in%lStokesMOST ) then
+    ! OBL_depth must be at or above 1) zbottom, the effective ocean bottom,
+    if ( present(zBottom) )  then
+      OBL_limit = abs(zBottom)
+    else
+      OBL_limit = abs(zt_cntr(nlev))
+    end if
+
+    ! (1) Find k such that Ri_bulk at level k+1 > Ri_crit
+    do k=0,size(Ri_bulk)-1
+      kRi = k+1
+      if (Ri_bulk(k+1).gt.CVmix_kpp_params_in%ri_crit) &
+      exit
+    end do
+
+    if (k.eq.size(Ri_bulk)) then
+      OBL_depth = OBL_limit
+    elseif (k.eq.0) then
+      OBL_depth = abs(zt_cntr(1))
+    else
+
+    ! (2) Interpolation
+      if (k.eq.1) then
+        call cvmix_math_poly_interp(coeffs, CVmix_kpp_params_in%interp_type,  &
+                               depth(k:k+1), Ri_bulk(k:k+1))
+      else
+        call cvmix_math_poly_interp(coeffs, CVmix_kpp_params_in%interp_type,  &
+                               depth(k:k+1), Ri_bulk(k:k+1), depth(k-1),      &
+                               Ri_bulk(k-1))
+      end if
+      coeffs(1) = coeffs(1)-CVmix_kpp_params_in%ri_crit
+
+      OBL_depth = -cvmix_math_cubic_root_find(coeffs, 0.5_cvmix_r8 *          &
+                                                      (depth(k)+depth(k+1)))
+
+    ! (3) OBL_depth needs to be at or below the center of the top level
+      ! Note: OBL_depth can only be computed to be above this point if k=1,
+      if (k.eq.1)  OBL_depth = max(OBL_depth, -zt_cntr(1))
+    end if                 !  -zt_cntr(1)  <  OBL_depth < OBL_limit
+
+      ! (5) the modified MoninObukhov limit (= vonk*Lstar) if stable and lMonOb=True
+    if (CVmix_kpp_params_in%lMonOb ) then
+      if ( present(Xi) .and. present(surf_buoy) ) then
+        MoninObukhov = OBL_limit
+        do k = 0, kRi-1
+          if (surf_buoy(k+1) .gt. cvmix_zero) MoninObukhov =      &
+                surf_fric**3 / (surf_buoy(k+1) * (cvmix_one-Xi(k+1)))
+          if ( MoninObukhov .lt. abs(zt_cntr(k+1)) ) &
+          exit
+        end do
+        if (k.eq.0) then
+          OBL_limit  = abs(zt_cntr(1))
+        elseif (k.lt.kRi) then
+           OBL_limit = min( OBL_limit, abs(zw_iface(k)) )
+        end if
+
+      else
+        print*, "ERROR: Stokes_XI and surf_buoy both must be present if lMonOb=true with Stokes_Most package"
+        stop 1
+      end if
+    end if     ! lMonOb
+
+      ! (4) OBL_depth must be at or above OBL_limit -zt_cntr(1)  <  OBL_depth < OBL_limit
+    OBL_depth  = min(OBL_depth, OBL_limit )
+    kOBL_depth = cvmix_kpp_compute_kOBL_depth(zw_iface, zt_cntr, OBL_depth)
+
+  else ! not Stokes_MOST
+
     OBL_limit  = abs(zt_cntr(nlev))
 
     ! Since depth gets more negative as you go deeper, that translates into
     ! OBL_depth = max(abs(computed depth), abs(Ekman depth), abs(M-O depth))
     if (CVmix_kpp_params_in%lEkman) then
       ! Column is stable if surf_buoy > 0
-      lstable = (surf_buoy.gt.cvmix_zero)
+      lstable = (surf_buoy(nlev).gt.cvmix_zero)
 
       if (Coriolis.ne.cvmix_zero .and. lstable) then
         Ekman = 0.7_cvmix_r8*surf_fric/abs(Coriolis)
@@ -1480,10 +1695,10 @@ contains
 
     if (CVmix_kpp_params_in%lMonOb) then
       ! Column is stable if surf_buoy > 0
-      lstable = (surf_buoy.gt.cvmix_zero)
+      lstable = (surf_buoy(nlev).gt.cvmix_zero)
 
       if (lstable) then
-        MoninObukhov = surf_fric**3/(surf_buoy*CVmix_kpp_params_in%vonkarman)
+        MoninObukhov = surf_fric**3/(surf_buoy(nlev)*CVmix_kpp_params_in%vonkarman)
       else
         MoninObukhov = abs(zt_cntr(nlev))
       end if
@@ -1535,6 +1750,8 @@ contains
       OBL_depth = min(OBL_depth, CVmix_kpp_params_in%maxOBLdepth)
     kOBL_depth = cvmix_kpp_compute_kOBL_depth(zw_iface, zt_cntr, OBL_depth)
 
+  end if    ! lStokesMOST
+
 !EOC
 
   end subroutine cvmix_kpp_compute_OBL_depth_low
@@ -1547,16 +1764,13 @@ contains
   function cvmix_kpp_compute_kOBL_depth(zw_iface, zt_cntr, OBL_depth)
 
 ! !DESCRIPTION:
-!  Computes the index of the level and interface above OBL\_depth. The index is
+!  Computes the index of the level and interface above \verb|OBL_depth|. The index is
 !  stored as a real number, and the integer index can be solved for in the
 !  following way:\\
-!    \verb|kt| = index of cell center above OBL\_depth = \verb|nint(kOBL_depth)-1|
-!    \verb|kw| = index of interface above OBL\_depth = \verb|floor(kOBL_depth)|
+!    \verb|kt| = index of cell center above \verb|OBL_depth| = \verb|nint(kOBL_depth)-1|
+!    \verb|kw| = index of interface above \verb|OBL_depth| = \verb|floor(kOBL_depth)|
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     real(cvmix_r8), dimension(:), intent(in) :: zw_iface, zt_cntr
@@ -1608,11 +1822,11 @@ contains
 
 ! !DESCRIPTION:
 !  The enhanced mixing described in Appendix D of LMD94 changes the diffusivity
-!  values at the interface between the cell center above OBL\_depth and the one
-!  below it, based on a weighted average of how close to each center OBL\_depth
-!  is. Note that we need to know whether OBL\_depth is above this interface or
+!  values at the interface between the cell center above \verb|OBL_depth| and the one
+!  below it, based on a weighted average of how close to each center \verb|OBL_depth|
+!  is. Note that we need to know whether \verb|OBL_depth| is above this interface or
 !  below it - we do this by comparing the indexes of the cell center above
-!  OBL\_depth (ktup) and the cell interface above OBL\_depth(kwup).
+!  \verb|OBL_depth| (\verb|ktup|) and the cell interface above \verb|OBL_depth|(\verb|kwup|).
 !\\
 !\\
 
@@ -1715,12 +1929,10 @@ contains
   subroutine cvmix_kpp_compute_OBL_depth_wrap(CVmix_vars, CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
-!  Computes the depth of the ocean boundary layer (OBL) for a given column.
+!  Computes the depth of the ocean boundary layer (\verb|CVmix_vars%BoundaryLayerDepth|)
+!  for a given column.
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     type(cvmix_kpp_params_type), optional, target, intent(in) ::                &
@@ -1733,18 +1945,22 @@ contains
 !BOC
 
     ! Local variables
-    real(cvmix_r8) :: lcl_obl_depth, lcl_kobl_depth
+!   real(cvmix_r8) :: lcl_obl_depth, lcl_kobl_depth
+    real(cvmix_r8), dimension(1) :: lcl_Xi, lcl_sfcBuoy
+    lcl_Xi(1) = CVmix_vars%StokesMostXi
+    lcl_sfcBuoy(1) = CVmix_vars%SurfaceBuoyancyForcing
 
     call cvmix_kpp_compute_OBL_depth(CVmix_vars%BulkRichardson_cntr,          &
                                      CVmix_vars%zw_iface,                     &
-                                     lcl_obl_depth,  lcl_kobl_depth,          &
+                                     CVmix_vars%BoundaryLayerDepth,           &
+                                     CVmix_vars%kOBL_depth,                   &
                                      CVmix_vars%zt_cntr,                      &
                                      CVmix_vars%SurfaceFriction,              &
-                                     CVmix_vars%SurfaceBuoyancyForcing,       &
+                                     lcl_sfcBuoy,                             &
                                      CVmix_vars%Coriolis,                     &
+                                     lcl_Xi   ,                               &
+                                     CVmix_vars%zBottomOceanNumerics,         &
                                      CVmix_kpp_params_user)
-    call cvmix_put(CVmix_vars, 'OBL_depth', lcl_obl_depth)
-    call cvmix_put(CVmix_vars, 'kOBL_depth', lcl_kobl_depth)
 
 !EOC
 
@@ -1769,9 +1985,6 @@ contains
 !\\
 !\\
 
-! !USES:
-!  Only those used by entire module.
-
 ! !INPUT PARAMETERS:
     ! * zt_cntr is level-center height (d in LMD94, units: m)
     ! * delta_buoy_cntr is the mean buoyancy estimate over surface layer minus
@@ -1786,15 +1999,15 @@ contains
     ! * Nsqr_iface: squared buoyancy frequency at interfaces (units: 1/s^2)
     ! * Vt_sqr_cntr: squared unresolved shear term (units m^2/s^2)
     ! See note in description about what values should be passed in
+    ! * bfsfc: surface buoyancy flux (units: m^2/s^3)
     real(cvmix_r8), dimension(size(zt_cntr)), intent(in), optional ::         &
-                                                 ws_cntr, Vt_sqr_cntr
+                                              bfsfc, ws_cntr, Vt_sqr_cntr
     real(cvmix_r8), dimension(size(zt_cntr)+1), intent(in), optional ::       &
                                                     N_iface, Nsqr_iface
     ! * EFactor: Langmuir enhancement factor for entrainment (units: none)
     ! * LaSL: surface layer averaged Langmuir number (units: none)
-    ! * bfsfc: surface buoyancy flux (units: m^2/s^3)
     ! * ustar: friction velocity (units: m/s)
-    real(cvmix_r8), intent(in), optional :: EFactor, LaSL, bfsfc, ustar
+    real(cvmix_r8), intent(in), optional :: EFactor, LaSL, ustar
     type(cvmix_kpp_params_type), intent(in), optional, target ::              &
                                            CVmix_kpp_params_user
 
@@ -1869,7 +2082,7 @@ contains
   subroutine cvmix_kpp_compute_turbulent_scales_0d(sigma_coord, OBL_depth,    &
                                                    surf_buoy_force,           &
                                                    surf_fric_vel,             &
-                                                   w_m, w_s,                  &
+                                                   xi, w_m, w_s,              &
                                                    CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
@@ -1878,12 +2091,10 @@ contains
 !\\
 !\\
 
-! !USES:
-!  Only those used by entire module.
-
 ! !INPUT PARAMETERS:
     real(cvmix_r8), intent(in) :: sigma_coord
     real(cvmix_r8), intent(in) :: OBL_depth, surf_buoy_force, surf_fric_vel
+    real(cvmix_r8), optional, intent(in) :: xi
     type(cvmix_kpp_params_type), intent(in), optional, target ::              &
                                            CVmix_kpp_params_user
 
@@ -1896,7 +2107,14 @@ contains
 
     ! Local variables
     real(cvmix_r8), dimension(1) :: sigma, lcl_wm, lcl_ws
+    real(cvmix_r8)               :: lcl_XI
     logical :: compute_wm, compute_ws
+
+    if( present( xi ) ) then
+      lcl_XI = xi
+    else
+      lcl_XI = cvmix_zero           ! NO WAVES
+    end if
 
     compute_wm = present(w_m)
     compute_ws = present(w_s)
@@ -1908,17 +2126,20 @@ contains
     if (compute_wm.and.compute_ws) then
       call cvmix_kpp_compute_turbulent_scales(sigma, OBL_depth,               &
                                               surf_buoy_force, surf_fric_vel, &
+                                              xi  = lcl_XI,                   &
                                               w_m = lcl_wm, w_s = lcl_ws,     &
                                   CVmix_kpp_params_user=CVmix_kpp_params_user)
     else
       if (compute_wm) &
         call cvmix_kpp_compute_turbulent_scales(sigma, OBL_depth,             &
                                                 surf_buoy_force,surf_fric_vel,&
+                                                xi  = lcl_XI,                 &
                                                 w_m = lcl_wm,                 &
                                   CVmix_kpp_params_user=CVmix_kpp_params_user)
       if (compute_ws) &
         call cvmix_kpp_compute_turbulent_scales(sigma, OBL_depth,             &
                                                 surf_buoy_force,surf_fric_vel,&
+                                                xi  = lcl_XI,                 &
                                                 w_s = lcl_ws,                 &
                                   CVmix_kpp_params_user=CVmix_kpp_params_user)
     end if
@@ -1940,7 +2161,7 @@ contains
   subroutine cvmix_kpp_compute_turbulent_scales_1d_sigma(sigma_coord,         &
                                                          OBL_depth,           &
                                                          surf_buoy_force,     &
-                                                         surf_fric_vel,       &
+                                                         surf_fric_vel, xi,   &
                                                          w_m, w_s,            &
                                                          CVmix_kpp_params_user)
 
@@ -1954,12 +2175,10 @@ contains
 !\\
 !\\
 
-! !USES:
-!  Only those used by entire module.
-
 ! !INPUT PARAMETERS:
     real(cvmix_r8), dimension(:), intent(in) :: sigma_coord
     real(cvmix_r8), intent(in) :: OBL_depth, surf_buoy_force, surf_fric_vel
+    real(cvmix_r8), optional, intent(in)           :: xi
     type(cvmix_kpp_params_type), intent(in), optional, target ::              &
                                            CVmix_kpp_params_user
 
@@ -1975,6 +2194,7 @@ contains
     logical :: compute_wm, compute_ws, l_LMD_ws
     real(cvmix_r8), dimension(size(sigma_coord)) :: zeta, sigma_loc
     real(cvmix_r8) :: vonkar, surf_layer_ext
+    real(cvmix_r8) :: chi_m, chi_s, L_StokesL
     type(cvmix_kpp_params_type), pointer :: CVmix_kpp_params_in
 
     n_sigma = size(sigma_coord)
@@ -1990,6 +2210,67 @@ contains
     l_LMD_ws       = CVmix_kpp_params_in%l_LMD_ws
     vonkar         = CVmix_kpp_params_in%vonkarman
     surf_layer_ext = CVmix_kpp_params_in%surf_layer_ext
+
+  if ( CVmix_kpp_params_in%lStokesMOST ) then
+    if (present(xi)) then
+      L_StokesL = cvmix_one - xi
+
+      if (surf_fric_vel.gt.cvmix_zero) then
+        sigma_loc(:) = min(cvmix_one , sigma_coord(:))
+        zeta(:) = sigma_loc(:) * OBL_depth * surf_buoy_force * vonkar / &
+              (surf_fric_vel**3)
+        if (compute_wm) then
+          chi_m = compute_Stokes_chi( xi , lchi_m=.true. )
+          do kw=1,n_sigma
+            w_m(kw) = compute_phi_inv(zeta(kw),CVmix_kpp_params_in, L_StokesL, lphi_m=.true.)*&
+                      vonkar*surf_fric_vel / chi_m
+          end do
+        end if
+        if (compute_ws) then
+          chi_s = compute_Stokes_chi( xi , lchi_s=.true. )
+          do kw=1,n_sigma
+            w_s(kw) = compute_phi_inv(zeta(kw),CVmix_kpp_params_in, L_StokesL, lphi_s=.true.)*&
+                      vonkar*surf_fric_vel / chi_s
+          end do
+        end if
+
+      else ! surf_fric_vel = 0
+        if (compute_wm) then
+          if (surf_buoy_force.ge.cvmix_zero) then  ! STABLE
+            w_m = cvmix_zero
+          else                                 ! convective limit
+            chi_m = compute_Stokes_chi( xi , lchi_m=.true. )
+            L_StokesL = cvmix_one - xi
+            do kw=1,n_sigma
+              w_m(kw) = -surf_buoy_force * real(14,cvmix_r8) * sigma_coord(kw) * &
+                         OBL_depth * vonkar * L_StokesL
+              w_m(kw) = vonkar*(w_m(kw)**(cvmix_one/real(3,cvmix_r8))) / chi_m
+            end do
+          end if
+        end if   ! compute_wm
+
+        if (compute_ws) then
+          if (surf_buoy_force.ge.cvmix_zero) then  ! STABLE
+            w_s = cvmix_zero
+          else
+            chi_s = compute_Stokes_chi( xi , lchi_s=.true. )
+            L_StokesL = cvmix_one - xi
+            do kw=1,n_sigma                    ! convective limit
+              w_s(kw) = -surf_buoy_force * real(25,cvmix_r8) * sigma_coord(kw) * &
+                        OBL_depth * vonkar * L_StokesL
+              w_s(kw) = vonkar*(w_s(kw)**(cvmix_one/real(3,cvmix_r8))) / chi_s
+            end do
+          end if  ! surf_buoy_force >= 0
+        end if    ! compute_ws
+
+      end if ! surf_fric_vel != 0
+
+    else
+      print*, "ERROR: Similarity xi must be present in 1d_sigma to use Stokes_MOST package!"
+      stop 1
+    end if    ! lStokesMOST and xi not present
+
+  else    ! not lStokesMOST
 
     if (surf_fric_vel.ne.cvmix_zero) then
       if ((surf_buoy_force.ge.cvmix_zero) .and. l_LMD_ws) then
@@ -2065,35 +2346,36 @@ contains
         end if ! surf_buoy_force >= 0
       end if ! compute_ws
     end if ! surf_fric_vel != 0
-
+  end if    ! lStokesMOST
 !EOC
 
   end subroutine cvmix_kpp_compute_turbulent_scales_1d_sigma
+
+!BOP
+
+! !IROUTINE: cvmix_kpp_compute_turbulent_scales_1d_OBL
+! !INTERFACE:
 
   subroutine cvmix_kpp_compute_turbulent_scales_1d_OBL(sigma_coord,           &
                                                        OBL_depth,             &
                                                        surf_buoy_force,       &
                                                        surf_fric_vel,         &
-                                                       w_m, w_s,              &
+                                                       xi, w_m, w_s,          &
                                                        CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
 !  Computes the turbulent velocity scales for momentum (\verb|w_m|) and scalars
 !  (\verb|w_s|) given a single $\sigma$ coordinate and an array of boundary
 !  layer depths. Note that the turbulent scales are a continuous function, so
-!  there is no restriction to only evaluating this routine at interfaces or
-!  cell centers. Also, if $\sigma >$ \verb|surf_layer_ext| (which is typically
-!  0.1), \verb|w_m| and \verb|w_s| will be evaluated at the latter value.
+!  they are evaluated at sigma\_coord * OBL\_depth(z) using surf\_buoy\_force(z)
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     real(cvmix_r8), intent(in) :: sigma_coord
     real(cvmix_r8), intent(in) :: surf_fric_vel
     real(cvmix_r8), dimension(:), intent(in) ::  surf_buoy_force, OBL_depth
+    real(cvmix_r8), dimension(:), intent(in), optional :: xi
     type(cvmix_kpp_params_type), intent(in), optional, target ::              &
                                            CVmix_kpp_params_user
 
@@ -2109,6 +2391,7 @@ contains
     logical :: compute_wm, compute_ws, l_LMD_ws
     real(cvmix_r8), dimension(size(surf_buoy_force)) :: zeta, sigma_loc
     real(cvmix_r8) :: vonkar, surf_layer_ext
+    real(cvmix_r8)  :: chi_m,chi_s,L_StokesL
     type(cvmix_kpp_params_type), pointer :: CVmix_kpp_params_in
 
     n_sigma = size(surf_buoy_force)
@@ -2124,6 +2407,62 @@ contains
     l_LMD_ws       = CVmix_kpp_params_in%l_LMD_ws
     vonkar         = CVmix_kpp_params_in%vonkarman
     surf_layer_ext = CVmix_kpp_params_in%surf_layer_ext
+
+  if ( CVmix_kpp_params_in%lStokesMOST ) then
+    if (present(xi)) then
+
+      if (surf_fric_vel.ne.cvmix_zero) then
+        zeta(:) = sigma_coord*OBL_depth(:)*surf_buoy_force(:)*vonkar / &
+                     (surf_fric_vel**3)
+        if (compute_wm) then
+          do kw = 1,n_sigma
+            chi_m = compute_Stokes_chi( xi(kw) , lchi_m=.true. )
+            L_StokesL = cvmix_one - xi(kw)             !wgl - xi
+            w_m(kw)=compute_phi_inv(zeta(kw),CVmix_kpp_params_in,L_StokesL,lphi_m=.true.) * &
+                      vonkar*surf_fric_vel / chi_m
+          end do
+        end if
+
+        if (compute_ws) then
+          do kw = 1,n_sigma
+            chi_s = compute_Stokes_chi( xi(kw) , lchi_s=.true. )
+            w_s(kw)=compute_phi_inv(zeta(kw),CVmix_kpp_params_in,L_StokesL,lphi_s=.true.) * &
+                      vonkar*surf_fric_vel  / chi_s
+          end do
+        end if
+
+      else ! surf_fric_vel = 0
+        if (compute_wm) then
+          do kw = 1,n_sigma
+            if (surf_buoy_force(kw).ge.cvmix_zero) then  ! STABLE
+              w_m(kw) = cvmix_zero
+            else                            ! convective limit
+              L_StokesL = cvmix_one - xi(kw)
+              w_m(kw) = -surf_buoy_force(kw) * real(14,cvmix_r8) * sigma_coord * &
+                        OBL_depth(kw) * vonkar * L_StokesL
+              w_m(kw) =vonkar*(w_m(kw)**(cvmix_one/real(3,cvmix_r8))) / compute_Stokes_chi(xi(kw),lchi_m=.true.)
+            end if
+          end do
+        end if
+        if (compute_ws) then
+          do kw = 1,n_sigma
+            if (surf_buoy_force(kw).ge.cvmix_zero) then  ! STABLE
+              w_s(kw) = cvmix_zero
+            else
+              L_StokesL = cvmix_one - xi(kw)
+              w_s(kw) = -surf_buoy_force(kw) * real(25,cvmix_r8) * sigma_coord * &
+                        OBL_depth(kw) * vonkar * L_StokesL
+              w_s(kw) =vonkar*(w_s(kw)**(cvmix_one/real(3,cvmix_r8))) / compute_Stokes_chi(xi(kw),lchi_s=.true.)
+            end if  ! surf_buoy_force >= 0
+          end do
+        end if    ! compute_ws
+      end if      ! surf_fric_vel = 0
+    else
+      print*, "ERROR: Similarity xi must be present in 1d_OBL to use Stokes_MOST package!"
+      stop 1
+    end if    ! lStokesMOST but xi not present
+
+  else    ! not lStokesMOST
 
     if (surf_fric_vel.ne.cvmix_zero) then
       sigma_loc = min(surf_layer_ext, sigma_coord)
@@ -2176,7 +2515,7 @@ contains
             ! w_m = vonkar * u* / phi_m
             !     = vonkar * ((u*/phi_m)^3)^1/3
             w_m(kw) = vonkar*(w_m(kw)**(cvmix_one/real(3,cvmix_r8)))
-        endif
+        end if
         end do
       end if ! compute_wm
 
@@ -2200,6 +2539,7 @@ contains
         end do
       end if ! compute_ws
     end if ! surf_fric_vel != 0
+  end if    ! lStokesMOST
 
 !EOC
 
@@ -2226,9 +2566,6 @@ contains
 !\\
 !\\
 
-! !USES:
-!  Only those used by entire module.
-
 ! !INPUT PARAMETERS:
     ! zt_cntr: height at center of cell (units: m)
     ! ws_cntr: w_s (turbulent scale factor) at center of cell (units: m/s)
@@ -2238,11 +2575,12 @@ contains
     ! note that you must provide exactly one of these two inputs!
     real(cvmix_r8), dimension(size(zt_cntr)+1), intent(in), optional ::       &
                                                     N_iface, Nsqr_iface
+    ! bfsfc: surface buoyancy flux above cell centers (units: m^2/s^3)
+    real(cvmix_r8), dimension(size(zt_cntr)), intent(in), optional :: bfsfc
     ! EFactor: Langmuir enhancement factor (units: none)
     ! LaSL: surface layer averaged Langmuir number (units: none)
-    ! bfsfc: surface buoyancy flux (units: m^2/s^3)
     ! ustar: friction velocity (units: m/s)
-    real(cvmix_r8), intent(in), optional :: EFactor, LaSL, bfsfc, ustar
+    real(cvmix_r8), intent(in), optional :: EFactor, LaSL, ustar
     type(cvmix_kpp_params_type),  intent(in), optional, target ::             &
                                            CVmix_kpp_params_user
 
@@ -2256,6 +2594,9 @@ contains
     ! Local variables
     integer :: kt, nlev
     real(cvmix_r8) :: Cv, Vtc
+    logical :: lwstar          ! use wstar rather than w_s
+    real(cvmix_r8) :: wstar    ! convective velocity scale
+    real(cvmix_r8) :: ws_wstar ! ratio in limit of pure convection
     ! N_cntr: buoyancy frequency at cell centers, derived from either N_iface
     !        or Nsqr_iface (units: 1/s)
     real(cvmix_r8), dimension(size(zt_cntr)) :: N_cntr
@@ -2309,6 +2650,39 @@ contains
       end if
     end if
 
+  if ( CVmix_kpp_params_in%lStokesMOST ) then
+    if (present(N_iface)) then
+      lwstar   = .false.   !  .true.
+
+      ws_wstar = CVmix_kpp_params_in%vonkarman * real(25,cvmix_r8) ! *  &
+      ws_wstar = CVmix_kpp_params_in%vonkarman * ws_wstar**(cvmix_one/real(3,cvmix_r8))
+
+
+      Vtc = sqrt(0.2_cvmix_r8 *3.8409_cvmix_r8 /ws_wstar) /CVmix_kpp_params_in%Ri_crit
+
+      Cv = 1.4_cvmix_r8
+
+      do kt=1,nlev
+        if (lwstar ) then
+          wstar = (MAX(0.0 , zt_cntr(kt) * bfsfc(kt) ))**(cvmix_one/real(3,cvmix_r8))
+          cvmix_kpp_compute_unresolved_shear(kt) = &
+               -zt_cntr(kt) * N_iface(kt) * Cv * Vtc * wstar
+        else
+          cvmix_kpp_compute_unresolved_shear(kt) = &
+               -zt_cntr(kt) * N_iface(kt) * Cv * Vtc * ws_cntr(kt) / ws_wstar
+        end if
+
+        if (cvmix_kpp_compute_unresolved_shear(kt).lt.                       &
+                CVmix_kpp_params_in%minVtsqr) then
+              cvmix_kpp_compute_unresolved_shear(kt) = CVmix_kpp_params_in%minVtsqr
+        end if
+      enddo
+    else
+     print*, "ERROR: StokesMOST package requires N_iface in cvmix_kpp_compute_unresolved_shear "
+        stop 1
+    end if
+  else    ! not lStokesMOST
+
     ! options for Langmuir enhanced entrainment
     select case (CVmix_kpp_params_in%Langmuir_Entrainment_Opt)
 
@@ -2354,7 +2728,7 @@ contains
           stop 1
         end if
         ! only apply Langmuir enhanced entrainment under unstable condition
-        if (bfsfc<cvmix_zero) then
+        if (bfsfc(1)<cvmix_zero) then
           ! (26) of Li and Fox-Kemper, 2017, JPO
           c_CT =  cvmix_get_kpp_real('c_CT', CVmix_kpp_params_in)
           c_ST =  cvmix_get_kpp_real('c_ST', CVmix_kpp_params_in)
@@ -2371,7 +2745,7 @@ contains
                 Cv = 1.7_cvmix_r8
               end if
             end if
-            Vtc = sqrt((c_CT*bfsfc*zt_cntr(kt) + c_ST*ustar**3 +                 &
+            Vtc = sqrt((c_CT*bfsfc(kt)*zt_cntr(kt) + c_ST*ustar**3 +             &
                      c_LT*ustar**3*LaSL**(-1.*p_LT))/ws_cntr(kt))
             cvmix_kpp_compute_unresolved_shear(kt) = -Cv*Vtc*zt_cntr(kt)*        &
                                    N_cntr(kt)/CVmix_kpp_params_in%Ri_crit
@@ -2474,20 +2848,38 @@ contains
         end do
 
     end select
+  end if    ! lStokesMOST
 
 !EOC
 
   end function cvmix_kpp_compute_unresolved_shear
 
-  function compute_phi_inv(zeta, CVmix_kpp_params_in, lphi_m, lphi_s)
+!BOP
 
+! !IROUTINE: compute_phi_inv
+! !INTERFACE:
+
+  function compute_phi_inv(zeta, CVmix_kpp_params_in, L_Lstokes, lphi_m, lphi_s)
+
+! !DESCRIPTION:
+!  Computes $\frac{1}{\phi_m}$ or $\frac{1}{\phi_s}$
+!\\
+!\\
+
+! !INPUT PARAMETERS:
     real(cvmix_r8),              intent(in) :: zeta
     type(cvmix_kpp_params_type), intent(in) :: CVmix_kpp_params_in
+    real(cvmix_r8), optional,    intent(in) :: L_Lstokes
     logical, optional,           intent(in) :: lphi_m, lphi_s
 
+! !OUTPUT PARAMETERS:
     real(cvmix_r8) :: compute_phi_inv
 
+!EOP
+!BOC
+
     logical :: lm, ls
+    real(cvmix_r8) :: zetastar
 
     ! If not specifying lphi_m or lphi_s, routine will error out, but
     ! initializing result to 0 removes warning about possibly returning an
@@ -2511,33 +2903,125 @@ contains
       stop 1
     end if
 
-    if (lm) then
-      if (zeta.ge.cvmix_zero) then
-        ! Stable region
-        compute_phi_inv = cvmix_one/(cvmix_one + real(5,cvmix_r8)*zeta)
-      else if (zeta.ge.CVmix_kpp_params_in%zeta_m) then
-        compute_phi_inv = (cvmix_one - real(16,cvmix_r8)*zeta)**0.25_cvmix_r8
-      else
-        compute_phi_inv = (CVmix_kpp_params_in%a_m -                          &
-                          CVmix_kpp_params_in%c_m*zeta)**                     &
-                          (cvmix_one/real(3,cvmix_r8))
+    zetastar =  zeta
+    if ( present(L_Lstokes) ) zetastar = zeta * L_Lstokes
+
+    if ( CVmix_kpp_params_in%lStokesMOST ) then
+      if (lm) then
+        if (zeta.ge.cvmix_zero) then   ! STABLE
+          compute_phi_inv = cvmix_one/(cvmix_one + real(14,cvmix_r8)*zetastar)
+        else
+          compute_phi_inv = &
+          (cvmix_one - real(14,cvmix_r8)*zetastar)**(cvmix_one/real(3,cvmix_r8))
+        end if
+      end if
+      if (ls) then
+        if (zeta.ge.cvmix_zero) then   ! STABLE
+          compute_phi_inv = cvmix_one/(cvmix_one + real( 5,cvmix_r8)*zetastar)
+        else
+          compute_phi_inv = &
+          (cvmix_one - real(25,cvmix_r8)*zetastar)**(cvmix_one/real(3,cvmix_r8))
+        end if
+      end if
+    else    ! not lStokesMOST
+
+      if (lm) then
+        if (zeta.ge.cvmix_zero) then
+          ! Stable region
+          compute_phi_inv = cvmix_one/(cvmix_one + real(5,cvmix_r8)*zeta)
+        else if (zeta.ge.CVmix_kpp_params_in%zeta_m) then
+          compute_phi_inv = (cvmix_one - real(16,cvmix_r8)*zeta)**0.25_cvmix_r8
+        else
+          compute_phi_inv = (CVmix_kpp_params_in%a_m -                          &
+                            CVmix_kpp_params_in%c_m*zeta)**                     &
+                            (cvmix_one/real(3,cvmix_r8))
+        end if
+      end if
+
+      if (ls) then
+        if (zeta.ge.cvmix_zero) then
+          ! Stable region
+          compute_phi_inv = cvmix_one/(cvmix_one + real(5,cvmix_r8)*zeta)
+        else if (zeta.ge.CVmix_kpp_params_in%zeta_s) then
+          compute_phi_inv = (cvmix_one - real(16,cvmix_r8)*zeta)**0.5_cvmix_r8
+        else
+          compute_phi_inv = (CVmix_kpp_params_in%a_s -                          &
+                            CVmix_kpp_params_in%c_s*zeta)**                     &
+                            (cvmix_one/real(3,cvmix_r8))
+        end if
       end if
     end if
 
-    if (ls) then
-      if (zeta.ge.cvmix_zero) then
-        ! Stable region
-        compute_phi_inv = cvmix_one/(cvmix_one + real(5,cvmix_r8)*zeta)
-      else if (zeta.ge.CVmix_kpp_params_in%zeta_s) then
-        compute_phi_inv = (cvmix_one - real(16,cvmix_r8)*zeta)**0.5_cvmix_r8
-      else
-        compute_phi_inv = (CVmix_kpp_params_in%a_s -                          &
-                          CVmix_kpp_params_in%c_s*zeta)**                     &
-                          (cvmix_one/real(3,cvmix_r8))
-      end if
-    end if
+!EOC
 
   end function compute_phi_inv
+
+!BOP
+
+! !IROUTINE: compute_Stokes_chi
+! !INTERFACE:
+
+  function compute_Stokes_chi( xi, lchi_m, lchi_s)
+
+! !DESCRIPTION:
+!  Compute Stokes similarity function chi, of Stokes parameter xi= Ps/(PU+PS+PB)
+!\\
+!\\
+
+! !INPUT PARAMETERS:
+    real(cvmix_r8),              intent(in) :: xi
+    logical, optional,           intent(in) :: lchi_m, lchi_s
+
+! !OUTPUT PARAMETERS:
+    real(cvmix_r8) :: compute_Stokes_chi
+
+!EOP
+!BOC
+
+    logical :: lm, ls
+    real(cvmix_r8)  :: chi, xi_tmp
+
+    ! If not specifying lchi_m or lchi_s, routine will error out, but
+    ! initializing result to 1 (No Stokes value) removes warning about
+    ! possibly returning an un-initialized value
+    compute_Stokes_chi = cvmix_one
+
+  if (present(lchi_m)) then
+      lm = lchi_m
+  else
+      lm = .false.
+  end if
+
+  if (present(lchi_s)) then
+    ls = lchi_s
+  else
+    ls = .false.
+  end if
+
+  if (lm.eqv.ls) then
+    print*, "ERROR: must compute chi_m or chi_s, can not compute both!"
+    stop 1
+  end if
+
+  if (lm) then
+    xi_tmp = MAX( cvmix_zero , MIN( xi , 0.73_cvmix_r8 ) )
+    chi = cvmix_one - 1.671_cvmix_r8 * xi_tmp
+    if ( xi_tmp .ge. 0.35_cvmix_r8) &
+      chi = 1.03_cvmix_r8 + xi_tmp * ( 1.58_cvmix_r8*xi_tmp - 2.31_cvmix_r8 )
+    compute_Stokes_chi = chi
+  end if
+
+  if (ls) then
+    xi_tmp = MAX( cvmix_zero , MIN( xi , 0.89_cvmix_r8 ) )
+    chi = cvmix_one - 1.594_cvmix_r8 * xi_tmp
+    if ( xi_tmp .ge. 0.35_cvmix_r8) &
+      chi = 0.78_cvmix_r8 + xi_tmp * ( 0.67_cvmix_r8*xi_tmp - 1.20_cvmix_r8 )
+    compute_Stokes_chi = chi
+  end if
+
+!EOC
+
+  end function compute_Stokes_chi
 
 !BOP
 
@@ -2559,9 +3043,6 @@ contains
 !  this routine returns coeffs(1:4) = $(/a_0, a_1, a_2, a_3/)$
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     real(cvmix_r8), intent(in) :: GAT1  ! G(1)
@@ -2596,9 +3077,6 @@ contains
 !  above and below.
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     ! depths_cntr  = (/layer center containing OBL, layer center below/)
@@ -2653,34 +3131,31 @@ contains
     end if
     cvmix_kpp_compute_nu_at_OBL_depth_LMD94=cvmix_math_evaluate_cubic(coeffs, &
                                                                   -OBL_depth)
-!      call cvmix_math_poly_interp(coeffs, interp_type2, layer_depth, layer_nu,&
-!           depth_2above, nu_2above)
-!      cvmix_kpp_compute_nu_at_OBL_depth = cvmix_math_evaluate_cubic(coeffs,   &
-!                                                                   -OBL_depth,&
-!                                                                    dnu_dz)
+!EOC
 
   end function cvmix_kpp_compute_nu_at_OBL_depth_LMD94
 
-!EOC
+!BOP
 
+! !IROUTINE: cvmix_kpp_EFactor_model
+! !INTERFACE:
   function cvmix_kpp_EFactor_model(u10, ustar, hbl, CVmix_params_in)
 
-! This function returns the enhancement factor, given the 10-meter
-! wind (m/s), friction velocity (m/s) and the boundary layer depth (m).
-!
-! Qing Li, 160606
+! !DESCRIPTION:
+!  This function returns the enhancement factor, given the 10-meter
+!  wind (m/s), friction velocity (m/s) and the boundary layer depth (m).
+!\\
+!\\
 
-! Input
-    real(cvmix_r8), intent(in) :: &
-        ! 10 meter wind (m/s)
-        u10, &
-        ! water-side surface friction velocity (m/s)
-        ustar, &
-        ! boundary layer depth (m)
-        hbl
+! !INPUT PARAMETERS:
+    real(cvmix_r8),                 intent(in) :: u10    ! 10 meter wind (m/s)
+    real(cvmix_r8),                 intent(in) :: ustar  ! water-side surface friction velocity (m/s)
+    real(cvmix_r8),                 intent(in) :: hbl    ! boundary layer depth (m)
     type(cvmix_global_params_type), intent(in) :: CVmix_params_in
 
-! Local variables
+!EOP
+!BOC
+
     real(cvmix_r8) :: us_sl, lasl_sqr_i
     real(cvmix_r8) :: cvmix_kpp_EFactor_model
 
@@ -2698,26 +3173,32 @@ contains
     else
       ! otherwise set to one
       cvmix_kpp_EFactor_model = cvmix_one
-    endif
+    end if
+
+!EOC
 
   end function cvmix_kpp_EFactor_model
 
+!BOP
+
+! !IROUTINE: cvmix_kpp_ustokes_SL_model
+! !INTERFACE:
   function cvmix_kpp_ustokes_SL_model(u10, hbl, CVmix_params_in)
 
-! This function returns the surface layer averaged Stokes drift, given
-! the 10-meter wind (m/s) and the boundary layer depth (m).
-!
-! Qing Li, 20180130
+! !DESCRIPTION:
+!  This function returns the surface layer averaged Stokes drift, given
+!  the 10-meter wind (m/s) and the boundary layer depth (m).
+!\\
+!\\
 
-! Input
-    real(cvmix_r8), intent(in) :: &
-        ! 10 meter wind (m/s)
-        u10, &
-        ! boundary layer depth (m)
-        hbl
+! !INPUT PARAMETERS:
+    real(cvmix_r8),                 intent(in) :: u10    ! 10 meter wind (m/s)
+    real(cvmix_r8),                 intent(in) :: hbl    ! boundary layer depth (m)
     type(cvmix_global_params_type), intent(in) :: CVmix_params_in
-! Local variables
-    ! parameters
+
+!EOP
+!BOC
+
     real(cvmix_r8), parameter :: &
         ! ratio of U19.5 to U10 (Holthuijsen, 2007)
         u19p5_to_u10 = 1.075_cvmix_r8, &
@@ -2780,8 +3261,239 @@ contains
       cvmix_kpp_ustokes_SL_model = us*(0.715_cvmix_r8+r1+r2+r3+r4)
     else
       cvmix_kpp_ustokes_SL_model = cvmix_zero
-    endif
+    end if
 
-    end function cvmix_kpp_ustokes_SL_model
+!EOC
+
+  end function cvmix_kpp_ustokes_SL_model
+
+!BOP
+
+! !IROUTINE: cvmix_kpp_composite_shape
+! !INTERFACE:
+
+  function cvmix_kpp_composite_shape( sigma , Gat1)
+
+!  !DESCRIPTION:
+!   This function returns the value of the composite shape function for both
+!   momentum and scalars at fractional depth sigma in the boundary layer.
+!   This shape function is a cubic for sigma<sig\_m; and a quadratic below, as
+!   fit to Fig. 6 of Large et al., 2020 (doi:10.1175/JPO-D-20-0308.1)
+!   The subroutine also returns the derivative  dG / dsig
+!\\
+!\\
+
+! !INPUT PARAMETERS:
+    real(cvmix_r8),                    intent(in)  ::  sigma
+    real(cvmix_r8), optional,          intent(in)  ::  Gat1
+
+! !OUTPUT PARAMETERS:
+    real(cvmix_r8) :: cvmix_kpp_composite_shape
+
+!EOP
+!BOC
+
+    real(cvmix_r8)  :: a2Gsig, a3Gsig, sig_m, G_m, G_1, sig
+    a2Gsig = -2.1637_cvmix_r8
+    a3Gsig =  0.5831_cvmix_r8
+    sig_m  =  0.35_cvmix_r8
+    G_m    =  0.11_cvmix_r8     ! sig_m + sig_m * sig_m * (a2Gsig + a3Gsig * sig_m)
+    if ( present(Gat1) ) then
+      G_1  = MAX( cvmix_zero  ,  MIN( Gat1 , G_m ) )
+    else
+      G_1  =  cvmix_zero
+    end if
+
+    if (sigma .lt. sig_m)  then
+      sig = MAX( sigma , cvmix_zero)
+      cvmix_kpp_composite_shape = sig + sig * sig * (a2Gsig + a3Gsig * sig)
+    else
+      sig = MIN( sigma , cvmix_one )
+      cvmix_kpp_composite_shape = G_1 + (G_m-G_1) * ((1.-sig) / (1.-sig_m))**2
+    end if
+
+!EOC
+
+  end function cvmix_kpp_composite_shape
+
+!BOP
+
+! !IROUTINE: cvmix_kpp_composite_Gshape
+! !INTERFACE:
+
+  subroutine cvmix_kpp_composite_Gshape(sigma , Gat1, Gsig, dGdsig)
+
+! !INPUT PARAMETERS:
+    real(cvmix_r8),                    intent(in)  ::  sigma
+    real(cvmix_r8),                    intent(in)  ::  Gat1
+
+! !INPUT/OUTPUT PARAMETERS:
+    real(cvmix_r8),                  intent(inout) ::  Gsig
+    real(cvmix_r8),                  intent(inout) ::  dGdsig
+
+!EOP
+!BOC
+
+    real(cvmix_r8)  :: a2Gsig, a3Gsig, bGsig, sig_m, G_m, G_1, sig
+
+    a2Gsig = -2.1637_cvmix_r8
+    a3Gsig =  0.5831_cvmix_r8
+    sig_m  =  0.35_cvmix_r8
+    G_m    =  0.11_cvmix_r8     ! sig_m + sig_m * sig_m * (a2Gsig + a3Gsig * sig_m)
+    G_1    =  MAX( cvmix_zero  ,  MIN( Gat1 , G_m ) )
+
+    if (sigma .lT. sig_m)  then
+      sig    = MAX( sigma , cvmix_zero)
+      Gsig   = sig + sig * sig * (a2Gsig + a3Gsig * sig)
+      dGdsig = cvmix_one + sig * (2.0_cvmix_r8 * a2Gsig + 3.0_cvmix_r8 * a3Gsig * sig)
+    else
+      bGsig  =  (G_m-G_1) / (1.-sig_m)**2
+      sig    = MIN( sigma , cvmix_one )
+      Gsig   = G_1 + bGsig * (cvmix_one - sig) * (cvmix_one - sig)
+      dGdsig = bGsig * 2.0_cvmix_r8 * (sig - cvmix_one)
+    end if
+
+!EOC
+
+  end subroutine cvmix_kpp_composite_Gshape
+
+!BOP
+
+! !IROUTINE: cvmix_coeffs_bkgnd_wrap
+! !INTERFACE:
+
+  subroutine cvmix_kpp_compute_StokesXi (zi, zk, kSL, SLDepth,          &
+           surf_buoy_force, surf_fric_vel, omega_w2x, uE, vE, uS, vS,   &
+           uSbar, vSbar, uS_SLD, vS_SLD, uSbar_SLD, vSbar_SLD,          &
+           StokesXI, CVmix_kpp_params_user)
+
+! !DESCRIPTION:
+!  Compute the Stokes similarity parameter, StokesXI, and Entrainment Rule, BEdE\_ER, from
+!  surface layer integrated TKE production terms as parameterized in
+!  Large et al., 2020 (doi:10.1175/JPO-D-20-0308.1)
+!\\
+!\\
+
+! !INPUT PARAMETERS:
+    real(cvmix_r8), dimension(:), intent(in) :: zi, zk          !< Cell interface and center heights < 0
+    integer,        intent(in) :: kSL                           !< cell index of Surface Layer Depth
+    real(cvmix_r8), intent(in) :: SLDepth                       !< Surface Layer Depth Integration limit
+    real(cvmix_r8), intent(in) :: surf_buoy_force               !< Surface buoyancy flux forcing
+    real(cvmix_r8), intent(in) :: surf_fric_vel, omega_w2x      !< Surface wind forcing from x-axis
+    real(cvmix_r8), dimension(:), intent(in) :: uE, vE          !< Eulerian velocity at centers
+    real(cvmix_r8), intent(in) :: uS_SLD, vS_SLD                !< Stokes drift at SLDepth
+    real(cvmix_r8), intent(in) :: uSbar_SLD, vSbar_SLD          !< Average Stokes drift cell kSL to SLDepth
+
+    type(cvmix_kpp_params_type), intent(in), optional, target :: CVmix_kpp_params_user
+
+! !INPUT/OUTPUT PARAMETERS:
+    real(cvmix_r8), dimension(:), intent(inout) :: uS, vS       !< Stokes drift at interfaces
+    real(cvmix_r8), dimension(:), intent(inout) :: uSbar, vSbar !< Cell average Stokes drift
+    real(cvmix_r8), intent(inout) :: StokesXI                   !< Stokes similarity parameter
+
+!EOP
+!BOC
+
+    type(cvmix_kpp_params_type),  pointer :: CVmix_kpp_params_in
+    real(cvmix_r8) :: PU, PS , PB                   ! surface layer TKE production terms
+    real(cvmix_r8) :: uS_TMP, vS_TMP, uSbar_TMP, vSbar_TMP                       ! Temporary Store
+    real(cvmix_r8) :: ustar, delH, delU, delV, omega_E2x, cosOmega, sinOmega
+    real(cvmix_r8) :: BLDepth, TauMAG, TauCG, TauDG, taux0, tauy0, Stk0 , Pinc
+    real(cvmix_r8) :: PBfact , CempCGm                                           ! Empirical constants
+    real(cvmix_r8) :: dtop, tauEtop, tauxtop, tauytop                            ! Cell top values
+    real(cvmix_r8) :: dbot, tauEbot, tauxbot, tauybot, sigbot, Gbot              ! Cell bottom values
+    integer        :: ktmp                                                       ! vertical loop
+
+    CVmix_kpp_params_in => CVmix_kpp_params_saved
+    if (present(CVmix_kpp_params_user)) then
+      CVmix_kpp_params_in => CVmix_kpp_params_user
+    end if
+
+    if ( CVmix_kpp_params_in%lStokesMOST ) then
+
+    ! Move bottom of cell kSL up to Surface Layer Extent = SLDepth
+    uS_TMP = uS(kSL+1)
+    vS_TMP = vS(kSL+1)
+    uSbar_TMP = uSbar(kSL)
+    vSbar_TMP = vSbar(kSL)
+    uS(kSL+1)   = uS_SLD
+    vS(kSL+1)   = vS_SLD
+    uSbar(kSL)= uSbar_SLD
+    vSbar(kSL)= vSbar_SLD
+
+    CempCGm=  3.5_cvmix_r8
+
+    ustar   = MAX( surf_fric_vel , 1.e-4_cvmix_r8 )   ! > 0
+    taux0   = ustar**2 * cos(omega_w2x)
+    tauy0   = ustar**2 * sin(omega_w2x)
+    Stk0    = sqrt( uS(1)**2 + vS(1)**2 )
+    BLDepth = SLDepth / CVmix_kpp_params_in%surf_layer_ext
+
+    ! Parameterized Buoyancy production of TKE
+    PBfact =  0.110_cvmix_r8
+    PB      = PBfact * MAX( -surf_buoy_force * BLdepth ,  cvmix_zero )
+
+    ! Compute Both Shear Production Terms down from  Surface = initial top values
+    PU      = 0.0
+    PS      = 0.0
+    dtop    = 0.0
+    delU    = uE(1) - uE(2)
+    delV    = vE(1) - vE(2)
+    tauEtop = (taux0 * delU + tauy0 * delV ) / (zk(1) - zk(2) )
+    tauxtop = taux0
+    tauytop = tauy0
+
+    do ktmp = 1, kSL
+      ! SLdepth can be between cell interfaces kSL and kSL+1
+      delH = min( max(cvmix_zero, SLdepth - dtop), (zi(ktmp) - zi(ktmp+1) ) )
+      dbot = MIN( dtop + delH ,  SLdepth)
+      sigbot = dbot / BLdepth
+      Gbot     = cvmix_kpp_composite_shape(sigbot)
+      TauMAG   = ustar * ustar * Gbot / sigbot
+      delU     = uE(ktmp) - uE(ktmp+1)
+      delV     = vE(ktmp) - vE(ktmp+1)
+      Omega_E2x= atan2( delV  , delU )
+      cosOmega = cos(Omega_E2x)
+      sinOmega = sin(Omega_E2x)
+      tauCG    = CempCGm * Gbot *  (taux0 * cosOmega - tauy0 * sinOmega)
+      ! tauDG    = sqrt( TauMAG**2 - tauCG**2 ) ! G
+      tauDG    = TauMAG                       ! E
+      tauxbot  = tauDG * cosOmega  -  tauCG * sinOmega
+      tauybot  = tauDG * sinOmega  +  tauCG * cosOmega
+      tauEbot  = (tauxbot * delU + tauybot * delV) / (zk(ktmp) - zk(ktmp+1) )
+
+      ! Increment Eulerian Shear Production
+      Pinc     = 0.5_cvmix_r8 * (tauEbot + tauEtop) * delH
+      PU       = PU + MAX( Pinc , cvmix_zero )
+
+      ! Increment Stokes Shear Production
+      Pinc   = tauxtop*uS(ktmp) - tauxbot*uS(ktmp+1) + tauytop*vS(ktmp) - tauybot*vS(ktmp+1)
+      Pinc   = Pinc - (tauxtop-tauxbot) * uSbar(ktmp)  - (tauytop-tauybot) * vSbar(ktmp)
+      PS     = PS +  MAX( Pinc , cvmix_zero )
+
+      ! Bottom becomes next top
+      dtop    = dbot
+      tauxtop = tauxbot
+      tauytop = tauybot
+      tauEtop = tauEbot
+    enddo
+
+    ! Compute Stokes similarity parameter
+    StokesXI  = PS / MAX( PU + PS + PB , 1.e-12_cvmix_r8 )
+
+
+    ! Restore bottom of cell kSL at zi(kSL+1) with stored Stokes Drift ; ditto average over cell kSL
+    uS(kSL+1)  = uS_TMP
+    vS(kSL+1)  = vS_TMP
+    uSbar(kSL) = uSbar_TMP
+    vSbar(kSL) = vSbar_TMP
+
+   else    ! not lStokesMOST
+     StokesXI  = cvmix_zero
+   end if
+
+!EOC
+
+  end subroutine cvmix_kpp_compute_StokesXi
 
 end module cvmix_kpp
