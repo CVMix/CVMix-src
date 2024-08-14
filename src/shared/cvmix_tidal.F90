@@ -151,9 +151,8 @@ contains
 !  mixing scheme.
 !                    - set \verb|mix_scheme = 'schmittner'| to use the Schmittner
 !  mixing scheme.
-!
-! !USES:
-!  Only those used by entire module.
+!\\
+!\\
 
 ! !INPUT PARAMETERS:
     character(len=*),        optional, intent(in) :: mix_scheme, old_vals
@@ -317,9 +316,6 @@ contains
 !  parameterizations.
 !\\
 !\\
-!
-! !USES:
-!  only those used by entire module.
 
 ! !INPUT PARAMETERS:
     type(cvmix_tidal_params_type),  target, optional, intent(in) ::           &
@@ -393,9 +389,6 @@ contains
 !  parameterizations.
 !\\
 !\\
-!
-! !USES:
-!  only those used by entire module.
 
 ! !INPUT PARAMETERS:
     type(cvmix_tidal_params_type),  target, optional, intent(in) ::           &
@@ -483,9 +476,6 @@ contains
 !  parameterizations.
 !\\
 !\\
-!
-! !USES:
-!  only those used by entire module.
 
 ! !INPUT PARAMETERS:
     type(cvmix_tidal_params_type),  target, optional, intent(in) ::           &
@@ -561,9 +551,6 @@ contains
 !  mixing.
 !\\
 !\\
-!
-! !USES:
-!  only those used by entire module.
 
 ! !INPUT PARAMETERS:
     type(cvmix_tidal_params_type),     intent(in) :: CVmix_tidal_params
@@ -616,9 +603,6 @@ contains
 !  mixing.
 !\\
 !\\
-!
-! !USES:
-!  only those used by entire module.
 
 ! !INPUT PARAMETERS:
     type(cvmix_tidal_params_type),     intent(in) :: CVmix_tidal_params
@@ -663,9 +647,6 @@ contains
 !  the Simmons, et al., scheme.
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     type(cvmix_global_params_type), intent(in) :: CVmix_params
@@ -717,9 +698,6 @@ contains
 !\\
 !\\
 
-! !USES:
-!  Only those used by entire module.
-
 ! !INPUT PARAMETERS:
     integer,        intent(in) :: nlev
     real(cvmix_r8), intent(in) :: energy_flux, rho
@@ -768,9 +746,6 @@ contains
 !\\
 !\\
 
-! !USES:
-!  Only those used by entire module.
-
 ! !INPUT PARAMETERS:
     type(cvmix_global_params_type), intent(in) :: CVmix_params
     type(cvmix_tidal_params_type),  target, optional, intent(in) ::           &
@@ -818,9 +793,6 @@ contains
 !  the Schmittner 2014 scheme.
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     integer,        intent(in) :: nlev
@@ -882,9 +854,6 @@ contains
 !\\
 !\\
 
-! !USES:
-!  Only those used by entire module.
-
 ! !INPUT PARAMETERS:
     integer, intent(in)  :: nlev
     real(cvmix_r8), dimension(2:nlev+1),   intent(in) :: energy_flux
@@ -930,9 +899,6 @@ contains
 !  the Schmittner 2014 scheme.
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     integer,        intent(in) :: nlev
@@ -985,9 +951,6 @@ contains
 !\\
 !\\
 
-! !USES:
-!  Only those used by entire module.
-
 ! !INPUT PARAMETERS:
     type(cvmix_tidal_params_type),  target, optional, intent(in) ::           &
                                             CVmix_tidal_params_user
@@ -1032,9 +995,6 @@ contains
 !  Compute the time-invariant Schmittner Southern-Ocean tidal mixing terms
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     integer,        intent(in) :: nlev
@@ -1085,9 +1045,6 @@ contains
 !\\
 !\\
 
-! !USES:
-!  Only those used by entire module.
-
 ! !INPUT PARAMETERS:
     character(len=*), intent(in) :: varname
     integer,          intent(in) :: val
@@ -1130,9 +1087,6 @@ contains
 !\\
 !\\
 
-! !USES:
-!  Only those used by entire module.
-
 ! !INPUT PARAMETERS:
     character(len=*),       intent(in) :: varname
     logical(cvmix_log_kind),intent(in) :: val
@@ -1174,9 +1128,6 @@ contains
 !  Write a real value into a cvmix\_tidal\_params\_type variable.
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*), intent(in) :: varname
@@ -1232,9 +1183,6 @@ contains
 !\\
 !\\
 
-! !USES:
-!  Only those used by entire module.
-
 ! !INPUT PARAMETERS:
     character(len=*), intent(in) :: varname
     character(len=*), intent(in) :: val
@@ -1278,9 +1226,6 @@ contains
 !  Returns the real value of a cvmix\_tidal\_params\_type variable.
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*),                                intent(in) :: varname
@@ -1333,9 +1278,6 @@ contains
 !  Returns the string value of a cvmix\_tidal\_params\_type variable.
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*),                                intent(in) :: varname

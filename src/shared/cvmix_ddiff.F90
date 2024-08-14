@@ -176,10 +176,9 @@ module cvmix_ddiff
 !  \end{eqnarray*}
 !  $\kappa$ is stored in \verb|CVmix_vars%diff_iface(:,1)|, while the modified value
 !  for non-temperature tracers is stored in \verb|CVmix_vars%diff_iface(:,2)|.
-!  Note that CVMix assumes units are |'mks'|.\\
+!  Note that CVMix assumes units are |'mks'|.
 !\\
-! !USES:
-!  Only those used by entire module.
+!\\
 
 ! !INPUT PARAMETERS:
     real(cvmix_r8),   optional, intent(in) :: strat_param_max,                &
@@ -303,9 +302,6 @@ module cvmix_ddiff
 !  parameterization.
 !\\
 !\\
-!
-! !USES:
-!  only those used by entire module.
 
 ! !INPUT PARAMETERS:
     type(cvmix_ddiff_params_type), optional, target, intent(in) ::            &
@@ -361,9 +357,6 @@ module cvmix_ddiff
 !  parameterization.
 !\\
 !\\
-!
-! !USES:
-!  only those used by entire module.
 
 ! !INPUT PARAMETERS:
     type(cvmix_ddiff_params_type), optional, target, intent(in) ::            &
@@ -453,9 +446,6 @@ module cvmix_ddiff
 !\\
 !\\
 
-! !USES:
-!  Only those used by entire module.
-
 ! !INPUT PARAMETERS:
     character(len=*), intent(in) :: varname, val
 
@@ -507,9 +497,6 @@ module cvmix_ddiff
 !  Write a real value into a cvmix\_ddiff\_params\_type variable.
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*), intent(in) :: varname
@@ -568,9 +555,6 @@ module cvmix_ddiff
 !\\
 !\\
 
-! !USES:
-!  Only those used by entire module.
-
 ! !INPUT PARAMETERS:
     character(len=*), intent(in) :: varname
     integer,          intent(in) :: val
@@ -615,9 +599,6 @@ module cvmix_ddiff
 !  queries of ddiff parameters, such as at initialization.
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*),                                intent(in)    :: varname

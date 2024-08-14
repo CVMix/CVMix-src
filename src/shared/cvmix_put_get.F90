@@ -57,9 +57,6 @@ contains
 !\\
 !\\
 
-! !USES:
-!  Only those used by entire module.
-
 ! !INPUT PARAMETERS:
     character(len=*),           intent(in) :: varname
     integer,                    intent(in) :: val
@@ -117,9 +114,6 @@ contains
 !  Write a real value into a cvmix\_data\_type variable.
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*),           intent(in) :: varname
@@ -298,9 +292,6 @@ contains
 !\\
 !\\
 
-! !USES:
-!  Only those used by entire module.
-
 ! !INPUT PARAMETERS:
     character(len=*),             intent(in) :: varname
     real(cvmix_r8), dimension(:), intent(in) :: val
@@ -465,9 +456,6 @@ contains
 !\\
 !\\
 
-! !USES:
-!  Only those used by entire module.
-
 ! !INPUT PARAMETERS:
     character(len=*),             intent(in) :: varname
     real(cvmix_r8), dimension(:,:), intent(in) :: val
@@ -524,9 +512,6 @@ contains
 !\\
 !\\
 
-! !USES:
-!  Only those used by entire module.
-
 ! !INPUT PARAMETERS:
     character(len=*), intent(in) :: varname
     integer,          intent(in) :: val
@@ -560,9 +545,6 @@ contains
 !  Write a real value into a cvmix\_global\_params\_type variable.
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*), intent(in) :: varname

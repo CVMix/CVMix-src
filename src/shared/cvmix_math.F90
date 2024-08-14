@@ -216,9 +216,6 @@
 !\\
 !\\
 
-! !USES:
-!  Only those used by entire module.
-
 ! !INPUT PARAMETERS:
     real(cvmix_r8), dimension(4), intent(in) :: coeffs
     real(cvmix_r8),               intent(in) :: x_in

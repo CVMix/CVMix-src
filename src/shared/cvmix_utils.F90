@@ -51,9 +51,6 @@ contains
 !\\
 !\\
 
-! !USES:
-!  Only those used by entire module.
-
 ! !INPUT PARAMETERS:
     integer, intent(in) :: old_vals, nlev
     real(cvmix_r8), dimension(nlev+1), optional, intent(in) :: new_Mdiff,     &
@@ -115,9 +112,6 @@ contains
 !  attribute in the cvmix\_data\_type structure.
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*), intent(in) :: varname

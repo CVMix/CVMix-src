@@ -102,13 +102,6 @@ contains
 !\\
 !\\
 
-! !USES:
-!  Only those used by entire module.
-
-! !OUTPUT PARAMETERS:
-    type (cvmix_conv_params_type), optional, intent(inout) ::                 &
-                                       CVmix_conv_params_user
-
 ! !INPUT PARAMETERS:
     real(cvmix_r8), intent(in) :: &
       convect_diff,      &! diffusivity to parameterize convection
@@ -117,6 +110,10 @@ contains
     real(cvmix_r8), intent(in), optional :: BVsqr_convect ! B-V parameter
     logical,        intent(in), optional :: lnoOBL ! False => apply in OBL too
     character(len=cvmix_strlen), optional, intent(in) :: old_vals
+
+! !OUTPUT PARAMETERS:
+    type (cvmix_conv_params_type), optional, intent(inout) ::                 &
+                                       CVmix_conv_params_user
 
 !EOP
 !BOC
@@ -180,9 +177,6 @@ contains
 !  Computes vertical diffusion coefficients for convective mixing.
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
 
@@ -248,9 +242,6 @@ contains
 !  Computes vertical diffusion coefficients for convective mixing.
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
 
@@ -374,9 +365,6 @@ contains
 !\\
 !\\
 
-! !USES:
-!  Only those used by entire module.
-
 ! !INPUT PARAMETERS:
     character(len=*), intent(in) :: varname
     integer,          intent(in) :: val
@@ -419,9 +407,6 @@ contains
 !  Write a real value into a cvmix\_conv\_params\_type variable.
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*), intent(in) :: varname
@@ -471,9 +456,6 @@ contains
 !\\
 !\\
 
-! !USES:
-!  Only those used by entire module.
-
 ! !INPUT PARAMETERS:
     character(len=*), intent(in) :: varname
     logical,          intent(in) :: val
@@ -518,9 +500,6 @@ contains
 !  Read the real value of a cvmix\_conv\_params\_type variable.
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*),             intent(in) :: varname

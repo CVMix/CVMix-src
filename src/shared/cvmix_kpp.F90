@@ -232,9 +232,6 @@ contains
 !  Initialization routine for KPP mixing.
 !\\
 !\\
-!
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     real(cvmix_r8),   optional, intent(in) :: ri_crit,                        &
@@ -601,9 +598,6 @@ contains
 !  parameterization.
 !\\
 !\\
-!
-! !USES:
-!  only those used by entire module.
 
 ! !INPUT PARAMETERS:
     type(cvmix_kpp_params_type), intent(in), optional, target ::              &
@@ -680,9 +674,6 @@ contains
 !  parameterization.
 !\\
 !\\
-!
-! !USES:
-!  only those used by entire module.
 
 ! !INPUT PARAMETERS:
     type(cvmix_kpp_params_type),  intent(in), optional, target ::             &
@@ -1278,9 +1269,6 @@ contains
 !\\
 !\\
 
-! !USES:
-!  Only those used by entire module.
-
 ! !INPUT PARAMETERS:
     character(len=*), intent(in) :: varname
     real(cvmix_r8),   intent(in) :: val
@@ -1363,9 +1351,6 @@ contains
 !\\
 !\\
 
-! !USES:
-!  Only those used by entire module.
-
 ! !INPUT PARAMETERS:
     character(len=*), intent(in) :: varname
     integer,          intent(in) :: val
@@ -1416,9 +1401,6 @@ contains
 !  Write a Boolean value into a cvmix\_kpp\_params\_type variable.
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*), intent(in) :: varname
@@ -1475,9 +1457,6 @@ contains
 !  queries of ddiff parameters, such as at initialization.
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     character(len=*),                              intent(in) :: varname
@@ -1553,13 +1532,10 @@ contains
                                              CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
-!  Computes the depth of the ocean boundary layer (OBL) for a given column.
+!  Computes the depth of the ocean boundary layer (\verb|OBL_depth|) for a given column.
 !  Ri\_bulk(h) = Ricr; h < -zBottom, (stable+lMonOb) 0 < h < vonKaraman Lstar
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     real(cvmix_r8), dimension(:),                   intent(in) :: Ri_bulk
@@ -1788,16 +1764,13 @@ contains
   function cvmix_kpp_compute_kOBL_depth(zw_iface, zt_cntr, OBL_depth)
 
 ! !DESCRIPTION:
-!  Computes the index of the level and interface above OBL\_depth. The index is
+!  Computes the index of the level and interface above \verb|OBL_depth|. The index is
 !  stored as a real number, and the integer index can be solved for in the
 !  following way:\\
-!    \verb|kt| = index of cell center above OBL\_depth = \verb|nint(kOBL_depth)-1|
-!    \verb|kw| = index of interface above OBL\_depth = \verb|floor(kOBL_depth)|
+!    \verb|kt| = index of cell center above \verb|OBL_depth| = \verb|nint(kOBL_depth)-1|
+!    \verb|kw| = index of interface above \verb|OBL_depth| = \verb|floor(kOBL_depth)|
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     real(cvmix_r8), dimension(:), intent(in) :: zw_iface, zt_cntr
@@ -1849,11 +1822,11 @@ contains
 
 ! !DESCRIPTION:
 !  The enhanced mixing described in Appendix D of LMD94 changes the diffusivity
-!  values at the interface between the cell center above OBL\_depth and the one
-!  below it, based on a weighted average of how close to each center OBL\_depth
-!  is. Note that we need to know whether OBL\_depth is above this interface or
+!  values at the interface between the cell center above \verb|OBL_depth| and the one
+!  below it, based on a weighted average of how close to each center \verb|OBL_depth|
+!  is. Note that we need to know whether \verb|OBL_depth| is above this interface or
 !  below it - we do this by comparing the indexes of the cell center above
-!  OBL\_depth (ktup) and the cell interface above OBL\_depth(kwup).
+!  \verb|OBL_depth| (\verb|ktup|) and the cell interface above \verb|OBL_depth|(\verb|kwup|).
 !\\
 !\\
 
@@ -1956,12 +1929,10 @@ contains
   subroutine cvmix_kpp_compute_OBL_depth_wrap(CVmix_vars, CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
-!  Computes the depth of the ocean boundary layer (OBL) for a given column.
+!  Computes the depth of the ocean boundary layer (\verb|CVmix_vars%BoundaryLayerDepth|)
+!  for a given column.
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     type(cvmix_kpp_params_type), optional, target, intent(in) ::                &
@@ -2013,9 +1984,6 @@ contains
 !  \verb|Nsqr_iface|.
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     ! * zt_cntr is level-center height (d in LMD94, units: m)
@@ -2123,9 +2091,6 @@ contains
 !\\
 !\\
 
-! !USES:
-!  Only those used by entire module.
-
 ! !INPUT PARAMETERS:
     real(cvmix_r8), intent(in) :: sigma_coord
     real(cvmix_r8), intent(in) :: OBL_depth, surf_buoy_force, surf_fric_vel
@@ -2209,9 +2174,6 @@ contains
 !  \verb|w_s| will be evaluated at the latter value.
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     real(cvmix_r8), dimension(:), intent(in) :: sigma_coord
@@ -2409,9 +2371,6 @@ contains
 !\\
 !\\
 
-! !USES:
-!  Only those used by entire module.
-
 ! !INPUT PARAMETERS:
     real(cvmix_r8), intent(in) :: sigma_coord
     real(cvmix_r8), intent(in) :: surf_fric_vel
@@ -2606,9 +2565,6 @@ contains
 !  negative values are assumed to be zero (default POP behavior).
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     ! zt_cntr: height at center of cell (units: m)
@@ -2906,12 +2862,9 @@ contains
   function compute_phi_inv(zeta, CVmix_kpp_params_in, L_Lstokes, lphi_m, lphi_s)
 
 ! !DESCRIPTION:
-!  Computes 1/phi\_m or 1/phi\_s
+!  Computes $\frac{1}{\phi_m}$ or $\frac{1}{\phi_s}$
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     real(cvmix_r8),              intent(in) :: zeta
@@ -3015,9 +2968,6 @@ contains
 !\\
 !\\
 
-! !USES:
-!  Only those used by entire module.
-
 ! !INPUT PARAMETERS:
     real(cvmix_r8),              intent(in) :: xi
     logical, optional,           intent(in) :: lchi_m, lchi_s
@@ -3094,9 +3044,6 @@ contains
 !\\
 !\\
 
-! !USES:
-!  Only those used by entire module.
-
 ! !INPUT PARAMETERS:
     real(cvmix_r8), intent(in) :: GAT1  ! G(1)
     real(cvmix_r8), intent(in) :: DGAT1 ! G'(1)
@@ -3130,9 +3077,6 @@ contains
 !  above and below.
 !\\
 !\\
-
-! !USES:
-!  Only those used by entire module.
 
 ! !INPUT PARAMETERS:
     ! depths_cntr  = (/layer center containing OBL, layer center below/)
@@ -3203,9 +3147,6 @@ contains
 !\\
 !\\
 
-! !USES:
-!  Only those used by entire module.
-
 ! !INPUT PARAMETERS:
     real(cvmix_r8),                 intent(in) :: u10    ! 10 meter wind (m/s)
     real(cvmix_r8),                 intent(in) :: ustar  ! water-side surface friction velocity (m/s)
@@ -3247,6 +3188,8 @@ contains
 ! !DESCRIPTION:
 !  This function returns the surface layer averaged Stokes drift, given
 !  the 10-meter wind (m/s) and the boundary layer depth (m).
+!\\
+!\\
 
 ! !INPUT PARAMETERS:
     real(cvmix_r8),                 intent(in) :: u10    ! 10 meter wind (m/s)
