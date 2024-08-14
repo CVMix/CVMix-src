@@ -1044,8 +1044,7 @@ sub print_notice {
     print "%                **** IMPORTANT NOTICE *****" ;
     print "% This LaTeX file has been automatically produced by ProTeX v. 1.1";
     print "% Any changes made to this file will likely be lost next time";
-    print "% this file is regenerated from its source. Send questions ";
-    print "% to Arlindo da Silva, dasilva\@gsfc.nasa.gov";
+    print "% this file is regenerated from its source.";
     print " ";
 
 }# sub print_notice
