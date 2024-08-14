@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 
 # (1) Load required routines
 . ../common/environ.sh
