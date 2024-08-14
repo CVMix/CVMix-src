@@ -6,7 +6,14 @@ SHARE=$SRC/shared
 
 mkdir -p protex_out
 rm -f protex_out/protex_documentation.*
-./protex                                     \
+./protex -s -F -g +n                         \
+       $SRC/cvmix_driver.F90                 \
+       $DRIVE/cvmix_bgrnd_BL.F90             \
+       $DRIVE/cvmix_shear_drv.F90            \
+       $DRIVE/cvmix_tidal_Simmons.F90        \
+       $DRIVE/cvmix_ddiff_drv.F90            \
+       $DRIVE/cvmix_kpp_drv.F90              \
+       $SRC/cvmix_io.F90                     \
        $SHARE/cvmix_kinds_and_types.F90      \
        $SHARE/cvmix_background.F90           \
        $SHARE/cvmix_shear.F90                \
@@ -16,14 +23,7 @@ rm -f protex_out/protex_documentation.*
        $SHARE/cvmix_convection.F90           \
        $SHARE/cvmix_math.F90                 \
        $SHARE/cvmix_put_get.F90              \
-       $SHARE/cvmix_utils.F90                \
-       $SRC/cvmix_driver.F90                 \
-       $DRIVE/cvmix_bgrnd_BL.F90             \
-       $DRIVE/cvmix_shear_drv.F90            \
-       $DRIVE/cvmix_tidal_Simmons.F90        \
-       $DRIVE/cvmix_ddiff_drv.F90            \
-       $DRIVE/cvmix_kpp_drv.F90              \
-       $SRC/cvmix_io.F90 >                   \
+       $SHARE/cvmix_utils.F90 >              \
        protex_out/protex_documentation.tex
 
 cd protex_out

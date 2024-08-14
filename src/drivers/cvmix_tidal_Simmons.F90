@@ -1,5 +1,4 @@
 !BOP
-!\newpage
 ! !ROUTINE: cvmix_tidal_driver
 
 ! !DESCRIPTION: A routine to test the Simmons implementation of tidal mixing.

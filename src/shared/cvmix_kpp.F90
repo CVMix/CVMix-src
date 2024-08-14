@@ -3343,11 +3343,12 @@ contains
 ! !INPUT PARAMETERS:
     real(cvmix_r8),                    intent(in)  ::  sigma
     real(cvmix_r8), optional,          intent(in)  ::  Gat1
+
 ! !OUTPUT PARAMETERS:
     real(cvmix_r8) :: cvmix_kpp_composite_shape
 
-!BOP
-!EOC
+!EOP
+!BOC
 
     real(cvmix_r8)  :: a2Gsig, a3Gsig, sig_m, G_m, G_1, sig
     a2Gsig = -2.1637_cvmix_r8
@@ -3374,7 +3375,7 @@ contains
 
 !BOP
 
-! !IROUTINE: cvmix_kpp_composite_shape
+! !IROUTINE: cvmix_kpp_composite_Gshape
 ! !INTERFACE:
 
   subroutine cvmix_kpp_composite_Gshape(sigma , Gat1, Gsig, dGdsig)
@@ -3382,6 +3383,7 @@ contains
 ! !INPUT PARAMETERS:
     real(cvmix_r8),                    intent(in)  ::  sigma
     real(cvmix_r8),                    intent(in)  ::  Gat1
+
 ! !INPUT/OUTPUT PARAMETERS:
     real(cvmix_r8),                  intent(inout) ::  Gsig
     real(cvmix_r8),                  intent(inout) ::  dGdsig
@@ -3422,10 +3424,12 @@ contains
            uSbar, vSbar, uS_SLD, vS_SLD, uSbar_SLD, vSbar_SLD,          &
            StokesXI, CVmix_kpp_params_user)
 
-! !DESCRIPTION: wgl(04/05/24)
+! !DESCRIPTION:
 !  Compute the Stokes similarity parameter, StokesXI, and Entrainment Rule, BEdE\_ER, from
 !  surface layer integrated TKE production terms as parameterized in
 !  Large et al., 2020 (doi:10.1175/JPO-D-20-0308.1)
+!\\
+!\\
 
 ! !INPUT PARAMETERS:
     real(cvmix_r8), dimension(:), intent(in) :: zi, zk          !< Cell interface and center heights < 0

@@ -1,12 +1,3 @@
-!BOI
-
-! !TITLE: In-code documentation for CVMix
-! !AUTHORS: Many contributors from GFDL, LANL, and NCAR
-! !AFFILIATION: GFDL, LANL, and NCAR
-! !DATE: \today
-
-!EOI
-
 module cvmix_kinds_and_types
 
 !BOP

@@ -1,5 +1,4 @@
 !BOP
-!\newpage
 ! !ROUTINE: cvmix_shear_driver
 
 ! !DESCRIPTION: A routine to test the Large, et al., implementation of shear

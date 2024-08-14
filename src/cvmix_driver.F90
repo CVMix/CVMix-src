@@ -1,6 +1,16 @@
-!BOP
+!BOI
 
-! \newpage
+! !TITLE: In-code documentation for CVMix
+! !AUTHORS: Many contributors from GFDL, LANL, and NCAR
+! !AFFILIATION: GFDL, LANL, and NCAR
+! !DATE: \today
+
+!EOI
+
+Program cvmix_driver
+
+  !BOP
+
 ! !MODULE: Main Program (Stand-Alone)
 ! !ROUTINE: cvmix_driver
 
@@ -13,8 +23,6 @@
 
 ! !INTERFACE:
 
-Program cvmix_driver
-
 ! !USES:
 
   use cvmix_kinds_and_types, only : cvmix_r8,                                 &
@@ -23,6 +31,7 @@ Program cvmix_driver
 
 !EOP
 !BOC
+
   integer :: nlev, max_nlev
   real(kind=cvmix_r8) :: ocn_depth
   character(len=cvmix_strlen) :: mix_type
@@ -52,5 +61,7 @@ Program cvmix_driver
     case DEFAULT
       print*, "WARNING: mix_type = '", trim(mix_type), "' is not supported by this driver."
   end select
+
+!EOC
 
 End Program cvmix_driver

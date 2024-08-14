@@ -1,5 +1,4 @@
 !BOP
-!\newpage
 ! !ROUTINE: cvmix_ddiff_driver
 
 ! !DESCRIPTION: A routine to test the double diffusion mixing module.

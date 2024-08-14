@@ -370,7 +370,9 @@ contains
 
 ! !DESCRIPTION:
 !  Calls cvmix\_init\_bkgnd\_BryanLewis\_low
-!
+!\\
+!\\
+
 ! !USES:
 !  Only those used by entire module.
 
@@ -436,7 +438,9 @@ contains
 !  \item[] bl4 $= 2500$ m
 !  \end{itemize}
 !  However, more recent usage of their scheme may warrant different settings.
-!
+!\\
+!\\
+
 ! !USES:
 !  Only those used by entire module.
 
