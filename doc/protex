@@ -1058,7 +1058,7 @@ sub print_preamble {
     print "\\usepackage{amsmath}";
     print "\\usepackage{epsfig}";
     print "\\usepackage{color}";
-    print "\\usepackage[linkbordercolor={0 0 1}]{hyperref}";
+    print "\\usepackage[colorlinks=true,linkcolor=blue,linktocpage=true]{hyperref}";
     print "\\textheight     9in";
     print "\\topmargin      0pt";
     print "\\headsep        1cm";
