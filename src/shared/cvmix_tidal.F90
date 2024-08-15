@@ -349,8 +349,7 @@ contains
                                 CVmix_vars%SimmonsCoeff,                    &
                                 CVmix_vars%VertDep_iface, nlev, max_nlev,   &
                                 CVMix_params,                               &
-                                CVmix_vars%SchmittnerSouthernOcean,         &
-                                CVmix_tidal_params_user)
+                                CVMix_tidal_params_user=CVmix_tidal_params_user)
       case ('schmittner','Schmittner')
         call cvmix_coeffs_tidal_schmittner                                  &
                                 (new_Mdiff, new_Tdiff,                      &
