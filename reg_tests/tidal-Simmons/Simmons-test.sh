@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 
 # (1) Load required routines
 . ../common/environ.sh
@@ -20,7 +20,8 @@ PHYS_FILE=gx1v6_physics_130523.nc
 ENERGY_FILE=tidal_energy_gx1v6_20130512.nc
 
 # Input Data repository (currently using "svn export")
-check_inputdata $GRID_FILE $PHYS_FILE $ENERGY_FILE
+# (run in subshell because check_inputdata changes directory)
+(check_inputdata $GRID_FILE $PHYS_FILE $ENERGY_FILE)
 
 # If different inputdata directory specified, update namelist
 if [ "$INPUTDATA_DIR" != "$CVMix/inputdata" ]; then
