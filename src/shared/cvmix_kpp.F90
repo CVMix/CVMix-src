@@ -2593,7 +2593,7 @@ contains
 
     ! Local variables
     integer :: kt, nlev
-    real(cvmix_r8) :: Cv, Vtc
+    real(cvmix_r8) :: Cv, Vtc , beta, xbeta, ybeta   ! pure convection entrainment rule
     logical :: lwstar          ! use wstar rather than w_s
     real(cvmix_r8) :: wstar    ! convective velocity scale
     real(cvmix_r8) :: ws_wstar ! ratio in limit of pure convection
@@ -2651,25 +2651,25 @@ contains
     end if
 
   if ( CVmix_kpp_params_in%lStokesMOST ) then
-    if (present(N_iface)) then
       lwstar   = .false.   !  .true.
-
-      ws_wstar = CVmix_kpp_params_in%vonkarman * real(25,cvmix_r8) ! *  &
+      ws_wstar = CVmix_kpp_params_in%vonkarman * cvmix_one * real(25,cvmix_r8) ! *  &
       ws_wstar = CVmix_kpp_params_in%vonkarman * ws_wstar**(cvmix_one/real(3,cvmix_r8))
-
-
-      Vtc = sqrt(0.2_cvmix_r8 *3.8409_cvmix_r8 /ws_wstar) /CVmix_kpp_params_in%Ri_crit
-
-      Cv = 1.4_cvmix_r8
+      ! for Mike: please make this a param
+      Cv = 2.6_cvmix_r8 ! call this CVt2
 
       do kt=1,nlev
+        xbeta = MAX( cvmix_zero , MIN( (300._cvmix_r8-100._cvmix_r8) , (-zt_cntr(kt) - 100._cvmix_r8) ) )
+        xbeta = xbeta / (300._cvmix_r8-100._cvmix_r8)
+        ybeta = (cvmix_one - xbeta*xbeta)**2
+        beta  = ybeta * 0.2_cvmix_r8
+        Vtc = sqrt( beta *3.8409_cvmix_r8 /ws_wstar) /CVmix_kpp_params_in%Ri_crit
         if (lwstar ) then
           wstar = (MAX(0.0 , zt_cntr(kt) * bfsfc(kt) ))**(cvmix_one/real(3,cvmix_r8))
           cvmix_kpp_compute_unresolved_shear(kt) = &
-               -zt_cntr(kt) * N_iface(kt) * Cv * Vtc * wstar
+               -zt_cntr(kt) * N_cntr(kt)  * Cv * Vtc * wstar
         else
           cvmix_kpp_compute_unresolved_shear(kt) = &
-               -zt_cntr(kt) * N_iface(kt) * Cv * Vtc * ws_cntr(kt) / ws_wstar
+               -zt_cntr(kt) * N_cntr(kt)  * Cv * Vtc * ws_cntr(kt) / ws_wstar
         end if
 
         if (cvmix_kpp_compute_unresolved_shear(kt).lt.                       &
@@ -2677,10 +2677,6 @@ contains
               cvmix_kpp_compute_unresolved_shear(kt) = CVmix_kpp_params_in%minVtsqr
         end if
       enddo
-    else
-     print*, "ERROR: StokesMOST package requires N_iface in cvmix_kpp_compute_unresolved_shear "
-        stop 1
-    end if
   else    ! not lStokesMOST
 
     ! options for Langmuir enhanced entrainment
