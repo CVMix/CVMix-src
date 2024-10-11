@@ -208,6 +208,9 @@
       real(cvmix_r8) :: RWHGK_ENTR_COEF,& ! Coefficient and exponent from
                         RWHGK_ENTR_EXP    ! RWHGK16 Langmuir parameterization
 
+      real(cvmix_r8) :: CVt2              ! Tunable parameter for convection entrainment
+                                          ! (Only used with StokesMOST)
+
   end type cvmix_kpp_params_type
 
 !EOP
@@ -480,10 +483,11 @@ contains
     end if
 
     if (present(lStokesMOST)) then
-       call cvmix_put_kpp('lStokesMOST',lStokesMOST , CVmix_kpp_params_user)
+       call cvmix_put_kpp('lStokesMOST', lStokesMOST, CVmix_kpp_params_user)
     else
       call cvmix_put_kpp('lStokesMOST', .false., CVmix_kpp_params_user)
     end if
+    call cvmix_put_kpp('CVt2', 2.6_cvmix_r8, CVmix_kpp_params_user)
 
     if (present(lEkman)) then
       call cvmix_put_kpp('lEkman', lEkman, CVmix_kpp_params_user)
@@ -1316,6 +1320,8 @@ contains
         CVmix_kpp_params_out%surf_layer_ext = val
       case ('Cv')
         CVmix_kpp_params_out%Cv = val
+      case ('CVt2')
+        CVmix_kpp_params_out%CVt2 = val
       case ('nonlocal_coeff')
         CVmix_kpp_params_out%nonlocal_coeff = val
       case ('c_CT')
@@ -1500,6 +1506,8 @@ contains
         cvmix_get_kpp_real = CVmix_kpp_params_get%surf_layer_ext
       case ('Cv')
         cvmix_get_kpp_real = CVmix_kpp_params_get%Cv
+      case ('CVt2')
+        cvmix_get_kpp_real = CVmix_kpp_params_get%CVt2
       case ('c_CT')
         cvmix_get_kpp_real = CVmix_kpp_params_get%c_CT
       case ('c_ST')
@@ -2593,7 +2601,7 @@ contains
 
     ! Local variables
     integer :: kt, nlev
-    real(cvmix_r8) :: Cv, Vtc , beta, xbeta, ybeta   ! pure convection entrainment rule
+    real(cvmix_r8) :: Cv, Vtc, beta, xbeta, ybeta   ! pure convection entrainment rule
     logical :: lwstar          ! use wstar rather than w_s
     real(cvmix_r8) :: wstar    ! convective velocity scale
     real(cvmix_r8) :: ws_wstar ! ratio in limit of pure convection
@@ -2654,8 +2662,6 @@ contains
       lwstar   = .false.   !  .true.
       ws_wstar = CVmix_kpp_params_in%vonkarman * cvmix_one * real(25,cvmix_r8) ! *  &
       ws_wstar = CVmix_kpp_params_in%vonkarman * ws_wstar**(cvmix_one/real(3,cvmix_r8))
-      ! for Mike: please make this a param
-      Cv = 2.6_cvmix_r8 ! call this CVt2
 
       do kt=1,nlev
         xbeta = MAX( cvmix_zero , MIN( (300._cvmix_r8-100._cvmix_r8) , (-zt_cntr(kt) - 100._cvmix_r8) ) )
@@ -2666,10 +2672,10 @@ contains
         if (lwstar ) then
           wstar = (MAX(0.0 , zt_cntr(kt) * bfsfc(kt) ))**(cvmix_one/real(3,cvmix_r8))
           cvmix_kpp_compute_unresolved_shear(kt) = &
-               -zt_cntr(kt) * N_cntr(kt)  * Cv * Vtc * wstar
+               -zt_cntr(kt) * N_cntr(kt)  * CVmix_kpp_params_in%CVt2 * Vtc * wstar
         else
           cvmix_kpp_compute_unresolved_shear(kt) = &
-               -zt_cntr(kt) * N_cntr(kt)  * Cv * Vtc * ws_cntr(kt) / ws_wstar
+               -zt_cntr(kt) * N_cntr(kt)  * CVmix_kpp_params_in%CVt2 * Vtc * ws_cntr(kt) / ws_wstar
         end if
 
         if (cvmix_kpp_compute_unresolved_shear(kt).lt.                       &
