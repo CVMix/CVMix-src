@@ -2434,6 +2434,7 @@ contains
         if (compute_ws) then
           do kw = 1,n_sigma
             chi_s = compute_Stokes_chi( xi(kw) , lchi_s=.true. )
+            L_StokesL = cvmix_one - xi(kw)             !wgl - xi
             w_s(kw)=compute_phi_inv(zeta(kw),CVmix_kpp_params_in,L_StokesL,lphi_s=.true.) * &
                       vonkar*surf_fric_vel  / chi_s
           end do
