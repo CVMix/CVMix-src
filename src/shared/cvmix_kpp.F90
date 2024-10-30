@@ -223,12 +223,12 @@ contains
 
 ! !IROUTINE: cvmix_init_kpp
 ! !INTERFACE:
-  subroutine cvmix_init_kpp(ri_crit, minOBLdepth, maxOBLdepth, minVtsqr,      &
-                            vonkarman, Cstar, zeta_m, zeta_s, surf_layer_ext, &
-                            Cv, interp_type, interp_type2, MatchTechnique,    &
-                            old_vals, lEkman, lStokesMOST, lMonOb, lnoDGat1,  &
-                            lenhanced_diff, lnonzero_surf_nonlocal,           &
-                            Langmuir_mixing_str, Langmuir_entrainment_str,    &
+  subroutine cvmix_init_kpp(ri_crit, minOBLdepth, maxOBLdepth, minVtsqr,         &
+                            vonkarman, Cstar, zeta_m, zeta_s, surf_layer_ext,    &
+                            CVt2, Cv, interp_type, interp_type2, MatchTechnique, &
+                            old_vals, lEkman, lStokesMOST, lMonOb, lnoDGat1,     &
+                            lenhanced_diff, lnonzero_surf_nonlocal,              &
+                            Langmuir_mixing_str, Langmuir_entrainment_str,       &
                             l_LMD_ws, CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
@@ -246,6 +246,7 @@ contains
                                               zeta_m,                         &
                                               zeta_s,                         &
                                               surf_layer_ext,                 &
+                                              CVt2,                           &
                                               Cv
     character(len=*), optional, intent(in) :: interp_type,                    &
                                               interp_type2,                   &
@@ -487,7 +488,12 @@ contains
     else
       call cvmix_put_kpp('lStokesMOST', .false., CVmix_kpp_params_user)
     end if
-    call cvmix_put_kpp('CVt2', 2.6_cvmix_r8, CVmix_kpp_params_user)
+
+    if (present(CVt2)) then
+      call cvmix_put_kpp('CVt2', CVt2, CVmix_kpp_params_user)
+    else
+      call cvmix_put_kpp('CVt2', 1.6_cvmix_r8, CVmix_kpp_params_user)
+    end if
 
     if (present(lEkman)) then
       call cvmix_put_kpp('lEkman', lEkman, CVmix_kpp_params_user)
@@ -2434,6 +2440,7 @@ contains
         if (compute_ws) then
           do kw = 1,n_sigma
             chi_s = compute_Stokes_chi( xi(kw) , lchi_s=.true. )
+            L_StokesL = cvmix_one - xi(kw)             !wgl - xi
             w_s(kw)=compute_phi_inv(zeta(kw),CVmix_kpp_params_in,L_StokesL,lphi_s=.true.) * &
                       vonkar*surf_fric_vel  / chi_s
           end do
