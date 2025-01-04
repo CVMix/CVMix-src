@@ -865,6 +865,11 @@ contains
           end if
 
     !     (3a) Compute turbulent scales at interfaces throughout column
+    Tnonlocal = cvmix_zero
+    Snonlocal = cvmix_zero
+    OBL_Mdiff = cvmix_zero
+    OBL_Tdiff = cvmix_zero
+    OBL_Sdiff = cvmix_zero
     sigma = -zw(1:nlev+1)/OBL_depth
     call cvmix_kpp_compute_turbulent_scales(sigma, OBL_depth, surf_buoy, & !_1d
                 surf_fric,   xi=StokesXI,    w_m=w_m, w_s=w_s,           &
