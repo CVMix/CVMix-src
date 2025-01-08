@@ -2,12 +2,7 @@ name: CVMix CI
 on: [push, pull_request]
 jobs:
   CVMix-Testing:
-    runs-on: ubuntu-latest
-
-    strategy:
-        matrix:
-            python-version:
-                - 3.9
+    runs-on: ubuntu-22.04  # tests fail on 24.04 due to nc-config --flibs returning empty string
 
     steps:
       - uses: actions/checkout@v3
