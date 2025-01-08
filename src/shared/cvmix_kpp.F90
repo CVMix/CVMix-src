@@ -2613,7 +2613,7 @@ contains
 
     ! Local variables
     integer :: kt, nlev
-    real(cvmix_r8) :: Cv, Vtc, beta, xbeta, ybeta   ! pure convection entrainment rule
+    real(cvmix_r8) :: Cv, Vtc  ! pure convection entrainment rule
     logical :: lwstar          ! use wstar rather than w_s
     real(cvmix_r8) :: wstar    ! convective velocity scale
     real(cvmix_r8) :: ws_wstar ! ratio in limit of pure convection
@@ -2676,11 +2676,7 @@ contains
     ws_wstar = CVmix_kpp_params_in%vonkarman * ws_wstar**(cvmix_one/real(3,cvmix_r8))
 
     do kt=1,nlev
-      xbeta = MAX( cvmix_zero , MIN( (300._cvmix_r8-100._cvmix_r8) , (-zt_cntr(kt) - 100._cvmix_r8) ) )
-      xbeta = xbeta / (300._cvmix_r8-100._cvmix_r8)
-      ybeta = (cvmix_one - xbeta*xbeta)**2
-      beta  = ybeta * 0.2_cvmix_r8
-      Vtc = sqrt( beta *3.8409_cvmix_r8 /ws_wstar) /CVmix_kpp_params_in%Ri_crit
+      Vtc = sqrt( 0.2_cvmix_r8 *3.8409_cvmix_r8 /ws_wstar) /CVmix_kpp_params_in%Ri_crit
       if (lwstar ) then
         wstar = (MAX(0.0 , zt_cntr(kt) * bfsfc(kt) ))**(cvmix_one/real(3,cvmix_r8))
         cvmix_kpp_compute_unresolved_shear(kt) = &
