@@ -28,7 +28,7 @@ ifeq ($(FC_TMP),pgf90)
 endif
 
 ifeq ($(FC_TMP),ifx)
-  FCFLAGS = -O2 -free -module $(OBJ_DIR) -cpp -warn all -diag-error warn -nogen-interface -fp-model source
+  FCFLAGS = -O0 -g -fpe0 -free -module $(OBJ_DIR) -cpp -warn all -diag-error warn -nogen-interface -fp-model source
 endif
 
 ifeq ($(FC_TMP),xlf90)
