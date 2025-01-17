@@ -1672,8 +1672,8 @@ contains
       if ( present(Xi) .and. present(surf_buoy) ) then
         MoninObukhov = OBL_limit
         numer = surf_fric**3
-        denom = surf_buoy(k+1) * (cvmix_one-Xi(k+1))
         do k = 0, kRi-1
+          denom = surf_buoy(k+1) * (cvmix_one-Xi(k+1))
           if ( denom*OBL_limit .gt. numer ) MoninObukhov =      &
                 numer / denom
           if ( MoninObukhov .lt. abs(zt_cntr(k+1)) ) &
