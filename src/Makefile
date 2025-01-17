@@ -145,7 +145,7 @@ endif
 
 all: exe
 
-$(EXE): $(addprefix $(OBJ_DIR)/,$(OBJS) $(DRIVER_OBJS))        \
+$(EXE): $(addprefix $(OBJ_DIR)/,$(DRIVER_OBJS) $(OBJS))        \
         $(LIB_DIR)/libcvmix.a
 	$(FC) -o $(EXE) $(addprefix $(OBJ_DIR)/,$(OBJS) $(DRIVER_OBJS)) $(LINKING_FLAGS)
 
