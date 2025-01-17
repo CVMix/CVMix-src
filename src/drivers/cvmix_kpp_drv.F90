@@ -41,7 +41,7 @@ Subroutine cvmix_kpp_driver()
   real(cvmix_r8), parameter :: third = cvmix_one / real(3,cvmix_r8)
 
   ! CVMix datatypes
-  type(cvmix_data_type)       :: CVmix_vars1, CVmix_vars4, CVmix_vars5
+  type(cvmix_data_type) :: CVmix_vars1, CVmix_vars4, CVmix_vars5, CVmix_vars7
 
   real(cvmix_r8), dimension(:),   allocatable, target :: Mdiff, Tdiff, Sdiff
   real(cvmix_r8), dimension(:),   allocatable, target :: zt, zw_iface,        &
@@ -52,19 +52,23 @@ Subroutine cvmix_kpp_driver()
                                                          delta_vel_sqr,       &
                                                          buoy_freq_iface
   real(cvmix_r8), dimension(:,:), allocatable, target :: hor_vel
+  real(cvmix_r8), dimension(:),   allocatable         :: ones
   real(cvmix_r8), dimension(2)                        :: ref_vel
   real(cvmix_r8), dimension(4) :: shape_coeffs
-  integer :: i, fid, kt, kw, nlev1, nlev3, nlev4, max_nlev4, OBL_levid4, nlev5
-  real(cvmix_r8) :: hmix1, hmix5, ri_crit, layer_thick1, layer_thick4,        &
-                    layer_thick5, OBL_depth4, OBL_depth5, N, Nsqr
+  integer :: i, fid, kt, kw, nlev1, nlev3, nlev4, max_nlev4, OBL_levid4,      &
+             nlev5, nlev7
+  real(cvmix_r8) :: hmix1, hmix5, hmix7,  ri_crit, layer_thick1,              &
+                    layer_thick4, layer_thick5, layer_thick7, OBL_depth4,     &
+                    OBL_depth5, OBL_depth7, N, Nsqr
   real(cvmix_r8) :: kOBL_depth, Bslope, Vslope
   real(cvmix_r8) :: sigma6, OBL_depth6, surf_buoy_force6, surf_fric_vel6,     &
                     vonkarman6, tao, rho0, grav, alpha, Qnonpen, Cp0,         &
                     w_m6, w_s6, wm6_true, ws6_true
-  character(len=cvmix_strlen) :: interp_type_t1, interp_type_t4, interp_type_t5
+  character(len=cvmix_strlen) :: interp_type_t1, interp_type_t4,              &
+                                 interp_type_t5, interp_type_t7
   character(len=cvmix_strlen) :: filename
   ! True => run specified test
-  logical :: ltest1, ltest2, ltest3, ltest4, ltest5, ltest6
+  logical :: ltest1, ltest2, ltest3, ltest4, ltest5, ltest6, ltest7
   logical :: lnoDGat1 ! True => G'(1) = 0 (in test 4)
 
   namelist/kpp_col1_nml/ltest1, nlev1, layer_thick1, interp_type_t1, hmix1,   &
@@ -75,6 +79,7 @@ Subroutine cvmix_kpp_driver()
   namelist/kpp_col5_nml/ltest5, nlev5, layer_thick5, hmix5, interp_type_t5
   namelist/kpp_col6_nml/ltest6, vonkarman6, tao, rho0, grav, alpha, Qnonpen,  &
                         Cp0, OBL_depth6
+  namelist/kpp_col7_nml/ltest7, nlev7, layer_thick7, hmix7, interp_type_t7
 
   ! Read namelists
 
@@ -117,12 +122,20 @@ Subroutine cvmix_kpp_driver()
   Cp0        =  real(3992, cvmix_r8)
   OBL_depth6 =  real(6000, cvmix_r8)
 
+  ! Defaults for test 7
+  ltest7 = .false.
+  nlev7 = 10
+  layer_thick7   = real(5,  cvmix_r8)
+  hmix7          = real(17, cvmix_r8)
+  interp_type_t7 = "linear"
+
   read(*, nml=kpp_col1_nml)
   read(*, nml=kpp_col2_nml)
   read(*, nml=kpp_col3_nml)
   read(*, nml=kpp_col4_nml)
   read(*, nml=kpp_col5_nml)
   read(*, nml=kpp_col6_nml)
+  read(*, nml=kpp_col7_nml)
 
   ! Test 1: user sets up levels via namelist (constant thickness) and specifies
   !         critical Richardson number as well as depth parameter hmix1. The
@@ -589,6 +602,139 @@ Subroutine cvmix_kpp_driver()
     print*, ""
 
   end if ! ltest6
+
+  ! Test 7: Test 5, but lStokesMOST = .true.
+  if (ltest7) then
+    print*, ""
+    print*, "Test 7: Computing Bulk Richardson number (with StokesMOST)"
+    print*, "----------"
+
+    ! using linear interpolation, averaging Nsqr, and setting Cv = 1.5  to
+    ! match LMD result
+    call cvmix_init_kpp(Cv = 1.5_cvmix_r8, interp_type=interp_type_t7,        &
+                        lStokesMOST=.true., lMonOb=.true.)
+
+    ! Set up vertical levels (centers and interfaces) and compute bulk
+    ! Richardson number
+    allocate(zt(nlev7), zw_iface(nlev7+1))
+    do kw=1,nlev7+1
+      zw_iface(kw) = -layer_thick7*real(kw-1, cvmix_r8)
+    end do
+    do kt=1,nlev7
+      zt(kt) = 0.5_cvmix_r8 * (zw_iface(kt)+zw_iface(kt+1))
+    end do
+
+    ! Compute Br-B(d), |Vr-V(d)|^2, and Vt^2
+    allocate(buoyancy(nlev7), delta_vel_sqr(nlev7), hor_vel(nlev7,2),         &
+             shear_sqr(nlev7), w_s(nlev7), Ri_bulk(nlev7), Ri_bulk2(nlev7),   &
+             buoy_freq_iface(nlev7+1))
+
+    ref_vel(1) = 0.1_cvmix_r8
+    ref_vel(2) = cvmix_zero
+    N          = 0.01_cvmix_r8
+    Nsqr       = N*N
+    Bslope     = -Nsqr
+    Vslope     = -0.1_cvmix_r8 / (real(nlev7,cvmix_r8)*layer_thick7-hmix7)
+    do kt=1,nlev7
+      if ((zt(kt).ge.-hmix7).or.(kt.eq.1)) then
+        buoyancy(kt)  = Nsqr
+        hor_vel(kt,1) = 0.1_cvmix_r8
+        buoy_freq_iface(kt) = cvmix_zero
+      else
+        if (zw_iface(kt).ge.-hmix7) then
+          ! derivatives of buoyancy and horizontal velocity component are
+          ! discontinuous in this layer (no change -> non-zero linear change)
+          ! so we compute area-average of analytic function over layer
+          buoyancy(kt)  = Bslope*(-zw_iface(kt+1)-real(hmix7,cvmix_r8))**2 /  &
+                          (real(2,cvmix_r8)*layer_thick7) + Nsqr
+          hor_vel(kt,1) = Vslope*(-zw_iface(kt+1)-real(hmix7,cvmix_r8))**2 /  &
+                          (real(2,cvmix_r8)*layer_thick7) + 0.1_cvmix_r8
+        else
+          buoyancy(kt)  = Nsqr+Bslope*(-zt(kt)-real(hmix7,cvmix_r8))
+          hor_vel(kt,1) = 0.1_cvmix_r8 + Vslope *                             &
+                          (-zt(kt)-real(hmix7,cvmix_r8))
+        end if
+        buoy_freq_iface(kt) = sqrt(-(buoyancy(kt)-buoyancy(kt-1)) /           &
+                                    layer_thick7)
+      end if
+      ! Compute w_s with zeta=0 per LMD page 393
+      ! => w_s = von Karman * surf_fric_vel = 0.4*0.01 = 4e-3
+      call cvmix_kpp_compute_turbulent_scales(cvmix_zero, -zt(kt),            &
+                                              buoyancy(1), 0.01_cvmix_r8,     &
+                                              w_s=w_s(kt))
+      hor_vel(kt,2) = cvmix_zero
+      delta_vel_sqr(kt) = (ref_vel(1)-hor_vel(kt,1))**2 +                     &
+                          (ref_vel(2)-hor_vel(kt,2))**2
+    end do
+    buoy_freq_iface(nlev7+1) = N
+!   MNL: test both uses of compute_bulk_Richardson
+    Ri_bulk = cvmix_kpp_compute_bulk_Richardson(zt, (buoyancy(1)-buoyancy),   &
+                                             delta_vel_sqr,                   &
+                                             Nsqr_iface = buoy_freq_iface**2, &
+                                             ws_cntr = w_s)
+
+    shear_sqr = cvmix_kpp_compute_unresolved_shear(zt, w_s,                   &
+                                             Nsqr_iface = buoy_freq_iface**2)
+    ! Note that Vt_shear_sqr is the fourth argument in compute_bulk_Richardson
+    ! so it does not need to declared explicitly (even though it is optional)
+    Ri_bulk2  = cvmix_kpp_compute_bulk_Richardson(zt, (buoyancy(1)-buoyancy), &
+                                                  delta_vel_sqr, shear_sqr)
+    allocate(ones(nlev7))
+    ones(:) = cvmix_one
+    call cvmix_kpp_compute_OBL_depth(Ri_bulk, zw_iface, OBL_depth7,           &
+                                     kOBL_depth, zt, surf_fric=cvmix_one,     &
+                                     surf_buoy=ones, Xi=ones)
+    deallocate(ones)
+    do kt=1,nlev7
+      if (abs(Ri_bulk(kt)-Ri_bulk2(kt)).gt.1e-12_cvmix_r8) then
+        print*, "WARNING: two Ri_bulk computations did not match!"
+        print*, zt(kt), Ri_bulk(kt), Ri_bulk2(kt)
+      else
+        print*, zt(kt), Ri_bulk(kt)
+      end if
+    end do
+    print*, "OBL has depth of ", OBL_depth7
+#ifdef _NETCDF
+    print*, "Done! Data is stored in test7.nc, run plot_bulk_Rich.ncl ",      &
+            "to see output."
+#else
+    print*, "Done! Data is stored in test7.out, run plot_bulk_Rich.ncl ",     &
+            "to see output."
+#endif
+
+    CVmix_vars7%nlev                =  nlev7
+    CVmix_vars7%BoundaryLayerDepth  =  OBL_depth7
+    CVmix_vars7%zt_cntr             => zt
+    CVmix_vars7%BulkRichardson_cntr => Ri_bulk
+    CVmix_vars7%Vx_cntr             => hor_vel(:,1)
+#ifdef _NETCDF
+    call cvmix_io_open(fid, "test7.nc", "nc")
+#else
+    call cvmix_io_open(fid, "test7.out", "ascii")
+#endif
+    call cvmix_output_write(fid, CVmix_vars7, (/"zt      ",                   &
+                                                "Ri_bulk ",                   &
+                                                "Vx      ",                   &
+                                                "buoyancy"/), buoyancy)
+#ifdef _NETCDF
+    call cvmix_output_write_att(fid, "OBL_depth",                             &
+                                CVmix_vars7%BoundaryLayerDepth)
+    call cvmix_output_write_att(fid, "longname", "ocean height (cell center)",&
+                                "zt")
+    call cvmix_output_write_att(fid, "units", "m", "zt")
+    call cvmix_output_write_att(fid, "longname", "horizontal velocity", "U")
+    call cvmix_output_write_att(fid, "units", "m/s", "U")
+    call cvmix_output_write_att(fid, "units", "m/s^2", "buoyancy")
+    call cvmix_output_write_att(fid, "longname", "Bulk Richardson number",    &
+                                "BulkRichardson")
+    call cvmix_output_write_att(fid, "units", "unitless", "BulkRichardson")
+#endif
+    call cvmix_io_close(fid)
+
+    deallocate(zt, zw_iface)
+    deallocate(buoyancy, delta_vel_sqr, hor_vel, shear_sqr, w_s, Ri_bulk,     &
+               Ri_bulk2, buoy_freq_iface)
+  end if ! ltest7
 
 !EOC
 

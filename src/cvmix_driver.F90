@@ -36,6 +36,12 @@ Program cvmix_driver
   real(kind=cvmix_r8) :: ocn_depth
   character(len=cvmix_strlen) :: mix_type
 
+  external cvmix_BL_driver
+  external cvmix_shear_driver
+  external cvmix_tidal_driver
+  external cvmix_ddiff_driver
+  external cvmix_kpp_driver
+
   namelist/cvmix_nml/mix_type, nlev, max_nlev, ocn_depth
 
   mix_type = 'unset'

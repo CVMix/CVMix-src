@@ -1576,7 +1576,7 @@ contains
     ! Local variables
     real(kind=cvmix_r8), dimension(:), pointer :: depth
     real(kind=cvmix_r8), dimension(4)          :: coeffs
-    real(kind=cvmix_r8) :: Ekman, MoninObukhov, OBL_Limit
+    real(kind=cvmix_r8) :: Ekman, MoninObukhov, OBL_Limit, numer, denom
     integer             :: nlev, k, kRi
     logical             :: lstable
 
@@ -1671,9 +1671,11 @@ contains
     if (CVmix_kpp_params_in%lMonOb ) then
       if ( present(Xi) .and. present(surf_buoy) ) then
         MoninObukhov = OBL_limit
+        numer = surf_fric**3
+        denom = surf_buoy(k+1) * (cvmix_one-Xi(k+1))
         do k = 0, kRi-1
-          if (surf_buoy(k+1) .gt. cvmix_zero) MoninObukhov =      &
-                surf_fric**3 / (surf_buoy(k+1) * (cvmix_one-Xi(k+1)))
+          if ( denom*OBL_limit .gt. numer ) MoninObukhov =      &
+                numer / denom
           if ( MoninObukhov .lt. abs(zt_cntr(k+1)) ) &
           exit
         end do
