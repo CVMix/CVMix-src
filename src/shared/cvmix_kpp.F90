@@ -3346,12 +3346,13 @@ contains
 !EOP
 !BOC
 
-    real(cvmix_r8)  :: a2Gsig, a3Gsig, bGsig, sig_m, G_m, G_1, sig
+    real(cvmix_r8), parameter ::     a2Gsig = -2.1637_cvmix_r8,               &
+                                     a3Gsig =  0.5831_cvmix_r8,               &
+                                     sig_m  =  0.35_cvmix_r8,                 &
+                                     G_m    =  0.11_cvmix_r8
 
-    a2Gsig = -2.1637_cvmix_r8
-    a3Gsig =  0.5831_cvmix_r8
-    sig_m  =  0.35_cvmix_r8
-    G_m    =  0.11_cvmix_r8     ! sig_m + sig_m * sig_m * (a2Gsig + a3Gsig * sig_m)
+    real(cvmix_r8)  :: bGsig, G_1, sig
+
     G_1    =  MAX( cvmix_zero  ,  MIN( Gat1 , G_m ) )
 
     if (sigma .lT. sig_m)  then
@@ -3459,9 +3460,15 @@ contains
       ! SLdepth can be between cell interfaces kSL and kSL+1
       delH = min( max(cvmix_zero, SLdepth - dtop), (zi(ktmp) - zi(ktmp+1) ) )
       dbot = MIN( dtop + delH ,  SLdepth)
-      sigbot = dbot / BLdepth
-      Gbot     = cvmix_kpp_composite_shape(sigbot)
-      TauMAG   = ustar * ustar * Gbot / sigbot
+      if (BLdepth .gt. cvmix_zero) then
+        sigbot = dbot / BLdepth
+        Gbot     = cvmix_kpp_composite_shape(sigbot)
+        TauMAG   = ustar * ustar * Gbot / sigbot
+      else
+        sigbot = cvmix_zero
+        Gbot = cvmix_zero
+        TauMAG = cvmix_zero
+      endif
       delU     = uE(ktmp) - uE(ktmp+1)
       delV     = vE(ktmp) - vE(ktmp+1)
       Omega_E2x= atan2( delV  , delU )

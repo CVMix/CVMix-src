@@ -24,6 +24,7 @@ Subroutine cvmix_kpp_driver()
                                     cvmix_kpp_compute_unresolved_shear,       &
                                     cvmix_kpp_compute_turbulent_scales,       &
                                     cvmix_kpp_compute_shape_function_coeffs,  &
+                                    cvmix_kpp_compute_StokesXi,               &
                                     cvmix_coeffs_kpp
   use cvmix_put_get,         only : cvmix_put
   use cvmix_io,              only : cvmix_io_open,            &
@@ -52,7 +53,8 @@ Subroutine cvmix_kpp_driver()
                                                          delta_vel_sqr,       &
                                                          buoy_freq_iface
   real(cvmix_r8), dimension(:,:), allocatable, target :: hor_vel
-  real(cvmix_r8), dimension(:),   allocatable         :: ones
+  real(cvmix_r8), dimension(:),   allocatable         :: uS, vS, uSbar, vSbar
+  real(cvmix_r8), dimension(:),   allocatable         :: zeros, ones
   real(cvmix_r8), dimension(2)                        :: ref_vel
   real(cvmix_r8), dimension(4) :: shape_coeffs
   integer :: i, fid, kt, kw, nlev1, nlev3, nlev4, max_nlev4, OBL_levid4,      &
@@ -60,6 +62,7 @@ Subroutine cvmix_kpp_driver()
   real(cvmix_r8) :: hmix1, hmix5, hmix7,  ri_crit, layer_thick1,              &
                     layer_thick4, layer_thick5, layer_thick7, OBL_depth4,     &
                     OBL_depth5, OBL_depth7, N, Nsqr
+  real(cvmix_r8) :: StokesXI
   real(cvmix_r8) :: kOBL_depth, Bslope, Vslope
   real(cvmix_r8) :: sigma6, OBL_depth6, surf_buoy_force6, surf_fric_vel6,     &
                     vonkarman6, tao, rho0, grav, alpha, Qnonpen, Cp0,         &
@@ -679,12 +682,36 @@ Subroutine cvmix_kpp_driver()
     ! so it does not need to declared explicitly (even though it is optional)
     Ri_bulk2  = cvmix_kpp_compute_bulk_Richardson(zt, (buoyancy(1)-buoyancy), &
                                                   delta_vel_sqr, shear_sqr)
-    allocate(ones(nlev7))
-    ones(:) = cvmix_one
+    allocate(zeros(nlev7), source=cvmix_zero)
+    allocate(ones(nlev7), &
+             uS(nlev7), &
+             vS(nlev7), &
+             uSbar(nlev7), &
+             vSbar(nlev7), &
+             source=cvmix_one)
+    StokesXI = cvmix_one
+    call cvmix_kpp_compute_StokesXi(zi=zt,                                    &
+                                    zk=zw_iface,                              &
+                                    kSL=kt,                                   &
+                                    SLDepth=cvmix_zero, &
+                                    surf_buoy_force=cvmix_one, &
+                                    surf_fric_vel=cvmix_one, &
+                                    omega_w2x=cvmix_one, &
+                                    uE=ones, &
+                                    vE=ones, &
+                                    uS=uS, &
+                                    vS=vS, &
+                                    uSbar=uSbar, &
+                                    vSbar=vSbar, &
+                                    uS_SLD=cvmix_one, &
+                                    vS_SLD=cvmix_one, &
+                                    uSbar_SLD=cvmix_one, &
+                                    vSbar_SLD=cvmix_one, &
+                                    StokesXI=StokesXI)
     call cvmix_kpp_compute_OBL_depth(Ri_bulk, zw_iface, OBL_depth7,           &
                                      kOBL_depth, zt, surf_fric=cvmix_one,     &
                                      surf_buoy=ones, Xi=ones)
-    deallocate(ones)
+    deallocate(zeros, ones, uS, vS, uSbar, vSbar)
     do kt=1,nlev7
       if (abs(Ri_bulk(kt)-Ri_bulk2(kt)).gt.1e-12_cvmix_r8) then
         print*, "WARNING: two Ri_bulk computations did not match!"
