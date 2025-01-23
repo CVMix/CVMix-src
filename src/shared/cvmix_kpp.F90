@@ -1682,7 +1682,7 @@ contains
         if (k.eq.0) then
           OBL_limit  = abs(zt_cntr(1))
         elseif (k.lt.kRi) then
-           OBL_limit = min( OBL_limit, abs(zw_iface(k)) )
+           OBL_limit = min( OBL_limit, abs(zw_iface(k+1)) )
         end if
 
       else
@@ -1693,7 +1693,6 @@ contains
 
       ! (4) OBL_depth must be at or above OBL_limit -zt_cntr(1)  <  OBL_depth < OBL_limit
     OBL_depth  = min(OBL_depth, OBL_limit )
-    kOBL_depth = cvmix_kpp_compute_kOBL_depth(zw_iface, zt_cntr, OBL_depth)
 
   else ! not Stokes_MOST
 
@@ -1765,13 +1764,13 @@ contains
       !       because we know OBL_depth will equal OBL_limit?
       OBL_depth = min(OBL_depth, OBL_limit)
     end if
-
-    OBL_depth = max(OBL_depth, CVmix_kpp_params_in%minOBLdepth)
-    if (CVmix_kpp_params_in%maxOBLdepth.gt.cvmix_zero)                        &
-      OBL_depth = min(OBL_depth, CVmix_kpp_params_in%maxOBLdepth)
-    kOBL_depth = cvmix_kpp_compute_kOBL_depth(zw_iface, zt_cntr, OBL_depth)
-
   end if    ! lStokesMOST
+
+  OBL_depth = max(OBL_depth, CVmix_kpp_params_in%minOBLdepth)
+  if (CVmix_kpp_params_in%maxOBLdepth.gt.cvmix_zero)                        &
+    OBL_depth = min(OBL_depth, CVmix_kpp_params_in%maxOBLdepth)
+  kOBL_depth = cvmix_kpp_compute_kOBL_depth(zw_iface, zt_cntr, OBL_depth)
+
 
 !EOC
 
@@ -3460,15 +3459,9 @@ contains
       ! SLdepth can be between cell interfaces kSL and kSL+1
       delH = min( max(cvmix_zero, SLdepth - dtop), (zi(ktmp) - zi(ktmp+1) ) )
       dbot = MIN( dtop + delH ,  SLdepth)
-      if (BLdepth .gt. cvmix_zero) then
-        sigbot = dbot / BLdepth
-        Gbot     = cvmix_kpp_composite_shape(sigbot)
-        TauMAG   = ustar * ustar * Gbot / sigbot
-      else
-        sigbot = cvmix_zero
-        Gbot = cvmix_zero
-        TauMAG = cvmix_zero
-      endif
+      sigbot = dbot / BLdepth
+      Gbot     = cvmix_kpp_composite_shape(sigbot)
+      TauMAG   = ustar * ustar * Gbot / sigbot
       delU     = uE(ktmp) - uE(ktmp+1)
       delV     = vE(ktmp) - vE(ktmp+1)
       Omega_E2x= atan2( delV  , delU )
