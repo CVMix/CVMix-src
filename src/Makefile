@@ -90,7 +90,12 @@ ifeq ($(USE_NETCDF),TRUE)
         LINKING_FLAGS += -L$(NETCDF_LIB) -lnetcdff -lnetcdf
       else
         # get flibs from netcdf.pc
-        FLIBS = $(subst flibs=,,$(shell grep flibs $(NETCDF_PC)))
+        # older versions of netCDF have "flibs=" line
+        FLIBS = $(shell grep flibs $(NETCDF_PC) | cut -d '=' -f 2-)
+        ifeq ($(wildcard $(FLIBS)),)
+          # newer versions of netCDF have Libs: line (and use {libdir} in output
+          FLIBS = $(shell grep Libs $(NETCDF_PC) | grep -v private | cut -d '}' -f 2-)
+        endif
         # Workaround for yellowstone, I need to figure out where this
         # @NC_FLIBS@ comes from
         ifeq ($(FLIBS),@NC_FLIBS@)
@@ -145,7 +150,7 @@ endif
 
 all: exe
 
-$(EXE): $(addprefix $(OBJ_DIR)/,$(OBJS) $(DRIVER_OBJS))        \
+$(EXE): $(addprefix $(OBJ_DIR)/,$(DRIVER_OBJS) $(OBJS))        \
         $(LIB_DIR)/libcvmix.a
 	$(FC) -o $(EXE) $(addprefix $(OBJ_DIR)/,$(OBJS) $(DRIVER_OBJS)) $(LINKING_FLAGS)
 

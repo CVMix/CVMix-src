@@ -52,3 +52,13 @@ mix_type = 'kpp'
   Cp0        = 3992.0d0
   OBL_depth6 = 6000.0d0
 /
+
+! Test 7 params
+&kpp_col7_nml
+  ltest7         = .true.
+  nlev7          = 10
+  layer_thick7   = 5.0d0
+  hmix7          = 17.0d0
+  ! Parameter settings to match LMD94 (linear interp, average Nsqr)
+  interp_type_t7 = "linear"
+/

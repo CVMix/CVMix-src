@@ -1576,7 +1576,7 @@ contains
     ! Local variables
     real(kind=cvmix_r8), dimension(:), pointer :: depth
     real(kind=cvmix_r8), dimension(4)          :: coeffs
-    real(kind=cvmix_r8) :: Ekman, MoninObukhov, OBL_Limit
+    real(kind=cvmix_r8) :: Ekman, MoninObukhov, OBL_Limit, numer, denom
     integer             :: nlev, k, kRi
     logical             :: lstable
 
@@ -1671,16 +1671,18 @@ contains
     if (CVmix_kpp_params_in%lMonOb ) then
       if ( present(Xi) .and. present(surf_buoy) ) then
         MoninObukhov = OBL_limit
+        numer = surf_fric**3
         do k = 0, kRi-1
-          if (surf_buoy(k+1) .gt. cvmix_zero) MoninObukhov =      &
-                surf_fric**3 / (surf_buoy(k+1) * (cvmix_one-Xi(k+1)))
+          denom = surf_buoy(k+1) * (cvmix_one-Xi(k+1))
+          if ( denom*OBL_limit .gt. numer ) MoninObukhov =      &
+                numer / denom
           if ( MoninObukhov .lt. abs(zt_cntr(k+1)) ) &
           exit
         end do
         if (k.eq.0) then
           OBL_limit  = abs(zt_cntr(1))
         elseif (k.lt.kRi) then
-           OBL_limit = min( OBL_limit, abs(zw_iface(k)) )
+           OBL_limit = min( OBL_limit, abs(zw_iface(k+1)) )
         end if
 
       else
@@ -1691,7 +1693,6 @@ contains
 
       ! (4) OBL_depth must be at or above OBL_limit -zt_cntr(1)  <  OBL_depth < OBL_limit
     OBL_depth  = min(OBL_depth, OBL_limit )
-    kOBL_depth = cvmix_kpp_compute_kOBL_depth(zw_iface, zt_cntr, OBL_depth)
 
   else ! not Stokes_MOST
 
@@ -1763,13 +1764,13 @@ contains
       !       because we know OBL_depth will equal OBL_limit?
       OBL_depth = min(OBL_depth, OBL_limit)
     end if
-
-    OBL_depth = max(OBL_depth, CVmix_kpp_params_in%minOBLdepth)
-    if (CVmix_kpp_params_in%maxOBLdepth.gt.cvmix_zero)                        &
-      OBL_depth = min(OBL_depth, CVmix_kpp_params_in%maxOBLdepth)
-    kOBL_depth = cvmix_kpp_compute_kOBL_depth(zw_iface, zt_cntr, OBL_depth)
-
   end if    ! lStokesMOST
+
+  OBL_depth = max(OBL_depth, CVmix_kpp_params_in%minOBLdepth)
+  if (CVmix_kpp_params_in%maxOBLdepth.gt.cvmix_zero)                        &
+    OBL_depth = min(OBL_depth, CVmix_kpp_params_in%maxOBLdepth)
+  kOBL_depth = cvmix_kpp_compute_kOBL_depth(zw_iface, zt_cntr, OBL_depth)
+
 
 !EOC
 
@@ -3344,12 +3345,13 @@ contains
 !EOP
 !BOC
 
-    real(cvmix_r8)  :: a2Gsig, a3Gsig, bGsig, sig_m, G_m, G_1, sig
+    real(cvmix_r8), parameter ::     a2Gsig = -2.1637_cvmix_r8,               &
+                                     a3Gsig =  0.5831_cvmix_r8,               &
+                                     sig_m  =  0.35_cvmix_r8,                 &
+                                     G_m    =  0.11_cvmix_r8
 
-    a2Gsig = -2.1637_cvmix_r8
-    a3Gsig =  0.5831_cvmix_r8
-    sig_m  =  0.35_cvmix_r8
-    G_m    =  0.11_cvmix_r8     ! sig_m + sig_m * sig_m * (a2Gsig + a3Gsig * sig_m)
+    real(cvmix_r8)  :: bGsig, G_1, sig
+
     G_1    =  MAX( cvmix_zero  ,  MIN( Gat1 , G_m ) )
 
     if (sigma .lT. sig_m)  then
