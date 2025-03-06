@@ -279,3 +279,10 @@ diffusivity varies with different Richardson numbers.
 The fifth driver reads in tidal energy flux and buoyancy frequency data from an
 input data set and computes diffusivities in a column based on these physical
 values.
+
+LICENSE
+-------
+
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
+
+CVMix is [licensed](LICENSE.txt) under Apache 2.0.
