@@ -1,4 +1,4 @@
-Last update: July 23, 2014
+Last update: March 10, 2025
 --------------------------
 
 
@@ -257,7 +257,7 @@ in the salt fingering regime and one in the diffusive convective instability
 regime. In each case, the stratification parameter is set and then the
 temperature and salinity diffusivity coefficients are computed.
 
-The third driver runs a set of 6 tests for KPP boundary layer mixing:
+The third driver runs a set of seven tests for KPP boundary layer mixing:
   1. Compute the boundary layer depth for a column with a given HMIX (HBLT
      should = |HMIX|+2)
   2. Compute shape function coefficients with G(0) = G(1) = G'(1) = 0 and G'(0)
@@ -270,6 +270,7 @@ The third driver runs a set of 6 tests for KPP boundary layer mixing:
   6. Compute velocity scales (a) when surface buoyancy flux is 0 and friction
      is positive; and (b) when surface buoyancy flux is negative and friction
      velocity is 0.
+  7. Compute bulk Richardson number from buoyancy and zonal wind data, using `StokesMOST`
 
 The fourth driver sets up a single column using the shear mixing formula found in
 the Large, et al. KPP paper. For this test, each level is a different local
