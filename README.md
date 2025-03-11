@@ -286,4 +286,4 @@ LICENSE
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 
-CVMix is [licensed](LICENSE.txt) under Apache 2.0.
+CVMix is [licensed](LICENSE.txt) under Apache 2.0 with the [LLVM exception](https://lwn.net/Articles/701155/) to explicitly allow it to be included in projects licensed under GPLv2.
