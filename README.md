@@ -1,16 +1,19 @@
-Last update: March 10, 2025
+Last update: April 2, 2025
 --------------------------
 
-
 CVMix is a transparent, robust, flexible, and well-documented open source
-Fortran library for parameterizing ocean vertical mixing processes. It contains
-the following first-order closures:
+Fortran library for parameterizing ocean vertical mixing processes.
+It began as a collaboration among NOAA's Geophysical Fluid Dynamics Laboratory
+(GFDL), DOE's Los Alamos National Lab (LANL), and NSF's National Center
+for Atmospheric Research (NCAR).
+
+CVMix contains the following first-order closures:
 1. Background [time-independent] mixing, including the Bryan and Lewis (1979)
    parameterization
 2. Convective mixing (both density-based and the Brunt-Vaisala scheme)
 3. Double diffusion mixing, as described in Large, et al. (1994) and modified
    according to Danabasoglu, et al. (2006)
-4. The KPP boundary layer mixing scheme from Large, et al. 1994
+4. The KPP boundary layer mixing scheme from Large, et al. (1994)
 5. Shear [Richardson number-based] mixing, including both Pacanowski and
    Philander (1981) and the shear mixing used in Large, et al. (1994)
 6. Tidal mixing, which currently only offers the method described in Simmons,
