@@ -63,9 +63,9 @@ Subroutine cvmix_shear_driver(nlev, max_nlev)
 
   ! Namelist variables
   ! KPP mixing parameters for column
-  real(cvmix_r8) :: LMD_nu_zero, LMD_Ri_zero, LMD_exp
+  real(cvmix_r8) :: LMD_nu_zero, LMD_Ri_zero, LMD_exp, LMD_Prandtl_shear
 
-  namelist/LMD_nml/LMD_nu_zero, LMD_Ri_zero, LMD_exp
+  namelist/LMD_nml/LMD_nu_zero, LMD_Ri_zero, LMD_exp, LMD_Prandtl_shear
   namelist/PP_nml/PP_nu_zero, PP_alpha, PP_exp
 
   print*, "Active levels: ", nlev
@@ -74,7 +74,8 @@ Subroutine cvmix_shear_driver(nlev, max_nlev)
   ! Namelist (set defaults then read from file)
   LMD_nu_zero = 5e-3_cvmix_r8
   LMD_Ri_zero = 0.7_cvmix_r8
-  LMD_exp     = real(3,  cvmix_r8)
+  LMD_exp     = real(3, cvmix_r8)
+  LMD_Prandtl_shear = real(1, cvmix_r8)
 
   PP_nu_zero = 5e-3_cvmix_r8
   PP_alpha   = real(5, cvmix_r8)
@@ -89,6 +90,7 @@ Subroutine cvmix_shear_driver(nlev, max_nlev)
   print*, "KPP_nu_zero = ", LMD_nu_zero
   print*, "KPP_Ri_zero = ", LMD_Ri_zero
   print*, "KPP_exp = ", LMD_exp
+  print*, "Prandtl_shear = ", LMD_Prandtl_shear
 
   print*, ""
   print*, "Parameters Used in PP test"
@@ -144,7 +146,8 @@ Subroutine cvmix_shear_driver(nlev, max_nlev)
 
   ! Set LMD94 parameters
   call cvmix_init_shear(mix_scheme='KPP', KPP_nu_zero=LMD_nu_zero,            &
-                        KPP_Ri_zero=LMD_Ri_zero, KPP_exp=LMD_exp)
+                        KPP_Ri_zero=LMD_Ri_zero, KPP_exp=LMD_exp,             &
+                        Prandtl_shear=LMD_Prandtl_shear)
   call cvmix_coeffs_shear(CVmix_vars_LMD_1D)
 
   ! Set PP81 single column parameters
@@ -167,7 +170,7 @@ Subroutine cvmix_shear_driver(nlev, max_nlev)
   call cvmix_io_open(fid, "data_LMD.out", "ascii")
 #endif
 
-  call cvmix_output_write(fid, CVmix_vars_LMD_1D, (/"Ri   ", "Tdiff"/))
+  call cvmix_output_write(fid, CVmix_vars_LMD_1D, (/"Ri   ", "Tdiff", "Mdiff"/))
 #ifdef _NETCDF
   call cvmix_output_write_att(fid, "long_name", "Richardson number",          &
                               var_name="ShearRichardson")
@@ -186,7 +189,7 @@ Subroutine cvmix_shear_driver(nlev, max_nlev)
   call cvmix_io_open(fid, "data_PP1d.out", "ascii")
 #endif
 
-  call cvmix_output_write(fid, CVmix_vars_PP_1D, (/"Ri   ", "Mdiff"/))
+  call cvmix_output_write(fid, CVmix_vars_PP_1D, (/"Ri   ", "Tdiff", "Mdiff"/))
 #ifdef _NETCDF
   call cvmix_output_write_att(fid, "long_name", "Richardson number",          &
                               var_name="ShearRichardson")
@@ -204,7 +207,7 @@ Subroutine cvmix_shear_driver(nlev, max_nlev)
 #else
   call cvmix_io_open(fid, "data_PP2d.out", "ascii")
 #endif
-  call cvmix_output_write(fid, CVmix_vars_PP_2D, (/"Ri   ", "Mdiff"/))
+  call cvmix_output_write(fid, CVmix_vars_PP_2D, (/"Ri   ", "Tdiff", "Mdiff"/))
 #ifdef _NETCDF
   call cvmix_output_write_att(fid, "long_name", "Richardson number",          &
                               var_name="ShearRichardson")
