@@ -8,6 +8,7 @@ max_nlev = 60
 LMD_nu_zero = 5d-3
 LMD_Ri_zero = 0.7d0
 LMD_exp     = 3.0d0
+LMD_Prandtl_shear = 2.0d0
 /
 ! Shear mixing parameters from PP81 paper
 &PP_nml

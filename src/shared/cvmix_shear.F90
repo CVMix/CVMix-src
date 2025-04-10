@@ -101,6 +101,9 @@
       ! Exponent of unitless factor of diffusities (3 in LMD94)
       real(cvmix_r8) :: KPP_exp     ! units: unitless
 
+      ! Prandtl number for shear mixing (1.0 to match initial Mdiff_out = Tdiff_out)
+      real(cvmix_r8) :: Prandtl_shear ! units: unitless
+
       ! Flag for what to do with old values of CVmix_vars%[MTS]diff
       integer :: handle_old_vals
   end type cvmix_shear_params_type
@@ -118,7 +121,7 @@ contains
   subroutine cvmix_init_shear(CVmix_shear_params_user, mix_scheme,            &
                               PP_nu_zero, PP_alpha, PP_exp, PP_nu_b,          &
                               PP_kappa_b, KPP_nu_zero, KPP_Ri_zero, KPP_exp,  &
-                              old_vals)
+                              Prandtl_shear, old_vals)
 
 ! !DESCRIPTION:
 !  Initialization routine for shear (Richardson number-based) mixing. There are
@@ -162,7 +165,8 @@ contains
                                               PP_kappa_b,                     &
                                               KPP_nu_zero,                    &
                                               KPP_Ri_zero,                    &
-                                              KPP_exp
+                                              KPP_exp,                        &
+                                              Prandtl_shear
 
 ! !OUTPUT PARAMETERS:
     type(cvmix_shear_params_type), optional, target, intent(inout) ::         &
@@ -243,6 +247,11 @@ contains
           call cvmix_put_shear("KPP_exp", 3, CVmix_shear_params_user)
         end if
 
+        if (present(Prandtl_shear)) then
+          call cvmix_put_shear("Prandtl_shear", Prandtl_shear, CVmix_shear_params_user)
+        else
+          call cvmix_put_shear("Prandtl_shear", cvmix_one, CVmix_shear_params_user)
+        end if
       case DEFAULT
         print*, "ERROR: ", trim(CVmix_shear_params_out%mix_scheme),           &
                 " is not a valid choice for shear mixing."
@@ -362,6 +371,7 @@ contains
     real(cvmix_r8)            :: PP_alpha, PP_nu_b, PP_kappa_b, denom
     ! Parameters only used in LMD94
     real(cvmix_r8)            :: KPP_Ri_zero
+    real(cvmix_r8)            :: Prandtl_shear
     type(cvmix_shear_params_type), pointer :: CVmix_shear_params
 
     if (present(CVmix_shear_params_user)) then
@@ -393,9 +403,10 @@ contains
 
       case ('KPP')
         ! Copy parameters to make the code more legible
-        nu_zero     = CVmix_shear_params%KPP_nu_zero
-        KPP_Ri_zero = CVmix_shear_params%KPP_Ri_zero
-        loc_exp     = CVmix_shear_params%KPP_exp
+        nu_zero       = CVmix_shear_params%KPP_nu_zero
+        KPP_Ri_zero   = CVmix_shear_params%KPP_Ri_zero
+        loc_exp       = CVmix_shear_params%KPP_exp
+        Prandtl_shear = CVmix_shear_params%Prandtl_shear
 
         ! Large, et al
         do kw=1,nlev+1
@@ -409,7 +420,7 @@ contains
             end if
         end do
         ! to do: include global params for prandtl number!
-        Mdiff_out = Tdiff_out
+        Mdiff_out = Prandtl_shear * Tdiff_out
 
       case DEFAULT
         ! Note: this error should be caught in cvmix_init_shear
@@ -513,6 +524,8 @@ contains
         CVmix_shear_params_out%KPP_Ri_zero = val
       case ('KPP_exp')
         CVmix_shear_params_out%KPP_exp = val
+      case('Prandtl_shear')
+        CVmix_shear_params_out%Prandtl_shear = val
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
         stop 1
@@ -601,17 +614,19 @@ contains
     cvmix_get_shear_real = cvmix_zero
     select case (trim(varname))
       case ('PP_nu_zero')
-        cvmix_get_shear_real =CVmix_shear_params_in%PP_nu_zero
+        cvmix_get_shear_real = CVmix_shear_params_in%PP_nu_zero
       case ('PP_alpha')
-        cvmix_get_shear_real =CVmix_shear_params_in%PP_alpha
+        cvmix_get_shear_real = CVmix_shear_params_in%PP_alpha
       case ('PP_exp')
-        cvmix_get_shear_real =CVmix_shear_params_in%PP_exp
+        cvmix_get_shear_real = CVmix_shear_params_in%PP_exp
       case ('KPP_nu_zero')
-        cvmix_get_shear_real =CVmix_shear_params_in%KPP_nu_zero
+        cvmix_get_shear_real = CVmix_shear_params_in%KPP_nu_zero
       case ('KPP_Ri_zero')
-        cvmix_get_shear_real =CVmix_shear_params_in%KPP_Ri_zero
+        cvmix_get_shear_real = CVmix_shear_params_in%KPP_Ri_zero
       case ('KPP_exp')
-        cvmix_get_shear_real =CVmix_shear_params_in%KPP_exp
+        cvmix_get_shear_real = CVmix_shear_params_in%KPP_exp
+      case ('Prandtl_shear')
+        cvmix_get_shear_real = CVmix_shear_params_in%Prandtl_shear
       case DEFAULT
         print*, "ERROR: ", trim(varname), " not a valid choice!"
         stop 1
