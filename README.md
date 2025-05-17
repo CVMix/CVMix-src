@@ -1,16 +1,19 @@
-Last update: July 23, 2014
+Last update: April 2, 2025
 --------------------------
 
-
 CVMix is a transparent, robust, flexible, and well-documented open source
-Fortran library for parameterizing ocean vertical mixing processes. It contains
-the following first-order closures:
+Fortran library for parameterizing ocean vertical mixing processes.
+It began as a collaboration among NOAA's Geophysical Fluid Dynamics Laboratory
+(GFDL), DOE's Los Alamos National Lab (LANL), and NSF's National Center
+for Atmospheric Research (NCAR).
+
+CVMix contains the following first-order closures:
 1. Background [time-independent] mixing, including the Bryan and Lewis (1979)
    parameterization
 2. Convective mixing (both density-based and the Brunt-Vaisala scheme)
 3. Double diffusion mixing, as described in Large, et al. (1994) and modified
    according to Danabasoglu, et al. (2006)
-4. The KPP boundary layer mixing scheme from Large, et al. 1994
+4. The KPP boundary layer mixing scheme from Large, et al. (1994)
 5. Shear [Richardson number-based] mixing, including both Pacanowski and
    Philander (1981) and the shear mixing used in Large, et al. (1994)
 6. Tidal mixing, which currently only offers the method described in Simmons,
@@ -257,7 +260,7 @@ in the salt fingering regime and one in the diffusive convective instability
 regime. In each case, the stratification parameter is set and then the
 temperature and salinity diffusivity coefficients are computed.
 
-The third driver runs a set of 6 tests for KPP boundary layer mixing:
+The third driver runs a set of seven tests for KPP boundary layer mixing:
   1. Compute the boundary layer depth for a column with a given HMIX (HBLT
      should = |HMIX|+2)
   2. Compute shape function coefficients with G(0) = G(1) = G'(1) = 0 and G'(0)
@@ -270,6 +273,7 @@ The third driver runs a set of 6 tests for KPP boundary layer mixing:
   6. Compute velocity scales (a) when surface buoyancy flux is 0 and friction
      is positive; and (b) when surface buoyancy flux is negative and friction
      velocity is 0.
+  7. Compute bulk Richardson number from buoyancy and zonal wind data, using `StokesMOST`
 
 The fourth driver sets up a single column using the shear mixing formula found in
 the Large, et al. KPP paper. For this test, each level is a different local
@@ -279,3 +283,11 @@ diffusivity varies with different Richardson numbers.
 The fifth driver reads in tidal energy flux and buoyancy frequency data from an
 input data set and computes diffusivities in a column based on these physical
 values.
+
+LICENSE
+-------
+
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
+
+CVMix is [licensed](LICENSE.txt) under Apache 2.0 with the [LLVM exception](https://lwn.net/Articles/701155/) to explicitly allow it to be included in and distributed with projects licensed under GPLv2 such as the General Ocean Turbulence Model ([GOTM](https://gotm.net/portfolio/)).
+This exception also allows such projects to publish the CVMix source code as supplementary material to scientific journal articles.
