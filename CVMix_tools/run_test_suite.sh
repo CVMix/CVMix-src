@@ -153,8 +153,8 @@ if [ "${STATUS}" == "PASS" ]; then
 
     # Bryan-Lewis baseline comparison test
     cd ${CVMIX_ROOT}/reg_tests/Bryan-Lewis
-    echo "$ ./Bryan-Lewis-test.sh"
-    ./Bryan-Lewis-test.sh
+    echo "$ ./Bryan-Lewis-test.sh -nc"
+    ./Bryan-Lewis-test.sh -nc
     STATUS=$(check_return $?)
     print_status "Bryan Lewis (with netCDF)" >> $OUTFILE
     if [ "${STATUS}" == "PASS" ]; then
