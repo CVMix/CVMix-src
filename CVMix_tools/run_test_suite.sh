@@ -28,11 +28,13 @@ function print_status() {
 function baseline_comparison() {
   testname=$(basename $PWD)
   for file in `ls *.nc`; do
-    ${CVMIX_ROOT}/CVMix_tools/netcdf_comparison.py   \
-        -b ${CVMIX_ROOT}/baselines/${testname}/${file} \
-        -n ${file} --strict loose
-    STATUS=$(check_return $?)
-    print_status "Baseline comparison (${file})" >> $OUTFILE
+    if [ -f ${CVMIX_ROOT}/baselines/${testname}/${file} ]; then
+      ${CVMIX_ROOT}/CVMix_tools/netcdf_comparison.py   \
+          -b ${CVMIX_ROOT}/baselines/${testname}/${file} \
+          -n ${file} --strict loose
+      STATUS=$(check_return $?)
+      print_status "${testname} baseline comparison (${file})" >> $OUTFILE
+    fi
   done
 }
 
@@ -149,12 +151,25 @@ if [ "${STATUS}" == "PASS" ]; then
       baseline_comparison
     fi
 
-    # KPP test
+    # Bryan-Lewis baseline comparison test
+    cd ${CVMIX_ROOT}/reg_tests/Bryan-Lewis
+    echo "$ ./Bryan-Lewis-test.sh"
+    ./Bryan-Lewis-test.sh
+    STATUS=$(check_return $?)
+    print_status "Bryan Lewis (with netCDF)" >> $OUTFILE
+    if [ "${STATUS}" == "PASS" ]; then
+      baseline_comparison
+      ${CVMIX_ROOT}/CVMix_tools/netcdf_comparison.py -b data_memcopy.nc -n data_pointer.nc --strict exact
+      STATUS=$(check_return $?)
+      print_status "Bryan-Lewis memcopy and pointer comparison" >> $OUTFILE
+    fi
+
+    # KPP baseline comparison test
     cd ${CVMIX_ROOT}/reg_tests/kpp
     echo "$ ./kpp-test.sh -nc"
     ./kpp-test.sh -nc
     STATUS=$(check_return $?)
-    print_status "KPP.sh -nc" >> $OUTFILE
+    print_status "KPP (with netCDF)" >> $OUTFILE
     if [ "${STATUS}" == "PASS" ]; then
       baseline_comparison
     fi
