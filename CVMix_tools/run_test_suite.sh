@@ -24,6 +24,20 @@ function print_status() {
 
 #################################################
 
+# Run baseline comparison test
+function baseline_comparison() {
+  testname=$(basename $PWD)
+  for file in `ls *.nc`; do
+    ${CVMIX_ROOT}/CVMix_tools/netcdf_comparison.py   \
+        -b ${CVMIX_ROOT}/baselines/${testname}/${file} \
+        -n ${file} --strict loose
+    STATUS=$(check_return $?)
+    print_status "Baseline comparison (${file})" >> $OUTFILE
+  done
+}
+
+#################################################
+
 ###############
 # Global Vars #
 ###############
@@ -131,8 +145,20 @@ if [ "${STATUS}" == "PASS" ]; then
     ./Simmons-test.sh -nc
     STATUS=$(check_return $?)
     print_status "Tidal (requires netCDF)" >> $OUTFILE
-  fi
+    if [ "${STATUS}" == "PASS" ]; then
+      baseline_comparison
+    fi
 
+    # KPP test
+    cd ${CVMIX_ROOT}/reg_tests/kpp
+    echo "$ ./kpp-test.sh -nc"
+    ./kpp-test.sh -nc
+    STATUS=$(check_return $?)
+    print_status "KPP.sh -nc" >> $OUTFILE
+    if [ "${STATUS}" == "PASS" ]; then
+      baseline_comparison
+    fi
+  fi
 fi
 
 
