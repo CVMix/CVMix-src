@@ -130,7 +130,7 @@ if [ "${STATUS}" == "PASS" ]; then
   echo "$ ./kpp-test.sh"
   ./kpp-test.sh
   STATUS=$(check_return $?)
-  print_status "KPP.sh" >> $OUTFILE
+  print_status "KPP" >> $OUTFILE
 
   # Build stand-alone executable with netCDF
   cd ${CVMIX_ROOT}/src
@@ -162,6 +162,26 @@ if [ "${STATUS}" == "PASS" ]; then
       ${CVMIX_ROOT}/CVMix_tools/netcdf_comparison.py -b data_memcopy.nc -n data_pointer.nc --strict exact
       STATUS=$(check_return $?)
       print_status "Bryan-Lewis memcopy and pointer comparison" >> $OUTFILE
+    fi
+
+    # Double Diffusion baseline comparison test
+    cd ${CVMIX_ROOT}/reg_tests/double_diff
+    echo "$ ./double_diff-test.sh -nc"
+    ./double_diff-test.sh -nc
+    STATUS=$(check_return $?)
+    print_status "Double Diffusion (with netCDF)" >> $OUTFILE
+    if [ "${STATUS}" == "PASS" ]; then
+      baseline_comparison
+    fi
+
+    # Shear baseline comparison test
+    cd ${CVMIX_ROOT}/reg_tests/shear
+    echo "$ ./shear-test.sh -nc"
+    ./shear-test.sh -nc
+    STATUS=$(check_return $?)
+    print_status "Shear (with netCDF)" >> $OUTFILE
+    if [ "${STATUS}" == "PASS" ]; then
+      baseline_comparison
     fi
 
     # KPP baseline comparison test
