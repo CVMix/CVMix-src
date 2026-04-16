@@ -3530,7 +3530,11 @@ contains
     tauDG   = TauMAG                       ! E
     tauxbot  = tauDG * cosOmega  -  tauCG * sinOmega
     tauybot  = tauDG * sinOmega  +  tauCG * cosOmega
-    tauEbot  = (tauxbot * delU + tauybot * delV) / (zk(ktmp) - zk(ktmp+1) )
+    if (ktmp < size(zk)) then
+      tauEbot  = (tauxbot * delU + tauybot * delV) / (zk(ktmp) - zk(ktmp+1))
+    else
+      tauEbot  = (tauxbot * delU + tauybot * delV) / (zi(ktmp) - zi(ktmp+1))
+    endif
     ! Increment Eulerian Shear Production
     Pinc     = 0.5_cvmix_r8 * (tauEbot + tauEtop) * delH
     PU       = PU + MAX( Pinc , cvmix_zero )
