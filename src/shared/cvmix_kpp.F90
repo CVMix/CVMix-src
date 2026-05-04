@@ -65,6 +65,7 @@
   integer, parameter :: LANGMUIR_ENTRAINMENT_LWF16   = 1
   integer, parameter :: LANGMUIR_ENTRAINMENT_LF17    = 2
   integer, parameter :: LANGMUIR_ENTRAINMENT_RWHGK16 = 3
+  integer, parameter :: ML_DIFFUSIVITY_SHAPE = 5 ! ML_Diffusivity
 
 ! !PUBLIC MEMBER FUNCTIONS:
 
@@ -214,6 +215,9 @@
       real(cvmix_r8) :: ER_Cs             ! Entrainment Rule TKE Stokes production weight [nondim]
       real(cvmix_r8) :: ER_Cu             ! Entrainment Rule TKE shear production weight [nondim]
 
+      logical        :: ML_diffusivity    ! uses the Machine Learned equations to set diffusivity
+                                          ! from Sane et al. (2025) https://doi.org/10.31219/osf.io/uab7v_v2
+
   end type cvmix_kpp_params_type
 
 !EOP
@@ -232,7 +236,8 @@ contains
                             old_vals, lEkman, lStokesMOST, lMonOb, lnoDGat1,     &
                             lenhanced_diff, lnonzero_surf_nonlocal,              &
                             Langmuir_mixing_str, Langmuir_entrainment_str,       &
-                            l_LMD_ws, ER_Cb, ER_Cs, ER_Cu, CVmix_kpp_params_user)
+                            l_LMD_ws, ML_diffusivity,                            &
+                            ER_Cb, ER_Cs, ER_Cu, CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
 !  Initialization routine for KPP mixing.
@@ -266,7 +271,8 @@ contains
                                               lnoDGat1,                       &
                                               lenhanced_diff,                 &
                                               lnonzero_surf_nonlocal,         &
-                                              l_LMD_ws
+                                              l_LMD_ws,                       &
+                                              ML_diffusivity
 
 ! !OUTPUT PARAMETERS:
     type(cvmix_kpp_params_type), intent(inout), target, optional ::           &
@@ -459,6 +465,8 @@ contains
         case ('ParabolicNonLocal')
           call cvmix_put_kpp('MatchTechnique', CVMIX_KPP_PARABOLIC_NONLOCAL,  &
                              CVmix_kpp_params_user)
+        case ('ML_Diffusivity_Shape') ! ML_Diffusivity shape function
+          call cvmix_put_kpp('MatchTechnique', ML_DIFFUSIVITY_SHAPE, CVmix_kpp_params_user)
         case DEFAULT
           print*, "ERROR: ", trim(MatchTechnique), " is not a valid choice ", &
                   "for MatchTechnique!"
@@ -467,6 +475,16 @@ contains
     else
       call cvmix_put_kpp('MatchTechnique', CVMIX_KPP_SIMPLE_SHAPES,           &
                          CVmix_kpp_params_user)
+    end if
+
+    ! --- Add this block to for ML_diffusivity ---
+    if (present(ML_diffusivity)) then ! ML_diffusivity
+      call cvmix_put_kpp('ML_diffusivity', ML_diffusivity, CVmix_kpp_params_user)
+      if (ML_diffusivity) then
+        call cvmix_put_kpp('MatchTechnique', ML_DIFFUSIVITY_SHAPE, CVmix_kpp_params_user)
+      end if
+    else
+      call cvmix_put_kpp('ML_diffusivity', .false., CVmix_kpp_params_user)
     end if
 
     if (present(old_vals)) then
@@ -679,6 +697,7 @@ contains
                           nlev, max_nlev,                                     &
                           CVmix_vars%LangmuirEnhancementFactor,               &
                           CVmix_vars%StokesMostXi,                            &
+                          CVmix_vars%Coriolis,                                &
                           CVmix_kpp_params_user)
 
     call cvmix_update_wrap(CVmix_kpp_params_in%handle_old_vals, max_nlev,     &
@@ -702,7 +721,7 @@ contains
                                   old_Mdiff, old_Tdiff, old_Sdiff, OBL_depth, &
                                   kOBL_depth, Tnonlocal, Snonlocal, surf_fric,&
                                   surf_buoy, nlev, max_nlev, Langmuir_EFactor,&
-                                  StokesXI,CVmix_kpp_params_user)
+                                  StokesXI,Coriolis,CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
 !  Computes vertical diffusion coefficients for the KPP boundary layer mixing
@@ -727,6 +746,7 @@ contains
     ! Langmuir enhancement factor
     real(cvmix_r8), intent(in), optional :: Langmuir_EFactor
     real(cvmix_r8), intent(in), optional :: StokesXI
+    real(cvmix_r8), intent(in), optional :: Coriolis ! required for ML_diffusivity
 ! !INPUT/OUTPUT PARAMETERS:
     real(cvmix_r8), dimension(max_nlev+1), intent(inout) :: Mdiff_out,        &
                                                             Tdiff_out,        &
@@ -793,6 +813,14 @@ contains
 
     ! Parameters for Stokes_MOST
     real(cvmix_r8) :: Gcomposite, Hsigma, sigh, T_NLenhance , S_NLenhance , XIone
+
+    ! Parameters for the machine learning part, ML_diffusivity
+    real(cvmix_r8) :: sigma_max ! sigma coordinate of location of maximum diffusivity
+    real(cvmix_r8) :: g_sigma ! shape function at a sigma coordinate.
+    real(cvmix_r8) :: L_h ! Non-dimensional L_h = B*OBL_depth/u_*^3
+    real(cvmix_r8) :: E_h ! Non-dimensional E_h = OBL_depth * Coriolis /u_*
+    real(cvmix_r8) :: F_inter_func ! Stands for F_intermediate_function,
+    ! Non-dimensional intermediate function used to calculate sigma_max
 
     ! Constant from params
     integer :: interp_type2, MatchTechnique
@@ -1208,11 +1236,46 @@ contains
     call cvmix_kpp_compute_turbulent_scales(sigma, OBL_depth, surf_buoy,   &
                                             surf_fric, XIone, w_m, w_s,    &
                                             CVmix_kpp_params_user)
+
+
+    if (CVmix_kpp_params_in%ML_diffusivity) then ! ML_diffusivity
+      !!! Evaluating L_h and E_h
+      L_h = -surf_buoy * OBL_depth / (surf_fric ** 3.0) ! OBL / Monin-Obukhov-Depth
+      E_h = OBL_depth * Coriolis / surf_fric ! OBL / Ekman Depth i.e. hf/u*
+      F_inter_func = ( cvmix_one / ( 0.0712 + 0.4380 * exp(-1.0*(2.6821 * L_h)) ) ) + 1.5845
+      sigma_max = (F_inter_func * E_h) / ( 1.7908*(F_inter_func * E_h) + 0.6904)
+      !!! capping sigma_max between 0.1 and 0.7
+      sigma_max = min( max(sigma_max, 0.1), 0.7)
+    endif
     do kw=2,kwup
       !   (3b) Evaluate G(sigma) at each cell interface
-      MshapeAtS = cvmix_math_evaluate_cubic(Mshape, sigma(kw))
-      TshapeAtS = cvmix_math_evaluate_cubic(Tshape, sigma(kw))
-      SshapeAtS = cvmix_math_evaluate_cubic(Sshape, sigma(kw))
+
+      if (CVmix_kpp_params_in%ML_diffusivity) then ! ML_diffusivity
+
+        ! ML-diffusivity modification:
+        if (sigma(kw) .le. sigma_max ) then ! ML based shape function
+          ! quadratic part above sigma_max
+          g_sigma = (2.0*sigma(kw)/sigma_max) - (sigma(kw)/sigma_max)**2.0
+          g_sigma = g_sigma * (4.0/27.0) ! reduces the amplitude from 1 to 4/27 to match G(\sigma) of KPP
+          MshapeAtS = g_sigma
+          TshapeAtS = g_sigma
+          SshapeAtS = g_sigma
+        else
+          ! cubic part below sigma_max
+          g_sigma = 2.0*((sigma(kw) - sigma_max)/(cvmix_one - sigma_max))**3.0 &
+                    - 3.0*((sigma(kw) - sigma_max)/(cvmix_one - sigma_max))**2.0 &
+                    + cvmix_one
+          g_sigma = g_sigma * (4.0/27.0) ! reduces the amplitude from 1 to 4/27 to match G(\sigma) of KPP
+          MshapeAtS = g_sigma
+          TshapeAtS = g_sigma
+          SshapeAtS = g_sigma
+        end if
+
+      else
+        MshapeAtS = cvmix_math_evaluate_cubic(Mshape, sigma(kw))
+        TshapeAtS = cvmix_math_evaluate_cubic(Tshape, sigma(kw))
+        SshapeAtS = cvmix_math_evaluate_cubic(Sshape, sigma(kw))
+      end if
       ! The RWHGK16 Langmuir uses the shape function to shape the
       !  enhancement to the mixing coefficient.
       ShapeNoMatchAtS = cvmix_math_evaluate_cubic(NMshape, sigma(kw))
@@ -1302,7 +1365,7 @@ contains
 ! !IROUTINE: cvmix_put_kpp_real
 ! !INTERFACE:
 
-  subroutine cvmix_put_kpp_real(varname, val, CVmix_kpp_params_user)
+ subroutine cvmix_put_kpp_real(varname, val, CVmix_kpp_params_user)
 
 ! !DESCRIPTION:
 !  Write a real value into a cvmix\_kpp\_params\_type variable.
@@ -1483,6 +1546,8 @@ contains
         CVmix_kpp_params_out%lenhanced_diff = val
       case ('l_LMD_ws')
         CVmix_kpp_params_out%l_LMD_ws = val
+      case ('ML_diffusivity')
+        CVmix_kpp_params_out%ML_diffusivity = val
       case DEFAULT
         print*, "ERROR: ", trim(varname), " is not a boolean variable!"
         stop 1
@@ -3655,7 +3720,12 @@ contains
         ! Find sigE (the root of the derivative of the quadratic polynomial
         ! interpolating (sigma(i), Bflux(i)) for i in [iz, iz+1, iz+2])
         ! Also find BEnt (value of quadratic at sigE)
-        call cvmix_math_poly_interp(coeffs, sigma(iz:iz+2), Bflux(iz:iz+2))
+        ! call cvmix_math_poly_interp(coeffs, sigma(iz:iz+2), Bflux(iz:iz+2))
+        ! comment by Aakash: the above is the original line,
+        ! it gives me errors so I changed it to below call. not sure if it is correct
+        call cvmix_math_poly_interp(coeffs, CVMIX_MATH_INTERP_QUAD,           &
+                                    sigma(iz:iz+1), Bflux(iz:iz+1),           &
+                                    sigma(iz+2), Bflux(iz+2))
         ! coeffs(3) = 0 => sigma(iz), sigma(iz+1), and sigma(iz+2) are not unique values
         ! so there interpolation returned a linear equation. In this case we select
         ! (sigma(iz+1), Bflux(iz+1)) as the maximum.
